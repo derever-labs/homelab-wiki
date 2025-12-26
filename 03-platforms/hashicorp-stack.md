@@ -201,5 +201,25 @@ vault status
 ```bash
 journalctl -u cloud-init
 cat /var/log/cloud-init-output.log
-cloud-init status --wait
+## Vault
+Zentrales Secrets Management. Startet versiegelt und muss nach Reboot entsperrt werden.
+
+### Workload Identity
+Nomad Jobs authentifizieren sich bei Vault über JWT (Workload Identity) ohne statische Tokens.
+- **Auth Method:** `jwt-nomad`
+- **JWKS URL:** `http://10.0.2.104:4646/.well-known/jwks.json`
+- **Default Role:** `nomad-workloads`
+
+### Auto-Unseal
+Vault wird nach Neustart automatisch via systemd entsperrt:
+- **Keys:** `/etc/vault.d/unseal-keys` (chmod 600)
+- **Service:** `vault-unseal.service`
+
+## Consul DNS
+Die DNS-Server auf `10.0.2.1` und `10.0.2.2` leiten `.consul` Anfragen an den Cluster weiter.
+
+### Auflösung
+- `consul.service.consul` -> 10.0.2.104-106
+- `radarr.service.consul` -> 10.0.2.125 (Dynamisch je nach Node)
+- Unterstützung für SRV Records zur Port-Ermittlung.
 ```

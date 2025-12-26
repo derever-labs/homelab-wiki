@@ -25,6 +25,12 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 ### Authentifizierung
 Erfolgt via OAuth2 (Keycloak). Nur Benutzer der Gruppe `admin` haben Zugriff.
 
+### Stateless Setup
+Grafana läuft vollständig stateless:
+- **Dashboards:** Werden als JSON Dateien unter `/nfs/docker/grafana/dashboards/` bereitgestellt (aus Git).
+- **Datasources:** Werden beim Start via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`) provisioniert.
+- **Alerting:** Deaktiviert, da kein persistenter Storage für State vorhanden ist.
+
 ## Uptime Kuma
 Überwacht alle externen und internen Endpunkte via HTTP/TCP-Checks.
 - **Benachrichtigungen:** Bei Ausfall erfolgt eine Meldung via Gotify/Telegram (konfiguriert in Vault).

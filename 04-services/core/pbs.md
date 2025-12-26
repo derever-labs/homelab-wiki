@@ -38,5 +38,13 @@ Updates erfolgen über den integrierten Update-Manager oder via CLI:
 apt update && apt dist-upgrade
 ```
 
+## Monitoring
+PBS sendet Heartbeats an Uptime Kuma nach erfolgreichen Backup-Operationen.
+
+### Uptime Kuma Integration
+- **Typ:** Push Monitor
+- **Konfiguration:** Webhook Endpoint in PBS (`uptime-kuma-heartbeat`) triggert bei `backup-success-heartbeat`.
+- **URL:** Interner Aufruf an Uptime Kuma API (Port 3001).
+
 ---
-*Dokumentation erstellt am: 26.12.2025*
+*Letztes Update: 26.12.2025*
