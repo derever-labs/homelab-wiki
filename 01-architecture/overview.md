@@ -57,6 +57,9 @@ dateCreated: 2025-12-26T17:52:12+00:00
 | homeassistant | 10.0.0.100 | Home Assistant OS |
 | zigbee-node | 10.0.0.110 | Zigbee2MQTT VM |
 
+### [Architektur](./01-architecture/overview)
+Gesamtübersicht des Netzwerks, [Sicherheit](../03-platforms/security) und [Datenstrategie](./data-strategy).
+
 ## Services
 
 | Service | URL | Dokumentation |
@@ -65,7 +68,8 @@ dateCreated: 2025-12-26T17:52:12+00:00
 | Jellyfin | watch.ackermannprivat.ch | [Details](../04-services/media/jellyfin) |
 | Media Stack | prowlarr.ackermannprivat.ch | [arr-Stack](../04-services/media/arr-stack) |
 | Monitoring | graf.ackermannprivat.ch | [Stack Übersicht](../04-services/monitoring/stack) |
-| CheckMK | monitoring.ackermannprivat.ch | [Details](../04-services/monitoring/checkmk) |
+| Vaultwarden | vault.ackermannprivat.ch | [Details](../04-services/productivity/vaultwarden) |
+| Paperless | paper.ackermannprivat.ch | [Details](../04-services/productivity/paperless) |
 | Wiki.js | wiki.ackermannprivat.ch | [Home](../home) |
 
 ## Infrastruktur & Plattformen
@@ -75,8 +79,8 @@ dateCreated: 2025-12-26T17:52:12+00:00
 - **Network:** [OPNsense Gateway](../04-services/core/opnsense)
 - **Backup:** [Proxmox Backup Server](../04-services/core/pbs)
 - **Orchestrierung:** [HashiCorp Stack](../03-platforms/hashicorp-stack)
-- **Container:** [Nomad Overview](../04-services/nomad-overview)
-- **IoT:** [Zigbee / HomeAssistant](../04-services/iot-zigbee)
+- **Nomad Architektur:** [Job Overview](../03-platforms/nomad-architecture)
+- **IoT:** [Zigbee / HomeAssistant](../04-services/iot/zigbee)
 
 ## Wartung
 

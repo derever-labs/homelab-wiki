@@ -1,15 +1,27 @@
 ---
-title: Litestream Replikation
-description: S3 Dual-Replica Architektur für SQLite Datenbanken
+title: Datenstrategie & Replikation
+description: Speicher-Konzepte, Litestream Replikation und Backups
 published: true
 date: 2025-12-26T20:00:00+00:00
-tags: architecture, backup, sqlite, litestream
+tags: architecture, backup, sqlite, litestream, storage
 editor: markdown
 ---
 
-# Litestream S3 Dual-Replica Setup
+# Datenstrategie
 
-SQLite-Datenbanken werden mit Litestream auf S3-kompatiblen Storage repliziert. Dies ermöglicht hochverfügbare Stateful Services ohne zentrale Datenbank-Server.
+Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert und gesichert werden.
+
+## 1. Speicher-Ebenen
+
+| Ebene | Technologie | Pfad | Verwendungszweck |
+|-------|-------------|------|------------------|
+| **Hot Storage** | Lokales SSD/ZFS | `/local-docker/` | Performance-kritische DBs (SQLite) |
+| **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
+| **Object Storage** | MinIO (S3) | `http://10.0.0.200:9000` | Backup-Targets, Terraform State |
+
+## 2. Litestream Replikation (SQLite)
+
+Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutzen wir Litestream für eine Echtzeit-Replikation.
 
 ## Architektur
 
