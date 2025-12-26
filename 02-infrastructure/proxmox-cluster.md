@@ -20,12 +20,38 @@ Das Cluster besteht aus drei Knoten, die für Hochverfügbarkeit und Lastverteil
 
 ## Infrastructure VMs
 
-| VM | IP | Rolle |
-| :--- | :--- | :--- |
-| **vm-proxy-dns-01** | 10.0.2.1 | Primary DNS, Traefik, Keycloak |
-| **vm-vpn-dns-01** | 10.0.2.2 | Secondary DNS, VPN Gateway |
-| **checkmk** | 10.0.2.150 | Monitoring System |
-| **pbs-backup-server** | 10.0.2.50 | Proxmox Backup Server |
+| VM | IP | VM-ID | Host | Rolle |
+| :--- | :--- | :--- | :--- | :--- |
+| **vm-proxy-dns-01** | 10.0.2.1 | 4001 | pve01 | Primary DNS, Traefik, Keycloak, CrowdSec |
+| **vm-vpn-dns-01** | 10.0.2.2 | 4002 | pve02 | Secondary DNS, ZeroTier VPN |
+| **checkmk** | 10.0.2.150 | 2000 | pve01 | Monitoring System |
+| **pbs-backup-server** | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
+| **datacenter-manager** | 10.0.2.60 | 99998 | pve01 | Management Tools |
+
+## HashiCorp Stack VMs
+
+### Nomad Server (3x)
+
+| VM | IP | VM-ID | Host | Specs |
+| :--- | :--- | :--- | :--- | :--- |
+| **vm-nomad-server-04** | 10.0.2.104 | 3004 | pve00 | 2 CPU, 4GB RAM |
+| **vm-nomad-server-05** | 10.0.2.105 | 3005 | pve01 | 2 CPU, 4GB RAM |
+| **vm-nomad-server-06** | 10.0.2.106 | 3006 | pve02 | 2 CPU, 4GB RAM |
+
+### Nomad Clients (3x)
+
+| VM | IP | VM-ID | Host | Specs |
+| :--- | :--- | :--- | :--- | :--- |
+| **vm-nomad-client-04** | 10.0.2.124 | 3104 | pve00 | 4 CPU, 12GB RAM |
+| **vm-nomad-client-05** | 10.0.2.125 | 3105 | pve01 | 16 CPU, 48GB RAM |
+| **vm-nomad-client-06** | 10.0.2.126 | 3106 | pve02 | 16 CPU, 48GB RAM |
+
+## IoT VMs
+
+| VM | IP | VM-ID | Host | Rolle |
+| :--- | :--- | :--- | :--- | :--- |
+| **homeassistant** | 10.0.0.100 | 1000 | pve02 | Home Assistant OS |
+| **zigbee-node** | 10.0.0.110 | 1100 | pve02 | Zigbee2MQTT, Mosquitto |
 
 ## Netzwerk
 Alle Nodes sind über ein dediziertes Management-VLAN (10.0.2.x) erreichbar.

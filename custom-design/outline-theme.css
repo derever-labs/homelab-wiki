@@ -1,0 +1,162 @@
+/* --- Wiki.js Outline Theme Inspiration --- */
+
+/* 1. Fonts & Basis */
+@import url('https://rsms.me/inter/inter.css');
+
+:root {
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --color-bg-sidebar: #F7F9FC;
+    --color-bg-content: #FFFFFF;
+    --color-text-primary: #1A202C;
+    --color-text-secondary: #4A5568;
+    --color-border: #E2E8F0;
+    --color-active-item: #EDF2F7;
+    --width-content: 900px;
+}
+
+.v-application {
+    font-family: var(--font-primary) !important;
+    background-color: var(--color-bg-content) !important;
+    color: var(--color-text-primary) !important;
+}
+
+/* 2. Navigation Sidebar (Left) */
+.v-navigation-drawer {
+    background-color: var(--color-bg-sidebar) !important;
+    border-right: 1px solid var(--color-border) !important;
+    box-shadow: none !important;
+}
+
+/* Einträge in der Sidebar */
+.v-navigation-drawer .v-list-item {
+    margin: 4px 8px;
+    border-radius: 6px;
+    min-height: 36px;
+    color: var(--color-text-secondary) !important;
+}
+
+/* Aktiver Eintrag */
+.v-navigation-drawer .v-list-item--active {
+    background-color: #FFFFFF !important;
+    color: #3182CE !important; /* Blaues Highlight wie bei Outline */
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid var(--color-border);
+}
+
+.v-navigation-drawer .v-list-item:hover:not(.v-list-item--active) {
+    background-color: var(--color-active-item) !important;
+    color: #000 !important;
+}
+
+/* Icons in Sidebar dezenter */
+.v-navigation-drawer .v-icon {
+    font-size: 18px !important;
+    opacity: 0.7;
+}
+
+/* 3. Main Content Area */
+.v-main {
+    background-color: var(--color-bg-content) !important;
+}
+
+/* Container begrenzen für Lesbarkeit */
+.page-content {
+    max-width: var(--width-content) !important;
+    margin: 0 auto;
+    padding: 40px 20px !important;
+}
+
+/* Titel (H1) */
+h1 {
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    font-size: 2.25rem !important;
+    margin-bottom: 1.5rem !important;
+    color: #111827;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+}
+
+/* H2, H3 */
+h2 {
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+    margin-top: 2rem !important;
+    margin-bottom: 1rem !important;
+    color: #2D3748;
+}
+
+h3 {
+    font-weight: 600 !important;
+    font-size: 1.25rem !important;
+    margin-top: 1.5rem !important;
+    color: #2D3748;
+}
+
+/* Fließtext */
+p, li {
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+    color: #374151 !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Tabellen modernisieren */
+.v-data-table {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: none !important;
+}
+.v-data-table th {
+    background-color: #F8FAFC !important;
+    text-transform: uppercase;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.05em;
+    font-weight: 600 !important;
+    color: #64748B !important;
+}
+.v-data-table td {
+    font-size: 14px !important;
+    border-bottom: 1px solid var(--color-border) !important;
+}
+
+/* Code Blocks */
+code {
+    background-color: #F1F5F9 !important;
+    color: #0F172A !important;
+    border-radius: 4px;
+    padding: 2px 4px !important;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+}
+
+pre code {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+/* Links */
+a {
+    text-decoration: none;
+    color: #2563EB !important; /* Royal Blue */
+    transition: color 0.2s;
+}
+a:hover {
+    color: #1D4ED8 !important;
+    text-decoration: underline;
+}
+
+/* Header/Toolbar aufräumen */
+.v-app-bar {
+    background-color: #FFFFFF !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    box-shadow: none !important;
+}
+
+/* Search Bar cleaner machen */
+.v-autocomplete__content {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid var(--color-border);
+}

@@ -19,8 +19,10 @@ editor: markdown
 
 ## Funktionen
 - **SSL-Terminierung:** Automatische Zertifikate via Let's Encrypt (Cloudflare DNS Challenge).
-- **Authentication:** Forward-Auth Middleware integriert mit Keycloak (SSO).
+- **Authentication:** OAuth2-Proxy Middleware integriert mit Keycloak (SSO).
 - **Service Discovery:** Findet Nomad-Jobs automatisch via Consul-Catalog.
+- **Security:** CrowdSec Bouncer für automatisches IP-Blocking bei Angriffen.
+- **Rate Limiting:** Fail2ban-ähnliche Funktionalität via CrowdSec.
 
 ## Authentifizierung (Middlewares)
 Traefik nutzt verschiedene Sicherheitsstufen für Services:
@@ -30,11 +32,16 @@ Traefik nutzt verschiedene Sicherheitsstufen für Services:
 
 ## Wartung
 ### Konfiguration ändern
-Die statische Konfiguration liegt in `infra/homelab-hashicorp-stack/standalone-stacks/traefik-proxy/`.
+- **Templates (Git):** `infra/homelab-hashicorp-stack/standalone-stacks/traefik-proxy/templates/`
+- **Statische Config (VM):** `/nfs/docker/traefik/traefik.yml`
+- **Dynamische Config (VM):** `/nfs/docker/traefik/configurations/config.yml` (Middlewares, Routen)
+
 Änderungen werden per Ansible verteilt:
 ```bash
 ansible-playbook standalone-stacks/traefik-proxy/deploy.yml --tags sync-only
 ```
+
+**Hinweis:** Die dynamische Konfiguration (Middlewares, OAuth2-Callbacks) wird direkt auf der VM bearbeitet und ist nicht im Git versioniert.
 
 ### Logs prüfen
 ```bash

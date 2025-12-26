@@ -57,20 +57,54 @@ dateCreated: 2025-12-26T17:52:12+00:00
 | homeassistant | 10.0.0.100 | Home Assistant OS |
 | zigbee-node | 10.0.0.110 | Zigbee2MQTT VM |
 
-### [Architektur](./01-architecture/overview)
-Gesamtübersicht des Netzwerks, [Sicherheit](../03-platforms/security) und [Datenstrategie](./data-strategy).
+**Weitere Informationen:** [Sicherheit](../03-platforms/security) | [Datenstrategie](./data-strategy)
 
 ## Services
 
-| Service | URL | Dokumentation |
+### Core Services
+
+| Service | URL | Beschreibung |
 |---------|-----|--------------|
-| Traefik | traefik.ackermannprivat.ch | [Details](../04-services/core/traefik) |
-| Jellyfin | watch.ackermannprivat.ch | [Details](../04-services/media/jellyfin) |
-| Media Stack | prowlarr.ackermannprivat.ch | [arr-Stack](../04-services/media/arr-stack) |
-| Monitoring | graf.ackermannprivat.ch | [Stack Übersicht](../04-services/monitoring/stack) |
-| Vaultwarden | vault.ackermannprivat.ch | [Details](../04-services/productivity/vaultwarden) |
-| Paperless | paper.ackermannprivat.ch | [Details](../04-services/productivity/paperless) |
-| Wiki.js | wiki.ackermannprivat.ch | [Home](../home) |
+| Traefik | traefik.ackermannprivat.ch | Reverse Proxy, SSL - [Details](../04-services/core/traefik) |
+| Keycloak | sso.ackermannprivat.ch | Identity Provider (OAuth2/OIDC) |
+| Wiki.js | wiki.ackermannprivat.ch | Dokumentation |
+
+### Media
+
+| Service | URL | Beschreibung |
+|---------|-----|--------------|
+| Jellyfin | watch.ackermannprivat.ch | Media Server - [Details](../04-services/media/jellyfin) |
+| Jellyseerr | wish.ackermannprivat.ch | Media Requests |
+| Sonarr | sonarr.ackermannprivat.ch | Serien Management |
+| Radarr | radarr.ackermannprivat.ch | Film Management |
+| Prowlarr | prowlarr.ackermannprivat.ch | Indexer Management |
+| SABnzbd | sabnzbd.ackermannprivat.ch | Usenet Downloader |
+| AudioBookShelf | audio.ackermannprivat.ch | Hörbücher |
+
+### Monitoring
+
+| Service | URL | Beschreibung |
+|---------|-----|--------------|
+| Grafana | graf.ackermannprivat.ch | Dashboards - [Details](../04-services/monitoring/stack) |
+| Uptime Kuma | uptime.ackermannprivat.ch | Availability Monitoring |
+| CheckMK | monitoring.ackermannprivat.ch | Infrastructure Monitoring |
+
+### Productivity
+
+| Service | URL | Beschreibung |
+|---------|-----|--------------|
+| Vaultwarden | p.ackermannprivat.ch | Passwort Manager - [Details](../04-services/productivity/vaultwarden) |
+| Paperless | paperless.ackermannprivat.ch | DMS - [Details](../04-services/productivity/paperless) |
+| Tandoor | tandoor.ackermannprivat.ch | Rezepte |
+| Guacamole | remote.ackermannprivat.ch | Remote Desktop Gateway |
+
+### AI/LLM
+
+| Service | URL | Beschreibung |
+|---------|-----|--------------|
+| Ollama | ollama.ackermannprivat.ch | LLM Backend |
+| Open-WebUI | - | LLM Chat Interface |
+| HolLama | hollama.ackermannprivat.ch | Alternative LLM UI |
 
 ## Infrastruktur & Plattformen
 

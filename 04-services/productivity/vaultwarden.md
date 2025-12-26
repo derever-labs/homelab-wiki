@@ -13,7 +13,7 @@ editor: markdown
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **URL** | [vault.ackermannprivat.ch](https://vault.ackermannprivat.ch) |
+| **URL** | [p.ackermannprivat.ch](https://p.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/vaultwarden.nomad`) |
 
 ## Beschreibung

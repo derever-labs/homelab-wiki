@@ -12,11 +12,12 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 | Verzeichnis | Inhalt |
 |-------------|--------|
-| batch-jobs/ | Daily Maintenance, Watchtower |
+| batch-jobs/ | Watchtower, Docker Prune, Daily Cleanup/Reboot/Restart, Reddit/PH Downloader |
 | databases/ | OpenLDAP |
-| media/ | Jellyfin, *arr Stack, SABnzbd, Handbrake, Stash |
-| monitoring/ | Prometheus, Grafana, InfluxDB, Uptime Kuma, iperf3 |
-| services/ | Docker Registry, Paperless, Vaultwarden, Flame, Guacamole, Tandoor |
+| infrastructure/ | Harbor (Container Registry), MinIO Peer (Litestream) |
+| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Maintainerr, JellyStat, Stash, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Janitorr |
+| monitoring/ | Grafana, InfluxDB, Uptime Kuma, iperf3-to-influxdb |
+| services/ | WikiJS, Paperless, Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Guacamole, Tandoor, Docker Registry, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT |
 
 ## Deployment
 
@@ -39,13 +40,14 @@ nomad job stop <job-name>
 
 ## Traefik Middlewares
 
-| Middleware | Beschreibung | Gruppen |
-|------------|--------------|---------|
-| `admin-chain-v2@file` | OAuth2 + Internal Network | admin |
-| `family-chain@file` | OAuth2 + Internal Network | admin, family |
-| `guest-chain@file` | OAuth2 + Internal Network | admin, guest |
-| `internal-network@file` | Nur interne IPs (10.0.0.0/8) | - |
-| `api-chain@file` | Nur Internal Network | - |
+| Middleware | Beschreibung | Gruppen | Beispiel-Services |
+|------------|--------------|---------|-------------------|
+| `admin-chain-v2@file` | OAuth2 + Internal Network | admin | Grafana, Prowlarr, Traefik Dashboard |
+| `family-chain@file` | OAuth2 + Internal Network | admin, family | Jellyseerr |
+| `guest-chain@file` | OAuth2 + Internal Network | admin, family, guest | WikiJS |
+| `internal-network@file` | Nur interne IPs (10.0.0.0/8) | - | Ollama, Paperless, Vaultwarden |
+| `api-chain@file` | Internal Network (für API-Zugriff) | - | *-api Routen, InfluxDB, AudioBookShelf |
+| `secured-chain@file` | Basic Auth + Internal Network | - | Flame, MeshCmd |
 
 **Wichtig**: Für jeden neuen Host mit OAuth2 Auth muss ein Callback-Router in der Traefik config hinzugefügt werden.
 

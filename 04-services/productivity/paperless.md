@@ -13,7 +13,7 @@ editor: markdown
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **URL** | [paper.ackermannprivat.ch](https://paper.ackermannprivat.ch) |
+| **URL** | [paperless.ackermannprivat.ch](https://paperless.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/paperless-simple.nomad`) |
 
 ## Beschreibung
