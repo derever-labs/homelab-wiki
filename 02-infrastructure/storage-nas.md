@@ -22,9 +22,11 @@ Die folgenden Pfade werden als NFS-Shares bereitgestellt und im Cluster gemounte
 | Pfad | Verwendung |
 | :--- | :--- |
 | `/nfs/docker/` | Persistente Daten für Docker Container |
+| `/nfs/jellyfin/` | Medien-Bibliothek für Jellyfin & arr-Stack |
 | `/nfs/nomad/jobs/` | Job-Spezifikationen für Nomad |
 | `/nfs/cert/` | Zertifikate (Read-Only für Services) |
 | `/nfs/backup/` | Ziel für Backups (falls nicht via PBS) |
+| `/nfs/logs/` | Logs für Batch-Jobs (z.B. Reddit Downloader) |
 
 ## Einbindung
 Die Clients (Nomad Nodes, VMs) mounten die Shares meist via `/etc/fstab` oder direkt über den Docker-Volume-Driver.

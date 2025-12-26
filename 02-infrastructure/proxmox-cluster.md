@@ -18,6 +18,15 @@ Das Cluster besteht aus drei Knoten, die für Hochverfügbarkeit und Lastverteil
 | **pve01** | 10.0.2.41 | Main Compute Node | 16 CPU / 64GB |
 | **pve02** | 10.0.2.42 | Main Compute Node | 16 CPU / 64GB |
 
+## Infrastructure VMs
+
+| VM | IP | Rolle |
+| :--- | :--- | :--- |
+| **vm-proxy-dns-01** | 10.0.2.1 | Primary DNS, Traefik, Keycloak |
+| **vm-vpn-dns-01** | 10.0.2.2 | Secondary DNS, VPN Gateway |
+| **checkmk** | 10.0.2.150 | Monitoring System |
+| **pbs-backup-server** | 10.0.2.50 | Proxmox Backup Server |
+
 ## Netzwerk
 Alle Nodes sind über ein dediziertes Management-VLAN (10.0.2.x) erreichbar.
 Für die Replikation wird ein separates Thunderbolt-Netzwerk (10.99.1.x) verwendet, um den normalen Traffic nicht zu belasten.

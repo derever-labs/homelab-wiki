@@ -76,7 +76,6 @@ Gesamtübersicht des Netzwerks, [Sicherheit](../03-platforms/security) und [Date
 
 - **Compute:** [Proxmox Cluster](../02-infrastructure/proxmox-cluster)
 - **Storage:** [NAS Storage](../02-infrastructure/storage-nas)
-- **Network:** [OPNsense Gateway](../04-services/core/opnsense)
 - **Backup:** [Proxmox Backup Server](../04-services/core/pbs)
 - **Orchestrierung:** [HashiCorp Stack](../03-platforms/hashicorp-stack)
 - **Nomad Architektur:** [Job Overview](../03-platforms/nomad-architecture)
