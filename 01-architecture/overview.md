@@ -63,6 +63,8 @@ dateCreated: 2025-12-26T17:52:12+00:00
 |---------|-----|--------------|
 | Traefik | traefik.ackermannprivat.ch | [Details](../04-services/core/traefik) |
 | Jellyfin | watch.ackermannprivat.ch | [Details](../04-services/media/jellyfin) |
+| Media Stack | prowlarr.ackermannprivat.ch | [arr-Stack](../04-services/media/arr-stack) |
+| Monitoring | graf.ackermannprivat.ch | [Stack Übersicht](../04-services/monitoring/stack) |
 | CheckMK | monitoring.ackermannprivat.ch | [Details](../04-services/monitoring/checkmk) |
 | Wiki.js | wiki.ackermannprivat.ch | [Home](../home) |
 
