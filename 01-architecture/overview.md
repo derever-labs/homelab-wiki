@@ -59,16 +59,26 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 ## Services
 
-| Service | URL | Beschreibung |
+| Service | URL | Dokumentation |
 |---------|-----|--------------|
-| Traefik | traefik.ackermannprivat.ch | Reverse Proxy Dashboard |
-| Keycloak | sso.ackermannprivat.ch | Identity Provider |
-| Uptime Kuma | uptime.ackermannprivat.ch | Monitoring |
-| Grafana | graf.ackermannprivat.ch | Dashboards |
-| Wiki.js | wiki.ackermannprivat.ch | Dokumentation |
-| Nomad UI | 10.0.2.104:4646 | Job Scheduler |
-| Consul UI | 10.0.2.104:8500 | Service Discovery |
-| Vault UI | 10.0.2.104:8200 | Secrets Management |
+| Traefik | traefik.ackermannprivat.ch | [Details](../04-services/core/traefik) |
+| Jellyfin | watch.ackermannprivat.ch | [Details](../04-services/media/jellyfin) |
+| CheckMK | monitoring.ackermannprivat.ch | [Details](../04-services/monitoring/checkmk) |
+| Wiki.js | wiki.ackermannprivat.ch | [Home](../home) |
+
+## Infrastruktur & Plattformen
+
+- **Compute:** [Proxmox Cluster](../02-infrastructure/proxmox-cluster)
+- **Storage:** [NAS Storage](../02-infrastructure/storage-nas)
+- **Network:** [OPNsense Gateway](../04-services/core/opnsense)
+- **Backup:** [Proxmox Backup Server](../04-services/core/pbs)
+- **Orchestrierung:** [HashiCorp Stack](../03-platforms/hashicorp-stack)
+- **Container:** [Nomad Overview](../04-services/nomad-overview)
+- **IoT:** [Zigbee / HomeAssistant](../04-services/iot-zigbee)
+
+## Wartung
+
+- **Notfall:** [Cluster Restart Runbook](../05-runbooks/cluster-restart)
 
 ## Storage
 
