@@ -1,100 +1,51 @@
 ---
-title: Zigbee
-description:
+title: Zigbee IoT
+description: Zigbee2MQTT und MQTT Broker Setup
 published: true
-date: 2025-12-26T17:52:12+00:00
-tags:
+date: 2025-12-26T20:10:00+00:00
+tags: service, iot, zigbee
 editor: markdown
-dateCreated: 2025-12-26T17:52:12+00:00
 ---
 
+# Zigbee2MQTT Setup
+
 ## Übersicht
+| Attribut | Wert |
+| :--- | :--- |
+| **Status** | Produktion |
+| **VM** | `zigbee-node` (10.0.0.110) |
+| **Hardware** | Silicon Labs CP210x USB Stick |
+| **Software** | Zigbee2MQTT + Mosquitto |
 
-- **Zigbee2MQTT Server**: 10.0.0.110 (VM zigbee-node)
-- **Home Assistant**: 10.0.0.100 (VM homeassistant)
+## Komponenten
 
-## Architektur
+### Mosquitto (MQTT Broker)
+- **Port:** 1883 (TCP)
+- **User:** `mqtt_user` (Passwort in Vault/Keepass)
+- **Persistence:** Ja, speichert Nachrichten im `/mosquitto/data/` Verzeichnis.
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  Zigbee Devices │    │   Zigbee2MQTT    │    │ Home Assistant  │
-│                 │◄──►│  10.0.0.110      │◄──►│  10.0.0.100     │
-│  40+ Devices    │    │  + Mosquitto     │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+### Zigbee2MQTT
+- **Frontend:** `http://10.0.0.110:8080`
+- **Channel:** 25 (zur Vermeidung von WLAN-Interferenzen)
+- **USB:** `/dev/ttyUSB0` durchgereicht von Proxmox.
 
-## Services
+## Wartung
 
-### Zigbee2MQTT (10.0.0.110)
+### Gerät anlernen (Pairing)
+1. Im Web-Frontend `Permit Join` aktivieren.
+2. Gerät in Pairing-Modus versetzen.
+3. Warten bis Gerät erscheint, dann `Permit Join` deaktivieren.
 
-| Service | URL/Port |
-|---------|----------|
-| Web Interface | http://10.0.0.110:8080 |
-| MQTT Broker | mosquitto:1883 (intern) |
-| USB Adapter | Silicon Labs CP210x (/dev/ttyUSB0) |
+### Backups
+Regelmäßiges Backup des `~/docker` Verzeichnisses auf der VM (enthält alle Configs und die Zigbee-Datenbank).
 
-### Portainer (10.0.0.110)
-
-| Service | URL |
-|---------|-----|
-| Web Interface | http://10.0.0.110:9000 |
-| Funktion | Docker Container Management |
-
-### Home Assistant (10.0.0.100)
-
-| Service | URL |
-|---------|-----|
-| Web Interface | http://10.0.0.100:8123 |
-| MQTT Integration | Verbindung zu 10.0.0.110:1883 |
-| SSH | Port 2222 (SSH Add-on) |
-
-## Quick Start
-
+### Troubleshooting
+Falls der Stick nicht erkannt wird:
 ```bash
-# Services starten
-ssh sam@10.0.0.110
-cd docker
-docker-compose up -d
-
-# Status prüfen
-docker ps
-docker logs zigbee2mqtt
-docker logs mosquitto
-```
-
-## Verzeichnisstruktur
-
-```
-zigbee-homeassistant/
-├── README.md                        # Übersicht
-├── SETUP.md                         # Vollständige Installation
-├── TROUBLESHOOTING.md               # Problembehandlung
-├── configurations/                  # Docker Setup
-│   ├── docker-compose.yml           # Docker Compose Stack
-│   ├── mosquitto.conf               # MQTT Broker Config
-│   ├── configuration.yaml           # Zigbee2MQTT Config
-│   └── start.sh                     # Start-Script
-└── old-backup-device-database/      # Archiv: 40+ migrierte Geräte
-```
-
-## SSH Zugang
-
-```bash
-# Zigbee VM
-ssh sam@10.0.0.110
-
-# Home Assistant (Port 2222)
-ssh root@10.0.0.100 -p 2222
-```
-
-## Troubleshooting
-
-```bash
-# Logs prüfen
-docker logs zigbee2mqtt
-docker logs mosquitto
-
-# USB Adapter prüfen
+lsusb
 ls -la /dev/ttyUSB*
-dmesg | grep -i usb
 ```
+Berechtigungen prüfen (User muss in `dialout` Gruppe sein).
+
+---
+*Letztes Update: 26.12.2025*

@@ -13,11 +13,11 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 ## Schnelleinstieg
 
-### [Architektur](./01-architecture/overview)
-Gesamtübersicht des Netzwerks und des Aufbaus.
-
 ### [Infrastruktur](./02-infrastructure/proxmox-cluster)
-Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas) und [Backup (PBS)](./04-services/core/pbs).
+Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas), [Netzwerk (10GbE)](./02-infrastructure/networking-10gbe) und [Backup (PBS)](./04-services/core/pbs).
+
+### [Architektur](./01-architecture/overview)
+Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security) und [Replikation (Litestream)](./01-architecture/litestream).
 
 ### [Services](./04-services/nomad-overview)
 Übersicht aller laufenden Applikationen und Container.
