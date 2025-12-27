@@ -43,19 +43,6 @@ systemctl status proxmox-datacenter-api
 systemctl status proxmox-datacenter-privileged-api
 ```
 
-## CLI Nutzung
-
-```bash
-# Remote auflisten
-proxmox-datacenter-manager-client remote list
-
-# VMs eines Remotes auflisten
-proxmox-datacenter-manager-client pve qemu list lenzburg
-
-# Container eines Remotes auflisten
-proxmox-datacenter-manager-client pve lxc list lenzburg
-```
-
 ## Konfigurationsdateien
 
 | Datei | Beschreibung |

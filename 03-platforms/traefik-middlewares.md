@@ -88,24 +88,6 @@ oauth2-my-service:
   priority: 1000
 ```
 
-## Migrationshistorie
-
-### 2025-12-28: Chain Umbenennung
-
-Folgende Chains wurden umbenannt fuer bessere Konsistenz:
-
-| Alt | Neu |
-|-----|-----|
-| `admin-chain-v2` | `intern-admin-chain` |
-| `admin-chain` | entfernt |
-| `api-chain` | `intern-api-chain` |
-| `internal-network` | `intern-chain` |
-| `secured-chain` | `intern-family-chain` |
-| `secured-restricted-chain` | entfernt |
-| `guest-chain` | `public-guest-chain` |
-| `family-chain` | `public-family-chain` |
-| `public-secured-chain` | `public-guest-chain` |
-
 ## Konfigurationsdateien
 
 - Traefik Config: `/nfs/docker/traefik/configurations/config.yml` (auf vm-proxy-dns-01)
