@@ -2,7 +2,7 @@
 title: Linstor & DRBD
 description: Distributed Block Storage mit synchroner Replikation
 published: true
-date: 2025-12-27T20:00:00+00:00
+date: 2025-12-29T17:00:00+00:00
 tags: storage, ha, drbd, linstor
 editor: markdown
 dateCreated: 2025-12-27T20:00:00+00:00
@@ -22,14 +22,14 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
 ## Architektur
 
 ```
-                      Linstor 3-Node HA Cluster
+                      Linstor 3-Node Cluster
 
    +-----------------------+
    | vm-nomad-client-04    |
    | 10.0.2.124            |
    |                       |
-   | Linstor Controller    |  <- Alle 3 Nodes laufen Controller
-   | Satellite (Diskless)  |  <- Leader Election via etcd
+   | Satellite (Diskless)  |  <- Diskless Witness fuer Quorum
+   | Nur DRBD, kein LVM    |
    +-----------+-----------+
                | 1 Gbit
    +-----------+-----------+---------------------------+
@@ -40,12 +40,14 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
    | 10.0.2.125            |         | 10.0.2.126            |
    | TB: 10.99.1.105       |<------->| TB: 10.99.1.106       |
    |                       | 25 Gbit |                       |
-   | Linstor Controller    |  DRBD   | Linstor Controller    |
-   | Satellite             | Proto C | Satellite             |
-   | Storage: 100GB        |         | Storage: 100GB        |
+   | Linstor Controller    |  DRBD   | Satellite             |
+   | Satellite (Combined)  | Proto C |                       |
+   | Storage: 100GB LVM    |         | Storage: 100GB LVM    |
    | /dev/sdb              |         | /dev/sdb              |
    +-----------------------+         +-----------------------+
 ```
+
+**Wichtig:** Der Linstor Controller laeuft nur auf client-05 (Combined Node). Die anderen Nodes sind Satellites.
 
 ### Netzwerk
 
@@ -63,10 +65,25 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
 
 ### Quorum
 
-- 3 Nodes im Cluster
-- 2 von 3 muessen erreichbar sein
-- Node 04 ist diskless (nur Quorum, keine Daten)
+- 3 Nodes im Cluster (2 Storage + 1 Diskless Witness)
+- 2 von 3 muessen erreichbar sein fuer Schreiboperationen
+- Node 04 ist diskless Witness (nur Quorum, keine Daten)
 - Verhindert Split-Brain bei Netzwerkpartitionierung
+
+### Aktive Volumes
+
+| Volume | Groesse | Verwendung |
+|--------|---------|------------|
+| influxdb-data | 3 GiB | InfluxDB Time Series DB |
+| jellyfin-config | 15 GiB | Jellyfin Media Server Config |
+| paperless-data | 20 GiB | Paperless-ngx Dokumente |
+| postgres-data | 10 GiB | PostgreSQL Datenbank (zentral) |
+| sabnzbd-config | 1 GiB | SABnzbd Download Client |
+| stash-data | 10 GiB | Stash Media Organizer |
+| uptime-kuma-data | 5 GiB | Uptime Kuma Monitoring |
+| vaultwarden-data | 1 GiB | Vaultwarden Password Manager |
+
+Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
 
 ## Installation
 
@@ -116,25 +133,46 @@ sudo lvcreate -l 95%FREE -T linstor_vg/thinpool
 ### Cluster initialisieren
 
 ```bash
-# Auf einem beliebigen Node
-linstor node create vm-nomad-client-04 10.0.2.124
-linstor node create vm-nomad-client-05 10.0.2.125
-linstor node create vm-nomad-client-06 10.0.2.126
+# Auf dem Controller Node (client-05)
 
-# Interface fuer DRBD-Traffic (Thunderbolt)
+# Controller Node (Combined = Controller + Satellite)
+linstor node create vm-nomad-client-05 10.0.2.125 --node-type Combined
+
+# Storage Satellite
+linstor node create vm-nomad-client-06 10.0.2.126 --node-type Satellite
+
+# Diskless Witness (nur fuer Quorum)
+linstor node create vm-nomad-client-04 10.0.2.124 --node-type Satellite
+
+# Interface fuer DRBD-Traffic (Thunderbolt, nur Storage Nodes)
 linstor node interface create vm-nomad-client-05 thunderbolt 10.99.1.105
 linstor node interface create vm-nomad-client-06 thunderbolt 10.99.1.106
+
+# PrefNic setzen damit DRBD Thunderbolt bevorzugt
+linstor node set-property vm-nomad-client-05 PrefNic thunderbolt
+linstor node set-property vm-nomad-client-06 PrefNic thunderbolt
 ```
 
 ### Storage Pool erstellen
 
 ```bash
-# Nur auf Storage Nodes
+# Nur auf Storage Nodes (05, 06)
 linstor storage-pool create lvmthin vm-nomad-client-05 linstor_pool linstor_vg/thinpool
 linstor storage-pool create lvmthin vm-nomad-client-06 linstor_pool linstor_vg/thinpool
 
-# Diskless Pool auf Node 04 (fuer Quorum)
-linstor storage-pool create diskless vm-nomad-client-04 diskless_pool
+# Diskless Pool wird automatisch erstellt (DfltDisklessStorPool)
+```
+
+### Diskless Witness hinzufuegen
+
+Fuer jede Ressource muss ein Diskless Witness erstellt werden:
+
+```bash
+# Nach dem Erstellen einer Ressource auf Storage Nodes
+linstor resource create vm-nomad-client-04 <resource-name> --diskless
+
+# Beispiel fuer uptime-kuma-data
+linstor resource create vm-nomad-client-04 uptime-kuma-data --diskless
 ```
 
 ### Resource Definition
@@ -175,6 +213,13 @@ job "linstor-csi" {
   type = "system"
   datacenters = ["dc1"]
 
+  # Nur auf Nodes mit Linstor/DRBD Storage
+  constraint {
+    attribute = "${attr.unique.hostname}"
+    operator  = "regexp"
+    value     = "vm-nomad-client-0[56]"
+  }
+
   group "csi" {
     network {
       mode = "host"
@@ -188,7 +233,7 @@ job "linstor-csi" {
         args = [
           "--csi-endpoint=unix:///csi/csi.sock",
           "--node=${attr.unique.hostname}",
-          "--linstor-endpoint=http://10.0.2.124:3370",
+          "--linstor-endpoint=http://10.0.2.125:3370",
           "--log-level=info"
         ]
       }
@@ -198,12 +243,15 @@ job "linstor-csi" {
         mount_dir = "/csi"
       }
       env {
-        LS_CONTROLLERS = "http://10.0.2.124:3370,http://10.0.2.125:3370,http://10.0.2.126:3370"
+        # Nur ein Controller (Combined Node auf client-05)
+        LS_CONTROLLERS = "http://10.0.2.125:3370"
       }
     }
   }
 }
 ```
+
+**Hinweis:** Das CSI Plugin laeuft nur auf den Storage Nodes (client-05, client-06), da nur diese Volumes mounten koennen.
 
 ### Volume erstellen
 
@@ -331,7 +379,114 @@ Die DRBD-Replikation laeuft ueber das Thunderbolt-Netzwerk (10.99.1.0/24) mit 25
 | Throughput | > 1 GB/s |
 | IOPS | > 100k (SSD) |
 
+### PostgreSQL Benchmark (DRBD vs Lokale SSD)
+
+Benchmark durchgefuehrt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threads, 60 Sekunden).
+
+**Testaufbau:**
+- DRBD: PostgreSQL auf client-05 (DRBD Volume), Zugriff von client-06 via `postgres.service.consul`
+- Lokal: PostgreSQL direkt auf client-06 SSD, lokaler Unix-Socket Zugriff
+
+| Metrik | DRBD (Netzwerk) | Lokal (SSD) | Differenz |
+|--------|-----------------|-------------|-----------|
+| TPS | 2,561 | 4,411 | +72% |
+| Latenz | 3.91 ms | 2.27 ms | -42% |
+| Transaktionen (60s) | 153,379 | 264,633 | +73% |
+| Verbindungszeit | 117 ms | 10 ms | -91% |
+
+**Erkenntnisse:**
+- DRBD-Overhead: ca. 1.6 ms zusaetzliche Latenz pro Transaktion (Netzwerk-RTT + synchrone Replikation)
+- Lokale SSD ist ~72% schneller bei TPS, aber DRBD mit 2,561 TPS ist fuer Homelab-Anwendungen mehr als ausreichend
+- Die meisten Services (Jellyseerr, Sonarr, etc.) benoetigen < 100 TPS
+- Verbindungszeit ueber Netzwerk ist hoeher (TCP vs Unix-Socket), aber nur beim initialen Connect relevant
+
+**Fazit:** Der DRBD-Performance-Overhead ist fuer den Anwendungsfall akzeptabel. Die Vorteile (automatisches Failover, keine manuelle Replikation) ueberwiegen die leicht hoeheren Latenzen.
+
+#### Konfiguration verifizieren
+
+```bash
+# Interfaces pruefen
+linstor node interface list vm-nomad-client-05
+linstor node interface list vm-nomad-client-06
+
+# PrefNic Property pruefen
+linstor node list-properties vm-nomad-client-05
+linstor node list-properties vm-nomad-client-06
+# -> PrefNic sollte "thunderbolt" sein
+
+# DRBD Verbindungen pruefen (muessen 10.99.1.x IPs zeigen)
+ss -tnp | grep ':7'
+# -> Verbindungen zwischen 10.99.1.105 und 10.99.1.106
+```
+
 ### Monitoring
+
+#### Grafana Dashboard
+
+URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
+
+Das Linstor Storage Dashboard zeigt:
+
+| Panel | Beschreibung |
+|-------|--------------|
+| Storage Pool Auslastung | Gauge mit Gesamtauslastung des linstor_pool (Schwellwerte: 70% gelb, 90% rot) |
+| Storage Pool Total/Frei | Absolute Werte in GB |
+| Volumes | Anzahl der Resource Definitions |
+| Volume Auslastung | Prozentuale Auslastung pro Volume (Belegt/Provisioniert), sortiert nach hoechster Auslastung |
+| Volume Allocation | Tatsaechlich belegter Speicher pro Volume in Bytes |
+| Volume Definition | Provisionierte Groesse pro Volume in Bytes |
+| Node Status | Online/Offline Status aller Linstor Nodes |
+| Resource Status | Sync-Status aller Ressourcen (UpToDate, Syncing, Diskless) |
+
+#### Metriken-Pipeline
+
+```
+Linstor Controller (10.0.2.125:3370)
+         |
+         | /metrics Endpoint
+         v
+    Traefik Proxy
+         |
+         | https://linstor.ackermannprivat.ch/metrics
+         v
+      Telegraf
+         |
+         | prometheus input plugin (60s interval)
+         v
+      InfluxDB
+         |
+         | telegraf bucket
+         v
+      Grafana
+```
+
+#### Telegraf Konfiguration
+
+```toml
+# /nfs/docker/telegraf/config/telegraf.conf
+[[inputs.prometheus]]
+  urls = ["https://linstor.ackermannprivat.ch/metrics"]
+  metric_version = 2
+  interval = "60s"
+  response_timeout = "10s"
+
+  [inputs.prometheus.tags]
+    source = "linstor"
+```
+
+#### Wichtige Metriken
+
+| Metrik | Beschreibung |
+|--------|--------------|
+| linstor_storage_pool_capacity_total_bytes | Gesamtkapazitaet des Storage Pools |
+| linstor_storage_pool_capacity_free_bytes | Freier Speicher im Pool |
+| linstor_volume_allocated_size_bytes | Tatsaechlich belegter Speicher pro Volume |
+| linstor_volume_definition_size_bytes | Provisionierte Groesse pro Volume |
+| linstor_node_state | Node Status (0=Offline, 1=Connected, 2=Online) |
+| linstor_resource_state | Resource Status (0=UpToDate, 1=Syncing) |
+| linstor_resource_definition_count | Anzahl der definierten Volumes |
+
+#### CLI Monitoring
 
 ```bash
 # DRBD Metriken
@@ -339,6 +494,11 @@ drbdsetup status --verbose --statistics
 
 # Linstor Metriken (Prometheus)
 curl http://localhost:3370/metrics
+
+# Schnellstatus
+linstor node list
+linstor storage-pool list
+linstor resource list -p
 ```
 
 ## Referenzen
