@@ -149,12 +149,90 @@ homelab-hashicorp-stack/
 | NFS Server | 10.0.0.200 |
 | Storage Pool | rpool (ZFS) |
 
-## TLS Konfiguration
+## Security
 
-**Consul TLS ist deaktiviert** für einfachere Cluster-Kommunikation im Homelab:
+### Uebersicht
+
+| Komponente | Massnahme | Status |
+|------------|-----------|--------|
+| Consul | Gossip Encryption | Aktiv |
+| Consul | ACLs | Aktiv (default: allow) |
+| Nomad | ACLs | Aktiv |
+| Vault | Audit Logging | Aktiv |
+| TLS | Deaktiviert | Homelab-Entscheidung |
+
+### Consul Gossip Encryption
+
+Gesamter Gossip-Traffic zwischen Consul Nodes ist verschluesselt (symmetrischer Key).
+
+```hcl
+# /etc/consul.d/consul.hcl
+encrypt = "<key>"  # Auf allen Nodes identisch
+```
+
+Key generieren: `consul keygen`
+
+### Consul ACLs
+
+ACLs sind aktiviert mit `default_policy = "allow"` - Services funktionieren ohne Token.
+
+```hcl
+# /etc/consul.d/consul.hcl
+acl {
+  enabled = true
+  default_policy = "allow"
+  enable_token_persistence = true
+}
+```
+
+**Tokens:**
+- Management Token in `infra/.consul-token`
+- Verwendung: `export CONSUL_HTTP_TOKEN="$(cat .consul-token)"`
+
+### Nomad ACLs
+
+ACLs sind aktiviert. UI und API erfordern Token-Authentifizierung.
+
+```hcl
+# /etc/nomad.d/nomad.hcl
+acl {
+  enabled = true
+}
+```
+
+**Tokens:**
+- Management Token in `infra/.nomad-token`
+- Operator Token fuer CI/CD (Policy: operator)
+- Verwendung: `export NOMAD_TOKEN="$(cat .nomad-token)"`
+
+**Policies:**
+
+| Policy | Beschreibung |
+|--------|--------------|
+| operator | Jobs deployen, Logs lesen, Allocs verwalten |
+
+### Vault Audit Logging
+
+Alle Vault-Zugriffe werden protokolliert.
+
+```bash
+# Audit Device
+vault audit enable file file_path=/opt/vault/audit/vault-audit.log
+
+# Logs auf aktivem Server (aktuell server-05)
+/opt/vault/audit/vault-audit.log
+```
+
+Logrotate konfiguriert: 30 Tage, komprimiert.
+
+### TLS Konfiguration
+
+**Consul TLS ist deaktiviert** fuer einfachere Cluster-Kommunikation im Homelab:
 - `verify_incoming = false`
 - `verify_outgoing = false`
 - `verify_server_hostname = false`
+
+**Begruendung:** Kein Expiry-Risiko durch Zertifikate, Gossip Encryption schuetzt Traffic trotzdem.
 
 ## Hilfreiche Scripts
 
