@@ -351,7 +351,47 @@ linstor controller list
 
 ## Backup
 
-### Snapshot erstellen
+### Automatische Snapshots
+
+Taeglich um 02:00 Uhr werden automatisch Snapshots aller Linstor-Ressourcen erstellt. Die letzten 7 Snapshots werden behalten.
+
+**Script:** `/usr/local/bin/linstor-snapshot.sh` auf client-05
+
+```bash
+#!/bin/bash
+# Linstor Daily Snapshot Script
+# Dynamisch - erfasst automatisch alle neuen Ressourcen
+
+DATE=$(date +%Y%m%d-%H%M)
+KEEP=7
+
+# Alle Ressourcen dynamisch abfragen
+RESOURCES=$(linstor resource-definition list -p 2>/dev/null | \
+  grep -v '^+' | grep -v 'ResourceName' | awk '{print $2}' | \
+  grep -v '^$' | grep -v '^|')
+
+for RES in $RESOURCES; do
+  # Snapshot erstellen
+  linstor snapshot create "$RES" "daily-$DATE"
+
+  # Alte Snapshots loeschen (behalte die letzten KEEP)
+  linstor snapshot list -r "$RES" | grep "daily-" | awk '{print $2}' | \
+    sort -r | tail -n +$((KEEP+1)) | while read SNAP; do
+      linstor snapshot delete "$RES" "$SNAP"
+    done
+done
+```
+
+**Cron Job:** `/etc/cron.d/linstor-snapshot`
+
+```
+# Linstor Daily Snapshots at 02:00
+0 2 * * * root /usr/local/bin/linstor-snapshot.sh >> /var/log/linstor-snapshot.log 2>&1
+```
+
+**Wichtig:** Neue Ressourcen werden automatisch erfasst - keine manuelle Anpassung noetig.
+
+### Manueller Snapshot
 
 ```bash
 linstor snapshot create <resource> <snapshot-name>
@@ -365,6 +405,19 @@ linstor snapshot volume-definition restore \
   --from-resource <resource> \
   --from-snapshot <snapshot-name> \
   --to-resource <new-resource>
+```
+
+### Snapshot Status pruefen
+
+```bash
+# Alle Snapshots anzeigen
+linstor snapshot list
+
+# Snapshots einer Ressource
+linstor snapshot list -r postgres-data
+
+# Log der automatischen Snapshots
+tail -f /var/log/linstor-snapshot.log
 ```
 
 ## Performance
