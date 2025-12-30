@@ -1,9 +1,9 @@
 ---
 title: Linstor & DRBD
-description: Distributed Block Storage mit synchroner Replikation
+description: Distributed Block Storage mit synchroner Replikation und Controller HA
 published: true
-date: 2025-12-29T17:00:00+00:00
-tags: storage, ha, drbd, linstor
+date: 2025-12-30T18:00:00+00:00
+tags: storage, ha, drbd, linstor, drbd-reactor, dclab
 editor: markdown
 dateCreated: 2025-12-27T20:00:00+00:00
 ---
@@ -15,39 +15,64 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
 | Komponente | Funktion |
 |------------|----------|
 | DRBD | Kernel-Modul fuer synchrone Block-Replikation |
-| Linstor Controller | Management API, Cluster-Koordination |
+| Linstor Controller | Management API, Cluster-Koordination (H2 DB) |
 | Linstor Satellite | Node-Agent, verwaltet lokale Ressourcen |
+| DRBD Reactor | Failover-Manager fuer Controller HA |
 | CSI Driver | Integration mit Nomad/Kubernetes |
 
-## Architektur
+## Homelab Architektur
+
+### Controller High Availability (HA)
+
+Der Linstor Controller laeuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`).
+
+**Wichtig:** Linstor Controller ist fuer Active/Passive designed - nur EIN Controller kann gleichzeitig laufen!
 
 ```
-                      Linstor 3-Node Cluster
-
-   +-----------------------+
-   | vm-nomad-client-04    |
-   | 10.0.2.124            |
-   |                       |
-   | Satellite (Diskless)  |  <- Diskless Witness fuer Quorum
-   | Nur DRBD, kein LVM    |
-   +-----------+-----------+
-               | 1 Gbit
-   +-----------+-----------+---------------------------+
-   |                                                   |
-   v                                                   v
-   +-----------------------+         +-----------------------+
-   | vm-nomad-client-05    |         | vm-nomad-client-06    |
-   | 10.0.2.125            |         | 10.0.2.126            |
-   | TB: 10.99.1.105       |<------->| TB: 10.99.1.106       |
-   |                       | 25 Gbit |                       |
-   | Linstor Controller    |  DRBD   | Satellite             |
-   | Satellite (Combined)  | Proto C |                       |
-   | Storage: 100GB LVM    |         | Storage: 100GB LVM    |
-   | /dev/sdb              |         | /dev/sdb              |
-   +-----------------------+         +-----------------------+
++-------------------------------------------------------------+
+|           DRBD Resource: linstor_db (Quorum: 2/3)           |
+|                    H2 Datenbank                             |
++---------------+-----------------------------+---------------+
+                |                             |
+        +-------+-------+             +-------+-------+
+        |   client-05   |  Thunderbolt|   client-06   |
+        |   COMBINED    |<----------->|   COMBINED    |
+        |   [ACTIVE]    |   25 Gbit   |   [STANDBY]   |
+        | drbd-reactor  |             | drbd-reactor  |
+        | 10.0.2.125    |             | 10.0.2.126    |
+        | TB: 10.99.1.105             | TB: 10.99.1.106
+        | Storage: 100GB|             | Storage: 100GB|
+        +-------+-------+             +-------+-------+
+                |                             |
+                |         Management          |
+                |           1 Gbit            |
+                +-------------+---------------+
+                              |
+                   +----------+----------+
+                   | vm-nomad-client-04  |
+                   | 10.0.2.124          |
+                   |                     |
+                   | Satellite (Diskless)|
+                   | TieBreaker/Quorum   |
+                   +---------------------+
 ```
 
-**Wichtig:** Der Linstor Controller laeuft nur auf client-05 (Combined Node). Die anderen Nodes sind Satellites.
+**Architektur-Details:**
+- **Active/Passive:** Nur ein Controller laeuft gleichzeitig (managed by drbd-reactor)
+- **DRBD Reactor:** Ueberwacht DRBD Quorum und startet/stoppt Services automatisch
+- **H2 Datenbank:** Schneller als etcd, auf DRBD-Volume repliziert
+- **Thunderbolt (25Gbit):** DRBD Replikation zwischen client-05 und client-06
+- **Management (1Gbit):** Control Plane, CSI, Satellite-Kommunikation
+- **TieBreaker:** client-04 ist diskloser Quorum-Witness (kein Thunderbolt noetig)
+
+### Failover-Verhalten
+
+| Szenario | Verhalten | Failover-Zeit |
+|----------|-----------|---------------|
+| Controller-Node down | Automatischer Failover zum Standby | ~10-15 Sekunden |
+| Netzwerk-Partition | Quorum entscheidet (2-von-3 Nodes) | ~10-15 Sekunden |
+| Manueller Failover | `drbd-reactorctl evict linstor_db` | ~20 Sekunden |
+| DRBD Split-Brain | Verhindert durch Quorum-Mechanismus | - |
 
 ### Netzwerk
 
@@ -70,10 +95,178 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
 - Node 04 ist diskless Witness (nur Quorum, keine Daten)
 - Verhindert Split-Brain bei Netzwerkpartitionierung
 
+## DClab Konfiguration
+
+Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) fuer DRBD-Replikation zwischen den Storage-Nodes.
+
+### Netzwerk-Topologie
+
+```
++-------------------------------------------------------------+
+|           DRBD Resource: linstor_db (Quorum: 2/3)           |
+|                    H2 Datenbank                             |
++---------------+-----------------------------+---------------+
+                |                             |
+        +-------+-------+             +-------+-------+
+        |   client-02   |    10GbE    |   client-03   |
+        |   COMBINED    |<----------->|   COMBINED    |
+        |   [ACTIVE]    | 172.180.46.x|   [STANDBY]   |
+        | drbd-reactor  |             | drbd-reactor  |
+        | 10.180.46.82  |             | 10.180.46.83  |
+        | DRBD: 172.180.46.82         | DRBD: 172.180.46.83
+        | Storage: NVMe |             | Storage: NVMe |
+        +-------+-------+             +-------+-------+
+                |                             |
+                |         Management          |
+                |           1 Gbit            |
+                +-------------+---------------+
+                              |
+                   +----------+----------+
+                   | vm-nomad-client-01  |
+                   | 10.180.46.81        |
+                   |                     |
+                   | Satellite (Diskless)|
+                   | TieBreaker/Quorum   |
+                   | KEIN 10GbE Zugang   |
+                   +---------------------+
+```
+
+### Netzwerk-Uebersicht
+
+| Node | Management (1GbE) | DRBD-Sync (10GbE) | Rolle |
+|------|-------------------|-------------------|-------|
+| vm-nomad-client-01 | 10.180.46.81 | - | TieBreaker (Diskless) |
+| vm-nomad-client-02 | 10.180.46.82 | 172.180.46.82 | Storage + Controller |
+| vm-nomad-client-03 | 10.180.46.83 | 172.180.46.83 | Storage + Controller |
+
+**Wichtig:** client-01 hat NUR Zugang zum Management-Netzwerk (1GbE). Das DRBD-Sync Netzwerk (172.180.46.0/24) ist nur zwischen client-02 und client-03 verfuegbar.
+
+### Connection Paths (Wichtig bei heterogenem Netzwerk)
+
+Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connection-Paths konfiguriert werden. Ohne diese wuerde Linstor versuchen, alle Verbindungen ueber das PrefNic-Interface (drbd-sync) aufzubauen.
+
+**Verbindungsmatrix:**
+
+| Verbindung | Netzwerk | Interface |
+|------------|----------|-----------|
+| client-01 ↔ client-02 | Management (10.180.46.x) | default ↔ default |
+| client-01 ↔ client-03 | Management (10.180.46.x) | default ↔ default |
+| client-02 ↔ client-03 | DRBD-Sync (172.180.46.x) | drbd-sync ↔ drbd-sync |
+
+**Connection-Paths erstellen:**
+
+```bash
+# Fuer jede Resource muss ein Path zum TieBreaker erstellt werden
+# Beispiel fuer linstor_db:
+linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-02 linstor_db management-path default default
+linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-03 linstor_db management-path default default
+
+# Fuer alle anderen Resources wiederholen:
+for res in postgres-data traefik-data uptime-kuma-data; do
+  linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-02 $res management-path default default
+  linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-03 $res management-path default default
+done
+```
+
+### Node Interface Konfiguration
+
+```bash
+# Interfaces pruefen
+linstor node interface list vm-nomad-client-01
+# +--------------------------------------------------------------------------+
+# | vm-nomad-client-01 | NetInterface | IP           | Port | EncryptionType |
+# | + StltCon          | default      | 10.180.46.81 | 3366 | PLAIN          |
+# +--------------------------------------------------------------------------+
+
+linstor node interface list vm-nomad-client-02
+# +---------------------------------------------------------------------------+
+# | vm-nomad-client-02 | NetInterface | IP            | Port | EncryptionType |
+# | + StltCon          | default      | 10.180.46.82  | 3366 | PLAIN          |
+# |                    | drbd-sync    | 172.180.46.82 |      |                |
+# +---------------------------------------------------------------------------+
+
+# PrefNic ist auf Node-Level gesetzt (NUR fuer Storage-Nodes)
+linstor node list-properties vm-nomad-client-02 | grep PrefNic
+# | PrefNic | drbd-sync |
+
+# client-01 hat KEIN PrefNic (verwendet automatisch default)
+```
+
+### DRBD Resource Konfiguration
+
+Die resultierende DRBD-Konfiguration zeigt die korrekten Verbindungsadressen:
+
+```bash
+# cat /var/lib/linstor.d/linstor_db.res (auf client-02)
+connection
+{
+    path
+    {
+        host "vm-nomad-client-01" address ipv4 10.180.46.81:7011;   # Management
+        host "vm-nomad-client-02" address ipv4 10.180.46.82:7011;   # Management
+    }
+}
+
+connection
+{
+    host "vm-nomad-client-02" address ipv4 172.180.46.82:7011;      # 10GbE
+    host "vm-nomad-client-03" address ipv4 172.180.46.83:7011;      # 10GbE
+}
+```
+
+### IP-Reservierungen (172.180.46.0/24)
+
+| IP | Verwendung |
+|----|------------|
+| 172.180.46.1-4 | Reserviert (Netzwerk-Infrastruktur) |
+| 172.180.46.82 | vm-nomad-client-02 (DRBD-Sync) |
+| 172.180.46.83 | vm-nomad-client-03 (DRBD-Sync) |
+
+### Aktive Resources (DClab)
+
+| Resource | Groesse | Verwendung |
+|----------|---------|------------|
+| linstor_db | 500 MiB | Controller H2 Datenbank (HA) |
+| postgres-data | 10 GiB | PostgreSQL |
+| traefik-data | 1 GiB | Traefik Proxy |
+| authentik-data | 5 GiB | Authentik SSO |
+| uptime-kuma-data | 1 GiB | Uptime Monitoring |
+| homepage-data | 500 MiB | Homepage Dashboard |
+| flame-data | 500 MiB | Flame Dashboard |
+| wikijs-data | 2 GiB | Wiki.js |
+| snipeit-data | 1 GiB | Snipe-IT Assets |
+| snipeit-db | 2 GiB | Snipe-IT Database |
+
+### Troubleshooting DClab
+
+**Verbindungen im "Connecting" Status:**
+
+Wenn Ressourcen "Connecting" zu client-01 zeigen, fehlen die Connection-Paths:
+
+```bash
+# Status pruefen
+linstor resource list -r <resource-name>
+
+# Fehlende Paths erstellen
+linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-02 <resource-name> management-path default default
+linstor resource-connection path create vm-nomad-client-01 vm-nomad-client-03 <resource-name> management-path default default
+```
+
+**DRBD-Konfiguration verifizieren:**
+
+```bash
+# Auf client-02 oder client-03
+cat /var/lib/linstor.d/<resource-name>.res | grep -A5 connection
+
+# Verbindungen zu client-01 muessen 10.180.46.x verwenden
+# Verbindungen zwischen client-02 und client-03 muessen 172.180.46.x verwenden
+```
+
 ### Aktive Volumes
 
 | Volume | Groesse | Verwendung |
 |--------|---------|------------|
+| **linstor_db** | 500 MiB | **Linstor Controller H2 Datenbank (HA)** |
 | influxdb-data | 3 GiB | InfluxDB Time Series DB |
 | jellyfin-config | 15 GiB | Jellyfin Media Server Config |
 | paperless-data | 20 GiB | Paperless-ngx Dokumente |
@@ -84,6 +277,8 @@ Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Devi
 | vaultwarden-data | 1 GiB | Vaultwarden Password Manager |
 
 Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
+
+**Hinweis:** `linstor_db` ist ein spezielles Volume fuer die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geaendert werden.
 
 ## Installation
 
@@ -114,9 +309,21 @@ echo "drbd" | sudo tee /etc/modules-load.d/drbd.conf
 # Controller und Satellite
 sudo apt-get install -y linstor-controller linstor-satellite linstor-client
 
-# Services aktivieren
-sudo systemctl enable --now linstor-controller
+# Nur Satellite aktivieren (Controller wird von drbd-reactor verwaltet)
 sudo systemctl enable --now linstor-satellite
+
+# Controller NICHT manuell enablen - wird von drbd-reactor gesteuert!
+# sudo systemctl enable linstor-controller  # NICHT AUSFUEHREN
+```
+
+### DRBD Reactor Installation (Storage Nodes)
+
+```bash
+# Auf client-05 und client-06
+sudo apt-get install -y drbd-reactor
+
+# Version pruefen (mindestens 1.10.0)
+drbd-reactor --version
 ```
 
 ### LVM Thin Pool (nur Storage Nodes)
@@ -233,7 +440,7 @@ job "linstor-csi" {
         args = [
           "--csi-endpoint=unix:///csi/csi.sock",
           "--node=${attr.unique.hostname}",
-          "--linstor-endpoint=http://10.0.2.125:3370",
+          "--linstor-endpoint=http://10.0.2.125:3370,http://10.0.2.126:3370",
           "--log-level=info"
         ]
       }
@@ -243,15 +450,15 @@ job "linstor-csi" {
         mount_dir = "/csi"
       }
       env {
-        # Nur ein Controller (Combined Node auf client-05)
-        LS_CONTROLLERS = "http://10.0.2.125:3370"
+        # HA Controller Endpoints (beide Combined Nodes)
+        LS_CONTROLLERS = "http://10.0.2.125:3370,http://10.0.2.126:3370"
       }
     }
   }
 }
 ```
 
-**Hinweis:** Das CSI Plugin laeuft nur auf den Storage Nodes (client-05, client-06), da nur diese Volumes mounten koennen.
+**Hinweis:** Das CSI Plugin laeuft nur auf den Storage Nodes (client-05, client-06), da nur diese Volumes mounten koennen. Die HA-Endpoints stellen sicher, dass CSI-Operationen auch bei Controller-Ausfall funktionieren.
 
 ### Volume erstellen
 
@@ -283,9 +490,16 @@ linstor node list
 linstor storage-pool list
 linstor resource list
 
-# DRBD Status
+# DRBD Reactor Status (Controller HA)
+sudo drbd-reactorctl status
+
+# DRBD Status (alle Ressourcen)
 drbdadm status
+drbdadm status linstor_db  # Controller DB
+
+# Detaillierte DRBD Statistiken
 cat /proc/drbd
+drbdsetup status --verbose --statistics
 ```
 
 ### Volume erstellen
@@ -300,14 +514,30 @@ nomad volume create volume.hcl
 
 ### Failover testen
 
+**Controller Failover (DRBD Reactor):**
 ```bash
-# Node offline nehmen
+# Aktuellen Status pruefen
+sudo drbd-reactorctl status
+
+# Manuellen Failover ausloesen (auf aktivem Node)
+sudo drbd-reactorctl evict linstor_db
+
+# Status auf dem anderen Node pruefen
+ssh sam@10.0.2.126 "sudo drbd-reactorctl status"
+
+# Cluster-Status verifizieren
+linstor node list
+```
+
+**Satellite Failover:**
+```bash
+# Satellite offline nehmen
 sudo systemctl stop linstor-satellite
 
 # Pruefen ob Resources auf anderem Node verfuegbar
 linstor resource list
 
-# Node wieder online
+# Satellite wieder online
 sudo systemctl start linstor-satellite
 ```
 
@@ -338,16 +568,106 @@ drbdadm connect --discard-my-data <resource>
 drbdadm connect <resource>
 ```
 
-### Controller HA
+### Controller HA mit DRBD Reactor
 
+Der Linstor Controller laeuft im Active/Passive Modus. DRBD Reactor ueberwacht das `linstor_db` DRBD-Volume und startet den Controller automatisch auf dem Node mit DRBD Primary.
+
+**DRBD Reactor Status:**
 ```bash
-# Leader pruefen
-linstor controller list
+# Auf jedem Storage Node
+sudo drbd-reactorctl status
 
-# Bei Controller-Failover
-# -> Automatisch via Leader Election
-# -> Satellites reconnecten automatisch
+# Beispiel-Output:
+# /etc/drbd-reactor.d/linstor_db.toml:
+# Promoter: Currently active on this node
+# * drbd-services@linstor_db.target
+# * +- drbd-promote@linstor_db.service
+# * +- var-lib-linstor.mount
+# * +- linstor-controller.service
 ```
+
+**Controller Status:**
+```bash
+# Aktueller aktiver Controller
+linstor controller which
+
+# DRBD Status fuer linstor_db
+sudo drbdadm status linstor_db
+
+# Controller Logs
+journalctl -u linstor-controller -f
+
+# drbd-reactor Logs
+journalctl -u drbd-reactor -f
+```
+
+**Manueller Failover:**
+```bash
+# Auf dem aktiven Node ausfuehren
+sudo drbd-reactorctl evict linstor_db
+
+# Der andere Node uebernimmt automatisch (~20 Sekunden)
+```
+
+**Controller Konfiguration (`/etc/linstor/linstor.toml` auf client-05/06):**
+```toml
+[db]
+# H2 Datenbank (default, gespeichert in /var/lib/linstor)
+# Keine connection_url = verwendet H2
+
+[http]
+enabled = true
+listen_addr = "::"
+port = 3370
+
+[logging]
+level = "info"
+linstor_level = "info"
+```
+
+**DRBD Reactor Promoter Config (`/etc/drbd-reactor.d/linstor_db.toml`):**
+```toml
+[[promoter]]
+id = "linstor-controller"
+
+[promoter.resources.linstor_db]
+start = ["var-lib-linstor.mount", "linstor-controller.service"]
+on-drbd-demote-failure = "reboot"
+on-quorum-loss = "shutdown"
+secondary-force = true
+preferred-nodes = ["vm-nomad-client-05", "vm-nomad-client-06"]
+```
+
+**Systemd Mount Unit (`/etc/systemd/system/var-lib-linstor.mount`):**
+```ini
+[Unit]
+Description=LINSTOR Database Filesystem (DRBD)
+After=drbd-reactor.service
+
+[Mount]
+What=/dev/drbd/by-res/linstor_db/0
+Where=/var/lib/linstor
+Type=ext4
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Satellite Konfiguration (`/etc/linstor/linstor.toml` auf client-04):**
+```toml
+# Satellite-only - keine DB-Konfiguration noetig
+[logging]
+level = "info"
+```
+
+**Bei Controller-Ausfall:**
+1. DRBD Reactor erkennt Quorum-Verlust auf dem ausgefallenen Node
+2. Standby-Node erhaelt Quorum und wird DRBD Primary
+3. drbd-reactor mounted `/var/lib/linstor` und startet `linstor-controller`
+4. Satellites reconnecten automatisch zum neuen Controller
+5. CSI Plugin verbindet automatisch (beide Endpoints konfiguriert)
+6. Failover dauert ca. 10-15 Sekunden
 
 ## Backup
 
@@ -558,4 +878,7 @@ linstor resource list -p
 
 - [LINBIT Linstor User Guide](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/)
 - [DRBD User Guide](https://linbit.com/drbd-user-guide/drbd-guide-9_0-en/)
+- [DRBD Reactor (GitHub)](https://github.com/LINBIT/drbd-reactor)
+- [DRBD Reactor Promoter Plugin](https://linbit.com/blog/drbd-reactor-promoter/)
+- [Linstor HA mit DRBD Reactor](https://docs.piraeus.daocloud.io/books/linstor-10-user-guide/page/21-linstor-high-availability-pWl)
 - [Linstor CSI Driver](https://github.com/piraeusdatastore/linstor-csi)
