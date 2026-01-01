@@ -37,7 +37,7 @@ editor: markdown
 3. Warten bis Gerät erscheint, dann `Permit Join` deaktivieren.
 
 ### Backups
-Regelmäßiges Backup des `~/docker` Verzeichnisses auf der VM (enthält alle Configs und die Zigbee-Datenbank).
+Regelmässiges Backup des `~/docker` Verzeichnisses auf der VM (enthält alle Configs und die Zigbee-Datenbank).
 
 ### Troubleshooting
 Falls der Stick nicht erkannt wird:

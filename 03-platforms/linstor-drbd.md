@@ -280,6 +280,21 @@ Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBrea
 
 **Hinweis:** `linstor_db` ist ein spezielles Volume fuer die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geaendert werden.
 
+### CSI HA via Consul Service Discovery
+
+Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung des CSI-Plugins zu ermoeglichen, wird Consul Service Discovery genutzt.
+
+**Funktionsweise:**
+1. Der aktive Linstor Controller (bestimmt durch drbd-reactor) registriert sich als Service `linstor-controller` in Consul.
+2. Das CSI Plugin verwendet `http://linstor-controller.service.consul:3370` als Endpoint.
+3. Bei einem Failover registriert der neue aktive Node den Service.
+4. Die DNS TTL fuer diesen Service ist auf 0s gesetzt, um Caching-Probleme zu vermeiden.
+
+**Komponenten:**
+- **Registration Script:** `/usr/local/bin/linstor-consul-register.sh`
+- **Systemd Service:** `linstor-consul-register.service` (haengt von linstor-controller ab)
+- **DRBD Reactor:** Startet den Registration-Service zusammen mit dem Controller
+
 ## Installation
 
 ### Voraussetzungen

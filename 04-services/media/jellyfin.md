@@ -50,7 +50,7 @@ nomad job run infra/nomad-jobs/media/jellyfin.nomad
 ```
 
 ### Backup
-- Die `/config` Daten liegen auf lokalem SSD Storage der VM und sollten regelmäßig gesichert werden.
+- Die `/config` Daten liegen auf lokalem SSD Storage der VM und sollten regelmässig gesichert werden.
 - Die Mediendaten auf dem NFS unterliegen der Backup-Strategie des NAS.
 
 ---

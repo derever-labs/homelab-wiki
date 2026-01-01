@@ -24,7 +24,7 @@ Vaultwarden ist ein in Rust geschriebener Passwort-Server, der mit den offiziell
 - **Backups:** Neben Litestream werden tägliche Snapshots des `/nfs/docker/vaultwarden` Verzeichnisses empfohlen.
 
 ## Sicherheit
-Der Zugriff ist zusätzlich durch Traefik OAuth2 geschützt (je nach Konfiguration). Die Kommunikation erfolgt ausschließlich verschlüsselt via HTTPS.
+Der Zugriff ist zusätzlich durch Traefik OAuth2 geschützt (je nach Konfiguration). Die Kommunikation erfolgt ausschliesslich verschlüsselt via HTTPS.
 
 ---
 *Letztes Update: 26.12.2025*

@@ -1,5 +1,5 @@
 ---
-title: Harbor Container Registry
+title: Harbor Container Registry (Abgeloest)
 description: Private Container Registry mit Proxy Cache und 3-Wege-Replikation
 published: true
 date: 2025-12-28T20:00:00+00:00
@@ -8,6 +8,10 @@ editor: markdown
 ---
 
 # Harbor Container Registry
+
+> **HINWEIS:** Harbor wurde am 29.12.2025 durch [Docker Registry v2](/04-services/core/docker-registry) ersetzt.
+> Gruende: Deutlich geringerer Ressourcenverbrauch (50MB vs 2.5GB RAM), einfachere Konfiguration, native Pull-Through Cache Funktion.
+> Diese Dokumentation bleibt als Referenz erhalten.
 
 ## Übersicht
 | Attribut | Wert |
