@@ -57,6 +57,28 @@ Das Cluster besteht aus drei Knoten, die für Hochverfügbarkeit und Lastverteil
 Alle Nodes sind über ein dediziertes Management-VLAN (10.0.2.x) erreichbar.
 Für die Replikation wird ein separates Thunderbolt-Netzwerk (10.99.1.x) verwendet, um den normalen Traffic nicht zu belasten.
 
+### Thunderbolt Boot-Konfiguration
+
+Das Thunderbolt-Interface (`thunderbolt1`) erscheint erst nach dem Firmware-Init (~20s). Um Race Conditions zu vermeiden, ist auf pve01 und pve02 ein Dual-Layer Fix implementiert:
+
+**Systemd Drop-in** (`/etc/systemd/system/networking.service.d/wait-for-thunderbolt.conf`):
+```ini
+[Unit]
+Wants=sys-subsystem-net-devices-thunderbolt1.device
+After=sys-subsystem-net-devices-thunderbolt1.device
+```
+
+**udev Fallback** (`/etc/udev/rules.d/99-thunderbolt-bridge.rules`):
+```
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="thunderbolt1", RUN+="/usr/local/bin/thunderbolt-bridge-add.sh"
+```
+
+**Verifikation nach Reboot:**
+```bash
+brctl show vmbr-tb | grep thunderbolt1
+journalctl -u networking.service | grep -i thunder
+```
+
 ## Storage
 - **Local ZFS:** Schneller Speicher für OS und Caches auf jedem Node.
 - **NFS (Synology):** Geteilter Speicher für Backups und ISOs.
@@ -73,4 +95,4 @@ ssh root@10.0.2.42
 ```
 
 ---
-*Letztes Update: 26.12.2025*
+*Letztes Update: 12.01.2026*
