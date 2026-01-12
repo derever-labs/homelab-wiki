@@ -341,6 +341,32 @@ sudo apt-get install -y drbd-reactor
 drbd-reactor --version
 ```
 
+### Ansible Deployment (empfohlen)
+
+Die komplette DRBD Reactor Konfiguration kann via Ansible Role deployed werden:
+
+```bash
+cd homelab-hashicorp-stack/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/setup-drbd-reactor.yml
+```
+
+**Role:** `roles/drbd-reactor/`
+
+**Was wird konfiguriert:**
+- DRBD Reactor Promoter Config (inkl. Consul Registration)
+- Systemd Mount Unit (ohne WantedBy - nur DRBD-gesteuert)
+- Consul Registration Scripts mit Health Checks
+- JVM Memory Optimization fuer Linstor Controller
+- Erzwingt `linstor-controller` als disabled (verhindert manuelles Enable)
+
+**Variablen (defaults/main.yml):**
+```yaml
+linstor_controller_xms: "1G"   # Initial JVM Heap
+linstor_controller_xmx: "8G"   # Max JVM Heap
+drbd_reactor_on_demote_failure: "reboot"
+drbd_reactor_on_quorum_loss: "shutdown"
+```
+
 ### LVM Thin Pool (nur Storage Nodes)
 
 ```bash
@@ -455,7 +481,8 @@ job "linstor-csi" {
         args = [
           "--csi-endpoint=unix:///csi/csi.sock",
           "--node=${attr.unique.hostname}",
-          "--linstor-endpoint=http://10.0.2.125:3370,http://10.0.2.126:3370",
+          # HA via Consul Service Discovery (empfohlen)
+          "--linstor-endpoint=http://linstor-controller.service.consul:3370",
           "--log-level=info"
         ]
       }
@@ -465,15 +492,15 @@ job "linstor-csi" {
         mount_dir = "/csi"
       }
       env {
-        # HA Controller Endpoints (beide Combined Nodes)
-        LS_CONTROLLERS = "http://10.0.2.125:3370,http://10.0.2.126:3370"
+        # HA Controller via Consul DNS
+        LS_CONTROLLERS = "http://linstor-controller.service.consul:3370"
       }
     }
   }
 }
 ```
 
-**Hinweis:** Das CSI Plugin laeuft nur auf den Storage Nodes (client-05, client-06), da nur diese Volumes mounten koennen. Die HA-Endpoints stellen sicher, dass CSI-Operationen auch bei Controller-Ausfall funktionieren.
+**Hinweis:** Das CSI Plugin verwendet Consul Service Discovery (`linstor-controller.service.consul`). Bei Failover aktualisiert der neue Controller automatisch die Consul-Registrierung.
 
 ### Volume erstellen
 
@@ -646,7 +673,11 @@ linstor_level = "info"
 id = "linstor-controller"
 
 [promoter.resources.linstor_db]
-start = ["var-lib-linstor.mount", "linstor-controller.service"]
+start = [
+    "var-lib-linstor.mount",
+    "linstor-controller.service",
+    "linstor-consul-register.service"  # Consul Registration fuer Service Discovery
+]
 on-drbd-demote-failure = "reboot"
 on-quorum-loss = "shutdown"
 secondary-force = true
@@ -666,7 +697,34 @@ Type=ext4
 Options=defaults
 
 [Install]
-WantedBy=multi-user.target
+# WICHTIG: Kein WantedBy - wird NUR von drbd-reactor gesteuert!
+# Dies verhindert Race Conditions beim Boot.
+```
+
+**JVM Memory Override (`/etc/systemd/system/linstor-controller.service.d/jvm-memory.conf`):**
+```ini
+[Service]
+# Optimierte JVM Settings fuer stabilen Betrieb
+# Initial Heap: 1G (verhindert GC-Druck beim Start)
+# Max Heap: 8G (fuer Homelab ausreichend)
+Environment="CONTROLLER_OPTS=-Xms1G -Xmx8G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/linstor-controller"
+```
+
+**Consul Registration Service (`/etc/systemd/system/linstor-consul-register.service`):**
+```ini
+[Unit]
+Description=Register Linstor Controller in Consul
+After=linstor-controller.service
+Requires=linstor-controller.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/linstor-consul-register.sh
+ExecStop=/usr/local/bin/linstor-consul-deregister.sh
+RemainAfterExit=yes
+
+[Install]
+# Kein WantedBy - nur von drbd-reactor verwaltet!
 ```
 
 **Satellite Konfiguration (`/etc/linstor/linstor.toml` auf client-04):**
