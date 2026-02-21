@@ -24,6 +24,9 @@ Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security.md) und [Da
 ### [Runbooks](./05-runbooks/cluster-restart.md)
 Schritt-für-Schritt Anleitungen für Wartung und Notfälle.
 
+### [Wiki-Richtlinien](./06-meta/wiki-guidelines.md)
+Regeln für Inhalt, Struktur und Pflege dieser Dokumentation.
+
 ## Stack Übersicht
 - **Virtualisierung:** Proxmox VE
 - **Orchestrierung:** HashiCorp Nomad & Consul
