@@ -932,14 +932,27 @@ Linstor Controller (10.0.2.125:3370)
 
 ```toml
 # /nfs/docker/telegraf/config/telegraf.conf
+
+# Linstor API Metriken (Pool Capacity, Volume Sizes, Node/Resource State)
 [[inputs.prometheus]]
   urls = ["https://linstor.ackermannprivat.ch/metrics"]
   metric_version = 2
   interval = "60s"
-  response_timeout = "10s"
-
   [inputs.prometheus.tags]
     source = "linstor"
+
+# DRBD Reactor Metriken (Connection State, Out-of-Sync, Replication Traffic)
+[[inputs.prometheus]]
+  urls = ["http://10.0.2.125:9942/metrics", "http://10.0.2.126:9942/metrics"]
+  metric_version = 2
+  interval = "60s"
+  [inputs.prometheus.tags]
+    source = "drbd"
+
+# LVM Thin Pool Metriken (von Host-Cron-Scripts via NFS)
+[[inputs.file]]
+  files = ["/metrics/lvm_thinpool_*.influx"]
+  data_format = "influx"
 ```
 
 #### Wichtige Metriken
