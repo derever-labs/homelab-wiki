@@ -744,45 +744,61 @@ level = "info"
 
 ## Backup
 
-### Automatische Snapshots
+### Backup-Architektur (3 Ebenen)
 
-Taeglich um 02:00 Uhr werden automatisch Snapshots aller Linstor-Ressourcen erstellt. Die letzten 7 Snapshots werden behalten.
+| Ebene | Was | Wo | Retention | Script |
+|-------|-----|----|-----------|----|
+| **Linstor Snapshots** | Block-Level Snapshots aller Ressourcen | Lokal auf DRBD-Nodes | 7 Tage | `linstor-backup.sh` |
+| **S3/MinIO Backup** | Vollstaendige Linstor-Backups | NAS MinIO (`linstor-backups` Bucket) | 14 Tage | `linstor-backup.sh` |
+| **PostgreSQL Dump** | `pg_dumpall` SQL-Export | NFS `/nfs/backup/postgres/` | GFS (7/4/3) | `postgres-backup.nomad` |
 
-**Script:** `/usr/local/bin/linstor-snapshot.sh` auf client-05
+### Konsolidiertes Backup Script
+
+Das Script `linstor-backup.sh` wird taeglich um 02:00 auf dem aktiven Controller-Node ausgefuehrt. Es konsolidiert lokale Snapshots, S3-Export und Retention in einem Script.
+
+**Script:** `/usr/local/bin/linstor-backup.sh` (auf client-05 und client-06)
+**Repo:** `scripts/linstor-backup.sh`
+**Log:** `/var/log/linstor-backup.log`
+
+**Ablauf pro Ressource:**
+1. Lokalen Snapshot erstellen (`daily-YYYYMMDD-HHMM`)
+2. Backup auf S3/MinIO exportieren (`linstor backup create`)
+3. Alte `daily-*` Snapshots aufraeumen (behalte 7)
+4. Alte `back_*` Snapshots aufraeumen (behalte 14)
+
+**Besonderheiten:**
+- Laeuft nur auf dem Node mit aktivem Linstor Controller (`systemctl is-active linstor-controller`)
+- Entsperrt automatisch den verschluesselten Controller via `/etc/linstor/passphrase`
+- Verwendet `awk -F'|'` fuer korrektes Parsing der Linstor-Tabellenausgabe (Spalte 2 = Resource, Spalte 3 = Snapshot)
+
+**Cron Job:** Verwaltet via Ansible (`setup-backup-infrastructure.yml`)
+
+```
+0 2 * * * root /usr/local/bin/linstor-backup.sh >> /var/log/linstor-backup.log 2>&1
+```
+
+### S3/MinIO Remote
+
+Der Linstor S3-Remote `nas-backup` sichert auf den MinIO-Server des NAS (10.0.0.200:9000, Bucket `linstor-backups`).
 
 ```bash
-#!/bin/bash
-# Linstor Daily Snapshot Script
-# Dynamisch - erfasst automatisch alle neuen Ressourcen
+# Remote-Status pruefen
+linstor remote list
 
-DATE=$(date +%Y%m%d-%H%M)
-KEEP=7
+# Manuelles Backup erstellen
+linstor backup create nas-backup <resource-name>
 
-# Alle Ressourcen dynamisch abfragen
-RESOURCES=$(linstor resource-definition list -p 2>/dev/null | \
-  grep -v '^+' | grep -v 'ResourceName' | awk '{print $2}' | \
-  grep -v '^$' | grep -v '^|')
-
-for RES in $RESOURCES; do
-  # Snapshot erstellen
-  linstor snapshot create "$RES" "daily-$DATE"
-
-  # Alte Snapshots loeschen (behalte die letzten KEEP)
-  linstor snapshot list -r "$RES" | grep "daily-" | awk '{print $2}' | \
-    sort -r | tail -n +$((KEEP+1)) | while read SNAP; do
-      linstor snapshot delete "$RES" "$SNAP"
-    done
-done
+# Backups auflisten
+linstor backup list nas-backup
 ```
 
-**Cron Job:** `/etc/cron.d/linstor-snapshot`
+### NFS Backup Mount
 
-```
-# Linstor Daily Snapshots at 02:00
-0 2 * * * root /usr/local/bin/linstor-snapshot.sh >> /var/log/linstor-snapshot.log 2>&1
-```
+PostgreSQL-Dumps werden auf NFS gespeichert (fuer alle Nodes verfuegbar):
 
-**Wichtig:** Neue Ressourcen werden automatisch erfasst - keine manuelle Anpassung noetig.
+- **NFS-Pfad:** `10.0.0.200:/volume2/nfs/backup` → `/nfs/backup`
+- **Verzeichnisse:** `/nfs/backup/postgres/{daily,weekly,monthly}`
+- **Konfiguration:** `ansible/roles/nfs/tasks/main.yml`
 
 ### Manueller Snapshot
 
@@ -800,7 +816,7 @@ linstor snapshot volume-definition restore \
   --to-resource <new-resource>
 ```
 
-### Snapshot Status pruefen
+### Backup Status pruefen
 
 ```bash
 # Alle Snapshots anzeigen
@@ -809,8 +825,14 @@ linstor snapshot list
 # Snapshots einer Ressource
 linstor snapshot list -r postgres-data
 
-# Log der automatischen Snapshots
-tail -f /var/log/linstor-snapshot.log
+# S3 Backups pruefen
+linstor backup list nas-backup
+
+# Log des Backup-Scripts
+tail -f /var/log/linstor-backup.log
+
+# Encryption-Status pruefen
+linstor encryption status
 ```
 
 ## Performance
