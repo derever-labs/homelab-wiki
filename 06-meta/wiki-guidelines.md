@@ -41,6 +41,8 @@ Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorth
 | NFS-Exports, Mount-Pfade | [NAS-Speicher](../02-infrastructure/storage-nas.md) |
 | Service-Verzeichnis (URLs) | [Infrastruktur-Uebersicht](../01-architecture/overview.md) |
 | Middleware Chains | [Traefik Middlewares](../03-platforms/traefik-middlewares.md) |
+| DNS-Architektur | [DNS-Architektur](../03-platforms/dns-architecture.md) |
+| CrowdSec | [CrowdSec](../03-platforms/crowdsec.md) |
 | Backup-Architektur | [Backup-Strategie](../04-services/core/backup-strategy.md) |
 
 ## Struktur

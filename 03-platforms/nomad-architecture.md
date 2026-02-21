@@ -22,22 +22,9 @@ Siehe [Traefik Middleware Chains](traefik-middlewares.md) fuer die vollstaendige
 
 Alle VMs und IPs: [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md)
 
-## DNS-Kette
+## DNS
 
-```
-Client (Port 53)
-      ↓
-  dnsmasq ─┬─ *.consul → Consul Server (8600)
-           ├─ *.local → Router (10.0.0.1)
-           ├─ *.ackermannprivat.ch → Traefik (10.0.2.1)
-           └─ andere → Pi-hole (1153) → Unbound (2253)
-```
-
-### Pi-hole
-
-- **Blocklists**: ~709K unique Domains (29 Listen inkl. OISD Big)
-- **DNSSEC**: Via Unbound (recursive resolver)
-- **Web UI**: http://10.0.2.1:5480/admin, http://10.0.2.2:5480/admin
+Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige Dokumentation der DNS-Kette (dnsmasq, Pi-hole, Unbound, Consul DNS).
 
 ## Litestream SQLite Replikation
 

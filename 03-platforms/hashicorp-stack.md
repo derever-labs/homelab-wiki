@@ -112,11 +112,7 @@ Vault wird nach Neustart automatisch via systemd entsperrt:
 
 ## Consul DNS
 
-Die DNS-Server auf `10.0.2.1` und `10.0.2.2` leiten `.consul` Anfragen an den Cluster weiter.
-
-- `consul.service.consul` → 10.0.2.104-106
-- `radarr.service.consul` → 10.0.2.125 (dynamisch je nach Node)
-- Unterstuetzung fuer SRV Records zur Port-Ermittlung
+Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige DNS-Dokumentation inkl. Consul-Forwarding.
 
 ---
 *Letztes Update: 21.02.2026*

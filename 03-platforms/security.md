@@ -45,9 +45,15 @@ Zentraler oauth2-proxy mit ForwardAuth. Prueft das Session-Cookie und validiert 
 | `family` | corinna, + weitere | Familien-Zugriff (Jellyseerr, Jellyfin, etc.) |
 | `guest` | Weitere | Limitierter Zugriff |
 
+## CrowdSec (Intrusion Detection)
+
+CrowdSec analysiert Traefik-Logs und blockiert boeswillige IPs per ForwardAuth-Bouncer. In den `public-*-chain-v2` Middleware Chains ist CrowdSec als erste Stufe eingebunden.
+
+Details: [CrowdSec](crowdsec.md)
+
 ## Middleware Chains
 
-Detaillierte Beschreibung siehe [Traefik Middleware Chains](../03-platforms/traefik-middlewares.md).
+Detaillierte Beschreibung siehe [Traefik Middleware Chains](traefik-middlewares.md).
 
 ### Kurzuebersicht
 
