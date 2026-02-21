@@ -1,5 +1,5 @@
 ---
-title: Media Management Stack
+title: Medien-Verwaltung
 description: Übersicht der arr-Suite (Sonarr, Radarr, Prowlarr, Sabnzbd)
 published: true
 date: 2025-12-26T19:20:00+00:00

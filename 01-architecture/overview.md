@@ -1,5 +1,5 @@
 ---
-title: Infrastructure Übersicht
+title: Infrastruktur-Übersicht
 description:
 published: true
 date: 2025-12-26T17:52:12+00:00

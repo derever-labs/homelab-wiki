@@ -1,5 +1,5 @@
 ---
-title: NAS Storage
+title: NAS-Speicher
 description: Zentraler NFS Speicher
 published: true
 date: 2025-12-26T19:10:00+00:00

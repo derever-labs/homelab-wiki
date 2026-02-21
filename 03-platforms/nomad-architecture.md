@@ -1,5 +1,5 @@
 ---
-title: Nomad Jobs
+title: Nomad Job-Übersicht
 description:
 published: true
 date: 2025-12-26T17:52:12+00:00

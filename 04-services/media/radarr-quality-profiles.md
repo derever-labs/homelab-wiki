@@ -1,4 +1,13 @@
-# Radarr Quality Profiles
+---
+title: Radarr Qualitätsprofile
+description: Konfigurierte Quality Profiles basierend auf TRaSH Guides
+published: true
+date: 2026-02-21T00:00:00+00:00
+tags: service, media, radarr
+editor: markdown
+---
+
+# Radarr Qualitätsprofile
 
 Diese Dokumentation beschreibt alle konfigurierten Quality Profiles in Radarr und gibt Empfehlungen basierend auf den [TRaSH Guides](https://trash-guides.info/).
 

@@ -1,5 +1,5 @@
 ---
-title: Home
+title: Startseite
 description: Willkommen in der Homelab Dokumentation
 published: true
 date: 2025-12-26T18:30:00+00:00
@@ -19,7 +19,7 @@ Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructu
 ### [Architektur](./01-architecture/overview)
 Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security) und [Datenstrategie](./01-architecture/data-strategy).
 
-### [Services](./04-services/nomad-overview)
+### [Services](./03-platforms/nomad-architecture)
 Übersicht aller laufenden Applikationen und Container.
 
 ### [Runbooks](./05-runbooks/cluster-restart)
