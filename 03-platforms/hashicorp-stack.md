@@ -8,7 +8,7 @@ editor: markdown
 dateCreated: 2025-12-26T17:52:12+00:00
 ---
 
-## Übersicht
+## Uebersicht
 
 - **Infrastruktur**: Proxmox VE 8.x (3 Hosts: pve00, pve01, pve02)
 - **OS**: Ubuntu 24.04 LTS
@@ -45,63 +45,9 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 **Services**: Nomad Client, Consul Client, Docker
 
-## Quick Start
+## Ersteinrichtung
 
-### 1. Voraussetzungen
-
-```bash
-# Tools installieren (Mac)
-brew install packer terraform ansible git jq genisoimage
-
-# Python-Pakete für Ansible Proxmox Module
-pip install proxmoxer
-
-# Ansible Collections
-ansible-galaxy collection install community.general
-
-# SSH Key erstellen
-ssh-keygen -t ed25519 -f ~/.ssh/homelab_ed25519 -C "admin@homelab"
-```
-
-### 2. Repository Setup
-
-```bash
-chmod +x setup-homelab-v1.4.2.sh
-./setup-homelab-v1.4.2.sh
-
-cd homelab-hashicorp-stack
-cp .env.example .env
-./scripts/validate-env.sh
-source .env
-```
-
-### 3. Proxmox API Token
-
-```bash
-# Auf Proxmox Host
-pveum user add automation@pam
-pveum aclmod / -user automation@pam -role Administrator
-pveum user token add automation@pam homelab -privsep 0
-```
-
-### 4. VM-Template erstellen
-
-```bash
-cd packer
-packer init ubuntu-2404.pkr.hcl
-packer build ubuntu-2404.pkr.hcl
-# Template manuell auf andere Hosts replizieren!
-```
-
-### 5. Deployment
-
-```bash
-cd terraform/proxmox-vms
-terraform init && terraform apply
-
-cd ../../ansible
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml
-```
+Siehe README.md im Repository `homelab-hashicorp-stack`.
 
 ## Service URLs
 
@@ -145,13 +91,11 @@ homelab-hashicorp-stack/
 | Admin User | sam (nur SSH Key Auth) |
 | Netzwerk | 10.0.2.0/22 |
 | Gateway | 10.0.0.1 |
-| DNS | 1.1.1.1, 8.8.8.8 |
+| DNS | 10.0.2.1, 10.0.2.2 |
 | NFS Server | 10.0.0.200 |
 | Storage Pool | rpool (ZFS) |
 
 ## Security
-
-### Uebersicht
 
 | Komponente | Massnahme | Status |
 |------------|-----------|--------|
@@ -161,78 +105,19 @@ homelab-hashicorp-stack/
 | Vault | Audit Logging | Aktiv |
 | TLS | Deaktiviert | Homelab-Entscheidung |
 
-### Consul Gossip Encryption
+**Consul Gossip Encryption:** Gesamter Gossip-Traffic zwischen Consul Nodes ist verschluesselt (symmetrischer Key, auf allen Nodes identisch).
 
-Gesamter Gossip-Traffic zwischen Consul Nodes ist verschluesselt (symmetrischer Key).
+**Consul ACLs:** Aktiviert mit `default_policy = "allow"` — Services funktionieren ohne Token. Management Token in `infra/.consul-token`.
 
-```hcl
-# /etc/consul.d/consul.hcl
-encrypt = "<key>"  # Auf allen Nodes identisch
-```
-
-Key generieren: `consul keygen`
-
-### Consul ACLs
-
-ACLs sind aktiviert mit `default_policy = "allow"` - Services funktionieren ohne Token.
-
-```hcl
-# /etc/consul.d/consul.hcl
-acl {
-  enabled = true
-  default_policy = "allow"
-  enable_token_persistence = true
-}
-```
-
-**Tokens:**
-- Management Token in `infra/.consul-token`
-- Verwendung: `export CONSUL_HTTP_TOKEN="$(cat .consul-token)"`
-
-### Nomad ACLs
-
-ACLs sind aktiviert. UI und API erfordern Token-Authentifizierung.
-
-```hcl
-# /etc/nomad.d/nomad.hcl
-acl {
-  enabled = true
-}
-```
-
-**Tokens:**
-- Management Token in `infra/.nomad-token`
-- Operator Token fuer CI/CD (Policy: operator)
-- Verwendung: `export NOMAD_TOKEN="$(cat .nomad-token)"`
-
-**Policies:**
+**Nomad ACLs:** Aktiviert. UI und API erfordern Token-Authentifizierung. Management Token in `infra/.nomad-token`.
 
 | Policy | Beschreibung |
 |--------|--------------|
 | operator | Jobs deployen, Logs lesen, Allocs verwalten |
 
-### Vault Audit Logging
+**Vault Audit Logging:** Alle Vault-Zugriffe werden protokolliert unter `/opt/vault/audit/vault-audit.log`. Logrotate konfiguriert (30 Tage, komprimiert).
 
-Alle Vault-Zugriffe werden protokolliert.
-
-```bash
-# Audit Device
-vault audit enable file file_path=/opt/vault/audit/vault-audit.log
-
-# Logs auf aktivem Server (aktuell server-05)
-/opt/vault/audit/vault-audit.log
-```
-
-Logrotate konfiguriert: 30 Tage, komprimiert.
-
-### TLS Konfiguration
-
-**Consul TLS ist deaktiviert** fuer einfachere Cluster-Kommunikation im Homelab:
-- `verify_incoming = false`
-- `verify_outgoing = false`
-- `verify_server_hostname = false`
-
-**Begruendung:** Kein Expiry-Risiko durch Zertifikate, Gossip Encryption schuetzt Traffic trotzdem.
+**TLS Deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schuetzt Traffic trotzdem.
 
 ## Hilfreiche Scripts
 
@@ -240,64 +125,33 @@ Logrotate konfiguriert: 30 Tage, komprimiert.
 |---------|--------------|
 | `make snapshot` | VM Snapshots erstellen |
 | `make test` | Cluster Health Check |
-| `make summary` | Übersicht aller Services |
+| `make summary` | Uebersicht aller Services |
 | `make troubleshoot` | Automatische Fehlerdiagnose |
 
-## Troubleshooting
-
-### SSH Verbindung
-
-```bash
-chmod 600 ~/.ssh/homelab_ed25519
-ssh -vvv -i ~/.ssh/homelab_ed25519 sam@10.0.2.104
-```
-
-### Cluster Status
-
-```bash
-consul members
-nomad server members
-nomad node status
-```
-
-### Logs prüfen
-
-```bash
-journalctl -u consul -f
-journalctl -u nomad -f
-```
-
-### Vault unsealen
-
-```bash
-vault status
-/usr/local/bin/vault-unseal.sh
-```
-
-### Cloud-init Probleme
-
-```bash
-journalctl -u cloud-init
-cat /var/log/cloud-init-output.log
 ## Vault
+
 Zentrales Secrets Management. Startet versiegelt und muss nach Reboot entsperrt werden.
 
 ### Workload Identity
-Nomad Jobs authentifizieren sich bei Vault über JWT (Workload Identity) ohne statische Tokens.
+
+Nomad Jobs authentifizieren sich bei Vault ueber JWT (Workload Identity) ohne statische Tokens.
 - **Auth Method:** `jwt-nomad`
 - **JWKS URL:** `http://10.0.2.104:4646/.well-known/jwks.json`
 - **Default Role:** `nomad-workloads`
 
 ### Auto-Unseal
+
 Vault wird nach Neustart automatisch via systemd entsperrt:
 - **Keys:** `/etc/vault.d/unseal-keys` (chmod 600)
 - **Service:** `vault-unseal.service`
 
 ## Consul DNS
+
 Die DNS-Server auf `10.0.2.1` und `10.0.2.2` leiten `.consul` Anfragen an den Cluster weiter.
 
-### Auflösung
-- `consul.service.consul` -> 10.0.2.104-106
-- `radarr.service.consul` -> 10.0.2.125 (Dynamisch je nach Node)
-- Unterstützung für SRV Records zur Port-Ermittlung.
-```
+- `consul.service.consul` → 10.0.2.104-106
+- `radarr.service.consul` → 10.0.2.125 (dynamisch je nach Node)
+- Unterstuetzung fuer SRV Records zur Port-Ermittlung
+
+---
+*Letztes Update: 21.02.2026*

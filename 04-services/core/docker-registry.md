@@ -16,13 +16,11 @@ editor: markdown
 | **Version** | Zot v2.1.14 (ghcr.io/project-zot/zot-linux-amd64:latest) |
 | **Primary URL** | localhost:5000 (jeder Node) |
 | **External URL** | [registry.ackermannprivat.ch](https://registry.ackermannprivat.ch) |
-| **Deployment** | Nomad System Job (alle Clients) |
+| **Deployment** | Nomad System Job (`infrastructure/zot-registry.nomad`) |
 | **Storage Backend** | MinIO S3 auf NAS (10.0.0.200:9000) |
 | **UI** | Eingebaut (Zot UI Extension) |
 
 ## Warum Zot statt Docker Registry v2?
-
-Docker Registry v2 wurde Ende 2025 als Zwischenloesung nach Harbor eingesetzt, wurde aber durch Zot ersetzt:
 
 | Aspekt | Docker Registry v2 | Zot |
 | :--- | :--- | :--- |
@@ -62,31 +60,9 @@ Docker Registry v2 wurde Ende 2025 als Zwischenloesung nach Harbor eingesetzt, w
 
 ## Konfiguration
 
-### Nomad Job
+Die vollstaendige Konfiguration (Zot Config, S3 Storage, Proxy Cache, Docker Hub Credentials) ist im Nomad Job definiert: `infrastructure/zot-registry.nomad`
 
-Datei: `infrastructure/zot-registry.nomad`
-
-Wichtige Konfigurationsparameter:
-
-```json
-{
-  "http": {
-    "address": "0.0.0.0",
-    "port": 5000,
-    "compat": ["docker2s2"]
-  },
-  "storage": {
-    "storageDriver": {
-      "name": "s3",
-      "regionendpoint": "http://10.0.0.200:9000",
-      "bucket": "zot-registry"
-    },
-    "dedupe": false
-  }
-}
-```
-
-**Wichtig:** `compat: ["docker2s2"]` ist noetig, damit Docker-Format Manifeste (v2 Schema 2) akzeptiert werden. Ohne dieses Setting schlaegt der Push von Multi-Arch Images fehl mit `manifest invalid`.
+**Wichtig:** `compat: ["docker2s2"]` in der HTTP-Konfiguration ist noetig, damit Docker-Format Manifeste (v2 Schema 2) akzeptiert werden. Ohne dieses Setting schlaegt der Push von Multi-Arch Images fehl mit `manifest invalid`.
 
 ### Proxy Cache Registries
 
@@ -106,113 +82,17 @@ Wichtige Konfigurationsparameter:
 | Root Directory | /zot |
 | Credentials | Vault kv/minio-nas |
 
-### Docker daemon.json (alle Nodes)
+### Docker daemon.json
 
-```json
-{
-  "registry-mirrors": ["http://localhost:5000"],
-  "insecure-registries": ["localhost:5000"]
-}
-```
-
-**Verhalten:**
-1. Docker versucht erst localhost:5000 (Zot)
-2. Falls Zot down: automatisch Docker Hub direkt
-
-## Verwendung
-
-### Image Pull (via On-Demand Cache)
-
-```bash
-# Standard Docker Pull (nutzt automatisch Registry-Mirror)
-docker pull nginx:alpine
-
-# Oder explizit ueber Zot
-docker pull localhost:5000/library/nginx:alpine
-
-# Images von ghcr.io (via Proxy Cache)
-docker pull localhost:5000/ghcr.io/paperless-ngx/paperless-ngx:latest
-```
-
-### Multi-Arch Image Push
-
-```bash
-# Multi-Arch Build und Push (funktioniert dank docker2s2 compat)
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --push \
-  -t localhost:5000/myimage:latest \
-  .
-
-# Einzelnes Image Push
-docker tag myimage:latest localhost:5000/myimage:latest
-docker push localhost:5000/myimage:latest
-```
-
-### Catalog und Search
-
-```bash
-# Catalog anzeigen
-curl http://localhost:5000/v2/_catalog
-
-# Image Tags auflisten
-curl http://localhost:5000/v2/library/nginx/tags/list
-
-# GraphQL Search (Zot Extension)
-curl -s http://localhost:5000/v2/_zot/ext/search -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"{ImageList(repo:\"\"){Results{RepoName Tag}}}"}'
-```
-
-### Zot Web UI
-
-Die eingebaute UI ist unter `http://localhost:5000/` erreichbar (nur intern).
-
-## Troubleshooting
-
-### Registry nicht erreichbar
-
-```bash
-# Health Check
-curl http://localhost:5000/v2/
-
-# Nomad Job Status
-nomad job status zot-registry
-
-# Logs pruefen
-nomad alloc logs -job zot-registry zot
-```
-
-### "manifest invalid" beim Push
-
-Sicherstellen dass `compat: ["docker2s2"]` in der Zot-Config gesetzt ist. Alternativ Image vor dem Push in OCI-Format konvertieren:
-
-```bash
-skopeo copy --format oci docker://source:tag docker://localhost:5000/dest:tag
-```
-
-### S3 Probleme
-
-```bash
-# MinIO erreichbar?
-curl http://10.0.0.200:9000/minio/health/live
-
-# Zot Logs auf S3-Fehler pruefen
-nomad alloc logs -stderr -job zot-registry zot
-```
+Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet durch Ansible). Docker versucht erst localhost:5000 (Zot), bei Nichterreichbarkeit automatisch Docker Hub direkt.
 
 ## Backup
-
-### Zu sichernde Daten
 
 | Pfad | Inhalt |
 | :--- | :--- |
 | MinIO: zot-registry/* | Alle Registry Blobs und Manifeste |
 
-### Restore
-
-1. MinIO Bucket wiederherstellen
-2. Nomad Job starten: `nomad job run infrastructure/zot-registry.nomad`
+**Restore:** MinIO Bucket wiederherstellen, dann Nomad Job starten.
 
 ## Historie
 
