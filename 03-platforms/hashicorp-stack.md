@@ -93,15 +93,6 @@ homelab-hashicorp-stack/
 
 **TLS Deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schuetzt Traffic trotzdem.
 
-## Hilfreiche Scripts
-
-| Command | Beschreibung |
-|---------|--------------|
-| `make snapshot` | VM Snapshots erstellen |
-| `make test` | Cluster Health Check |
-| `make summary` | Uebersicht aller Services |
-| `make troubleshoot` | Automatische Fehlerdiagnose |
-
 ## Vault
 
 Zentrales Secrets Management. Startet versiegelt und muss nach Reboot entsperrt werden.
