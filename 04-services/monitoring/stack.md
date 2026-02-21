@@ -25,15 +25,34 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 ### Authentifizierung
 Erfolgt via OAuth2 (Keycloak). Nur Benutzer der Gruppe `admin` haben Zugriff.
 
-### Stateless Setup
-Grafana läuft vollständig stateless:
-- **Dashboards:** Werden als JSON Dateien unter `/nfs/docker/grafana/dashboards/` bereitgestellt (aus Git).
-- **Datasources:** Werden beim Start via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`) provisioniert.
-- **Alerting:** Deaktiviert, da kein persistenter Storage für State vorhanden ist.
+### Deployment
+Grafana laeuft mit persistentem Storage (Linstor CSI Volume `grafana-data`, 1 GiB) fuer Unified Alerting State:
+- **Dashboards:** JSON Dateien unter `/nfs/docker/grafana/dashboards/` (aus Git).
+- **Datasources:** Via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`, `kv/jellystat`) provisioniert.
+- **Alerting:** Unified Alerting aktiv, Alert Rules via File Provisioning (siehe unten).
+- **Constraint:** Nur auf client-05/06 (Linstor CSI Volume verfuegbar).
+
+### Alerting (Unified Alerting)
+Grafana Unified Alerting ist die zentrale Stelle fuer alle metrikbasierten Alerts.
+
+**Contact Point:** Telegram (Bot-Token aus `kv/data/telegram` via Vault)
+**Notification Policy:** Alle Alerts → Telegram, Group-Wait 30s, Repeat 4h
+
+**Alert Rules (provisioniert via Nomad Template):**
+
+| Rule | Bedingung | For | Severity |
+| :--- | :--- | :--- | :--- |
+| LVM Thin Pool > 75% | `data_percent > 75` | 5min | Warning |
+| LVM Thin Pool > 85% | `data_percent > 85` | 2min | Critical |
+| LVM Metadata > 75% | `metadata_percent > 75` | 5min | Warning |
+| DRBD Out-of-Sync | `outofsync_bytes > 0` | 10min | Warning |
+| DRBD Disconnected | `Connected != 1` | 5min | Critical |
+
+**Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die fuer Nomads Template-Engine escaped werden muessen (`{{ "{{" }}` / `{{ "}}" }}`).
 
 ## Uptime Kuma
 Überwacht alle externen und internen Endpunkte via HTTP/TCP-Checks.
-- **Benachrichtigungen:** Bei Ausfall erfolgt eine Meldung via Gotify/Telegram (konfiguriert in Vault).
+- **Benachrichtigungen:** Bei Ausfall erfolgt eine Meldung via Telegram (konfiguriert in Vault).
 - **Datenbank:** `kuma.db` (Repliziert via Litestream auf NAS).
 
 ## Backup-Monitoring
