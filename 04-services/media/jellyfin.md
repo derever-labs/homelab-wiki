@@ -1,10 +1,10 @@
 ---
 title: Jellyfin
 description: Medienserver fuer Filme und Serien
-published: true
-date: 2025-12-26T18:30:00+00:00
-tags: service, nomad, media
-editor: markdown
+tags:
+  - service
+  - nomad
+  - media
 ---
 
 # Jellyfin

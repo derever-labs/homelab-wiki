@@ -1,10 +1,9 @@
 ---
 title: Startseite
 description: Willkommen in der Homelab Dokumentation
-published: true
-date: 2025-12-26T18:30:00+00:00
-tags: home, overview
-editor: markdown
+tags:
+  - home
+  - overview
 ---
 
 # Homelab Dokumentation
@@ -13,16 +12,16 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 ## Schnelleinstieg
 
-### [Infrastruktur](./02-infrastructure/proxmox-cluster)
-Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas), [Netzwerk Optimierung](./02-infrastructure/network-optimization) und [Backup (PBS)](./04-services/core/pbs).
+### [Infrastruktur](./02-infrastructure/proxmox-cluster.md)
+Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas.md), [Netzwerk Optimierung](./02-infrastructure/network-optimization.md) und [Backup (PBS)](./04-services/core/pbs.md).
 
-### [Architektur](./01-architecture/overview)
-Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security) und [Datenstrategie](./01-architecture/data-strategy).
+### [Architektur](./01-architecture/overview.md)
+Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security.md) und [Datenstrategie](./01-architecture/data-strategy.md).
 
-### [Services](./03-platforms/nomad-architecture)
+### [Services](./03-platforms/nomad-architecture.md)
 Übersicht aller laufenden Applikationen und Container.
 
-### [Runbooks](./05-runbooks/cluster-restart)
+### [Runbooks](./05-runbooks/cluster-restart.md)
 Schritt-für-Schritt Anleitungen für Wartung und Notfälle.
 
 ## Stack Übersicht

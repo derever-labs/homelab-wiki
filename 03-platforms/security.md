@@ -1,10 +1,10 @@
 ---
 title: Sicherheit & Authentifizierung
 description: Keycloak, OAuth2-Proxy und Zugriffskontrolle
-published: true
-date: 2026-02-21T00:00:00+00:00
-tags: platform, security, keycloak
-editor: markdown
+tags:
+  - platform
+  - security
+  - keycloak
 ---
 
 # Security Architecture

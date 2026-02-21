@@ -1,11 +1,13 @@
 ---
 title: Linstor & DRBD
 description: Distributed Block Storage mit synchroner Replikation und Controller HA
-published: true
-date: 2025-12-30T18:00:00+00:00
-tags: storage, ha, drbd, linstor, drbd-reactor, dclab
-editor: markdown
-dateCreated: 2025-12-27T20:00:00+00:00
+tags:
+  - storage
+  - ha
+  - drbd
+  - linstor
+  - drbd-reactor
+  - dclab
 ---
 
 ## Uebersicht

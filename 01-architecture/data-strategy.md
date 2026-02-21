@@ -1,10 +1,12 @@
 ---
 title: Datenstrategie & Replikation
 description: Speicher-Konzepte, Litestream Replikation und Backups
-published: true
-date: 2025-12-26T20:00:00+00:00
-tags: architecture, backup, sqlite, litestream, storage
-editor: markdown
+tags:
+  - architecture
+  - backup
+  - sqlite
+  - litestream
+  - storage
 ---
 
 # Datenstrategie

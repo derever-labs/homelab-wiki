@@ -1,10 +1,12 @@
 ---
 title: SMTP Relay
 description: Zentraler Mail-Relay fuer Homelab Infrastruktur und Services
-published: true
-date: 2026-02-21T15:00:00+00:00
-tags: smtp, mail, infrastructure, nomad, postfix
-editor: markdown
+tags:
+  - smtp
+  - mail
+  - infrastructure
+  - nomad
+  - postfix
 ---
 
 # SMTP Relay

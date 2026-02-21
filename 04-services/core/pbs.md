@@ -1,10 +1,10 @@
 ---
 title: Proxmox Backup Server
 description: Zentrale Backup-Lösung für VMs
-published: true
-date: 2025-12-26T19:05:00+00:00
-tags: infrastructure, backup, pbs
-editor: markdown
+tags:
+  - infrastructure
+  - backup
+  - pbs
 ---
 
 # Proxmox Backup Server (PBS)

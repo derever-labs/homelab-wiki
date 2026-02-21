@@ -1,10 +1,10 @@
 ---
 title: Paperless-ngx
 description: Dokumenten-Management-System
-published: true
-date: 2025-12-26T19:40:00+00:00
-tags: service, office, nomad
-editor: markdown
+tags:
+  - service
+  - office
+  - nomad
 ---
 
 # Paperless-ngx

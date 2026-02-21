@@ -1,10 +1,10 @@
 ---
 title: Zigbee IoT
 description: Zigbee2MQTT und MQTT Broker Setup
-published: true
-date: 2025-12-26T20:10:00+00:00
-tags: service, iot, zigbee
-editor: markdown
+tags:
+  - service
+  - iot
+  - zigbee
 ---
 
 # Zigbee2MQTT Setup

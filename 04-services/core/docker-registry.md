@@ -1,10 +1,13 @@
 ---
 title: Zot Container Registry
 description: OCI-native Container Registry mit S3 Backend und Pull-Through Cache
-published: true
-date: 2026-02-21T00:00:00+00:00
-tags: docker, registry, container, infrastructure, s3, zot
-editor: markdown
+tags:
+  - docker
+  - registry
+  - container
+  - infrastructure
+  - s3
+  - zot
 ---
 
 # Zot Container Registry
