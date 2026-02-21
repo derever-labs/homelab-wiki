@@ -18,14 +18,9 @@ title: Nomad Job-Übersicht
 
 Siehe [Traefik Middleware Chains](traefik-middlewares.md) fuer die vollstaendige Dokumentation der v2 Middleware Chains.
 
-## Infrastructure VMs
+## Infrastructure
 
-| VM | IP | Rolle |
-|----|-----|-------|
-| vm-proxy-dns-01 | 10.0.2.1 | Primary DNS, Traefik, Keycloak, CrowdSec |
-| vm-vpn-dns-01 | 10.0.2.2 | Secondary DNS, ZeroTier |
-| vm-nomad-server-04/05/06 | 10.0.2.104-106 | Nomad/Consul/Vault Server |
-| vm-nomad-client-04/05/06 | 10.0.2.124-126 | Nomad Client |
+Alle VMs und IPs: [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md)
 
 ## DNS-Kette
 

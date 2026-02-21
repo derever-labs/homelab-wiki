@@ -2,13 +2,11 @@
 title: Infrastruktur-Übersicht
 ---
 
-## Proxmox Cluster
+## Infrastruktur
 
-| Host | IP | Beschreibung |
-|------|----|--------------|
-| pve00 | 10.0.2.40 | Proxmox VE Node (4 CPU, 16GB RAM) |
-| pve01 | 10.0.2.41 | Proxmox VE Node |
-| pve02 | 10.0.2.42 | Proxmox VE Node |
+Das Cluster besteht aus 3 Proxmox-Hosts, 6 HashiCorp-VMs (3 Server, 3 Worker), 2 Infrastruktur-VMs und 2 IoT-VMs.
+
+Vollstaendige Auflistung aller Hosts, IPs und Specs: [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md)
 
 ## Netzwerk
 
@@ -18,38 +16,6 @@ title: Infrastruktur-Übersicht
 | IoT | 10.0.0.0/24 | Home Assistant, Zigbee |
 | Docker Proxy | 192.168.90.0/24 | Traefik Proxy Network |
 | Thunderbolt | 10.99.1.0/24 | Peer-to-Peer Replikation |
-
-## Virtuelle Maschinen
-
-### Infrastructure VMs
-
-| VM | IP | Beschreibung |
-|----|-----|--------------|
-| vm-proxy-dns-01 | 10.0.2.1 | Traefik, Keycloak, DNS, CrowdSec |
-| vm-vpn-dns-01 | 10.0.2.2 | Secondary DNS, ZeroTier |
-
-### Nomad Server (3x)
-
-| Host | IP | VM ID |
-|------|-----|-------|
-| vm-nomad-server-04 | 10.0.2.104 | 3004 |
-| vm-nomad-server-05 | 10.0.2.105 | 3005 |
-| vm-nomad-server-06 | 10.0.2.106 | 3006 |
-
-### Nomad Clients (3x)
-
-| Host | IP | Proxmox Host | Specs |
-|------|-----|--------------|-------|
-| vm-nomad-client-04 | 10.0.2.124 | pve00 | 4 CPU, 12GB RAM |
-| vm-nomad-client-05 | 10.0.2.125 | pve01 | 16 CPU, 48GB RAM |
-| vm-nomad-client-06 | 10.0.2.126 | pve02 | 16 CPU, 48GB RAM |
-
-### IoT VMs
-
-| Host | IP | Beschreibung |
-|------|----|--------------|
-| homeassistant | 10.0.0.100 | Home Assistant OS |
-| zigbee-node | 10.0.0.110 | Zigbee2MQTT VM |
 
 **Weitere Informationen:** [Sicherheit](../03-platforms/security.md) | [Datenstrategie](./data-strategy.md)
 
@@ -115,12 +81,7 @@ title: Infrastruktur-Übersicht
 
 ## Storage
 
-| Pfad | Beschreibung |
-|------|--------------|
-| /nfs/docker/ | Persistente Container-Daten |
-| /nfs/nomad/jobs/ | Nomad Job Files |
-| /nfs/cert/ | Zertifikate (read-only) |
-| /local-docker/ | Lokaler Docker Storage (Litestream) |
+NFS-Exports und Mount-Pfade: [NAS-Speicher](../02-infrastructure/storage-nas.md)
 
 ## Zugang
 

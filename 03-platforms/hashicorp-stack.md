@@ -10,34 +10,14 @@ title: HashiCorp Stack
 - **Automatisierung**: Packer, Terraform, Ansible
 - **Storage**: rpool (ZFS)
 
-## Proxmox Hosts
+## Nodes
 
-| Host | IP | Specs |
-|------|-----|-------|
-| pve00 | 10.0.2.40 | 4 CPU, 16GB RAM (begrenzte Ressourcen) |
-| pve01 | 10.0.2.41 | Standard |
-| pve02 | 10.0.2.42 | Standard |
+Der Stack laeuft auf 3 Server-Nodes (Consul/Nomad/Vault) und 3 Worker-Nodes (Nomad Client/Docker), jeweils 1 pro Proxmox-Host.
 
-## Server Nodes (3x)
+- **Server**: Nomad Server, Consul Server, Vault
+- **Worker**: Nomad Client, Consul Client, Docker
 
-| VM | IP | VM ID | Specs |
-|----|-----|-------|-------|
-| vm-nomad-server-04 | 10.0.2.104 | 3004 | 2 CPU, 4GB RAM, 20GB Disk |
-| vm-nomad-server-05 | 10.0.2.105 | 3005 | 2 CPU, 4GB RAM, 20GB Disk |
-| vm-nomad-server-06 | 10.0.2.106 | 3006 | 2 CPU, 4GB RAM, 20GB Disk |
-
-**Services**: Nomad Server, Consul Server, Vault
-**Distribution**: 1 Server pro Proxmox Host
-
-## Worker Nodes (3x)
-
-| VM | IP | VM ID | Specs |
-|----|-----|-------|-------|
-| vm-nomad-client-04 | 10.0.2.124 | 3104 | 4 CPU, 12GB RAM, 64GB Disk |
-| vm-nomad-client-05 | 10.0.2.125 | 3105 | 16 CPU, 48GB RAM, 64GB Disk |
-| vm-nomad-client-06 | 10.0.2.126 | 3106 | 16 CPU, 48GB RAM, 64GB Disk |
-
-**Services**: Nomad Client, Consul Client, Docker
+Vollstaendige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md#hashicorp-stack-vms)
 
 ## Ersteinrichtung
 
