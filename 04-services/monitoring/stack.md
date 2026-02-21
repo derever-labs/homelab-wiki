@@ -36,9 +36,17 @@ Grafana läuft vollständig stateless:
 - **Benachrichtigungen:** Bei Ausfall erfolgt eine Meldung via Gotify/Telegram (konfiguriert in Vault).
 - **Datenbank:** `kuma.db` (Repliziert via Litestream auf NAS).
 
+## Backup-Monitoring
+
+### Linstor Backup Monitor
+Ein separates Script (`/usr/local/bin/linstor-backup-monitor.sh`) prueft um 06:00 Uhr den Status der S3-Backups und meldet via Uptime Kuma Push.
+
+### PostgreSQL Backup
+Der Nomad Batch-Job `postgres-backup` fuehrt taeglich ein `pg_dumpall` durch und sichert auf NFS (`/nfs/backup/postgres/`). Status wird via Uptime Kuma Push gemeldet.
+
 ## Wartung
 ### Grafana Dashboards
 Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-dashboards/` verwaltet oder direkt in der UI erstellt.
 
 ---
-*Letztes Update: 26.12.2025*
+*Letztes Update: 21.02.2026*
