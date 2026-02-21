@@ -1,10 +1,12 @@
 ---
 title: Backup-Strategie
 description: PostgreSQL Backups, DRBD Snapshots und Monitoring
-published: true
-date: 2026-01-01T12:00:00+00:00
-tags: backup, postgresql, drbd, linstor, monitoring
-editor: markdown
+tags:
+  - backup
+  - postgresql
+  - drbd
+  - linstor
+  - monitoring
 ---
 
 # Backup-Strategie

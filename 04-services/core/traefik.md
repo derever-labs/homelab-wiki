@@ -1,10 +1,10 @@
 ---
 title: Traefik Reverse Proxy
 description: Zentraler Ingress und SSL-Terminierung
-published: true
-date: 2025-12-26T19:30:00+00:00
-tags: service, core, networking
-editor: markdown
+tags:
+  - service
+  - core
+  - networking
 ---
 
 # Traefik Reverse Proxy

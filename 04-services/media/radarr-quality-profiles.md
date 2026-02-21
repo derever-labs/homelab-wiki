@@ -1,10 +1,10 @@
 ---
 title: Radarr Qualitätsprofile
 description: Konfigurierte Quality Profiles basierend auf TRaSH Guides
-published: true
-date: 2026-02-21T00:00:00+00:00
-tags: service, media, radarr
-editor: markdown
+tags:
+  - service
+  - media
+  - radarr
 ---
 
 # Radarr Qualitätsprofile

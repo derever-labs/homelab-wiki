@@ -1,10 +1,10 @@
 ---
 title: Medien-Verwaltung
 description: Übersicht der arr-Suite (Sonarr, Radarr, Prowlarr, Sabnzbd)
-published: true
-date: 2025-12-26T19:20:00+00:00
-tags: service, media, nomad
-editor: markdown
+tags:
+  - service
+  - media
+  - nomad
 ---
 
 # Media Management Stack

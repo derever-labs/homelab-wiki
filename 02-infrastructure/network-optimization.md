@@ -1,10 +1,10 @@
 ---
 title: 10GbE Netzwerk Optimierung
 description: Performance-Tuning für VirtIO und Thunderbolt
-published: true
-date: 2025-12-26T20:05:00+00:00
-tags: infrastructure, networking, performance
-editor: markdown
+tags:
+  - infrastructure
+  - networking
+  - performance
 ---
 
 # 10GbE Network Optimization

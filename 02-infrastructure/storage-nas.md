@@ -1,10 +1,10 @@
 ---
 title: NAS-Speicher
 description: Zentraler NFS Speicher
-published: true
-date: 2025-12-26T19:10:00+00:00
-tags: infrastructure, storage, nfs
-editor: markdown
+tags:
+  - infrastructure
+  - storage
+  - nfs
 ---
 
 # NAS Storage

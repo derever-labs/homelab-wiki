@@ -1,10 +1,11 @@
 ---
 title: Traefik Middleware Chains
 description: OAuth2-Proxy v2 Middleware Chains fuer Traefik
-published: true
-date: 2026-02-21T00:00:00+00:00
-tags: platform, traefik, security, oauth2
-editor: markdown
+tags:
+  - platform
+  - traefik
+  - security
+  - oauth2
 ---
 
 # Traefik Middleware Chains

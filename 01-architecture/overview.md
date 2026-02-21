@@ -1,11 +1,5 @@
 ---
 title: Infrastruktur-Übersicht
-description:
-published: true
-date: 2025-12-26T17:52:12+00:00
-tags:
-editor: markdown
-dateCreated: 2025-12-26T17:52:12+00:00
 ---
 
 ## Proxmox Cluster
@@ -57,7 +51,7 @@ dateCreated: 2025-12-26T17:52:12+00:00
 | homeassistant | 10.0.0.100 | Home Assistant OS |
 | zigbee-node | 10.0.0.110 | Zigbee2MQTT VM |
 
-**Weitere Informationen:** [Sicherheit](../03-platforms/security) | [Datenstrategie](./data-strategy)
+**Weitere Informationen:** [Sicherheit](../03-platforms/security.md) | [Datenstrategie](./data-strategy.md)
 
 ## Services
 
@@ -65,7 +59,7 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 | Service | URL | Beschreibung |
 |---------|-----|--------------|
-| Traefik | traefik.ackermannprivat.ch | Reverse Proxy, SSL - [Details](../04-services/core/traefik) |
+| Traefik | traefik.ackermannprivat.ch | Reverse Proxy, SSL - [Details](../04-services/core/traefik.md) |
 | Keycloak | sso.ackermannprivat.ch | Identity Provider (OAuth2/OIDC) |
 | Wiki.js | wiki.ackermannprivat.ch | Dokumentation |
 
@@ -73,7 +67,7 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 | Service | URL | Beschreibung |
 |---------|-----|--------------|
-| Jellyfin | watch.ackermannprivat.ch | Media Server - [Details](../04-services/media/jellyfin) |
+| Jellyfin | watch.ackermannprivat.ch | Media Server - [Details](../04-services/media/jellyfin.md) |
 | Jellyseerr | wish.ackermannprivat.ch | Media Requests |
 | Sonarr | sonarr.ackermannprivat.ch | Serien Management |
 | Radarr | radarr.ackermannprivat.ch | Film Management |
@@ -85,7 +79,7 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 | Service | URL | Beschreibung |
 |---------|-----|--------------|
-| Grafana | graf.ackermannprivat.ch | Dashboards - [Details](../04-services/monitoring/stack) |
+| Grafana | graf.ackermannprivat.ch | Dashboards - [Details](../04-services/monitoring/stack.md) |
 | Uptime Kuma | uptime.ackermannprivat.ch | Availability Monitoring |
 | CheckMK | monitoring.ackermannprivat.ch | Infrastructure Monitoring |
 
@@ -93,8 +87,8 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 | Service | URL | Beschreibung |
 |---------|-----|--------------|
-| Vaultwarden | p.ackermannprivat.ch | Passwort Manager - [Details](../04-services/productivity/vaultwarden) |
-| Paperless | paperless.ackermannprivat.ch | DMS - [Details](../04-services/productivity/paperless) |
+| Vaultwarden | p.ackermannprivat.ch | Passwort Manager - [Details](../04-services/productivity/vaultwarden.md) |
+| Paperless | paperless.ackermannprivat.ch | DMS - [Details](../04-services/productivity/paperless.md) |
 | Tandoor | tandoor.ackermannprivat.ch | Rezepte |
 | Guacamole | remote.ackermannprivat.ch | Remote Desktop Gateway |
 
@@ -108,16 +102,16 @@ dateCreated: 2025-12-26T17:52:12+00:00
 
 ## Infrastruktur & Plattformen
 
-- **Compute:** [Proxmox Cluster](../02-infrastructure/proxmox-cluster)
-- **Storage:** [NAS Storage](../02-infrastructure/storage-nas)
-- **Backup:** [Proxmox Backup Server](../04-services/core/pbs)
-- **Orchestrierung:** [HashiCorp Stack](../03-platforms/hashicorp-stack)
-- **Nomad Architektur:** [Job Overview](../03-platforms/nomad-architecture)
-- **IoT:** [Zigbee / HomeAssistant](../04-services/iot/zigbee)
+- **Compute:** [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md)
+- **Storage:** [NAS Storage](../02-infrastructure/storage-nas.md)
+- **Backup:** [Proxmox Backup Server](../04-services/core/pbs.md)
+- **Orchestrierung:** [HashiCorp Stack](../03-platforms/hashicorp-stack.md)
+- **Nomad Architektur:** [Job Overview](../03-platforms/nomad-architecture.md)
+- **IoT:** [Zigbee / HomeAssistant](../04-services/iot/zigbee.md)
 
 ## Wartung
 
-- **Notfall:** [Cluster Restart Runbook](../05-runbooks/cluster-restart)
+- **Notfall:** [Cluster Restart Runbook](../05-runbooks/cluster-restart.md)
 
 ## Storage
 

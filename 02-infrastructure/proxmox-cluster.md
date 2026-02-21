@@ -1,10 +1,10 @@
 ---
 title: Proxmox Cluster
 description: Übersicht der physikalischen Virtualisierungs-Hosts
-published: true
-date: 2025-12-26T18:30:00+00:00
-tags: infrastructure, proxmox, hosts
-editor: markdown
+tags:
+  - infrastructure
+  - proxmox
+  - hosts
 ---
 
 # Proxmox Cluster

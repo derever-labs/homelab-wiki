@@ -1,10 +1,10 @@
 ---
 title: CheckMK
 description: Zentrale Monitoring & Alerting Plattform
-published: true
-date: 2025-12-26T18:30:00+00:00
-tags: service, monitoring, infrastructure
-editor: markdown
+tags:
+  - service
+  - monitoring
+  - infrastructure
 ---
 
 # CheckMK Monitoring

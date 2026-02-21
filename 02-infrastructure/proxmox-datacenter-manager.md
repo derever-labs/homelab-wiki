@@ -1,10 +1,10 @@
 ---
 title: Proxmox Datacenter Manager
 description: Zentrale Verwaltung mehrerer Proxmox VE Cluster und Backup Server
-published: true
-date: 2026-02-21T00:00:00+00:00
-tags: infrastructure, proxmox, pdm
-editor: markdown
+tags:
+  - infrastructure
+  - proxmox
+  - pdm
 ---
 
 # Proxmox Datacenter Manager (PDM)

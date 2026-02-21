@@ -1,10 +1,10 @@
 ---
 title: Vaultwarden
 description: Passwort Manager (Bitwarden API kompatibel)
-published: true
-date: 2025-12-26T19:35:00+00:00
-tags: service, security, nomad
-editor: markdown
+tags:
+  - service
+  - security
+  - nomad
 ---
 
 # Vaultwarden

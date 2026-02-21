@@ -1,10 +1,10 @@
 ---
 title: Monitoring-Übersicht
 description: Übersicht der Überwachungswerkzeuge (Grafana, Uptime Kuma)
-published: true
-date: 2025-12-26T19:25:00+00:00
-tags: service, monitoring, nomad
-editor: markdown
+tags:
+  - service
+  - monitoring
+  - nomad
 ---
 
 # Monitoring Stack
