@@ -954,6 +954,25 @@ Linstor Controller (10.0.2.125:3370)
 | linstor_resource_state | Resource Status (0=UpToDate, 1=Syncing) |
 | linstor_resource_definition_count | Anzahl der definierten Volumes |
 
+#### LVM Thin Pool Monitoring
+
+**Warum zusaetzlich zu Linstor-Metriken?** Linstor meldet `storage_pool_capacity_free_bytes`, aber dies bildet die tatsaechliche LVM-Thin-Pool-Auslastung (inkl. Snapshot-Overhead) nicht korrekt ab. Beim Thin-Pool-Overflow-Incident zeigte Linstor noch freien Platz, waehrend LVM bei 100% war.
+
+**Metriken-Pipeline:**
+```
+[client-05/06] cron (1min) → lvs → InfluxDB Line Protocol
+     → /nfs/docker/telegraf/metrics/lvm_thinpool_$(hostname).influx
+          → Telegraf inputs.file → InfluxDB → Grafana
+```
+
+**Metriken:** `lvm_thinpool` mit Tags `host`, `vg`, `pool` und Fields `data_percent`, `metadata_percent`
+
+**CheckMK Safety Net:** Zusaetzlich laeuft ein CheckMK Local Check direkt auf dem Host (75% WARN, 85% CRIT) — funktioniert auch wenn der gesamte Container-Stack ausfaellt.
+
+**Scripts:**
+- `/usr/local/bin/lvm-thinpool-metrics.sh` — Metriken fuer Telegraf
+- `/usr/lib/check_mk_agent/local/lvm-thinpool.sh` — CheckMK Local Check
+
 #### CLI Monitoring
 
 ```bash
@@ -962,6 +981,9 @@ drbdsetup status --verbose --statistics
 
 # Linstor Metriken (Prometheus)
 curl http://localhost:3370/metrics
+
+# LVM Thin Pool Status
+sudo lvs -S 'seg_type=thin-pool' -o vg_name,lv_name,data_percent,metadata_percent
 
 # Schnellstatus
 linstor node list
