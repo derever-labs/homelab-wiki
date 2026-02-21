@@ -15,11 +15,14 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
 | **Grafana** | Dashboards & Metriken | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
+| **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
+| **Grafana Alloy** | Log-Collector (System-Job) | — (laeuft auf jedem Client-Node) |
 | **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 
 ## Grafana
 ### Datenquellen
 - **InfluxDB:** Speichert Metriken von Nomad, Consul und Proxmox.
+- **Loki:** Container-Logs (via Grafana Alloy gesammelt).
 - **CheckMK:** Integriert über das CheckMK-Plugin für Infrastruktur-Status.
 
 ### Authentifizierung
@@ -62,6 +65,33 @@ Ein separates Script (`/usr/local/bin/linstor-backup-monitor.sh`) prueft um 06:0
 
 ### PostgreSQL Backup
 Der Nomad Batch-Job `postgres-backup` fuehrt taeglich ein `pg_dumpall` durch und sichert auf NFS (`/nfs/backup/postgres/`). Status wird via Uptime Kuma Push gemeldet.
+
+## Zentrales Logging (Loki + Alloy)
+
+### Architektur
+```
+Docker Container (je Node) → Grafana Alloy (System-Job) → Loki → Grafana
+```
+
+### Loki (Log-Storage)
+- **Nomad Job:** `monitoring/loki.nomad` (Service-Job, Priority 100)
+- **Storage:** Linstor CSI Volume `loki-data` (20 GiB, repliziert)
+- **Port:** 3100 (statisch)
+- **Retention:** 30 Tage (720h)
+- **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-admin-chain@file`)
+
+### Grafana Alloy (Log-Collector)
+- **Nomad Job:** `system/alloy.nomad` (System-Job, laeuft auf jedem Client-Node)
+- **Docker-Socket:** `/var/run/docker.sock` (read-only) fuer Container-Discovery
+- **Labels:** Extrahiert `nomad_task` aus Container-Name, `nomad_alloc_id` aus Docker-Labels
+- **External Label:** `node` (Hostname des Client-Nodes)
+
+### Log-Abfrage in Grafana
+- Datasource: **Loki** (uid: `loki-logs`)
+- Beispiel-Queries:
+  - `{nomad_task="grafana"}` — Alle Grafana-Logs
+  - `{node="vm-nomad-client-05"}` — Alle Logs von client-05
+  - `{nomad_task="prowlarr"} |= "error"` — Prowlarr-Fehler
 
 ## Wartung
 ### Grafana Dashboards
