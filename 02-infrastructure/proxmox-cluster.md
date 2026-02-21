@@ -61,23 +61,8 @@ Für die Replikation wird ein separates Thunderbolt-Netzwerk (10.99.1.x) verwend
 
 Das Thunderbolt-Interface (`thunderbolt1`) erscheint erst nach dem Firmware-Init (~20s). Um Race Conditions zu vermeiden, ist auf pve01 und pve02 ein Dual-Layer Fix implementiert:
 
-**Systemd Drop-in** (`/etc/systemd/system/networking.service.d/wait-for-thunderbolt.conf`):
-```ini
-[Unit]
-Wants=sys-subsystem-net-devices-thunderbolt1.device
-After=sys-subsystem-net-devices-thunderbolt1.device
-```
-
-**udev Fallback** (`/etc/udev/rules.d/99-thunderbolt-bridge.rules`):
-```
-ACTION=="add", SUBSYSTEM=="net", KERNEL=="thunderbolt1", RUN+="/usr/local/bin/thunderbolt-bridge-add.sh"
-```
-
-**Verifikation nach Reboot:**
-```bash
-brctl show vmbr-tb | grep thunderbolt1
-journalctl -u networking.service | grep -i thunder
-```
+- **Systemd Drop-in:** `networking.service` wartet auf das Thunderbolt-Device, bevor das Netzwerk konfiguriert wird.
+- **udev Fallback:** Eine Regel fügt `thunderbolt1` nachträglich zur Bridge `vmbr-tb` hinzu, falls systemd das Interface verpasst.
 
 ## Storage
 - **Local ZFS:** Schneller Speicher für OS und Caches auf jedem Node.
@@ -85,14 +70,4 @@ journalctl -u networking.service | grep -i thunder
 - **PBS:** Proxmox Backup Server (vm-id 99999) auf pve02 für inkrementelle Backups.
 
 ## Management
-Die Web-UI ist unter `https://<node-ip>:8006` erreichbar.
-
-### SSH Zugriff
-```bash
-ssh root@10.0.2.40
-ssh root@10.0.2.41
-ssh root@10.0.2.42
-```
-
----
-*Letztes Update: 12.01.2026*
+Die Web-UI ist unter `https://<node-ip>:8006` erreichbar. SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
