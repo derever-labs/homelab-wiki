@@ -25,7 +25,7 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 
 Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutzen wir Litestream für eine Echtzeit-Replikation.
 
-## Architektur
+### Architektur
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -47,7 +47,7 @@ Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutze
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Komponenten
+### Komponenten
 
 | Komponente | Endpoint | Zweck |
 |------------|----------|-------|
@@ -55,7 +55,7 @@ Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutze
 | Node-05 MinIO | http://10.99.1.105:9100 | Peer-Replica via Thunderbolt |
 | Node-06 MinIO | http://10.99.1.106:9100 | Peer-Replica via Thunderbolt |
 
-## Services mit Litestream
+### Services mit Litestream
 
 | Service | DB-Pfad | Job-Datei |
 |---------|---------|-----------|
@@ -70,14 +70,14 @@ Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutze
 **Hinweis:** Alle Jobs können auf `vm-nomad-client-05` oder `vm-nomad-client-06` laufen.
 Bei Job-Start wird automatisch von der Peer-Replica (schnell) oder NAS (Fallback) restored.
 
-## Credentials
+### Credentials
 
 Alle Credentials sind in Vault gespeichert:
 - `kv/minio-nas`
 - `kv/litestream-s3`
 - `kv/minio-peer`
 
-## Performance
+### Performance
 
 | Metrik | Wert |
 |--------|------|
