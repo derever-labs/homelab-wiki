@@ -50,7 +50,7 @@ Die `intern-chain` erlaubt folgende IP-Bereiche:
 
 ### Zentraler oauth2-proxy
 
-Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gruppenprüfung per `allowed_groups` Query-Parameter macht:
+Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gruppenpruefung per `allowed_groups` Query-Parameter macht:
 
 ```
 User → Traefik → oauth2-errors → require-{group} → Backend
@@ -70,59 +70,15 @@ User → Traefik → oauth2-errors → require-{group} → Backend
 
 ### Error Handling (oauth2-errors)
 
-Die `oauth2-errors` Middleware faengt 401-Antworten von den `require-*` Middlewares ab und leitet den User zur Keycloak-Login-Seite weiter:
-
-```yaml
-oauth2-errors:
-  errors:
-    status:
-      - '401'
-    service: oauth2-backend
-    query: /oauth2/sign_in?rd={url}
-    statusRewrites:
-      '401': 302
-```
-
-**Wichtig:** Die `statusRewrites` Konfiguration ist noetig (Traefik >= 3.4), weil die `errors` Middleware standardmaessig den Original-Statuscode (401) beibehält. Browser folgen einem `Location`-Header nur bei 3xx-Statuscodes. Ohne `statusRewrites` wuerde der Browser "Found." als Text anzeigen statt automatisch weiterzuleiten.
+Die `oauth2-errors` Middleware faengt 401-Antworten von den `require-*` Middlewares ab und leitet den User zur Keycloak-Login-Seite weiter. Die `statusRewrites` Konfiguration (Traefik >= 3.4) schreibt den 401 auf 302 um, damit der Browser dem `Location`-Header folgt. Ohne `statusRewrites` wuerde der Browser "Found." als Text anzeigen statt automatisch weiterzuleiten.
 
 **Reihenfolge:** `oauth2-errors` muss in der Chain **vor** `require-*` stehen, da die `errors` Middleware nur Antworten von Middlewares abfaengt, die **nach** ihr in der Chain kommen.
 
 ## Konfiguration neuer Services
 
-### Interner Service (Standard)
+Fuer jeden Service mit OAuth2-Middleware muss die entsprechende Chain als Traefik Middleware im Nomad Job aktiviert werden (z.B. `public-admin-chain-v2@file`). Zusaetzlich muss eine OAuth2 Callback-Route in der Traefik Dynamic Config existieren.
 
-```hcl
-tags = [
-  "traefik.http.routers.my-service.middlewares=intern-chain@file"
-]
-```
-
-### Interner Service mit Admin-Auth
-
-```hcl
-tags = [
-  "traefik.http.routers.my-service.middlewares=intern-admin-chain-v2@file"
-]
-```
-
-### Oeffentlicher Service mit Family-Auth
-
-```hcl
-tags = [
-  "traefik.http.routers.my-service.middlewares=public-family-chain-v2@file"
-]
-```
-
-## OAuth2 Callback Routes
-
-Fuer jeden Service mit OAuth2-Middleware muss eine Callback-Route in der Traefik-Konfiguration existieren:
-
-```yaml
-oauth2-my-service:
-  rule: "Host(`my-service.ackermannprivat.ch`) && PathPrefix(`/oauth2/`)"
-  service: oauth2-backend
-  priority: 1000
-```
+Beispiele fuer die Verwendung der Chains stehen in der [Security-Dokumentation](security.md).
 
 ## Konfigurationsdateien
 

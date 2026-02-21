@@ -78,7 +78,7 @@ Docker Container (je Node) → Grafana Alloy (System-Job) → Loki → Grafana
 - **Storage:** Linstor CSI Volume `loki-data` (20 GiB, repliziert)
 - **Port:** 3100 (statisch)
 - **Retention:** 30 Tage (720h)
-- **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-admin-chain@file`)
+- **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-admin-chain-v2@file`)
 
 ### Grafana Alloy (Log-Collector)
 - **Nomad Job:** `system/alloy.nomad` (System-Job, laeuft auf jedem Client-Node)
