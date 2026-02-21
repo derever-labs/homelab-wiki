@@ -31,10 +31,7 @@ Die folgenden Pfade werden als NFS-Shares bereitgestellt und im Cluster gemounte
 ## Einbindung
 Die Clients (Nomad Nodes, VMs) mounten die Shares meist via `/etc/fstab` oder direkt über den Docker-Volume-Driver.
 
-### Beispiel fstab
-```bash
-10.0.0.200:/volume1/docker /nfs/docker nfs defaults 0 0
-```
+Die Mount-Punkte sind in `/etc/fstab` der jeweiligen VMs konfiguriert (verwaltet durch Ansible).
 
 ## Maintenance
 Das NAS verwaltet seine eigene RAID-Konsistenz (meist SHR oder RAID5/6).

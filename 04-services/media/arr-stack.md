@@ -32,9 +32,3 @@ Die SQLite-Datenbanken werden alle 5 Sekunden auf einen Peer-Node und alle 60 Se
 ## Wartung
 ### Job Updates
 Updates erfolgen durch Anpassung der Image-Version im jeweiligen Nomad-Job unter `infra/nomad-jobs/media/`.
-```bash
-nomad job run infra/nomad-jobs/media/<service>.nomad
-```
-
----
-*Letztes Update: 26.12.2025*

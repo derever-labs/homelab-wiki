@@ -37,22 +37,7 @@ CheckMK ist die zentrale Enterprise-Monitoring-Lösung für das Homelab. Sie üb
 - **Storage:** Läuft auf lokalem ZFS der Proxmox Node.
 - **Netzwerk:** Benötigt Zugriff auf TCP 6556 (Agent) auf allen Hosts.
 
-## Maintenance & Runbook
-### Update
-Das Update erfolgt über das OMD-Paketmanagement innerhalb der VM:
-```bash
-ssh sam@10.0.2.150
-sudo omd update mon
-```
+## Wartung
 
-### Backup
-Die gesamte VM wird täglich vom Proxmox Backup Server (PBS) gesichert.
-
-### Häufige Befehle
-```bash
-omd status    # Status der Site prüfen
-omd restart   # Gesamtes Monitoring neu starten
-```
-
----
-*Dokumentation migriert und aktualisiert am: 26.12.2025*
+- **Update:** Erfolgt über das OMD-Paketmanagement (`omd update`) innerhalb der VM.
+- **Backup:** Die gesamte VM wird täglich vom Proxmox Backup Server (PBS) gesichert.

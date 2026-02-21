@@ -40,12 +40,4 @@ tags:
 Regelmässiges Backup des `~/docker` Verzeichnisses auf der VM (enthält alle Configs und die Zigbee-Datenbank).
 
 ### Troubleshooting
-Falls der Stick nicht erkannt wird:
-```bash
-lsusb
-ls -la /dev/ttyUSB*
-```
-Berechtigungen prüfen (User muss in `dialout` Gruppe sein).
-
----
-*Letztes Update: 26.12.2025*
+Falls der USB-Stick nicht erkannt wird: Prüfen ob das Device unter `/dev/ttyUSB*` erscheint und ob der User in der `dialout`-Gruppe ist.

@@ -36,17 +36,6 @@ Traefik nutzt verschiedene Sicherheitsstufen für Services:
 - **Statische Config (VM):** `/nfs/docker/traefik/traefik.yml`
 - **Dynamische Config (VM):** `/nfs/docker/traefik/configurations/config.yml` (Middlewares, Routen)
 
-Änderungen werden per Ansible verteilt:
-```bash
-ansible-playbook standalone-stacks/traefik-proxy/deploy.yml --tags sync-only
-```
+Änderungen werden per Ansible Role `traefik-proxy` verteilt.
 
 **Hinweis:** Die dynamische Konfiguration (Middlewares, OAuth2-Callbacks) wird direkt auf der VM bearbeitet und ist nicht im Git versioniert.
-
-### Logs prüfen
-```bash
-ssh sam@10.0.2.1 "docker logs -f traefik"
-```
-
----
-*Letztes Update: 26.12.2025*

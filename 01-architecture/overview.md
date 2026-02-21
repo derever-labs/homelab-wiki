@@ -122,57 +122,8 @@ title: Infrastruktur-Übersicht
 | /nfs/cert/ | Zertifikate (read-only) |
 | /local-docker/ | Lokaler Docker Storage (Litestream) |
 
-## SSH Zugang
+## Zugang
 
-```bash
-# Proxmox Nodes
-ssh root@10.0.2.40  # pve00
-ssh root@10.0.2.41  # pve01
-ssh root@10.0.2.42  # pve02
-
-# Infrastructure VMs
-ssh sam@10.0.2.1    # vm-proxy-dns-01
-ssh sam@10.0.2.2    # vm-vpn-dns-01
-
-# Nomad Server
-ssh sam@10.0.2.104  # vm-nomad-server-04
-ssh sam@10.0.2.105  # vm-nomad-server-05
-ssh sam@10.0.2.106  # vm-nomad-server-06
-
-# Nomad Clients
-ssh sam@10.0.2.124  # vm-nomad-client-04
-ssh sam@10.0.2.125  # vm-nomad-client-05
-ssh sam@10.0.2.126  # vm-nomad-client-06
-
-# IoT
-ssh sam@10.0.0.110         # zigbee-node
-ssh root@10.0.0.100 -p 2222  # homeassistant
-```
-
-## Vault
-
-```bash
-export VAULT_ADDR=http://10.0.2.104:8200
-export VAULT_TOKEN=$(cat ~/.vault-token)
-vault kv list kv/
-vault kv get kv/<service>
-```
-
-## Wichtige Befehle
-
-```bash
-# Cluster Status
-consul members
-nomad server members
-nomad node status
-
-# Job Management
-nomad job run <job>.nomad
-nomad job status <job>
-nomad job stop <job>
-
-# Logs
-nomad alloc logs -job <job>
-journalctl -u consul -f
-journalctl -u nomad -f
-```
+- **SSH:** User `sam` für VMs, `root` für Proxmox-Nodes (IPs siehe Tabellen oben)
+- **Vault:** `http://10.0.2.104:8200` — Details siehe [HashiCorp Stack](../03-platforms/hashicorp-stack.md)
+- **Nomad/Consul:** Details siehe [HashiCorp Stack](../03-platforms/hashicorp-stack.md)

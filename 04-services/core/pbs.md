@@ -32,11 +32,8 @@ Der Proxmox Backup Server ist die zentrale Instanz für alle VM- und Container-B
 Das Web-Interface ist unter `https://10.0.2.50:8007` erreichbar.
 Login erfolgt meist über `root` oder integrierte Proxmox-User (sofern konfiguriert).
 
-## Maintenance
-Updates erfolgen über den integrierten Update-Manager oder via CLI:
-```bash
-apt update && apt dist-upgrade
-```
+## Wartung
+Updates erfolgen über den integrierten Update-Manager im Web-Interface.
 
 ## Monitoring
 PBS sendet Heartbeats an Uptime Kuma nach erfolgreichen Backup-Operationen.
