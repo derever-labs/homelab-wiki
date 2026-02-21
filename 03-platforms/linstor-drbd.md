@@ -1004,6 +1004,19 @@ linstor storage-pool list
 linstor resource list -p
 ```
 
+## LINBIT GUI (Web-Oberfläche)
+
+Die LINBIT Linstor GUI ist intern erreichbar unter [linstor-gui.ackermannprivat.ch](https://linstor-gui.ackermannprivat.ch).
+
+| Eigenschaft | Wert |
+|---|---|
+| URL | `https://linstor-gui.ackermannprivat.ch` |
+| Auth | OAuth Admin via Keycloak (`intern-admin-chain`) |
+| Backend | `linstor-controller.service.consul:3370` (Consul DNS) |
+| Zugang | Nur internes Netzwerk (IP-Whitelist) |
+
+Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul DNS — bei einem Controller-Failover bleibt die GUI funktional.
+
 ## Referenzen
 
 - [LINBIT Linstor User Guide](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/)
