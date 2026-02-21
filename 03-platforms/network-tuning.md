@@ -1,15 +1,15 @@
 ---
 title: 10GbE Netzwerk Optimierung
-description: Performance-Tuning für VirtIO und Thunderbolt
+description: Performance-Tuning fuer VirtIO und Thunderbolt
 tags:
-  - infrastructure
+  - platform
   - networking
   - performance
 ---
 
 # 10GbE Network Optimization
 
-Analyse und durchgeführte Optimierungen für die 10Gbps Netzwerkverbindungen.
+Analyse und durchgefuehrte Optimierungen fuer die 10Gbps Netzwerkverbindungen.
 
 ## Konfiguration
 
@@ -17,7 +17,7 @@ Analyse und durchgeführte Optimierungen für die 10Gbps Netzwerkverbindungen.
 
 | Host | Interface | Link Speed | Status |
 |------|-----------|------------|--------|
-| pve00 | enp5s0 | 1 Gbps | Nur 1Gbps verfügbar |
+| pve00 | enp5s0 | 1 Gbps | Nur 1Gbps verfuegbar |
 | pve01 | enp2s0 | 10 Gbps | Aktiv |
 | pve02 | enp2s0 | 10 Gbps | Aktiv |
 
@@ -28,23 +28,23 @@ Analyse und durchgeführte Optimierungen für die 10Gbps Netzwerkverbindungen.
 | pve02 -> pve01 (Host-to-Host) | ~9.4 Gbps | ~1,500 | Optimal |
 | client-06 -> client-05 (VM-to-VM) | ~9.2 Gbps | ~15,000 | Akzeptabel |
 
-## Durchgeführte Optimierungen
+## Durchgefuehrte Optimierungen
 
-### 1. Multiqueue für net0 (Proxmox)
+### 1. Multiqueue fuer net0 (Proxmox)
 VirtIO Multiqueue wurde auf beiden VMs aktiviert (queues=8).
 
 ### 2. TCP Buffer Tuning (VMs)
-Konfiguration in `/etc/sysctl.d/99-network-tuning.conf` erhöht die TCP Window Sizes und aktiviert BBR Congestion Control.
+Konfiguration in `/etc/sysctl.d/99-network-tuning.conf` erhoeht die TCP Window Sizes und aktiviert BBR Congestion Control.
 
 ### 3. Offloading-Einstellungen (VMs)
-TSO/GSO deaktiviert, GRO aktiviert für bessere Retransmit-Werte.
+TSO/GSO deaktiviert, GRO aktiviert fuer bessere Retransmit-Werte.
 
 ### 4. MTU-Fix auf pve02
-Die Bridge `vmbr-tb` (Thunderbolt) nutzt MTU 9000 für Jumbo Frames.
+Die Bridge `vmbr-tb` (Thunderbolt) nutzt MTU 9000 fuer Jumbo Frames.
 
 ## Hinweise
 - Host-to-Host Performance ist besser als VM-to-VM, was bei VirtIO normal ist.
-- Für kritische Anwendungen (z.B. Replikation) wird der Thunderbolt-Pfad (10.99.1.x) bevorzugt.
+- Fuer kritische Anwendungen (z.B. Replikation) wird der Thunderbolt-Pfad (10.99.1.x) bevorzugt.
 
 ---
 *Letztes Update: 26.12.2025*

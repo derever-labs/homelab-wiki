@@ -13,7 +13,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 ## Schnelleinstieg
 
 ### [Infrastruktur](./02-infrastructure/proxmox-cluster.md)
-Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas.md), [Netzwerk Optimierung](./02-infrastructure/network-optimization.md) und [Backup (PBS)](./04-services/core/pbs.md).
+Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./02-infrastructure/storage-nas.md), [Netzwerk-Tuning](./03-platforms/network-tuning.md) und [Backup (PBS)](./04-services/core/pbs.md).
 
 ### [Architektur](./01-architecture/overview.md)
 Gesamtübersicht des Netzwerks, [Sicherheit](./03-platforms/security.md) und [Datenstrategie](./01-architecture/data-strategy.md).
@@ -31,8 +31,9 @@ Regeln für Inhalt, Struktur und Pflege dieser Dokumentation.
 - **Virtualisierung:** Proxmox VE
 - **Orchestrierung:** HashiCorp Nomad & Consul
 - **Secrets:** HashiCorp Vault
-- **Netzwerk:** OPNsense, Traefik, Cloudflare
+- **Netzwerk:** dnsmasq, Pi-hole, Traefik, Cloudflare
+- **Security:** CrowdSec, Keycloak, OAuth2-Proxy
 - **Storage:** Synology NFS & Local SSD
 
 ---
-*Letztes Update: 26.12.2025*
+*Letztes Update: 21.02.2026*
