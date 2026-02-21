@@ -1,4 +1,13 @@
-# Runbook: Smart Shutdown (Nomad & Linstor)
+---
+title: Kontrolliertes Herunterfahren
+description: Smart Shutdown fuer Nomad-Clients mit Linstor/DRBD Storage
+published: true
+date: 2026-02-21T00:00:00+00:00
+tags: runbook, nomad, linstor, shutdown
+editor: markdown
+---
+
+# Kontrolliertes Herunterfahren (Nomad & Linstor)
 
 Dieses Runbook beschreibt die Implementierung des unterbrechungsfreien Shutdown-Prozesses für Nomad-Clients mit Linstor/DRBD Storage.
 

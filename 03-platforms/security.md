@@ -1,5 +1,5 @@
 ---
-title: Security & Authentication
+title: Sicherheit & Authentifizierung
 description: Keycloak, OAuth2-Proxy und Zugriffskontrolle
 published: true
 date: 2026-02-21T00:00:00+00:00

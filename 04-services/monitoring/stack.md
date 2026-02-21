@@ -1,5 +1,5 @@
 ---
-title: Monitoring Stack
+title: Monitoring-Übersicht
 description: Übersicht der Überwachungswerkzeuge (Grafana, Uptime Kuma)
 published: true
 date: 2025-12-26T19:25:00+00:00

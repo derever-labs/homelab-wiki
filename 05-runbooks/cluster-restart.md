@@ -1,5 +1,5 @@
 ---
-title: Cluster Restart Runbook
+title: Cluster-Neustart
 description: Anleitung zum sicheren Neustart des gesamten HashiCorp Stacks
 published: true
 date: 2025-12-26T18:30:00+00:00
