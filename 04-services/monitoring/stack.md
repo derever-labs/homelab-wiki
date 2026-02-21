@@ -16,13 +16,13 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 | :--- | :--- | :--- |
 | **Grafana** | Dashboards & Metriken | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
 | **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
-| **Grafana Alloy** | Log-Collector (System-Job) | — (laeuft auf jedem Client-Node) |
+| **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (laeuft auf 15 Nodes) |
 | **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 
 ## Grafana
 ### Datenquellen
 - **InfluxDB:** Speichert Metriken von Nomad, Consul und Proxmox.
-- **Loki:** Container-Logs (via Grafana Alloy gesammelt).
+- **Loki:** Zentrales Log-Storage fuer alle Infrastruktur-Logs (via Grafana Alloy gesammelt).
 - **CheckMK:** Integriert über das CheckMK-Plugin für Infrastruktur-Status.
 
 ### Authentifizierung
@@ -70,7 +70,13 @@ Der Nomad Batch-Job `postgres-backup` fuehrt taeglich ein `pg_dumpall` durch und
 
 ### Architektur
 ```
-Docker Container (je Node) → Grafana Alloy (System-Job) → Loki → Grafana
+Nomad Container (3 Nodes)   → Alloy System-Job (Nomad)  ──┐
+HashiCorp Server VMs (3x)   → Alloy systemd-Service     ──┤
+HashiCorp Client VMs (3x)   → Alloy systemd-Service     ──┤
+vm-proxy-dns-01              → Alloy Docker-Container    ──┼──→ Loki → Grafana
+Proxmox Hosts (3x)           → Alloy systemd-Service     ──┤
+Infra VMs (CheckMK, etc.)   → Alloy systemd-Service     ──┤
+NAS / Router                 → Syslog → Alloy Receiver   ──┘
 ```
 
 ### Loki (Log-Storage)
@@ -79,12 +85,54 @@ Docker Container (je Node) → Grafana Alloy (System-Job) → Loki → Grafana
 - **Port:** 3100 (statisch)
 - **Retention:** 30 Tage (720h)
 - **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-admin-chain-v2@file`)
+- **Consul DNS:** `loki.service.consul`
 
 ### Grafana Alloy (Log-Collector)
+
+Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki weiter. Je nach Deployment-Art gibt es drei Varianten:
+
+#### Variante 1: Nomad System-Job (Container-Logs)
 - **Nomad Job:** `system/alloy.nomad` (System-Job, laeuft auf jedem Client-Node)
 - **Docker-Socket:** `/var/run/docker.sock` (read-only) fuer Container-Discovery
 - **Labels:** Extrahiert `nomad_task` aus Container-Name, `nomad_alloc_id` aus Docker-Labels
 - **External Label:** `node` (Hostname des Client-Nodes)
+- **Syslog-Receiver:** Port 1514 (TCP+UDP, statisch) fuer externe Quellen (NAS, Router)
+
+#### Variante 2: Ansible-Rolle `alloy` (systemd-Service)
+- **Rolle:** `ansible/roles/alloy/`
+- **Config-Template:** `config.alloy.j2` (River-Syntax)
+- **Quellen:** systemd-Journal + optionale Datei-Targets
+- **Loki-Endpoint:** `loki.service.consul:3100` (via Consul DNS)
+
+| Playbook | Hosts | Source-Label | Besonderheiten |
+| :--- | :--- | :--- | :--- |
+| `deploy-alloy.yml` | Server- & Client-Nodes | `journal` / `nomad-client` | Client-Nodes: Linstor-Logs als File-Target |
+| `deploy-alloy-proxmox.yml` | pve00, pve01, pve02 | `proxmox` | `www-data`-Gruppe fuer pveproxy-Logs |
+| `deploy-alloy-infra.yml` | CheckMK, PBS, PDM, VPN-DNS, Zigbee | je nach Host | CheckMK: Core/Web/Notify-Logs |
+
+#### Variante 3: Docker-Container (vm-proxy-dns-01)
+- **Config:** `standalone-stacks/traefik-proxy/templates/alloy-config.alloy.j2`
+- **Quelle:** Docker-Socket Discovery (Traefik, Keycloak, etc.)
+- **DNS:** Container nutzt `10.0.2.1` / `10.0.2.2` fuer Consul-Aufloesung
+
+### Uebersicht aller Log-Quellen
+
+| Host / Gruppe | Methode | Source-Label |
+| :--- | :--- | :--- |
+| vm-nomad-client-04/05/06 | Nomad System-Job | `docker` |
+| vm-nomad-server-04/05/06 | Ansible (systemd) | `journal` |
+| vm-nomad-client-04/05/06 | Ansible (systemd) | `nomad-client` |
+| vm-proxy-dns-01 | Docker-Container | `docker-compose` |
+| pve00, pve01, pve02 | Ansible (systemd) | `proxmox` |
+| CheckMK (10.0.2.150) | Ansible (systemd) | `checkmk` |
+| PBS (10.0.2.50) | Ansible (systemd) | `pbs` |
+| Datacenter Manager (10.0.2.60) | Ansible (systemd) | `datacenter-manager` |
+| vm-vpn-dns-01 (10.0.2.2) | Ansible (systemd) | `vpn-dns` |
+| Zigbee-Node (10.0.0.110) | Ansible (systemd) | `iot` |
+| Synology NAS | Syslog → Alloy Receiver | `syslog` |
+| UniFi | Syslog → Alloy Receiver | `syslog` |
+
+**Hinweis:** Synology und UniFi Syslog-Integration sind noch in Arbeit (siehe GitHub Issues #5 und #6).
 
 ### Log-Abfrage in Grafana
 - Datasource: **Loki** (uid: `loki-logs`)
@@ -92,6 +140,10 @@ Docker Container (je Node) → Grafana Alloy (System-Job) → Loki → Grafana
   - `{nomad_task="grafana"}` — Alle Grafana-Logs
   - `{node="vm-nomad-client-05"}` — Alle Logs von client-05
   - `{nomad_task="prowlarr"} |= "error"` — Prowlarr-Fehler
+  - `{source="proxmox"}` — Alle Proxmox-Host-Logs
+  - `{source="checkmk"}` — CheckMK-Logs
+  - `{source="syslog"}` — Syslog-Quellen (NAS, Router)
+  - `{job="journal"} |= "error"` — Journal-Fehler aller Infra-VMs
 
 ## Wartung
 ### Grafana Dashboards
