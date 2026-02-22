@@ -20,41 +20,81 @@ tags:
 
 ## DNS-Kette
 
+### Primaer (10.0.2.1) — Pi-hole direkt
+
+```
+Client (Port 53)
+      |
+  Pi-hole v6 ---+--- *.consul ----------> Consul Server (8600)
+  (FTL/dnsmasq  +--- *.local -----------> Router (10.0.0.1)
+   2.92)        +--- *.ackermannprivat.ch -> 10.0.2.1 (lokal)
+                +--- *.ackermann.systems --> 10.0.2.1 (lokal)
+                +--- nana/autodiscover ---> 1.1.1.1 (oeffentlich)
+                +--- andere ------------> Unbound (2253) -> Root DNS
+```
+
+### Sekundaer (10.0.2.2) — Legacy-Stack
+
 ```
 Client (Port 53)
       |
   dnsmasq ---+--- *.consul ----------> Consul Server (8600)
              +--- *.local -----------> Router (10.0.0.1)
-             +--- *.ackermannprivat.ch -> Traefik (10.0.2.1)
+             +--- *.ackermannprivat.ch -> Traefik (10.0.2.2)
              +--- andere ------------> Pi-hole (1153) ---> Unbound (2253)
 ```
 
+!!! info "Migration 22.02.2026"
+    Der primaere DNS (10.0.2.1) wurde am 22.02.2026 von einem separaten dnsmasq + Pi-hole Stack auf **Pi-hole v6 direkt auf Port 53** migriert. Pi-hole v6 (FTL v6.5) enthaelt ein eingebettetes dnsmasq 2.92, das alle bisherigen dnsmasq-Regeln (Conditional Forwarding, lokale Records, Wildcards) uebernimmt. Der sekundaere DNS (10.0.2.2) laeuft noch auf dem alten Stack.
+
 ## Komponenten
 
-### dnsmasq
+### Pi-hole v6 (Primaer)
 
-Eingangs-Router fuer alle DNS-Anfragen auf Port 53. Leitet Anfragen je nach Domain an den passenden Upstream weiter:
-
-| Domain-Muster | Upstream | Port |
-|---------------|----------|------|
-| `*.consul` | Consul Server | 8600 |
-| `*.local` | Router | 53 |
-| `*.ackermannprivat.ch` | Traefik | - |
-| Alles andere | Pi-hole | 1153 |
-
-Web-UI auf Port 5380.
-
-### Pi-hole
-
-Ad-Blocking-DNS mit Web-UI.
+Pi-hole v6 mit eingebettetem dnsmasq 2.92 (FTL v6.5) uebernimmt auf 10.0.2.1 die Rolle des DNS-Eingangs-Routers **und** des Ad-Blockers in einem.
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Port | 1153 |
+| Port | **53** (direkt, kein vorgelagerter dnsmasq) |
 | Web-UI | Port 5480 (`/admin`) |
 | Upstream | Unbound (Port 2253) |
 | Blocklists | 29 Listen, ~709K unique Domains |
 | Groesste Liste | OISD Big |
+| dnsmasq-Version | 2.92 (eingebettet in FTL v6.5) |
+| Custom Config | `/etc/dnsmasq.d/05-custom.conf` (via Volume) |
+
+**Lokale DNS-Records** (in `05-custom.conf`):
+
+| Record | Ziel-IP |
+|--------|---------|
+| `*.ackermannprivat.ch` (Wildcard) | 10.0.2.1 |
+| `*.ackermann.systems` (Wildcard) | 10.0.2.1 |
+| `vpn.ackermannprivat.ch` | 10.0.2.2 |
+| `pve00/01/02.ackermannprivat.ch` | 10.0.2.40/41/42 |
+| `pbs.ackermannprivat.ch` | 10.0.2.50 |
+| `coturn.ackermannprivat.ch` | 10.0.2.80 |
+| `meeting.ackermannprivat.ch` | 10.0.2.81 |
+| `login.ackermannprivat.ch` | 10.0.0.200 |
+| `HomeServer` / `homeserver.local` | 10.0.0.200 |
+
+**Conditional Forwarding:**
+
+| Domain-Muster | Upstream | Port |
+|---------------|----------|------|
+| `*.consul` | Consul Server (104/105/106) | 8600 |
+| `*.local` | Router (10.0.0.1) | 53 |
+| `nana.ackermannprivat.ch` | 1.1.1.1 | 53 |
+| `autodiscover.ackermannprivat.ch` | 1.1.1.1 | 53 |
+| `autodiscovery.ackermannprivat.ch` | 1.1.1.1 | 53 |
+
+**Konfiguration:** Die Pi-hole TOML-Config (`/etc/pihole/pihole.toml`) muss `etc_dnsmasq_d = true` enthalten, damit die Custom-Config in `/etc/dnsmasq.d/` geladen wird.
+
+### dnsmasq (nur noch Sekundaer)
+
+Auf 10.0.2.2 laeuft noch der alte dnsmasq (jpillora/dnsmasq mit webproc UI) als Eingangs-Router auf Port 53.
+
+!!! warning "Veraltete Software"
+    jpillora/dnsmasq ist seit 2018 nicht mehr gepflegt und liefert dnsmasq v2.80. Dieses Setup soll mittelfristig ebenfalls auf Pi-hole direkt migriert werden.
 
 ### Unbound
 
@@ -80,7 +120,7 @@ SRV-Records liefern neben der IP auch den dynamischen Port des Services, was fue
 
 ## Consul-Forwarding
 
-dnsmasq leitet alle `.consul`-Anfragen an alle drei Consul Server weiter. Die Konfiguration liegt unter `/etc/dnsmasq.d/02-consul.conf` und enthaelt alle Server als Upstream fuer Redundanz:
+Pi-hole (10.0.2.1) bzw. dnsmasq (10.0.2.2) leiten alle `.consul`-Anfragen an alle drei Consul Server weiter. Die Konfiguration liegt in `/etc/dnsmasq.d/05-custom.conf` (Pi-hole) bzw. `/opt/dnsmasq.conf` (dnsmasq):
 
 | Consul Server | IP | Port |
 |---------------|-----|------|
@@ -92,14 +132,21 @@ DNSSEC ist fuer die `.consul`-Zone deaktiviert, da Consul dies nicht unterstuetz
 
 ## Standorte und Failover
 
-Die DNS-Infrastruktur laeuft identisch auf zwei VMs:
+Die DNS-Infrastruktur laeuft auf zwei VMs:
 
-| Standort | VM | IP | Rolle |
-|----------|-----|-----|-------|
-| Primaer | vm-proxy-dns-01 | 10.0.2.1 | Hauptstandort (mit Traefik, CrowdSec) |
-| Sekundaer | vm-vpn-dns-01 | 10.0.2.2 | Failover (mit ZeroTier VPN) |
+| Standort | VM | IP | Stack | Rolle |
+|----------|-----|-----|-------|-------|
+| Primaer | vm-proxy-dns-01 | 10.0.2.1 | Pi-hole v6 direkt (:53) + Unbound | Hauptstandort (mit Traefik, CrowdSec) |
+| Sekundaer | vm-vpn-dns-01 | 10.0.2.2 | dnsmasq + Pi-hole + Unbound | Failover (mit ZeroTier VPN) |
 
-Beide VMs betreiben den gleichen DNS-Stack (dnsmasq, Pi-hole, Unbound) mit identischer Konfiguration. Alle Netzwerk-Clients haben beide IPs als DNS-Server konfiguriert.
+Alle Netzwerk-Clients haben beide IPs als DNS-Server konfiguriert.
+
+## Historie
+
+| Datum | Aenderung |
+|-------|-----------|
+| ~2025 | Initialer Stack: dnsmasq → Pi-hole → Unbound auf beiden VMs |
+| 22.02.2026 | 10.0.2.1: dnsmasq (jpillora, v2.80) entfernt — deadlocked regelmaessig. Pi-hole v6 direkt auf Port 53 mit Custom dnsmasq.d Config |
 
 ## Verwandte Seiten
 
@@ -108,4 +155,4 @@ Beide VMs betreiben den gleichen DNS-Stack (dnsmasq, Pi-hole, Unbound) mit ident
 - [Netzwerk-Tuning](network-tuning.md) — TCP/IP-Optimierungen
 
 ---
-*Letztes Update: 21.02.2026*
+*Letztes Update: 22.02.2026*
