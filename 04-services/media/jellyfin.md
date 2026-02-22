@@ -28,7 +28,7 @@ Volumes, Traefik-Tags und weitere Konfiguration sind im Nomad Job (`media/jellyf
 ## Abhaengigkeiten
 
 - **Storage:** NFS Share fuer Medien (Synology)
-- **Identity:** Lokale Userverwaltung (aktuell kein LDAP/SSO aktiv)
+- **Identity:** [OpenLDAP](../core/ldap.md) (LDAP Bind Authentifizierung)
 
 ## Backup
 
@@ -36,4 +36,4 @@ Volumes, Traefik-Tags und weitere Konfiguration sind im Nomad Job (`media/jellyf
 - Die Mediendaten auf dem NFS unterliegen der Backup-Strategie des NAS.
 
 ---
-*Dokumentation erstellt am: 26.12.2025*
+*Letztes Update: 22.02.2026*
