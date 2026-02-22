@@ -24,7 +24,7 @@ Alle VMs und IPs: [Proxmox Cluster](../02-infrastructure/proxmox-cluster.md)
 
 ## DNS
 
-Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige Dokumentation der DNS-Kette (dnsmasq, Pi-hole, Unbound, Consul DNS).
+Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige Dokumentation der DNS-Kette (Pi-hole v6, Unbound, Consul DNS).
 
 ## Litestream SQLite Replikation
 
