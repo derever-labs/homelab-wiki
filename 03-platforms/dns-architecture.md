@@ -22,26 +22,28 @@ tags:
 
 ### Primaer (10.0.2.1) — Pi-hole direkt
 
-```
-Client (Port 53)
-      |
-  Pi-hole v6 ---+--- *.consul ----------> Consul Server (8600)
-  (FTL/dnsmasq  +--- *.local -----------> Router (10.0.0.1)
-   2.92)        +--- *.ackermannprivat.ch -> 10.0.2.1 (lokal)
-                +--- *.ackermann.systems --> 10.0.2.1 (lokal)
-                +--- nana/autodiscover ---> 1.1.1.1 (oeffentlich)
-                +--- andere ------------> Unbound (2253) -> Root DNS
+```mermaid
+flowchart TD
+    Client["Client (Port 53)"] --> PiHole["Pi-hole v6<br/>(FTL/dnsmasq 2.92)"]
+    PiHole -->|"*.consul"| Consul["Consul Server (8600)"]
+    PiHole -->|"*.local"| Router["Router (10.0.0.1)"]
+    PiHole -->|"*.ackermannprivat.ch"| Lokal1["10.0.2.1 (lokal)"]
+    PiHole -->|"*.ackermann.systems"| Lokal2["10.0.2.1 (lokal)"]
+    PiHole -->|"nana/autodiscover"| Public["1.1.1.1 (oeffentlich)"]
+    PiHole -->|"andere"| Unbound["Unbound (2253)"]
+    Unbound --> Root["Root DNS"]
 ```
 
 ### Sekundaer (10.0.2.2) — Legacy-Stack
 
-```
-Client (Port 53)
-      |
-  dnsmasq ---+--- *.consul ----------> Consul Server (8600)
-             +--- *.local -----------> Router (10.0.0.1)
-             +--- *.ackermannprivat.ch -> Traefik (10.0.2.2)
-             +--- andere ------------> Pi-hole (1153) ---> Unbound (2253)
+```mermaid
+flowchart TD
+    Client2["Client (Port 53)"] --> dnsmasq
+    dnsmasq -->|"*.consul"| Consul2["Consul Server (8600)"]
+    dnsmasq -->|"*.local"| Router2["Router (10.0.0.1)"]
+    dnsmasq -->|"*.ackermannprivat.ch"| Traefik2["Traefik (10.0.2.2)"]
+    dnsmasq -->|"andere"| PiHole2["Pi-hole (1153)"]
+    PiHole2 --> Unbound2["Unbound (2253)"]
 ```
 
 !!! info "Migration 22.02.2026"

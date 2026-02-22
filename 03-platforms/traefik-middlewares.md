@@ -62,12 +62,14 @@ Die `intern-chain` erlaubt folgende IP-Bereiche:
 
 Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gruppenpruefung per `allowed_groups` Query-Parameter macht:
 
-```
-User → Traefik → oauth2-errors → require-{group} → Backend
-                       ↓                ↓
-                  oauth2-backend    ForwardAuth an
-                  (Redirect zu      /oauth2/auth?allowed_groups=X
-                   Keycloak Login)
+```mermaid
+flowchart LR
+    User --> Traefik
+    Traefik --> errors["oauth2-errors"]
+    errors --> require["require-{group}"]
+    require --> Backend
+    errors -.-> backend2["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
+    require -.-> fwd["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
 ```
 
 ### ForwardAuth Middlewares (require-*)

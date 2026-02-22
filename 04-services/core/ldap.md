@@ -26,13 +26,12 @@ tags:
 
 OpenLDAP ist das zentrale Benutzerverzeichnis. Alle User-Accounts (Name, E-Mail, Gruppenzugehoerigkeit) werden hier verwaltet. Keycloak importiert diese Daten und nutzt LDAP als Identity Store.
 
-```
-User-Verwaltung (phpldapadmin)
-        ↓
-    OpenLDAP  ←──── Keycloak LDAP Federation (WRITABLE)
-        ↑                    ↓
-   Direkter Bind        OAuth2/OIDC
-   (Jellyfin, etc.)     (Traefik Services)
+```mermaid
+flowchart TD
+    PLA["User-Verwaltung<br/>(phpldapadmin)"] --> LDAP["OpenLDAP"]
+    KC["Keycloak LDAP Federation<br/>(WRITABLE)"] --> LDAP
+    LDAP --> Bind["Direkter Bind<br/>(Jellyfin, etc.)"]
+    KC --> OAuth["OAuth2/OIDC<br/>(Traefik Services)"]
 ```
 
 ## Keycloak LDAP Federation

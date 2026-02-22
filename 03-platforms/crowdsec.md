@@ -20,14 +20,13 @@ tags:
 
 ## Architektur
 
-```
-Internet --> Traefik --> CrowdSec Bouncer (ForwardAuth) --> Backend Service
-                                  |
-                                  v
-                         CrowdSec Engine (LAPI)
-                                  |
-                           Traefik Logs
-                      (/var/log/docker/traefik/)
+```mermaid
+flowchart LR
+    Internet --> Traefik
+    Traefik --> Bouncer["CrowdSec Bouncer<br/>(ForwardAuth)"]
+    Bouncer --> Backend["Backend Service"]
+    Bouncer -.-> Engine["CrowdSec Engine<br/>(LAPI)"]
+    Engine -.-> Logs["Traefik Logs<br/>(/var/log/docker/traefik/)"]
 ```
 
 Der Bouncer prueft eingehende Requests gegen die Engine. Wird eine IP als boeswillig erkannt, blockiert der Bouncer den Zugriff bevor der Request das Backend erreicht.

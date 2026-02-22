@@ -30,33 +30,25 @@ Der Linstor Controller laeuft im Active/Passive HA-Modus mit DRBD Reactor als Fa
 
 **Wichtig:** Linstor Controller ist fuer Active/Passive designed - nur EIN Controller kann gleichzeitig laufen!
 
-```
-+-------------------------------------------------------------+
-|           DRBD Resource: linstor_db (Quorum: 2/3)           |
-|                    H2 Datenbank                             |
-+---------------+-----------------------------+---------------+
-                |                             |
-        +-------+-------+             +-------+-------+
-        |   client-05   |  Thunderbolt|   client-06   |
-        |   COMBINED    |<----------->|   COMBINED    |
-        |   [ACTIVE]    |   25 Gbit   |   [STANDBY]   |
-        | drbd-reactor  |             | drbd-reactor  |
-        | 10.0.2.125    |             | 10.0.2.126    |
-        | TB: 10.99.1.105             | TB: 10.99.1.106
-        | Storage: 100GB|             | Storage: 100GB|
-        +-------+-------+             +-------+-------+
-                |                             |
-                |         Management          |
-                |           1 Gbit            |
-                +-------------+---------------+
-                              |
-                   +----------+----------+
-                   | vm-nomad-client-04  |
-                   | 10.0.2.124          |
-                   |                     |
-                   | Satellite (Diskless)|
-                   | TieBreaker/Quorum   |
-                   +---------------------+
+```mermaid
+flowchart TD
+    DB["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
+    DB --- C05 & C06
+
+    subgraph C05["client-05 — ACTIVE"]
+        C05a["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 100GB"]
+    end
+
+    subgraph C06["client-06 — STANDBY"]
+        C06a["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 100GB"]
+    end
+
+    C05 <-->|"Thunderbolt 25 Gbit"| C06
+    C05 & C06 -->|"Management 1 Gbit"| C04
+
+    subgraph C04["vm-nomad-client-04"]
+        C04a["10.0.2.124<br/>Satellite (Diskless)<br/>TieBreaker/Quorum"]
+    end
 ```
 
 **Architektur-Details:**
@@ -103,34 +95,25 @@ Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) fuer DRBD-Rep
 
 ### Netzwerk-Topologie
 
-```
-+-------------------------------------------------------------+
-|           DRBD Resource: linstor_db (Quorum: 2/3)           |
-|                    H2 Datenbank                             |
-+---------------+-----------------------------+---------------+
-                |                             |
-        +-------+-------+             +-------+-------+
-        |   client-02   |    10GbE    |   client-03   |
-        |   COMBINED    |<----------->|   COMBINED    |
-        |   [ACTIVE]    | 172.180.46.x|   [STANDBY]   |
-        | drbd-reactor  |             | drbd-reactor  |
-        | 10.180.46.82  |             | 10.180.46.83  |
-        | DRBD: 172.180.46.82         | DRBD: 172.180.46.83
-        | Storage: NVMe |             | Storage: NVMe |
-        +-------+-------+             +-------+-------+
-                |                             |
-                |         Management          |
-                |           1 Gbit            |
-                +-------------+---------------+
-                              |
-                   +----------+----------+
-                   | vm-nomad-client-01  |
-                   | 10.180.46.81        |
-                   |                     |
-                   | Satellite (Diskless)|
-                   | TieBreaker/Quorum   |
-                   | KEIN 10GbE Zugang   |
-                   +---------------------+
+```mermaid
+flowchart TD
+    DB2["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
+    DB2 --- DC02 & DC03
+
+    subgraph DC02["client-02 — ACTIVE"]
+        DC02a["COMBINED / drbd-reactor<br/>10.180.46.82 / DRBD: 172.180.46.82<br/>Storage: NVMe"]
+    end
+
+    subgraph DC03["client-03 — STANDBY"]
+        DC03a["COMBINED / drbd-reactor<br/>10.180.46.83 / DRBD: 172.180.46.83<br/>Storage: NVMe"]
+    end
+
+    DC02 <-->|"10GbE (172.180.46.x)"| DC03
+    DC02 & DC03 -->|"Management 1 Gbit"| DC01
+
+    subgraph DC01["vm-nomad-client-01"]
+        DC01a["10.180.46.81<br/>Satellite (Diskless)<br/>TieBreaker/Quorum<br/>KEIN 10GbE Zugang"]
+    end
 ```
 
 ### Netzwerk-Uebersicht
@@ -291,24 +274,13 @@ URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
 
 ### Metriken-Pipeline
 
-```
-Linstor Controller (10.0.2.125:3370)
-         |
-         | /metrics Endpoint
-         v
-    Traefik Proxy
-         |
-         | https://linstor.ackermannprivat.ch/metrics
-         v
-      Telegraf
-         |
-         | prometheus input plugin (60s interval)
-         v
-      InfluxDB
-         |
-         | telegraf bucket
-         v
-      Grafana
+```mermaid
+flowchart TD
+    LC["Linstor Controller<br/>(10.0.2.125:3370)"]
+    LC -->|"/metrics Endpoint"| Traefik["Traefik Proxy"]
+    Traefik -->|"https://linstor.ackermannprivat.ch/metrics"| Telegraf
+    Telegraf -->|"prometheus input plugin (60s)"| InfluxDB
+    InfluxDB -->|"telegraf bucket"| Grafana
 ```
 
 ### Wichtige Metriken
@@ -329,10 +301,12 @@ Linstor Controller (10.0.2.125:3370)
 
 **Metriken-Pipeline:**
 
-```
-[client-05/06] cron (1min) → lvs → InfluxDB Line Protocol
-     → /nfs/docker/telegraf/metrics/lvm_thinpool_$(hostname).influx
-          → Telegraf inputs.file → InfluxDB → Grafana
+```mermaid
+flowchart LR
+    Cron["[client-05/06]<br/>cron (1min)"] -->|"lvs"| File["InfluxDB Line Protocol<br/>/nfs/docker/telegraf/metrics/<br/>lvm_thinpool_$(hostname).influx"]
+    File -->|"inputs.file"| Telegraf2["Telegraf"]
+    Telegraf2 --> InfluxDB2["InfluxDB"]
+    InfluxDB2 --> Grafana2["Grafana"]
 ```
 
 **Metriken:** `lvm_thinpool` mit Tags `host`, `vg`, `pool` und Fields `data_percent`, `metadata_percent`
