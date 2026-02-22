@@ -44,6 +44,7 @@ Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorth
 | DNS-Architektur | [DNS-Architektur](../03-platforms/dns-architecture.md) |
 | CrowdSec | [CrowdSec](../03-platforms/crowdsec.md) |
 | Backup-Architektur | [Backup-Strategie](../04-services/core/backup-strategy.md) |
+| LDAP & Benutzerverwaltung | [OpenLDAP](../04-services/core/ldap.md) |
 
 ## Struktur
 

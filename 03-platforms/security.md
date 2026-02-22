@@ -24,11 +24,18 @@ User Request → Traefik → oauth2-errors → require-{group} → Backend Servi
 
 ## Komponenten
 
+### OpenLDAP (Benutzerverzeichnis)
+
+Zentraler Identity Store fuer alle User-Accounts. Keycloak ist per LDAP Federation (WRITABLE) angebunden und synchronisiert Passwort-Aenderungen zurueck nach LDAP. Services wie Jellyfin authentifizieren direkt gegen LDAP.
+
+Details: [OpenLDAP & Benutzerverwaltung](../04-services/core/ldap.md)
+
 ### Keycloak (SSO Provider)
 - **URL:** `https://sso.ackermannprivat.ch`
 - **Realm:** `traefik`
 - **Client:** `traefik-forward-auth`
 - **Deployment:** Docker Compose auf vm-proxy-dns-01
+- **LDAP Federation:** WRITABLE (Aenderungen in Keycloak werden nach LDAP geschrieben)
 
 ### oauth2-proxy (v2)
 Zentraler oauth2-proxy mit ForwardAuth. Prueft das Session-Cookie und validiert die Gruppenzugehoerigkeit via `allowed_groups` Query-Parameter.
@@ -91,4 +98,4 @@ oauth2-myservice:
 Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in der `intern-chain` IP-Whitelist enthalten, sodass Zugriff ueber Tailscale auf interne Services moeglich ist.
 
 ---
-*Letztes Update: 21.02.2026*
+*Letztes Update: 22.02.2026*
