@@ -54,20 +54,33 @@ Das Cluster besteht aus drei Knoten, die für Hochverfügbarkeit und Lastverteil
 | **zigbee-node** | 10.0.0.110 | 1100 | pve02 | Zigbee2MQTT, Mosquitto |
 
 ## Netzwerk
+
 Alle Nodes sind über ein dediziertes Management-VLAN (10.0.2.x) erreichbar.
-Für die Replikation wird ein separates Thunderbolt-Netzwerk (10.99.1.x) verwendet, um den normalen Traffic nicht zu belasten.
 
-### Thunderbolt Boot-Konfiguration
+### Thunderbolt Netzwerk (pve01 <-> pve02)
 
-Das Thunderbolt-Interface (`thunderbolt1`) erscheint erst nach dem Firmware-Init (~20s). Um Race Conditions zu vermeiden, ist auf pve01 und pve02 ein Dual-Layer Fix implementiert:
+Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration und DRBD-Replikation. Ein Linux Bond (`bond-tb`, active-backup) aggregiert beide TB-Interfaces und löst damit das Problem der nicht-deterministischen Interface-Benennung nach Reboots. Die Bridge `vmbr-tb` nutzt den Bond als einzigen Port.
 
-- **Systemd Drop-in:** `networking.service` wartet auf das Thunderbolt-Device, bevor das Netzwerk konfiguriert wird.
-- **udev Fallback:** Eine Regel fügt `thunderbolt1` nachträglich zur Bridge `vmbr-tb` hinzu, falls systemd das Interface verpasst.
+| Host | vmbr-tb | Bandbreite |
+|------|---------|------------|
+| pve01 | 10.99.1.1 | ~20 Gbps |
+| pve02 | 10.99.1.2 | ~20 Gbps |
+
+Detaillierte Dokumentation: [THUNDERBOLT_NETWORKING.md](../../homelab-hashicorp-stack/docs/THUNDERBOLT_NETWORKING.md)
+
+### HA Konfiguration
+
+- **shutdown_policy:** `migrate` — VMs werden bei geplanten Host-Shutdowns automatisch migriert
+- **Migration Network:** `10.99.1.0/24` (Thunderbolt Bridge)
 
 ## Storage
 - **Local ZFS:** Schneller Speicher für OS und Caches auf jedem Node.
 - **NFS (Synology):** Geteilter Speicher für Backups und ISOs.
 - **PBS:** Proxmox Backup Server (vm-id 99999) auf pve02 für inkrementelle Backups.
+- **Linstor/DRBD:** Replizierter Block-Storage über Thunderbolt für CSI-Volumes (Nomad).
 
 ## Management
 Die Web-UI ist unter `https://<node-ip>:8006` erreichbar. SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
+
+---
+*Letztes Update: 22.02.2026*
