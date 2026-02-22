@@ -31,9 +31,9 @@ Regeln für Inhalt, Struktur und Pflege dieser Dokumentation.
 - **Virtualisierung:** Proxmox VE
 - **Orchestrierung:** HashiCorp Nomad & Consul
 - **Secrets:** HashiCorp Vault
-- **Netzwerk:** dnsmasq, Pi-hole, Traefik, Cloudflare
+- **Netzwerk:** Pi-hole v6, Unbound, Traefik, Cloudflare
 - **Security:** CrowdSec, Keycloak, OAuth2-Proxy
 - **Storage:** Synology NFS & Local SSD
 
 ---
-*Letztes Update: 21.02.2026*
+*Letztes Update: 22.02.2026*
