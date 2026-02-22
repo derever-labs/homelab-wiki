@@ -76,6 +76,17 @@ Die vollstaendige Konfiguration (Zot Config, S3 Storage, Proxy Cache, Docker Hub
 | Quay.io | quay.io | On-Demand |
 | LinuxServer | lscr.io | On-Demand |
 
+### On-Demand Sync Verhalten
+
+Zot synchronisiert Images bei `onDemand: true` bei jedem Request mit dem Upstream. Das bedeutet:
+
+- **Gecachte Images mit unveraendertem Tag:** Zot prueft kurz beim Upstream ob eine neuere Version existiert ("already synced") und liefert sofort aus dem S3-Cache.
+- **Rate Limiting:** Wenn der Upstream (z.B. Docker Hub) ein 429 zurueckgibt, blockiert der Request bis zum naechsten Retry.
+- **Konfiguration:** `maxRetries: 1`, `retryDelay: 15s` — maximale Blockierzeit pro Image ca. 15 Sekunden (statt bis zu 15 Minuten bei der alten Konfiguration mit `maxRetries: 3`, `retryDelay: 5m`).
+
+!!! warning "Nach Zot-Restart"
+    Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen Nodes gleichzeitig, ihre Images via Zot zu aktualisieren. Da alle Instanzen die gleichen Docker Hub Credentials nutzen, wird das Rate Limit schnell erreicht. Die Queue arbeitet sich mit den neuen Retry-Werten aber deutlich schneller ab (~15s statt ~5min pro Rate-Limited Request).
+
 ### S3 Storage
 
 | Parameter | Wert |
@@ -97,6 +108,26 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 
 **Restore:** MinIO Bucket wiederherstellen, dann Nomad Job starten.
 
+### DNS-Abhaengigkeit
+
+Zot laeuft mit `network_mode = "host"` im Nomad Job. Das bedeutet:
+
+- `dns_servers` in der Nomad Docker-Config wird **ignoriert** — Zot nutzt die DNS-Konfiguration des Hosts (systemd-resolved).
+- Wenn der DNS-Server (10.0.2.1) nicht erreichbar ist, koennen keine Upstream-Registries aufgeloest werden.
+- systemd-resolved hat eingebaute Fallback-DNS (1.1.1.1, 8.8.8.8) die bei DNS-Ausfall greifen, aber mit Verzoegerung.
+
+## Troubleshooting
+
+### Langsame Image Pulls (>15s)
+
+1. **DNS pruefen:** `dig @10.0.2.1 registry-1.docker.io +short +timeout=3` — muss sofort antworten
+2. **Rate Limit pruefen:** `docker logs <zot-container> 2>&1 | grep TOOMANYREQUESTS` — wenn Docker Hub 429 zurueckgibt, warten bis Rate Limit ablaeuft
+3. **Zot Health pruefen:** `curl -s http://localhost:5000/v2/` — muss 200 zurueckgeben
+
+### Nach Cluster-Restart
+
+Nach einem Restart aller Nodes koennen Image-Pulls temporaer langsam sein (Docker Hub Rate Limiting). Das normalisiert sich nach 10-15 Minuten.
+
 ## Historie
 
 | Datum | Aenderung |
@@ -105,7 +136,8 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 | 29.12.2025 | Migration zu Docker Registry v2 (Zwischenloesung) |
 | 29.12.2025 | Migration zu Zot Registry (OCI-native, On-Demand Cache) |
 | 21.02.2026 | Fix: `compat: ["docker2s2"]` fuer Multi-Arch Push Support |
+| 22.02.2026 | Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` — verhindert 5min+ Blockierungen bei DNS- oder Rate-Limit-Problemen |
 
 ---
-*Dokumentation aktualisiert am: 21.02.2026*
+*Dokumentation aktualisiert am: 22.02.2026*
 *Ersetzt: Docker Registry v2 (Zwischenloesung), Harbor Container Registry*
