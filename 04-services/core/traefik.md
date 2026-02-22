@@ -25,10 +25,14 @@ tags:
 - **Rate Limiting:** Fail2ban-ähnliche Funktionalität via CrowdSec.
 
 ## Authentifizierung (Middlewares)
-Traefik nutzt verschiedene Sicherheitsstufen für Services:
-- **admin-chain:** Zugriff nur für Administratoren.
-- **family-chain:** Zugriff für Administratoren und Familienmitglieder.
-- **internal-network:** Zugriff nur aus dem lokalen Netz (10.0.0.0/8).
+
+Traefik nutzt v2 Middleware Chains mit OAuth2-Proxy und Keycloak. Vollstaendige Dokumentation: [Traefik Middleware Chains](../../03-platforms/traefik-middlewares.md)
+
+Kurzuebersicht:
+- **public-*-chain-v2:** CrowdSec + OAuth2 (fuer externen Zugriff)
+- **intern-*-chain-v2:** OAuth2 + IP-Whitelist (fuer internen Zugriff)
+- **intern-chain:** Nur IP-Whitelist (ohne Authentifizierung)
+- **admin-chain-v2:** OAuth2 Admin ohne IP-Einschraenkung (z.B. Traefik Dashboard)
 
 ## Wartung
 ### Konfiguration ändern

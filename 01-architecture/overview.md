@@ -27,6 +27,7 @@ Vollstaendige Auflistung aller Hosts, IPs und Specs: [Proxmox Cluster](../02-inf
 |---------|-----|--------------|
 | Traefik | traefik.ackermannprivat.ch | Reverse Proxy, SSL - [Details](../04-services/core/traefik.md) |
 | Keycloak | sso.ackermannprivat.ch | Identity Provider (OAuth2/OIDC) |
+| OpenLDAP | - (intern) | Benutzerverzeichnis - [Details](../04-services/core/ldap.md) |
 | Wiki.js | wiki.ackermannprivat.ch | Dokumentation |
 
 ### Media
