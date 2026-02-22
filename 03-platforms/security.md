@@ -12,14 +12,15 @@ tags:
 ## Uebersicht
 Der Zugriff auf interne Services wird zentral ueber Traefik gesteuert, welches Authentifizierungsanfragen an Keycloak delegiert.
 
-```
-User Request → Traefik → oauth2-errors → require-{group} → Backend Service
-                               ↓                ↓
-                         oauth2-backend     ForwardAuth
-                         (Redirect zu       /oauth2/auth?allowed_groups=X
-                          Keycloak Login)          ↓
-                                            Keycloak OIDC
-                                            (Gruppenpruefung)
+```mermaid
+flowchart LR
+    User["User Request"] --> Traefik
+    Traefik --> errors["oauth2-errors"]
+    errors --> require["require-{group}"]
+    require --> Backend["Backend Service"]
+    errors -.-> backend2["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
+    require -.-> fwd["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
+    fwd -.-> KC["Keycloak OIDC<br/>(Gruppenpruefung)"]
 ```
 
 ## Komponenten

@@ -35,24 +35,15 @@ tags:
 
 ## Architektur
 
-```
-                    MinIO S3 (NAS 10.0.0.200:9000)
-                    Bucket: zot-registry
-                              |
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        v                     v                     v
-┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│ Zot 124       │     │ Zot 125       │     │ Zot 126       │
-│ localhost:5000│     │ localhost:5000│     │ localhost:5000│
-│ (client-04)   │     │ (client-05)   │     │ (client-06)   │
-└───────────────┘     └───────────────┘     └───────────────┘
-        │                     │                     │
-        └───────────┬─────────┴─────────────────────┘
-                    │
-          On-Demand Proxy Cache
-          Docker Hub, ghcr.io,
-          quay.io, lscr.io
+```mermaid
+flowchart TD
+    S3["MinIO S3 (NAS 10.0.0.200:9000)<br/>Bucket: zot-registry"]
+    S3 --- Zot1["Zot 124<br/>localhost:5000<br/>(client-04)"]
+    S3 --- Zot2["Zot 125<br/>localhost:5000<br/>(client-05)"]
+    S3 --- Zot3["Zot 126<br/>localhost:5000<br/>(client-06)"]
+    Zot1 --- Cache["On-Demand Proxy Cache<br/>Docker Hub, ghcr.io,<br/>quay.io, lscr.io"]
+    Zot2 --- Cache
+    Zot3 --- Cache
 ```
 
 **Vorteile:**
