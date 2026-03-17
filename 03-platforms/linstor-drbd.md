@@ -36,11 +36,11 @@ flowchart TD
     DB --- C05 & C06
 
     subgraph C05["client-05 — ACTIVE"]
-        C05a["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 100GB"]
+        C05a["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 200GB"]
     end
 
     subgraph C06["client-06 — STANDBY"]
-        C06a["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 100GB"]
+        C06a["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 200GB"]
     end
 
     C05 <-->|"Thunderbolt 25 Gbit"| C06
@@ -79,8 +79,8 @@ flowchart TD
 
 | Node | Disk | Pool | Kapazitaet |
 |------|------|------|------------|
-| vm-nomad-client-05 | /dev/sdb | linstor_pool | 100 GB |
-| vm-nomad-client-06 | /dev/sdb | linstor_pool | 100 GB |
+| vm-nomad-client-05 | /dev/sdb | linstor_pool | 200 GB |
+| vm-nomad-client-06 | /dev/sdb | linstor_pool | 200 GB |
 
 ### Quorum
 
@@ -174,6 +174,9 @@ Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connecti
 | stash-data | 10 GiB | Stash Media Organizer |
 | uptime-kuma-data | 5 GiB | Uptime Kuma Monitoring |
 | vaultwarden-data | 1 GiB | Vaultwarden Password Manager |
+| loki-data | 20 GiB | Loki Log Aggregation |
+| grafana-data | 1 GiB | Grafana Dashboards |
+| gitea-data | 5 GiB | Gitea Git Server |
 
 Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
 
