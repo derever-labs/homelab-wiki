@@ -116,7 +116,16 @@ Beide Tools haben dedizierte Traefik-Router fuer API-Pfade ohne OAuth2-Middlewar
 | :--- | :--- | :--- |
 | solidtime | `time.ackermannprivat.ch/api/*` | Bearer Token (JWT) |
 | Kimai | `kimai.ackermannprivat.ch/api/*` | `Authorization: Bearer <api-key>` |
-| n8n Webhooks | `n8n.ackermannprivat.ch/webhook/*` | Kein Auth (Webhook-URLs als Secret) |
+| n8n Webhooks | `n8n.ackermannprivat.ch/webhook/arbeit-*` | Kein Auth (nur explizite Pfade) |
+
+::: danger Sicherheitskonzept n8n Webhooks
+n8n Webhooks haben **keine eigene Authentifizierung**. Die Sicherheit basiert auf zwei Ebenen:
+
+1. **Traefik-Whitelist:** Nur explizit freigegebene Pfade sind extern erreichbar (`/webhook/arbeit-start`, `/webhook/arbeit-stop` und deren `-test` Varianten). Alle anderen Webhooks und die n8n-UI bleiben hinter `intern-chain@file` (IP-Whitelist).
+2. **Obscurity:** Die Webhook-URLs sind nicht erratbar, aber auch kein echtes Secret.
+
+Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job (`services/n8n.nomad`) freigeschaltet werden.
+:::
 
 ## Vault Secrets
 
