@@ -18,82 +18,70 @@ Dieses Diagramm zeigt, welche Services von welchen Infrastruktur-Komponenten und
 ```mermaid
 flowchart TB
     subgraph Core["Core Infrastructure"]
-        TRAEFIK:::entry["Traefik<br>10.0.2.1"]
-        DNS:::entry["Pi-hole + Unbound<br>10.0.2.1 / 10.0.2.2"]
-        CONSUL:::accent["Consul<br>Service Discovery"]
-        VAULT:::accent["Vault<br>Secret Management"]
-        KEYCLOAK:::entry["Keycloak<br>sso.ackermannprivat.ch"]
-        LDAP:::svc["OpenLDAP<br>Benutzerverzeichnis"]
-        PG:::db["PostgreSQL 16<br>postgres.service.consul"]
-        SMTP:::svc["SMTP Relay<br>smtp.service.consul"]
-        NFS:::db["Synology NAS<br>10.0.0.200"]
+        TRAEFIK["Traefik"]
+        DNS["Pi-hole + Unbound"]
+        CONSUL["Consul"]
+        VAULT["Vault"]
+        KEYCLOAK["Keycloak"]
+        LDAP["OpenLDAP"]
+        PG["PostgreSQL 16"]
+        SMTP["SMTP Relay"]
+        NFS["Synology NAS"]
     end
 
     subgraph Media["Media Stack"]
-        JF:::svc["Jellyfin"]
-        JS:::svc["Jellyseerr"]
-        SONARR:::svc["Sonarr"]
-        RADARR:::svc["Radarr"]
-        PROWLARR:::svc["Prowlarr"]
-        SAB:::svc["SABnzbd"]
-        JSTAT:::svc["JellyStat"]
-        MAINT:::svc["Maintainerr"]
-        JANI:::svc["Janitorr"]
-        STASH:::svc["Stash"]
-        ABS:::svc["AudioBookShelf"]
-        LL:::svc["LazyLibrarian"]
-        YTDL:::svc["YouTube-DL"]
-        SYDL:::svc["Special-YT-DLP"]
-        VG:::svc["Video-Grabber"]
-        HB:::svc["Handbrake"]
+        JF["Jellyfin"]
+        JS["Jellyseerr"]
+        SONARR["Sonarr"]
+        RADARR["Radarr"]
+        PROWLARR["Prowlarr"]
+        SAB["SABnzbd"]
+        JSTAT["JellyStat"]
+        MAINT["Maintainerr"]
+        JANI["Janitorr"]
+        STASH["Stash"]
+        ABS["AudioBookShelf"]
+        YTDL["YouTube-DL"]
+        SYDL["Special-YT-DLP"]
+        VG["Video-Grabber"]
     end
 
-    subgraph Monitoring["Monitoring"]
-        GRAFANA:::svc["Grafana"]
-        LOKI:::svc["Loki"]
-        INFLUX:::svc["InfluxDB"]
-        ALLOY:::svc["Alloy"]
-        UK:::svc["Uptime Kuma"]
-        CMK:::svc["CheckMK"]
-        GATUS:::svc["Gatus"]
+    subgraph Mon["Monitoring"]
+        GRAFANA["Grafana"]
+        LOKI["Loki"]
+        INFLUX["InfluxDB"]
+        ALLOY["Alloy"]
+        UK["Uptime Kuma"]
+        GATUS["Gatus"]
     end
 
-    subgraph Productivity["Productivity"]
-        VW:::svc["Vaultwarden"]
-        PL:::svc["Paperless"]
-        TD:::svc["Tandoor"]
-        GUA:::svc["Guacamole"]
-        CD:::svc["ChangeDetection"]
-        OBS:::svc["Obsidian LiveSync"]
-        NOTIF:::svc["Notifiarr"]
-        GITEA:::svc["Gitea"]
-        N8N:::svc["n8n"]
-        META:::svc["Metabase"]
-        SOLID:::svc["solidtime"]
-        KIMAI:::svc["Kimai"]
+    subgraph Prod["Productivity"]
+        VW["Vaultwarden"]
+        PL["Paperless"]
+        TD["Tandoor"]
+        GUA["Guacamole"]
+        CD["ChangeDetection"]
+        OBS["Obsidian LiveSync"]
+        NOTIF["Notifiarr"]
+        GITEA["Gitea"]
+        N8N["n8n"]
+        META["Metabase"]
+        SOLID["solidtime"]
     end
 
     subgraph AI["AI / LLM"]
-        OLLAMA:::svc["Ollama"]
-        OWUI:::svc["Open-WebUI"]
-        HOLLA:::svc["HolLama"]
-    end
-
-    subgraph Dashboards["Dashboards"]
-        FLAME:::svc["Flame"]
-        HP:::svc["Homepage"]
+        OLLAMA["Ollama"]
+        OWUI["Open-WebUI"]
+        HOLLA["HolLama"]
     end
 
     subgraph IoT["IoT"]
-        HA:::svc["Home Assistant"]
-        Z2M:::svc["Zigbee2MQTT"]
-        MOSQ:::svc["Mosquitto"]
+        Z2M["Zigbee2MQTT"]
+        MOSQ["Mosquitto"]
     end
 
-    %% Core-Abhängigkeiten
     KEYCLOAK --> LDAP
 
-    %% Media -> Core
     SONARR --> PG
     RADARR --> PG
     PROWLARR --> PG
@@ -108,10 +96,8 @@ flowchart TB
     RADARR --> PROWLARR
     JANI --> SONARR
     JANI --> RADARR
-    JANI --> JS
     VG --> SYDL
 
-    %% Productivity -> Core
     VW --> PG
     PL --> PG
     TD --> PG
@@ -122,26 +108,26 @@ flowchart TB
     VW --> SMTP
     PL --> OLLAMA
 
-    %% Monitoring -> Core
     GRAFANA --> INFLUX
     GRAFANA --> LOKI
     GRAFANA --> PG
     ALLOY --> LOKI
 
-    %% AI
     OWUI --> OLLAMA
     HOLLA --> OLLAMA
-
-    %% n8n -> solidtime (Geofence-Automation)
     N8N --> SOLID
-
-    %% IoT
     Z2M --> MOSQ
-    HA --> MOSQ
-
-    %% Notifiarr -> Media
     NOTIF --> SONARR
     NOTIF --> RADARR
+
+    class TRAEFIK,KEYCLOAK,DNS entry
+    class CONSUL,VAULT accent
+    class PG,NFS,INFLUX db
+    class SMTP,LDAP,JF,JS,SONARR,RADARR,PROWLARR,SAB,JSTAT,MAINT,JANI,STASH,ABS,YTDL,SYDL,VG svc
+    class GRAFANA,LOKI,ALLOY,UK,GATUS svc
+    class VW,PL,TD,GUA,CD,OBS,NOTIF,GITEA,N8N,META,SOLID svc
+    class OLLAMA,OWUI,HOLLA svc
+    class Z2M,MOSQ svc
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
     classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
