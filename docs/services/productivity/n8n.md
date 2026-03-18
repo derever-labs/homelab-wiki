@@ -23,13 +23,28 @@ tags:
 
 ## Beschreibung
 
-n8n ist eine Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows. Aktuell genutzt für das [Immobilien-Monitoring](./immobilien-monitoring.md).
+n8n ist eine Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
+
+Aktive Workflows:
+- [Immobilien-Monitoring](./immobilien-monitoring.md)
+- [Zeiterfassung](./zeiterfassung.md) (Geofence-Automation fuer solidtime)
 
 ## Konfiguration
 
-- **Webhooks:** Extern erreichbar via `https://n8n.ackermannprivat.ch/webhook/...`
 - **Timezone:** Europe/Zurich
 - **Telemetrie:** Deaktiviert
+
+## Netzwerk und Webhooks
+
+Die n8n-UI ist nur intern erreichbar (`intern-chain@file`). Webhooks sind **einzeln freigeschaltet** via separatem Traefik-Router:
+
+| Webhook | Extern | Zweck |
+| :--- | :--- | :--- |
+| `/webhook/arbeit-start` | Ja | [Zeiterfassung](./zeiterfassung.md): Timer starten |
+| `/webhook/arbeit-stop` | Ja | [Zeiterfassung](./zeiterfassung.md): Timer stoppen |
+| Alle anderen `/webhook/*` | Nein | Hinter IP-Whitelist |
+
+Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
 
 ## Vault Secrets
 
