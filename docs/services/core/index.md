@@ -11,6 +11,7 @@ Grundlegende Dienste die von anderen Services abhängig sind.
 - [Traefik](./traefik.md) -- Reverse Proxy, Service Discovery
 - [Docker Registry](./docker-registry.md) -- Lokale Container-Registry (ZOT)
 - [LDAP](./ldap.md) -- OpenLDAP, Benutzerverwaltung
+- [VitePress Wiki](./wiki.md) -- Dokumentation mit GitHub Runner + Webhook
 - [Backup Strategie](./backup-strategy.md) -- PostgreSQL, DRBD, S3
 - [PBS](./pbs.md) -- Proxmox Backup Server
 - [SMTP Relay](./smtp-relay.md) -- Mailversand
