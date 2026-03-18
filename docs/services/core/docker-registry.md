@@ -86,7 +86,7 @@ Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen 
 | Endpoint | http://10.0.0.200:9000 |
 | Bucket | zot-registry |
 | Root Directory | /zot |
-| Credentials | Vault kv/minio-nas |
+| Credentials | Vault `kv/data/zot-s3` (Workload Identity) |
 
 ### Docker daemon.json
 
@@ -129,4 +129,5 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 | 29.12.2025 | Migration zu Zot Registry (OCI-native, On-Demand Cache) |
 | 21.02.2026 | Fix: `compat: ["docker2s2"]` für Multi-Arch Push Support |
 | 22.02.2026 | Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` — verhindert 5min+ Blockierungen bei DNS- oder Rate-Limit-Problemen |
+| 18.03.2026 | S3-Credentials aus Nomad-Job in Vault migriert (`kv/data/zot-s3`), Vault Workload Identity aktiviert |
 

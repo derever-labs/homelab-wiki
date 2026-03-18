@@ -10,7 +10,7 @@ tags:
 # Media Management Stack
 
 ## Übersicht
-Der Media Stack automatisiert die Suche, den Download und die Organisation von Medieninhalten. Alle Services laufen als Nomad Jobs und nutzen Litestream für die Datenbank-Replikation.
+Der Media Stack automatisiert die Suche, den Download und die Organisation von Medieninhalten. Alle Services laufen als Nomad Jobs und nutzen PostgreSQL (`postgres.service.consul:5432`) als Datenbank.
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
@@ -22,12 +22,16 @@ Der Media Stack automatisiert die Suche, den Download und die Organisation von M
 ## Konfiguration
 ### Speicherpfade (NFS)
 Alle Services greifen auf zentrale Pfade auf dem NAS (10.0.0.200) zu:
-- **Datenbanken:** `/local-docker/<service>/config/` (Repliziert via Litestream)
+- **Konfiguration:** `/nfs/docker/<service>/config/`
 - **Downloads:** `/nfs/downloads/`
 - **Mediathek:** `/nfs/jellyfin/` (für Sonarr/Radarr)
 
-### Datenbank-Sicherung (Litestream)
-Die SQLite-Datenbanken werden alle 5 Sekunden auf einen Peer-Node und alle 60 Sekunden auf das NAS repliziert. Dies ermöglicht einen schnellen Restore bei einem Node-Ausfall.
+### Datenbank (PostgreSQL)
+Sonarr, Radarr und Prowlarr nutzen die shared PostgreSQL-Instanz (`postgres.service.consul:5432`). Die DB-Passwörter werden via Vault Workload Identity injiziert:
+
+- `kv/data/sonarr` (Feld: `postgres_password`)
+- `kv/data/radarr` (Feld: `postgres_password`)
+- `kv/data/prowlarr` (Feld: `postgres_password`)
 
 ## Wartung
 ### Job Updates
