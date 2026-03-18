@@ -76,10 +76,12 @@ Bei Job-Start wird automatisch von der Peer-Replica (schnell) oder NAS (Fallback
 
 ### Credentials
 
-Alle Credentials sind in Vault gespeichert:
-- `kv/minio-nas`
-- `kv/litestream-s3`
-- `kv/minio-peer`
+::: warning Veraltet
+Die Litestream-Credentials wurden aus Vault entfernt, da dieses Konzept nie produktiv ging:
+- `kv/litestream-s3` — gelöscht (18.03.2026)
+- `kv/minio-nas` — nach 1Password migriert (18.03.2026)
+- `kv/minio-peer` — nach 1Password migriert (18.03.2026)
+:::
 
 ### Performance
 
