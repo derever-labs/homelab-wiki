@@ -38,14 +38,14 @@ flowchart TB
         PG:::db["PostgreSQL 16<br>postgres.service.consul:5432"]
     end
 
-    subgraph Storage["DRBD/Linstor Storage"]
-        DRBD:::accent["Linstor CSI Volume<br>postgres-data<br>Repliziert via Thunderbolt"]
+    subgraph Storage["DRBD Linstor Storage"]
+        DRBD:::accent["Linstor CSI Volume<br>postgres-data"]
     end
 
     subgraph Backup["Backup"]
         DUMP:::entry["pg_dumpall<br>03:00 UTC"]
-        NFS:::db["NFS: /nfs/backup/postgres/<br>GFS: 7d/4w/3m"]
-        S3:::db["MinIO: linstor-backups<br>Snapshots"]
+        NFS:::db["NFS Backup<br>GFS: 7d/4w/3m"]
+        S3:::db["MinIO linstor-backups<br>Snapshots"]
     end
 
     RADAR --> PG
@@ -60,7 +60,7 @@ flowchart TB
     ST --> PG
     N8N --> PG
     MB --> PG
-    GR -.->|"read-only<br>Datasource"| PG
+    GR -.->|"read-only Datasource"| PG
 
     PG --> DRBD
     PG --> DUMP
@@ -132,15 +132,15 @@ Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das über DR
 
 ```mermaid
 flowchart LR
-    subgraph pve01["pve01 (vm-nomad-client-05)"]
-        D1:::accent["DRBD<br>postgres-data<br>Primary oder Secondary"]
+    subgraph pve01["pve01 vm-nomad-client-05"]
+        D1:::accent["DRBD postgres-data<br>Primary oder Secondary"]
     end
 
-    subgraph pve02["pve02 (vm-nomad-client-06)"]
-        D2:::accent["DRBD<br>postgres-data<br>Primary oder Secondary"]
+    subgraph pve02["pve02 vm-nomad-client-06"]
+        D2:::accent["DRBD postgres-data<br>Primary oder Secondary"]
     end
 
-    D1 <-->|"Thunderbolt<br>10.99.1.0/24<br>~20 Gbps"| D2
+    D1 <-->|"Thunderbolt 10.99.1.0/24 ~20 Gbps"| D2
 
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```

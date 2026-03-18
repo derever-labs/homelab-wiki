@@ -25,53 +25,53 @@ Folgende Details fehlen noch und müssen ergänzt werden:
 ## Netzwerk-Diagramm
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph WAN["WAN / Internet"]
-        ISP:::ext["ISP Router<br>(Details unbekannt)"]
+        ISP:::ext["ISP Router"]
     end
 
     subgraph Core["Core Network"]
-        Router:::accent["UniFi Router<br>(Details unbekannt)"]
-        SW:::accent["UniFi Switch<br>(Details unbekannt)"]
+        Router:::accent["UniFi Router"]
+        SW:::accent["UniFi Switch"]
     end
 
-    subgraph MGMT["Management VLAN<br>10.0.2.0/24"]
-        PVE00:::svc["pve00<br>10.0.2.40"]
-        PVE01:::svc["pve01<br>10.0.2.41"]
-        PVE02:::svc["pve02<br>10.0.2.42"]
-        PROXY:::entry["vm-proxy-dns-01<br>10.0.2.1<br>Traefik, DNS, Keycloak"]
-        VPN:::svc["vm-vpn-dns-01<br>10.0.2.2<br>Secondary DNS, ZeroTier"]
-        NS04:::svc["vm-nomad-server-04<br>10.0.2.104"]
-        NS05:::svc["vm-nomad-server-05<br>10.0.2.105"]
-        NS06:::svc["vm-nomad-server-06<br>10.0.2.106"]
-        NC04:::svc["vm-nomad-client-04<br>10.0.2.124"]
-        NC05:::svc["vm-nomad-client-05<br>10.0.2.125"]
-        NC06:::svc["vm-nomad-client-06<br>10.0.2.126"]
-        PBS:::svc["pbs-backup-server<br>10.0.2.50"]
-        CMK:::svc["checkmk<br>10.0.2.150"]
-        DCM:::svc["datacenter-manager<br>10.0.2.60"]
+    subgraph MGMT["Management VLAN 10.0.2.0/24"]
+        PVE00:::svc["pve00 - 10.0.2.40"]
+        PVE01:::svc["pve01 - 10.0.2.41"]
+        PVE02:::svc["pve02 - 10.0.2.42"]
+        PROXY:::entry["vm-proxy-dns-01 - 10.0.2.1"]
+        VPN:::svc["vm-vpn-dns-01 - 10.0.2.2"]
+        NS04:::svc["vm-nomad-server-04 - 10.0.2.104"]
+        NS05:::svc["vm-nomad-server-05 - 10.0.2.105"]
+        NS06:::svc["vm-nomad-server-06 - 10.0.2.106"]
+        NC04:::svc["vm-nomad-client-04 - 10.0.2.124"]
+        NC05:::svc["vm-nomad-client-05 - 10.0.2.125"]
+        NC06:::svc["vm-nomad-client-06 - 10.0.2.126"]
+        PBS:::svc["pbs-backup-server - 10.0.2.50"]
+        CMK:::svc["checkmk - 10.0.2.150"]
+        DCM:::svc["datacenter-manager - 10.0.2.60"]
     end
 
-    subgraph IOT["IoT VLAN<br>10.0.0.0/24"]
-        NAS:::db["Synology NAS<br>10.0.0.200"]
-        HA:::svc["Home Assistant<br>10.0.0.100"]
-        ZIG:::svc["Zigbee Node<br>10.0.0.110"]
+    subgraph IOT["IoT VLAN 10.0.0.0/24"]
+        NAS:::db["Synology NAS - 10.0.0.200"]
+        HA:::svc["Home Assistant - 10.0.0.100"]
+        ZIG:::svc["Zigbee Node - 10.0.0.110"]
     end
 
-    subgraph TB["Thunderbolt P2P<br>10.99.1.0/24"]
-        TB01:::accent["pve01-tb<br>10.99.1.1"]
-        TB02:::accent["pve02-tb<br>10.99.1.2"]
+    subgraph TB["Thunderbolt P2P 10.99.1.0/24"]
+        TB01:::accent["pve01-tb - 10.99.1.1"]
+        TB02:::accent["pve02-tb - 10.99.1.2"]
     end
 
-    subgraph TS["Tailscale Overlay<br>100.64.0.0/10"]
-        TAIL:::ext["Tailscale CGNAT<br>Remote Access"]
+    subgraph TS["Tailscale Overlay 100.64.0.0/10"]
+        TAIL:::ext["Tailscale CGNAT"]
     end
 
     ISP --> Router
     Router --> SW
     SW --> MGMT
     SW --> IOT
-    TB01 <-->|"~20 Gbps<br>DRBD + Migration"| TB02
+    TB01 <-->|"~20 Gbps DRBD + Migration"| TB02
     TAIL -.->|"VPN Overlay"| Router
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
