@@ -42,6 +42,7 @@ Die n8n-UI ist nur intern erreichbar (`intern-chain@file`). Webhooks sind **einz
 | :--- | :--- | :--- |
 | `/webhook/arbeit-start` | Ja | [Zeiterfassung](./zeiterfassung.md): Timer starten |
 | `/webhook/arbeit-stop` | Ja | [Zeiterfassung](./zeiterfassung.md): Timer stoppen |
+| `/webhook/git-commit` | Ja | [Zeiterfassung](./zeiterfassung.md): Git-Commit Tracking |
 | Alle anderen `/webhook/*` | Nein | Hinter IP-Whitelist |
 
 Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
