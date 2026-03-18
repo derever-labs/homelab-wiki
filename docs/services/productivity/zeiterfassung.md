@@ -30,22 +30,22 @@ Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel i
 ```mermaid
 flowchart LR
     subgraph iPhone["iPhone"]
-        PWA["solidtime PWA"]
-        SC1["iOS Shortcut<br>Ankunft Horw"]
-        SC2["iOS Shortcut<br>Verlassen Horw"]
+        PWA:::entry["solidtime PWA"]
+        SC1:::entry["iOS Shortcut<br>Ankunft Horw"]
+        SC2:::entry["iOS Shortcut<br>Verlassen Horw"]
     end
 
     subgraph Traefik["Traefik (10.0.2.1)"]
-        R1["Router: time.*<br>admin-chain-v2"]
-        R2["Router: time.*/api<br>kein OAuth"]
-        R3["Router: n8n.*/webhook<br>kein OAuth"]
+        R1:::svc["Router: time.*<br>admin-chain-v2"]
+        R2:::svc["Router: time.*/api<br>kein OAuth"]
+        R3:::svc["Router: n8n.*/webhook<br>kein OAuth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
-        ST["solidtime<br>(app, scheduler,<br>worker, gotenberg)"]
-        KI["Kimai<br>(kimai + mariadb)"]
-        N8N["n8n"]
-        PG["PostgreSQL 16"]
+        ST:::svc["solidtime<br>(app, scheduler,<br>worker, gotenberg)"]
+        KI:::svc["Kimai<br>(kimai + mariadb)"]
+        N8N:::svc["n8n"]
+        PG:::db["PostgreSQL 16"]
     end
 
     PWA -->|HTTPS| R1
@@ -57,6 +57,10 @@ flowchart LR
     N8N -->|API: Timer Start/Stop| R2
     ST --> PG
     KI -.->|MariaDB Sidecar| KI
+
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
 ```
 
 ## Geofence-Automation

@@ -25,13 +25,18 @@ tags:
 
 ```mermaid
 flowchart LR
-    Push["git push main"] --> GHA["GitHub Actions<br/>(Self-Hosted Runner)"]
+    Push:::entry["git push main"] --> GHA:::ext["GitHub Actions<br/>(Self-Hosted Runner)"]
     GHA -->|"Build-Validierung"| GHA
-    GHA -->|"curl webhook"| WH["Webhook<br/>(Port 9001)"]
-    WH -->|"git pull + rebuild"| Sync["git-sync Sidecar"]
-    Sync -->|"atomarer Swap"| Dist["dist/"]
-    Dist --> Serve["serve<br/>(Port 4173)"]
-    Serve --> Traefik["Traefik<br/>(wiki.ackermannprivat.ch)"]
+    GHA -->|"curl webhook"| WH:::svc["Webhook<br/>(Port 9001)"]
+    WH -->|"git pull + rebuild"| Sync:::svc["git-sync Sidecar"]
+    Sync -->|"atomarer Swap"| Dist:::svc["dist/"]
+    Dist --> Serve:::svc["serve<br/>(Port 4173)"]
+    Serve --> Traefik:::accent["Traefik<br/>(wiki.ackermannprivat.ch)"]
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ## Nomad Job (3-Task-Architektur)

@@ -11,3 +11,5 @@ Hardware und Virtualisierung des Homelab.
 - [Proxmox Cluster](./proxmox-cluster.md) -- Hosts, VMs, Specs
 - [Proxmox Datacenter Manager](./proxmox-datacenter-manager.md) -- Zentrale Verwaltung
 - [Storage NAS](./storage-nas.md) -- Synology NFS, Exports, Mount-Punkte
+- [GitHub Actions Runner](./github-runner.md) -- Self-hosted CI/CD Runner
+- [Filebrowser](./filebrowser.md) -- Web-basierter Dateimanager (System Job)

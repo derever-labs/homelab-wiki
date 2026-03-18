@@ -37,13 +37,17 @@ tags:
 
 ```mermaid
 flowchart TD
-    S3["MinIO S3 (NAS 10.0.0.200:9000)<br/>Bucket: zot-registry"]
-    S3 --- Zot1["Zot 124<br/>localhost:5000<br/>(client-04)"]
-    S3 --- Zot2["Zot 125<br/>localhost:5000<br/>(client-05)"]
-    S3 --- Zot3["Zot 126<br/>localhost:5000<br/>(client-06)"]
-    Zot1 --- Cache["On-Demand Proxy Cache<br/>Docker Hub, ghcr.io,<br/>quay.io, lscr.io"]
+    S3:::db["MinIO S3 (NAS 10.0.0.200:9000)<br/>Bucket: zot-registry"]
+    S3 --- Zot1:::svc["Zot 124<br/>localhost:5000<br/>(client-04)"]
+    S3 --- Zot2:::svc["Zot 125<br/>localhost:5000<br/>(client-05)"]
+    S3 --- Zot3:::svc["Zot 126<br/>localhost:5000<br/>(client-06)"]
+    Zot1 --- Cache:::ext["On-Demand Proxy Cache<br/>Docker Hub, ghcr.io,<br/>quay.io, lscr.io"]
     Zot2 --- Cache
     Zot3 --- Cache
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
 ```
 
 **Vorteile:**

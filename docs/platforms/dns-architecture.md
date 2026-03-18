@@ -24,26 +24,35 @@ tags:
 
 ```mermaid
 flowchart TD
-    Client["Client (Port 53)"] --> PiHole["Pi-hole v6<br/>(FTL/dnsmasq 2.92)"]
-    PiHole -->|"*.consul"| Consul["Consul Server (8600)"]
-    PiHole -->|"*.local"| Router["Router (10.0.0.1)"]
-    PiHole -->|"*.ackermannprivat.ch"| Lokal1["10.0.2.1 (lokal)"]
-    PiHole -->|"*.ackermann.systems"| Lokal2["10.0.2.1 (lokal)"]
-    PiHole -->|"nana/autodiscover"| Public["1.1.1.1 (öffentlich)"]
-    PiHole -->|"andere"| Unbound["Unbound (2253)"]
-    Unbound --> Root["Root DNS"]
+    Client:::entry["Client (Port 53)"] --> PiHole:::accent["Pi-hole v6<br/>(FTL/dnsmasq 2.92)"]
+    PiHole -->|"*.consul"| Consul:::svc["Consul Server (8600)"]
+    PiHole -->|"*.local"| Router:::svc["Router (10.0.0.1)"]
+    PiHole -->|"*.ackermannprivat.ch"| Lokal1:::svc["10.0.2.1 (lokal)"]
+    PiHole -->|"*.ackermann.systems"| Lokal2:::svc["10.0.2.1 (lokal)"]
+    PiHole -->|"nana/autodiscover"| Public:::ext["1.1.1.1 (öffentlich)"]
+    PiHole -->|"andere"| Unbound:::svc["Unbound (2253)"]
+    Unbound --> Root:::ext["Root DNS"]
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ### Sekundär (10.0.2.2) — Legacy-Stack
 
 ```mermaid
 flowchart TD
-    Client2["Client (Port 53)"] --> dnsmasq
-    dnsmasq -->|"*.consul"| Consul2["Consul Server (8600)"]
-    dnsmasq -->|"*.local"| Router2["Router (10.0.0.1)"]
-    dnsmasq -->|"*.ackermannprivat.ch"| Traefik2["Traefik (10.0.2.2)"]
-    dnsmasq -->|"andere"| PiHole2["Pi-hole (1153)"]
-    PiHole2 --> Unbound2["Unbound (2253)"]
+    Client2:::entry["Client (Port 53)"] --> dnsmasq:::accent
+    dnsmasq -->|"*.consul"| Consul2:::svc["Consul Server (8600)"]
+    dnsmasq -->|"*.local"| Router2:::svc["Router (10.0.0.1)"]
+    dnsmasq -->|"*.ackermannprivat.ch"| Traefik2:::svc["Traefik (10.0.2.2)"]
+    dnsmasq -->|"andere"| PiHole2:::svc["Pi-hole (1153)"]
+    PiHole2 --> Unbound2:::svc["Unbound (2253)"]
+
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ::: info Migration 22.02.2026

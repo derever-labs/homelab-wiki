@@ -22,11 +22,16 @@ tags:
 
 ```mermaid
 flowchart LR
-    Internet --> Traefik
-    Traefik --> Bouncer["CrowdSec Bouncer<br/>(ForwardAuth)"]
-    Bouncer --> Backend["Backend Service"]
-    Bouncer -.-> Engine["CrowdSec Engine<br/>(LAPI)"]
-    Engine -.-> Logs["Traefik Logs<br/>(/var/log/docker/traefik/)"]
+    Internet:::ext --> Traefik:::svc
+    Traefik --> Bouncer:::accent["CrowdSec Bouncer<br/>(ForwardAuth)"]
+    Bouncer --> Backend:::svc["Backend Service"]
+    Bouncer -.-> Engine:::accent["CrowdSec Engine<br/>(LAPI)"]
+    Engine -.-> Logs:::db["Traefik Logs<br/>(/var/log/docker/traefik/)"]
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 Der Bouncer prüft eingehende Requests gegen die Engine. Wird eine IP als böswillig erkannt, blockiert der Bouncer den Zugriff bevor der Request das Backend erreicht.

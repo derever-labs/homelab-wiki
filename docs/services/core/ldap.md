@@ -28,10 +28,14 @@ OpenLDAP ist das zentrale Benutzerverzeichnis. Alle User-Accounts (Name, E-Mail,
 
 ```mermaid
 flowchart TD
-    PLA["User-Verwaltung<br/>(phpldapadmin)"] --> LDAP["OpenLDAP"]
-    KC["Keycloak LDAP Federation<br/>(WRITABLE)"] --> LDAP
-    LDAP --> Bind["Direkter Bind<br/>(Jellyfin, etc.)"]
-    KC --> OAuth["OAuth2/OIDC<br/>(Traefik Services)"]
+    PLA:::entry["User-Verwaltung<br/>(phpldapadmin)"] --> LDAP:::accent["OpenLDAP"]
+    KC:::svc["Keycloak LDAP Federation<br/>(WRITABLE)"] --> LDAP
+    LDAP --> Bind:::svc["Direkter Bind<br/>(Jellyfin, etc.)"]
+    KC --> OAuth:::svc["OAuth2/OIDC<br/>(Traefik Services)"]
+
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ## Keycloak LDAP Federation

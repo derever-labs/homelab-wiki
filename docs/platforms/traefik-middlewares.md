@@ -64,12 +64,16 @@ Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gru
 
 ```mermaid
 flowchart LR
-    User --> Traefik
-    Traefik --> errors["oauth2-errors"]
-    errors --> require["require-{group}"]
-    require --> Backend
-    errors -.-> backend2["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
-    require -.-> fwd["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
+    User:::entry --> Traefik:::svc
+    Traefik --> errors:::svc["oauth2-errors"]
+    errors --> require:::svc["require-{group}"]
+    require --> Backend:::svc
+    errors -.-> backend2:::accent["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
+    require -.-> fwd:::accent["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
+
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ### ForwardAuth Middlewares (require-*)
