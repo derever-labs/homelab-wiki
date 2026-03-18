@@ -9,7 +9,7 @@ tags:
 
 # n8n
 
-## Uebersicht
+## Übersicht
 
 | Attribut | Wert |
 | :--- | :--- |
@@ -23,7 +23,7 @@ tags:
 
 ## Beschreibung
 
-n8n ist eine Workflow-Automation-Plattform fuer Datenverarbeitung, API-Integrationen und Scraping-Workflows. Aktuell genutzt fuer das [Immobilien-Monitoring](./immobilien-monitoring.md).
+n8n ist eine Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows. Aktuell genutzt für das [Immobilien-Monitoring](./immobilien-monitoring.md).
 
 ## Konfiguration
 
