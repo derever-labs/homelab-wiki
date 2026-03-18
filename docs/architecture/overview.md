@@ -1,5 +1,5 @@
 ---
-title: Infrastruktur-Uebersicht
+title: Infrastruktur-Übersicht
 ---
 
 ## Infrastruktur
@@ -40,7 +40,7 @@ Vollstaendige Auflistung aller Hosts, IPs und Specs: [Proxmox Cluster](../infras
 | Radarr | radarr.ackermannprivat.ch | Film Management |
 | Prowlarr | prowlarr.ackermannprivat.ch | Indexer Management |
 | SABnzbd | sabnzbd.ackermannprivat.ch | Usenet Downloader |
-| AudioBookShelf | audio.ackermannprivat.ch | Hoerbuecher |
+| AudioBookShelf | audio.ackermannprivat.ch | Hörbücher |
 
 ### Monitoring
 
@@ -86,6 +86,6 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../infrastructure/storage-nas.md)
 
 ## Zugang
 
-- **SSH:** User `sam` fuer VMs, `root` fuer Proxmox-Nodes (IPs siehe Tabellen oben)
+- **SSH:** User `sam` für VMs, `root` für Proxmox-Nodes (IPs siehe Tabellen oben)
 - **Vault:** `http://10.0.2.104:8200` -- Details siehe [HashiCorp Stack](../platforms/hashicorp-stack.md)
 - **Nomad/Consul:** Details siehe [HashiCorp Stack](../platforms/hashicorp-stack.md)

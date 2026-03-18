@@ -8,7 +8,7 @@ tags:
 
 # Homelab Dokumentation
 
-Willkommen in der zentralen Wissensdatenbank fuer das Homelab. Diese Dokumentation umfasst die Architektur, die Infrastruktur-Komponenten und alle laufenden Services.
+Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentation umfasst die Architektur, die Infrastruktur-Komponenten und alle laufenden Services.
 
 ## Schnelleinstieg
 
@@ -16,18 +16,18 @@ Willkommen in der zentralen Wissensdatenbank fuer das Homelab. Diese Dokumentati
 Details zu den physikalischen Hosts (Proxmox), [Storage (NAS)](./infrastructure/storage-nas.md), [Netzwerk-Tuning](./platforms/network-tuning.md) und [Backup (PBS)](./services/core/pbs.md).
 
 ### [Architektur](./architecture/overview.md)
-Gesamtuebersicht des Netzwerks, [Sicherheit](./platforms/security.md) und [Datenstrategie](./architecture/data-strategy.md).
+Gesamtübersicht des Netzwerks, [Sicherheit](./platforms/security.md) und [Datenstrategie](./architecture/data-strategy.md).
 
 ### [Services](./platforms/nomad-architecture.md)
-Uebersicht aller laufenden Applikationen und Container.
+Übersicht aller laufenden Applikationen und Container.
 
 ### [Runbooks](./runbooks/cluster-restart.md)
-Schritt-fuer-Schritt Anleitungen fuer Wartung und Notfaelle.
+Schritt-für-Schritt Anleitungen für Wartung und Notfälle.
 
 ### [Wiki-Richtlinien](./wiki-richtlinien.md)
-Regeln fuer Inhalt, Struktur und Pflege dieser Dokumentation.
+Regeln für Inhalt, Struktur und Pflege dieser Dokumentation.
 
-## Stack Uebersicht
+## Stack Übersicht
 - **Virtualisierung:** Proxmox VE
 - **Orchestrierung:** HashiCorp Nomad & Consul
 - **Secrets:** HashiCorp Vault

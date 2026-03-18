@@ -1,6 +1,6 @@
 ---
 title: Monitoring
-description: Ueberwachung und Alerting
+description: Überwachung und Alerting
 order: 3
 ---
 

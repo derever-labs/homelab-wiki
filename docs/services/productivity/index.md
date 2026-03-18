@@ -1,6 +1,6 @@
 ---
 title: Productivity
-description: Produktivitaets-Tools
+description: Produktivitäts-Tools
 order: 4
 ---
 
