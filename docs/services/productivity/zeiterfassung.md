@@ -112,6 +112,54 @@ In n8n muss ein **HTTP Header Auth Credential** namens "solidtime API" erstellt 
 - Header Value: `Bearer <solidtime-api-token>`
 :::
 
+## Git-Commit Tracking
+
+Automatische Zeiterfassung fuer private Repos basierend auf Git-Commits. Jeder Commit erzeugt einen 1h-Zeitblock (30 Min vor, 30 Min nach). Ueberlappende Bloecke desselben Projekts werden zusammengefasst.
+
+### Konfigurierte Repos
+
+| Repo | Pfad | solidtime Projekt | Client |
+| :--- | :--- | :--- | :--- |
+| Finanzen | `/Users/Shared/git/gitea/finanzen/` | Finanzen | Privat |
+| Tieffurt | `/Users/Shared/git/gitea/tieffurt/` | Tieffurt | Privat |
+
+### Ablauf
+
+```mermaid
+sequenceDiagram
+    participant Git as Git (lokal)
+    participant n8n
+    participant solidtime
+
+    Note over Git: git commit
+    Git->>n8n: GET /webhook/git-commit<br>?project_id=...&repo=Finanzen
+    n8n->>solidtime: GET /time-entries (letzte 5)
+    solidtime-->>n8n: Bestehende Eintraege
+
+    alt Eintrag mit gleichem Projekt, Ende >= jetzt-30min
+        n8n->>solidtime: PUT /time-entries/{id}<br>(end = jetzt+30min)
+        Note over solidtime: Block verlaengert
+    else Kein ueberlappender Eintrag
+        n8n->>solidtime: POST /time-entries<br>(start=jetzt-30min, end=jetzt+30min)
+        Note over solidtime: Neuer 1h-Block
+    end
+
+    n8n-->>Git: OK
+```
+
+### Technische Details
+
+- **Mechanismus:** Git `post-commit` Hook in `.git/hooks/post-commit`
+- **Hook-Inhalt:** `curl -s "https://n8n.ackermannprivat.ch/webhook/git-commit?project_id=...&repo=..." &`
+- **Zusammenfassung:** Commits innerhalb von 30 Min nach dem Ende des letzten Blocks verlaengern diesen, statt einen neuen zu erstellen
+- **Projekttrennung:** Nur Bloecke des gleichen Projekts werden zusammengefasst -- paralleles Arbeiten an Finanzen und Tieffurt erzeugt separate Eintraege
+
+::: tip Neues Repo hinzufuegen
+1. solidtime: Neues Projekt unter Client "Privat" erstellen, Projekt-ID notieren
+2. Git Hook: `.git/hooks/post-commit` mit der Projekt-ID erstellen (siehe bestehende Hooks als Vorlage)
+3. Traefik: Kein Anpassung noetig (`/webhook/git-commit` ist bereits freigeschaltet)
+:::
+
 ## API-Zugriff
 
 Beide Tools haben dedizierte Traefik-Router fuer API-Pfade ohne OAuth2-Middleware. Die Apps authentifizieren selbst.
@@ -120,12 +168,12 @@ Beide Tools haben dedizierte Traefik-Router fuer API-Pfade ohne OAuth2-Middlewar
 | :--- | :--- | :--- |
 | solidtime | `time.ackermannprivat.ch/api/*` | Bearer Token (JWT) |
 | Kimai | `kimai.ackermannprivat.ch/api/*` | `Authorization: Bearer <api-key>` |
-| n8n Webhooks | `n8n.ackermannprivat.ch/webhook/arbeit-*` | Kein Auth (nur explizite Pfade) |
+| n8n Webhooks | `n8n.ackermannprivat.ch/webhook/{arbeit-start,arbeit-stop,git-commit}` | Kein Auth (nur explizite Pfade) |
 
 ::: danger Sicherheitskonzept n8n Webhooks
 n8n Webhooks haben **keine eigene Authentifizierung**. Die Sicherheit basiert auf zwei Ebenen:
 
-1. **Traefik-Whitelist:** Nur explizit freigegebene Pfade sind extern erreichbar (`/webhook/arbeit-start`, `/webhook/arbeit-stop` und deren `-test` Varianten). Alle anderen Webhooks und die n8n-UI bleiben hinter `intern-chain@file` (IP-Whitelist).
+1. **Traefik-Whitelist:** Nur explizit freigegebene Pfade sind extern erreichbar (`/webhook/arbeit-start`, `/webhook/arbeit-stop`, `/webhook/git-commit` und deren `-test` Varianten). Alle anderen Webhooks und die n8n-UI bleiben hinter `intern-chain@file` (IP-Whitelist).
 2. **Obscurity:** Die Webhook-URLs sind nicht erratbar, aber auch kein echtes Secret.
 
 Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job (`services/n8n.nomad`) freigeschaltet werden.
@@ -153,3 +201,4 @@ Keine Plugins installiert. GPS-Tracking ist nicht verfuegbar (weder nativ noch v
 - **2026-03-18:** solidtime und Kimai deployed zum Vergleich. solidtime als Haupttool gewaehlt wegen moderner UI, PWA, und Toggl-Aehnlichkeit. Kimai bleibt als Backup.
 - **2026-03-18:** Kimai Docker-Image unterstuetzt nur MySQL/MariaDB im Startup-Script. PostgreSQL ging nicht out-of-the-box, darum MariaDB-Sidecar statt Shared PostgreSQL Cluster.
 - **2026-03-18:** Geofence-Automation via n8n Webhooks + iOS Shortcuts implementiert, da solidtime und Kimai kein natives iOS-Geofencing bieten.
+- **2026-03-18:** Git-Commit Tracking fuer Finanzen und Tieffurt Repos. Ansatz: 1h-Bloecke pro Commit mit automatischer Zusammenfassung bei Ueberlappung. Bewusst einfach gehalten statt Editor-Plugin (Wakapi), da Commit-basiert ausreichend genau.
