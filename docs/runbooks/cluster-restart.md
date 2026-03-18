@@ -42,4 +42,3 @@ Falls Consul keine Leader-Wahl mehr durchführen kann:
 3. Nodes einzeln nacheinander starten.
 
 ---
-*Letztes Update: 26.12.2025*

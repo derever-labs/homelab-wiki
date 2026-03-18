@@ -83,4 +83,3 @@ Detaillierte Dokumentation: Siehe `homelab-hashicorp-stack/docs/THUNDERBOLT_NETW
 Die Web-UI ist unter `https://<node-ip>:8006` erreichbar. SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
 
 ---
-*Letztes Update: 22.02.2026*

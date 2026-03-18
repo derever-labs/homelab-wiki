@@ -44,4 +44,3 @@ PBS sendet Heartbeats an Uptime Kuma nach erfolgreichen Backup-Operationen.
 - **URL:** Interner Aufruf an Uptime Kuma API (Port 3001).
 
 ---
-*Letztes Update: 26.12.2025*

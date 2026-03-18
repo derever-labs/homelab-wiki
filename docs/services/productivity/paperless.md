@@ -25,4 +25,3 @@ Paperless-ngx digitalisiert physische Dokumente, macht sie durchsuchbar (OCR) un
 - **Consumption:** Neue Dokumente werden über das Verzeichnis `/nfs/docker/paperless/consume/` automatisch importiert.
 
 ---
-*Letztes Update: 26.12.2025*

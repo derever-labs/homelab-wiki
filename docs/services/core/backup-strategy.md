@@ -11,7 +11,7 @@ tags:
 
 # Backup-Strategie
 
-## Uebersicht
+## Übersicht
 
 | Layer | Technologie | Ziel | RPO | Retention |
 |-------|-------------|------|-----|-----------|
@@ -44,7 +44,7 @@ PostgreSQL (DRBD Volume)
 
 ### Restore-Konzept
 
-Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYYYMMDD-HHMM.sql.gz`) aus dem NFS-Backup-Verzeichnis. Einzelne Datenbanken koennen aus dem Dump extrahiert werden.
+Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYYYMMDD-HHMM.sql.gz`) aus dem NFS-Backup-Verzeichnis. Einzelne Datenbanken können aus dem Dump extrahiert werden.
 
 **Vault Secrets:** `kv/data/postgres` (Passwort), `kv/data/uptime-kuma` (Push-URLs). Policies: `postgres`, `postgres-backup`.
 
@@ -52,7 +52,7 @@ Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYY
 
 ### Lokale Snapshots
 
-Taeglich um 02:00 Uhr werden automatisch Snapshots aller DRBD-Ressourcen erstellt.
+Täglich um 02:00 Uhr werden automatisch Snapshots aller DRBD-Ressourcen erstellt.
 
 **Script:** `/usr/local/bin/linstor-backup.sh` (auf client-05 und client-06)
 **Cron:** Verwaltet via Ansible (`setup-backup-infrastructure.yml`)
@@ -64,12 +64,12 @@ Linstor exportiert Snapshots nativ nach S3-kompatiblem Storage (MinIO auf NAS, B
 **Ablauf pro Ressource:**
 1. Lokalen Snapshot erstellen (`daily-YYYYMMDD-HHMM`)
 2. Backup auf S3/MinIO exportieren
-3. Alte `daily-*` Snapshots aufraeumen (behalte 7)
-4. Alte `back_*` Snapshots aufraeumen (behalte 14)
+3. Alte `daily-*` Snapshots aufräumen (behalte 7)
+4. Alte `back_*` Snapshots aufräumen (behalte 14)
 
 **Besonderheiten:**
-- Laeuft nur auf dem Node mit aktivem Linstor Controller
-- Entsperrt automatisch den verschluesselten Controller via `/etc/linstor/passphrase`
+- Läuft nur auf dem Node mit aktivem Linstor Controller
+- Entsperrt automatisch den verschlüsselten Controller via `/etc/linstor/passphrase`
 
 ### Restore von S3
 
@@ -85,11 +85,9 @@ Ein Restore erfolgt durch Wiederherstellen eines Snapshots vom S3-Remote `nas-ba
 | Linstor S3 Backup | Push | 93600s (26h) | Linstor Shipping |
 | DRBD Snapshots | Push | 93600s (26h) | Lokale Snapshots |
 
-**Hinweis:** 26h Interval gibt 2h Puffer falls Backups laenger dauern als ueblich.
+**Hinweis:** 26h Interval gibt 2h Puffer falls Backups länger dauern als üblich.
 
 ### Backup Monitor Script
 
-`/usr/local/bin/linstor-backup-monitor.sh` (auf client-05) prueft um 06:00 Uhr ob Backups in den letzten 25h erstellt wurden und meldet via Uptime Kuma Push.
+`/usr/local/bin/linstor-backup-monitor.sh` (auf client-05) prüft um 06:00 Uhr ob Backups in den letzten 25h erstellt wurden und meldet via Uptime Kuma Push.
 
----
-*Letztes Update: 21.02.2026*

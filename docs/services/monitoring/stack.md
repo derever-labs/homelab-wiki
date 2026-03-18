@@ -16,27 +16,27 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 | :--- | :--- | :--- |
 | **Grafana** | Dashboards & Metriken | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
 | **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
-| **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (laeuft auf 15 Nodes) |
+| **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
 | **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 
 ## Grafana
 ### Datenquellen
 - **InfluxDB:** Speichert Metriken von Nomad, Consul und Proxmox.
-- **Loki:** Zentrales Log-Storage fuer alle Infrastruktur-Logs (via Grafana Alloy gesammelt).
+- **Loki:** Zentrales Log-Storage für alle Infrastruktur-Logs (via Grafana Alloy gesammelt).
 - **CheckMK:** Integriert über das CheckMK-Plugin für Infrastruktur-Status.
 
 ### Authentifizierung
 Erfolgt via OAuth2 (Keycloak). Nur Benutzer der Gruppe `admin` haben Zugriff.
 
 ### Deployment
-Grafana laeuft mit persistentem Storage (Linstor CSI Volume `grafana-data`, 1 GiB) fuer Unified Alerting State:
+Grafana läuft mit persistentem Storage (Linstor CSI Volume `grafana-data`, 1 GiB) für Unified Alerting State:
 - **Dashboards:** JSON Dateien unter `/nfs/docker/grafana/dashboards/` (aus Git).
 - **Datasources:** Via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`, `kv/jellystat`) provisioniert.
 - **Alerting:** Unified Alerting aktiv, Alert Rules via File Provisioning (siehe unten).
-- **Constraint:** Nur auf client-05/06 (Linstor CSI Volume verfuegbar).
+- **Constraint:** Nur auf client-05/06 (Linstor CSI Volume verfügbar).
 
 ### Alerting (Unified Alerting)
-Grafana Unified Alerting ist die zentrale Stelle fuer alle metrikbasierten Alerts.
+Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alerts.
 
 **Contact Point:** Telegram (Bot-Token aus `kv/data/telegram` via Vault)
 **Notification Policy:** Alle Alerts → Telegram, Group-Wait 30s, Repeat 4h
@@ -51,7 +51,7 @@ Grafana Unified Alerting ist die zentrale Stelle fuer alle metrikbasierten Alert
 | DRBD Out-of-Sync | `outofsync_bytes > 0` | 10min | Warning |
 | DRBD Disconnected | `Connected != 1` | 5min | Critical |
 
-**Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die fuer Nomads Template-Engine escaped werden muessen (doppelte geschweifte Klammern in HCL-Templates).
+**Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
 
 ## Uptime Kuma
 Überwacht alle externen und internen Endpunkte via HTTP/TCP-Checks.
@@ -61,10 +61,10 @@ Grafana Unified Alerting ist die zentrale Stelle fuer alle metrikbasierten Alert
 ## Backup-Monitoring
 
 ### Linstor Backup Monitor
-Ein separates Script (`/usr/local/bin/linstor-backup-monitor.sh`) prueft um 06:00 Uhr den Status der S3-Backups und meldet via Uptime Kuma Push.
+Ein separates Script (`/usr/local/bin/linstor-backup-monitor.sh`) prüft um 06:00 Uhr den Status der S3-Backups und meldet via Uptime Kuma Push.
 
 ### PostgreSQL Backup
-Der Nomad Batch-Job `postgres-backup` fuehrt taeglich ein `pg_dumpall` durch und sichert auf NFS (`/nfs/backup/postgres/`). Status wird via Uptime Kuma Push gemeldet.
+Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und sichert auf NFS (`/nfs/backup/postgres/`). Status wird via Uptime Kuma Push gemeldet.
 
 ## Zentrales Logging (Loki + Alloy)
 
@@ -92,11 +92,11 @@ NAS / Router                 → Syslog → Alloy Receiver   ──┘
 Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki weiter. Je nach Deployment-Art gibt es drei Varianten:
 
 #### Variante 1: Nomad System-Job (Container-Logs)
-- **Nomad Job:** `system/alloy.nomad` (System-Job, laeuft auf jedem Client-Node)
-- **Docker-Socket:** `/var/run/docker.sock` (read-only) fuer Container-Discovery
+- **Nomad Job:** `system/alloy.nomad` (System-Job, läuft auf jedem Client-Node)
+- **Docker-Socket:** `/var/run/docker.sock` (read-only) für Container-Discovery
 - **Labels:** Extrahiert `nomad_task` aus Container-Name, `nomad_alloc_id` aus Docker-Labels
 - **External Label:** `node` (Hostname des Client-Nodes)
-- **Syslog-Receiver:** Port 1514 (TCP+UDP, statisch) fuer externe Quellen (NAS, Router)
+- **Syslog-Receiver:** Port 1514 (TCP+UDP, statisch) für externe Quellen (NAS, Router)
 
 #### Variante 2: Ansible-Rolle `alloy` (systemd-Service)
 - **Rolle:** `ansible/roles/alloy/`
@@ -107,15 +107,15 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | Playbook | Hosts | Source-Label | Besonderheiten |
 | :--- | :--- | :--- | :--- |
 | `deploy-alloy.yml` | Server- & Client-Nodes | `journal` / `nomad-client` | Client-Nodes: Linstor-Logs als File-Target |
-| `deploy-alloy-proxmox.yml` | pve00, pve01, pve02 | `proxmox` | `www-data`-Gruppe fuer pveproxy-Logs |
+| `deploy-alloy-proxmox.yml` | pve00, pve01, pve02 | `proxmox` | `www-data`-Gruppe für pveproxy-Logs |
 | `deploy-alloy-infra.yml` | CheckMK, PBS, PDM, VPN-DNS, Zigbee | je nach Host | CheckMK: Core/Web/Notify-Logs |
 
 #### Variante 3: Docker-Container (vm-proxy-dns-01)
 - **Config:** `standalone-stacks/traefik-proxy/templates/alloy-config.alloy.j2`
 - **Quelle:** Docker-Socket Discovery (Traefik, Keycloak, etc.)
-- **DNS:** Container nutzt `10.0.2.1` / `10.0.2.2` fuer Consul-Aufloesung
+- **DNS:** Container nutzt `10.0.2.1` / `10.0.2.2` für Consul-Auflösung
 
-### Uebersicht aller Log-Quellen
+### Übersicht aller Log-Quellen
 
 | Host / Gruppe | Methode | Source-Label |
 | :--- | :--- | :--- |
@@ -150,4 +150,3 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-dashboards/` verwaltet oder direkt in der UI erstellt.
 
 ---
-*Letztes Update: 21.02.2026*

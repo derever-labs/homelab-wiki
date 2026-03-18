@@ -2,7 +2,7 @@
 title: HashiCorp Stack
 ---
 
-## Uebersicht
+## Übersicht
 
 - **Infrastruktur**: Proxmox VE 8.x (3 Hosts: pve00, pve01, pve02)
 - **OS**: Ubuntu 24.04 LTS
@@ -12,12 +12,12 @@ title: HashiCorp Stack
 
 ## Nodes
 
-Der Stack laeuft auf 3 Server-Nodes (Consul/Nomad/Vault) und 3 Worker-Nodes (Nomad Client/Docker), jeweils 1 pro Proxmox-Host.
+Der Stack läuft auf 3 Server-Nodes (Consul/Nomad/Vault) und 3 Worker-Nodes (Nomad Client/Docker), jeweils 1 pro Proxmox-Host.
 
 - **Server**: Nomad Server, Consul Server, Vault
 - **Worker**: Nomad Client, Consul Client, Docker
 
-Vollstaendige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../infrastructure/proxmox-cluster.md#hashicorp-stack-vms)
+Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../infrastructure/proxmox-cluster.md#hashicorp-stack-vms)
 
 ## Ersteinrichtung
 
@@ -79,7 +79,7 @@ homelab-hashicorp-stack/
 | Vault | Audit Logging | Aktiv |
 | TLS | Deaktiviert | Homelab-Entscheidung |
 
-**Consul Gossip Encryption:** Gesamter Gossip-Traffic zwischen Consul Nodes ist verschluesselt (symmetrischer Key, auf allen Nodes identisch).
+**Consul Gossip Encryption:** Gesamter Gossip-Traffic zwischen Consul Nodes ist verschlüsselt (symmetrischer Key, auf allen Nodes identisch).
 
 **Consul ACLs:** Aktiviert mit `default_policy = "allow"` — Services funktionieren ohne Token. Management Token in `infra/.consul-token`.
 
@@ -91,7 +91,7 @@ homelab-hashicorp-stack/
 
 **Vault Audit Logging:** Alle Vault-Zugriffe werden protokolliert unter `/opt/vault/audit/vault-audit.log`. Logrotate konfiguriert (30 Tage, komprimiert).
 
-**TLS Deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schuetzt Traffic trotzdem.
+**TLS Deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schützt Traffic trotzdem.
 
 ## Vault
 
@@ -99,7 +99,7 @@ Zentrales Secrets Management. Startet versiegelt und muss nach Reboot entsperrt 
 
 ### Workload Identity
 
-Nomad Jobs authentifizieren sich bei Vault ueber JWT (Workload Identity) ohne statische Tokens.
+Nomad Jobs authentifizieren sich bei Vault über JWT (Workload Identity) ohne statische Tokens.
 - **Auth Method:** `jwt-nomad`
 - **JWKS URL:** `http://10.0.2.104:4646/.well-known/jwks.json`
 - **Default Role:** `nomad-workloads`
@@ -112,7 +112,6 @@ Vault wird nach Neustart automatisch via systemd entsperrt:
 
 ## Consul DNS
 
-Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige DNS-Dokumentation inkl. Consul-Forwarding.
+Siehe [DNS-Architektur](dns-architecture.md) für die vollständige DNS-Dokumentation inkl. Consul-Forwarding.
 
 ---
-*Letztes Update: 21.02.2026*

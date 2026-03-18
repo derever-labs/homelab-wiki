@@ -10,11 +10,11 @@ tags:
 
 # Traefik Middleware Chains
 
-Diese Dokumentation beschreibt die verfuegbaren Middleware Chains fuer Traefik und deren Verwendung.
+Diese Dokumentation beschreibt die verfügbaren Middleware Chains für Traefik und deren Verwendung.
 
-## Uebersicht
+## Übersicht
 
-Alle Services werden ueber Traefik (vm-proxy-dns-01, 10.0.2.1) geroutet. Die Authentifizierung erfolgt ueber OAuth2-Proxy v2 mit Keycloak als Identity Provider.
+Alle Services werden über Traefik (vm-proxy-dns-01, 10.0.2.1) geroutet. Die Authentifizierung erfolgt über OAuth2-Proxy v2 mit Keycloak als Identity Provider.
 
 > **Migration v1 → v2:** Am 21.02.2026 wurden alle Middleware Chains auf v2 migriert.
 > Die v2 Chains nutzen einen zentralen oauth2-proxy mit ForwardAuth (`/oauth2/auth?allowed_groups=...`)
@@ -22,9 +22,9 @@ Alle Services werden ueber Traefik (vm-proxy-dns-01, 10.0.2.1) geroutet. Die Aut
 
 ## Middleware Chains
 
-### Fuer externen Zugriff (Public)
+### Für externen Zugriff (Public)
 
-Diese Chains erlauben Zugriff von ueberall, erfordern aber OAuth2-Authentifizierung:
+Diese Chains erlauben Zugriff von überall, erfordern aber OAuth2-Authentifizierung:
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
@@ -32,7 +32,7 @@ Diese Chains erlauben Zugriff von ueberall, erfordern aber OAuth2-Authentifizier
 | `public-admin-chain-v2` | crowdsec → oauth2-errors → require-admin | CrowdSec + OAuth2 Admin |
 | `public-family-chain-v2` | crowdsec → oauth2-errors → require-family | CrowdSec + OAuth2 Family |
 
-### Fuer internen Zugriff (IP-Whitelist + OAuth2)
+### Für internen Zugriff (IP-Whitelist + OAuth2)
 
 Diese Chains erfordern sowohl OAuth2-Authentifizierung als auch eine interne IP:
 
@@ -46,7 +46,7 @@ Diese Chains erfordern sowohl OAuth2-Authentifizierung als auch eine interne IP:
 | Chain | Komponenten | Beschreibung |
 |-------|-------------|--------------|
 | `intern-chain` | ipWhiteList | Basis IP-Whitelist |
-| `intern-api-chain` | intern-chain | Fuer API-Zugriffe (nur IP-Whitelist) |
+| `intern-api-chain` | intern-chain | Für API-Zugriffe (nur IP-Whitelist) |
 
 ### IP-Whitelist Ranges
 
@@ -60,7 +60,7 @@ Die `intern-chain` erlaubt folgende IP-Bereiche:
 
 ### Zentraler oauth2-proxy
 
-Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gruppenpruefung per `allowed_groups` Query-Parameter macht:
+Statt separater Instanzen pro Gruppe gibt es **einen** oauth2-proxy, der die Gruppenprüfung per `allowed_groups` Query-Parameter macht:
 
 ```mermaid
 flowchart LR
@@ -82,15 +82,15 @@ flowchart LR
 
 ### Error Handling (oauth2-errors)
 
-Die `oauth2-errors` Middleware faengt 401-Antworten von den `require-*` Middlewares ab und leitet den User zur Keycloak-Login-Seite weiter. Die `statusRewrites` Konfiguration (Traefik >= 3.4) schreibt den 401 auf 302 um, damit der Browser dem `Location`-Header folgt. Ohne `statusRewrites` wuerde der Browser "Found." als Text anzeigen statt automatisch weiterzuleiten.
+Die `oauth2-errors` Middleware fängt 401-Antworten von den `require-*` Middlewares ab und leitet den User zur Keycloak-Login-Seite weiter. Die `statusRewrites` Konfiguration (Traefik >= 3.4) schreibt den 401 auf 302 um, damit der Browser dem `Location`-Header folgt. Ohne `statusRewrites` würde der Browser "Found." als Text anzeigen statt automatisch weiterzuleiten.
 
-**Reihenfolge:** `oauth2-errors` muss in der Chain **vor** `require-*` stehen, da die `errors` Middleware nur Antworten von Middlewares abfaengt, die **nach** ihr in der Chain kommen.
+**Reihenfolge:** `oauth2-errors` muss in der Chain **vor** `require-*` stehen, da die `errors` Middleware nur Antworten von Middlewares abfängt, die **nach** ihr in der Chain kommen.
 
 ## Konfiguration neuer Services
 
-Fuer jeden Service mit OAuth2-Middleware muss die entsprechende Chain als Traefik Middleware im Nomad Job aktiviert werden (z.B. `public-admin-chain-v2@file`). Zusaetzlich muss eine OAuth2 Callback-Route in der Traefik Dynamic Config existieren.
+Für jeden Service mit OAuth2-Middleware muss die entsprechende Chain als Traefik Middleware im Nomad Job aktiviert werden (z.B. `public-admin-chain-v2@file`). Zusätzlich muss eine OAuth2 Callback-Route in der Traefik Dynamic Config existieren.
 
-Beispiele fuer die Verwendung der Chains stehen in der [Security-Dokumentation](security.md).
+Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](security.md).
 
 ## Konfigurationsdateien
 

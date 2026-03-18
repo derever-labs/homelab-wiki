@@ -10,25 +10,25 @@ tags:
   - dclab
 ---
 
-## Uebersicht
+## Übersicht
 
-Linstor ist eine Management-Schicht fuer DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgaenge synchron auf Block-Level zwischen Nodes.
+Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgänge synchron auf Block-Level zwischen Nodes.
 
 | Komponente | Funktion |
 |------------|----------|
-| DRBD | Kernel-Modul fuer synchrone Block-Replikation |
+| DRBD | Kernel-Modul für synchrone Block-Replikation |
 | Linstor Controller | Management API, Cluster-Koordination (H2 DB) |
 | Linstor Satellite | Node-Agent, verwaltet lokale Ressourcen |
-| DRBD Reactor | Failover-Manager fuer Controller HA |
+| DRBD Reactor | Failover-Manager für Controller HA |
 | CSI Driver | Integration mit Nomad/Kubernetes |
 
 ## Homelab Architektur
 
 ### Controller High Availability (HA)
 
-Der Linstor Controller laeuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`).
+Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`).
 
-**Wichtig:** Linstor Controller ist fuer Active/Passive designed - nur EIN Controller kann gleichzeitig laufen!
+**Wichtig:** Linstor Controller ist für Active/Passive designed - nur EIN Controller kann gleichzeitig laufen!
 
 ```mermaid
 flowchart TD
@@ -52,12 +52,12 @@ flowchart TD
 ```
 
 **Architektur-Details:**
-- **Active/Passive:** Nur ein Controller laeuft gleichzeitig (managed by drbd-reactor)
-- **DRBD Reactor:** Ueberwacht DRBD Quorum und startet/stoppt Services automatisch
+- **Active/Passive:** Nur ein Controller läuft gleichzeitig (managed by drbd-reactor)
+- **DRBD Reactor:** Überwacht DRBD Quorum und startet/stoppt Services automatisch
 - **H2 Datenbank:** Schneller als etcd, auf DRBD-Volume repliziert
 - **Thunderbolt (25Gbit):** DRBD Replikation zwischen client-05 und client-06
 - **Management (1Gbit):** Control Plane, CSI, Satellite-Kommunikation
-- **TieBreaker:** client-04 ist diskloser Quorum-Witness (kein Thunderbolt noetig)
+- **TieBreaker:** client-04 ist diskloser Quorum-Witness (kein Thunderbolt nötig)
 
 ### Failover-Verhalten
 
@@ -77,7 +77,7 @@ flowchart TD
 
 ### Storage Nodes
 
-| Node | Disk | Pool | Kapazitaet |
+| Node | Disk | Pool | Kapazität |
 |------|------|------|------------|
 | vm-nomad-client-05 | /dev/sdb | linstor_pool | 200 GB |
 | vm-nomad-client-06 | /dev/sdb | linstor_pool | 200 GB |
@@ -85,13 +85,13 @@ flowchart TD
 ### Quorum
 
 - 3 Nodes im Cluster (2 Storage + 1 Diskless Witness)
-- 2 von 3 muessen erreichbar sein fuer Schreiboperationen
+- 2 von 3 müssen erreichbar sein für Schreiboperationen
 - Node 04 ist diskless Witness (nur Quorum, keine Daten)
 - Verhindert Split-Brain bei Netzwerkpartitionierung
 
 ## DClab Konfiguration
 
-Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) fuer DRBD-Replikation zwischen den Storage-Nodes.
+Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Replikation zwischen den Storage-Nodes.
 
 ### Netzwerk-Topologie
 
@@ -116,7 +116,7 @@ flowchart TD
     end
 ```
 
-### Netzwerk-Uebersicht
+### Netzwerk-Übersicht
 
 | Node | Management (1GbE) | DRBD-Sync (10GbE) | Rolle |
 |------|-------------------|-------------------|-------|
@@ -124,11 +124,11 @@ flowchart TD
 | vm-nomad-client-02 | 10.180.46.82 | 172.180.46.82 | Storage + Controller |
 | vm-nomad-client-03 | 10.180.46.83 | 172.180.46.83 | Storage + Controller |
 
-**Wichtig:** client-01 hat NUR Zugang zum Management-Netzwerk (1GbE). Das DRBD-Sync Netzwerk (172.180.46.0/24) ist nur zwischen client-02 und client-03 verfuegbar.
+**Wichtig:** client-01 hat NUR Zugang zum Management-Netzwerk (1GbE). Das DRBD-Sync Netzwerk (172.180.46.0/24) ist nur zwischen client-02 und client-03 verfügbar.
 
 ### Connection Paths
 
-Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connection-Paths konfiguriert werden. Ohne diese wuerde Linstor versuchen, alle Verbindungen ueber das PrefNic-Interface (drbd-sync) aufzubauen.
+Da client-01 das 10GbE-Netzwerk nicht erreichen kann, müssen explizite Connection-Paths konfiguriert werden. Ohne diese würde Linstor versuchen, alle Verbindungen über das PrefNic-Interface (drbd-sync) aufzubauen.
 
 **Verbindungsmatrix:**
 
@@ -148,7 +148,7 @@ Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connecti
 
 ### Aktive Resources (DClab)
 
-| Resource | Groesse | Verwendung |
+| Resource | Grösse | Verwendung |
 |----------|---------|------------|
 | linstor_db | 500 MiB | Controller H2 Datenbank (HA) |
 | postgres-data | 10 GiB | PostgreSQL |
@@ -163,7 +163,7 @@ Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connecti
 
 ### Aktive Volumes (Homelab)
 
-| Volume | Groesse | Verwendung |
+| Volume | Grösse | Verwendung |
 |--------|---------|------------|
 | **linstor_db** | 500 MiB | **Linstor Controller H2 Datenbank (HA)** |
 | influxdb-data | 3 GiB | InfluxDB Time Series DB |
@@ -180,7 +180,7 @@ Da client-01 das 10GbE-Netzwerk nicht erreichen kann, muessen explizite Connecti
 
 Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
 
-**Hinweis:** `linstor_db` ist ein spezielles Volume fuer die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geaendert werden.
+**Hinweis:** `linstor_db` ist ein spezielles Volume für die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geändert werden.
 
 ## Installation und Konfiguration
 
@@ -188,34 +188,34 @@ Deployment via Ansible Role `drbd-reactor`. Siehe Repository `homelab-hashicorp-
 
 ## Nomad CSI Integration
 
-Das CSI Plugin (`system/linstor-csi.nomad`) ermoeglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs.
+Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs.
 
 **Wichtig:** Das offizielle LINBIT Image (drbd.io) erfordert Login. Stattdessen wird `kvaps/linstor-csi` von Docker Hub verwendet.
 
 ### CSI HA via Consul Service Discovery
 
-Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung des CSI-Plugins zu ermoeglichen, wird Consul Service Discovery genutzt.
+Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung des CSI-Plugins zu ermöglichen, wird Consul Service Discovery genutzt.
 
 **Funktionsweise:**
 1. Der aktive Linstor Controller (bestimmt durch drbd-reactor) registriert sich als Service `linstor-controller` in Consul.
 2. Das CSI Plugin verwendet `http://linstor-controller.service.consul:3370` als Endpoint.
 3. Bei einem Failover registriert der neue aktive Node den Service.
-4. Die DNS TTL fuer diesen Service ist auf 0s gesetzt, um Caching-Probleme zu vermeiden.
+4. Die DNS TTL für diesen Service ist auf 0s gesetzt, um Caching-Probleme zu vermeiden.
 
 **Komponenten:**
 - **Registration Script:** `/usr/local/bin/linstor-consul-register.sh`
-- **Systemd Service:** `linstor-consul-register.service` (haengt von linstor-controller ab)
+- **Systemd Service:** `linstor-consul-register.service` (hängt von linstor-controller ab)
 - **DRBD Reactor:** Startet den Registration-Service zusammen mit dem Controller
 
 ## Controller HA mit DRBD Reactor
 
-Der Linstor Controller laeuft im Active/Passive Modus. DRBD Reactor ueberwacht das `linstor_db` DRBD-Volume und startet den Controller automatisch auf dem Node mit DRBD Primary.
+Der Linstor Controller läuft im Active/Passive Modus. DRBD Reactor überwacht das `linstor_db` DRBD-Volume und startet den Controller automatisch auf dem Node mit DRBD Primary.
 
 Die gesamte Konfiguration (DRBD Reactor Promoter, Systemd Mount Unit, Consul Registration, JVM Memory) wird durch die Ansible Role `drbd-reactor` verwaltet.
 
 **Bei Controller-Ausfall:**
 1. DRBD Reactor erkennt Quorum-Verlust auf dem ausgefallenen Node
-2. Standby-Node erhaelt Quorum und wird DRBD Primary
+2. Standby-Node erhält Quorum und wird DRBD Primary
 3. drbd-reactor mounted `/var/lib/linstor` und startet `linstor-controller`
 4. Satellites reconnecten automatisch zum neuen Controller
 5. CSI Plugin verbindet automatisch (Consul Service Discovery)
@@ -232,13 +232,13 @@ Falls es dennoch vorkommt:
 
 ## Backup
 
-Die Backup-Strategie fuer DRBD-Volumes ist in der [Backup-Strategie](../services/core/backup-strategy.md) beschrieben.
+Die Backup-Strategie für DRBD-Volumes ist in der [Backup-Strategie](../services/core/backup-strategy.md) beschrieben.
 
 ## Performance
 
 ### Thunderbolt Optimierung
 
-Die DRBD-Replikation laeuft ueber das Thunderbolt-Netzwerk (10.99.1.0/24) mit 25 Gbit/s. Dadurch ist die Latenz fuer synchrone Replikation minimal.
+Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit 25 Gbit/s. Dadurch ist die Latenz für synchrone Replikation minimal.
 
 | Metrik | Erwarteter Wert |
 |--------|-----------------|
@@ -248,7 +248,7 @@ Die DRBD-Replikation laeuft ueber das Thunderbolt-Netzwerk (10.99.1.0/24) mit 25
 
 ### PostgreSQL Benchmark (DRBD vs Lokale SSD)
 
-Benchmark durchgefuehrt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threads, 60 Sekunden).
+Benchmark durchgeführt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threads, 60 Sekunden).
 
 | Metrik | DRBD (Netzwerk) | Lokal (SSD) | Differenz |
 |--------|-----------------|-------------|-----------|
@@ -257,7 +257,7 @@ Benchmark durchgefuehrt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threa
 | Transaktionen (60s) | 153,379 | 264,633 | +73% |
 | Verbindungszeit | 117 ms | 10 ms | -91% |
 
-**Fazit:** Der DRBD-Performance-Overhead ist fuer den Anwendungsfall akzeptabel. Die Vorteile (automatisches Failover, keine manuelle Replikation) ueberwiegen die leicht hoeheren Latenzen. Die meisten Services benoetigen < 100 TPS.
+**Fazit:** Der DRBD-Performance-Overhead ist für den Anwendungsfall akzeptabel. Die Vorteile (automatisches Failover, keine manuelle Replikation) überwiegen die leicht höheren Latenzen. Die meisten Services benötigen < 100 TPS.
 
 ## Monitoring
 
@@ -271,7 +271,7 @@ URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
 | Storage Pool Total/Frei | Absolute Werte in GB |
 | Volumes | Anzahl der Resource Definitions |
 | Volume Auslastung | Prozentuale Auslastung pro Volume |
-| Volume Allocation | Tatsaechlich belegter Speicher pro Volume |
+| Volume Allocation | Tatsächlich belegter Speicher pro Volume |
 | Node Status | Online/Offline Status aller Nodes |
 | Resource Status | Sync-Status aller Ressourcen |
 
@@ -290,17 +290,17 @@ flowchart TD
 
 | Metrik | Beschreibung |
 |--------|--------------|
-| linstor_storage_pool_capacity_total_bytes | Gesamtkapazitaet des Storage Pools |
+| linstor_storage_pool_capacity_total_bytes | Gesamtkapazität des Storage Pools |
 | linstor_storage_pool_capacity_free_bytes | Freier Speicher im Pool |
-| linstor_volume_allocated_size_bytes | Tatsaechlich belegter Speicher pro Volume |
-| linstor_volume_definition_size_bytes | Provisionierte Groesse pro Volume |
+| linstor_volume_allocated_size_bytes | Tatsächlich belegter Speicher pro Volume |
+| linstor_volume_definition_size_bytes | Provisionierte Grösse pro Volume |
 | linstor_node_state | Node Status (0=Offline, 1=Connected, 2=Online) |
 | linstor_resource_state | Resource Status (0=UpToDate, 1=Syncing) |
 | linstor_resource_definition_count | Anzahl der definierten Volumes |
 
 ### LVM Thin Pool Monitoring
 
-**Warum zusaetzlich zu Linstor-Metriken?** Linstor meldet `storage_pool_capacity_free_bytes`, aber dies bildet die tatsaechliche LVM-Thin-Pool-Auslastung (inkl. Snapshot-Overhead) nicht korrekt ab. Beim Thin-Pool-Overflow-Incident zeigte Linstor noch freien Platz, waehrend LVM bei 100% war.
+**Warum zusätzlich zu Linstor-Metriken?** Linstor meldet `storage_pool_capacity_free_bytes`, aber dies bildet die tatsächliche LVM-Thin-Pool-Auslastung (inkl. Snapshot-Overhead) nicht korrekt ab. Beim Thin-Pool-Overflow-Incident zeigte Linstor noch freien Platz, während LVM bei 100% war.
 
 **Metriken-Pipeline:**
 
@@ -314,9 +314,9 @@ flowchart LR
 
 **Metriken:** `lvm_thinpool` mit Tags `host`, `vg`, `pool` und Fields `data_percent`, `metadata_percent`
 
-**CheckMK Safety Net:** Zusaetzlich laeuft ein CheckMK Local Check direkt auf dem Host (75% WARN, 85% CRIT) — funktioniert auch wenn der gesamte Container-Stack ausfaellt.
+**CheckMK Safety Net:** Zusätzlich läuft ein CheckMK Local Check direkt auf dem Host (75% WARN, 85% CRIT) — funktioniert auch wenn der gesamte Container-Stack ausfällt.
 
-## LINBIT GUI (Web-Oberflaeche)
+## LINBIT GUI (Web-Oberfläche)
 
 | Eigenschaft | Wert |
 |---|---|
@@ -337,4 +337,3 @@ Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul
 - [Linstor CSI Driver](https://github.com/piraeusdatastore/linstor-csi)
 
 ---
-*Letztes Update: 21.02.2026*

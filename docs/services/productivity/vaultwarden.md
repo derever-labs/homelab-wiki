@@ -27,4 +27,3 @@ Vaultwarden ist ein in Rust geschriebener Passwort-Server, der mit den offiziell
 Der Zugriff ist zusätzlich durch Traefik OAuth2 geschützt (je nach Konfiguration). Die Kommunikation erfolgt ausschliesslich verschlüsselt via HTTPS.
 
 ---
-*Letztes Update: 26.12.2025*

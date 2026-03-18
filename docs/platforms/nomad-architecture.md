@@ -16,7 +16,7 @@ title: Nomad Job-Übersicht
 
 ## Traefik Middlewares
 
-Siehe [Traefik Middleware Chains](traefik-middlewares.md) fuer die vollstaendige Dokumentation der v2 Middleware Chains.
+Siehe [Traefik Middleware Chains](traefik-middlewares.md) für die vollständige Dokumentation der v2 Middleware Chains.
 
 ## Infrastructure
 
@@ -24,16 +24,16 @@ Alle VMs und IPs: [Proxmox Cluster](../infrastructure/proxmox-cluster.md)
 
 ## DNS
 
-Siehe [DNS-Architektur](dns-architecture.md) fuer die vollstaendige Dokumentation der DNS-Kette (Pi-hole v6, Unbound, Consul DNS).
+Siehe [DNS-Architektur](dns-architecture.md) für die vollständige Dokumentation der DNS-Kette (Pi-hole v6, Unbound, Consul DNS).
 
 ## Litestream SQLite Replikation
 
-Siehe [Data Strategy](../architecture/data-strategy.md) fuer die vollstaendige Dokumentation der Litestream-Replikation.
+Siehe [Data Strategy](../architecture/data-strategy.md) für die vollständige Dokumentation der Litestream-Replikation.
 
 ## Job Configuration
 
 - Docker als Task Driver
-- Volumes von `/nfs/docker/` fuer persistente Daten
+- Volumes von `/nfs/docker/` für persistente Daten
 - Bridge Networking mit Port Mappings
 - Health Checks wo anwendbar
 - Resource Limits gesetzt
@@ -45,4 +45,3 @@ Siehe [Data Strategy](../architecture/data-strategy.md) fuer die vollstaendige D
 - **Network**: Jobs nutzen verschiedene Ports
 
 ---
-*Letztes Update: 21.02.2026*
