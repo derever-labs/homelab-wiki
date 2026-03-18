@@ -8,4 +8,4 @@ order: 2
 
 - [Jellyfin](./jellyfin.md) -- Media Server
 - [Arr Stack](./arr-stack.md) -- Sonarr, Radarr, Prowlarr, SABnzbd
-- [Radarr Quality Profiles](./radarr-quality-profiles.md) -- Qualitaetsprofile
+- [Radarr Quality Profiles](./radarr-quality-profiles.md) -- Qualitätsprofile

@@ -6,7 +6,7 @@ order: 1
 
 # Core Services
 
-Grundlegende Dienste die von anderen Services abhaengig sind.
+Grundlegende Dienste die von anderen Services abhängig sind.
 
 - [Traefik](./traefik.md) -- Reverse Proxy, Service Discovery
 - [Docker Registry](./docker-registry.md) -- Lokale Container-Registry (ZOT)

@@ -86,7 +86,7 @@ tags:
 
 ### Custom Containers
 
-VitePress unterstuetzt folgende Container-Typen:
+VitePress unterstützt folgende Container-Typen:
 
 ```markdown
 ::: info Titel
@@ -94,7 +94,7 @@ Informationshinweis
 :::
 
 ::: warning Titel
-Warnung (haeufige Fehler)
+Warnung (häufige Fehler)
 :::
 
 ::: danger Titel
@@ -112,7 +112,7 @@ Optionale Vertiefungen (klappbar)
 
 ### Diagramme
 
-Mermaid-Diagramme sind unterstuetzt fuer Workflows und Architektur:
+Mermaid-Diagramme sind unterstützt für Workflows und Architektur:
 
 ````markdown
 ```mermaid
