@@ -9,7 +9,7 @@ tags:
 
 # Metabase
 
-## Uebersicht
+## Übersicht
 
 | Attribut | Wert |
 | :--- | :--- |
@@ -24,13 +24,13 @@ tags:
 
 ## Beschreibung
 
-Metabase stellt Daten aus der `n8n`-Datenbank als Dashboards dar. Primaerer Use Case: [Immobilien-Monitoring](./immobilien-monitoring.md) mit Karten, Preisvergleichen und Inseratuebersichten.
+Metabase stellt Daten aus der `n8n`-Datenbank als Dashboards dar. Primärer Use Case: [Immobilien-Monitoring](./immobilien-monitoring.md) mit Karten, Preisvergleichen und Inseratübersichten.
 
 ## Ersteinrichtung
 
 1. `/setup` aufrufen und Admin-Account erstellen
-2. Datenquelle hinzufuegen: PostgreSQL, Host `postgres.service.consul`, DB `n8n`, User `metabase_reader`
-3. Dashboards fuer Immobilien-Monitoring aufbauen
+2. Datenquelle hinzufügen: PostgreSQL, Host `postgres.service.consul`, DB `n8n`, User `metabase_reader`
+3. Dashboards für Immobilien-Monitoring aufbauen
 
 ## Vault Secrets
 
