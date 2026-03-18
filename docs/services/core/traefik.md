@@ -26,13 +26,13 @@ tags:
 
 ## Authentifizierung (Middlewares)
 
-Traefik nutzt v2 Middleware Chains mit OAuth2-Proxy und Keycloak. Vollstaendige Dokumentation: [Traefik Middleware Chains](../../platforms/traefik-middlewares.md)
+Traefik nutzt v2 Middleware Chains mit OAuth2-Proxy und Keycloak. Vollständige Dokumentation: [Traefik Middleware Chains](../../platforms/traefik-middlewares.md)
 
-Kurzuebersicht:
-- **public-*-chain-v2:** CrowdSec + OAuth2 (fuer externen Zugriff)
-- **intern-*-chain-v2:** OAuth2 + IP-Whitelist (fuer internen Zugriff)
+Kurzübersicht:
+- **public-*-chain-v2:** CrowdSec + OAuth2 (für externen Zugriff)
+- **intern-*-chain-v2:** OAuth2 + IP-Whitelist (für internen Zugriff)
 - **intern-chain:** Nur IP-Whitelist (ohne Authentifizierung)
-- **admin-chain-v2:** OAuth2 Admin ohne IP-Einschraenkung (z.B. Traefik Dashboard)
+- **admin-chain-v2:** OAuth2 Admin ohne IP-Einschränkung (z.B. Traefik Dashboard)
 
 ## Wartung
 ### Konfiguration ändern

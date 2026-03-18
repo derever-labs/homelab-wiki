@@ -8,28 +8,28 @@ tags:
 
 # Wiki-Richtlinien
 
-Diese Seite definiert die Regeln fuer Inhalt, Struktur und Pflege dieses Wikis.
+Diese Seite definiert die Regeln für Inhalt, Struktur und Pflege dieses Wikis.
 
 ## Grundprinzip
 
-Das Wiki erklaert das **Warum** und **Wie es zusammenhaengt**. Das Git-Repository enthaelt das **Was** (Code, Config, Jobs).
+Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repository enthält das **Was** (Code, Config, Jobs).
 
 ## Inhalt
 
-### Was ins Wiki gehoert
+### Was ins Wiki gehört
 
-- Architektur-Entscheidungen und deren Begruendung
-- Konzeptionelle Erklaerungen (wie Komponenten zusammenspielen)
-- Tabellen mit Uebersichtsdaten (Hosts, IPs, Services, URLs)
-- Mermaid-Diagramme fuer Architektur und Datenfluesse
+- Architektur-Entscheidungen und deren Begründung
+- Konzeptionelle Erklärungen (wie Komponenten zusammenspielen)
+- Tabellen mit Übersichtsdaten (Hosts, IPs, Services, URLs)
+- Mermaid-Diagramme für Architektur und Datenflüsse
 - Runbooks mit knappen Schritt-Beschreibungen
 
-### Was NICHT ins Wiki gehoert
+### Was NICHT ins Wiki gehört
 
-- **Keine Code-Bloecke** (HCL, YAML, JSON, TOML, INI) -- stattdessen Verweis auf die Repo-Datei
-- **Keine CLI-Befehle** in Bash-Bloecken -- hoechstens als Inline-Code (`befehl`) wenn unverzichtbar
+- **Keine Code-Blöcke** (HCL, YAML, JSON, TOML, INI) -- stattdessen Verweis auf die Repo-Datei
+- **Keine CLI-Befehle** in Bash-Blöcken -- höchstens als Inline-Code (`befehl`) wenn unverzichtbar
 - **Keine Konfigurationsdateien** -- "Verwaltet durch Ansible" oder "Siehe `pfad/zur/datei`"
-- **Keine Installationsanleitungen** -- gehoeren ins Repo (README, Ansible Roles)
+- **Keine Installationsanleitungen** -- gehören ins Repo (README, Ansible Roles)
 
 ## Single Source of Truth
 
@@ -39,7 +39,7 @@ Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorth
 |-------|-------------------|
 | Hosts, VMs, IPs, Specs | [Proxmox Cluster](./infrastructure/proxmox-cluster.md) |
 | NFS-Exports, Mount-Pfade | [NAS-Speicher](./infrastructure/storage-nas.md) |
-| Service-Verzeichnis (URLs) | [Infrastruktur-Uebersicht](./architecture/overview.md) |
+| Service-Verzeichnis (URLs) | [Infrastruktur-Übersicht](./architecture/overview.md) |
 | Middleware Chains | [Traefik Middlewares](./platforms/traefik-middlewares.md) |
 | DNS-Architektur | [DNS-Architektur](./platforms/dns-architecture.md) |
 | CrowdSec | [CrowdSec](./platforms/crowdsec.md) |
@@ -52,11 +52,11 @@ Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorth
 
 | Ordner | Inhalt |
 |--------|--------|
-| architecture/ | Gesamtuebersicht, Datenstrategie |
+| architecture/ | Gesamtübersicht, Datenstrategie |
 | infrastructure/ | Proxmox, Storage, Netzwerk-Hardware |
 | platforms/ | HashiCorp Stack, Traefik, Linstor, Security |
 | services/ | Einzelne Services (core, media, monitoring, productivity, iot) |
-| runbooks/ | Betriebsanleitungen fuer Wartung und Notfaelle |
+| runbooks/ | Betriebsanleitungen für Wartung und Notfälle |
 
 ### Dateinamen
 

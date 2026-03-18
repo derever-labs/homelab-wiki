@@ -9,7 +9,7 @@ tags:
 
 # CrowdSec
 
-## Uebersicht
+## Übersicht
 
 | Eigenschaft | Wert |
 |-------------|------|
@@ -29,13 +29,13 @@ flowchart LR
     Engine -.-> Logs["Traefik Logs<br/>(/var/log/docker/traefik/)"]
 ```
 
-Der Bouncer prueft eingehende Requests gegen die Engine. Wird eine IP als boeswillig erkannt, blockiert der Bouncer den Zugriff bevor der Request das Backend erreicht.
+Der Bouncer prüft eingehende Requests gegen die Engine. Wird eine IP als böswillig erkannt, blockiert der Bouncer den Zugriff bevor der Request das Backend erreicht.
 
 ## Komponenten
 
 ### CrowdSec Engine
 
-Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien. Entscheidet ueber IP-Bans und stellt die lokale API (LAPI) bereit.
+Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien. Entscheidet über IP-Bans und stellt die lokale API (LAPI) bereit.
 
 | Eigenschaft | Wert |
 |-------------|------|
@@ -46,7 +46,7 @@ Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien
 
 ### CrowdSec Bouncer
 
-ForwardAuth-Middleware in Traefik. Prueft bei jedem Request, ob die Quell-IP von der Engine gebannt wurde.
+ForwardAuth-Middleware in Traefik. Prüft bei jedem Request, ob die Quell-IP von der Engine gebannt wurde.
 
 | Eigenschaft | Wert |
 |-------------|------|
@@ -66,7 +66,7 @@ Die Engine verwendet folgende Collections zur Angriffserkennung:
 
 ## Integration mit Traefik Middleware Chains
 
-CrowdSec ist als erste Middleware in allen `public-*-chain-v2` Chains eingebunden. Damit werden alle oeffentlich erreichbaren Services geschuetzt, bevor die OAuth2-Authentifizierung greift.
+CrowdSec ist als erste Middleware in allen `public-*-chain-v2` Chains eingebunden. Damit werden alle öffentlich erreichbaren Services geschützt, bevor die OAuth2-Authentifizierung greift.
 
 | Chain | Reihenfolge |
 |-------|-------------|
@@ -78,7 +78,7 @@ Details zu den Middleware Chains: [Traefik Middlewares](traefik-middlewares.md)
 
 ## CrowdSec Console
 
-Das zentrale Dashboard unter app.crowdsec.net zeigt Statistiken ueber erkannte Angriffe, gebannte IPs und die aktiven Szenarien. Die lokale Engine synchronisiert sich mit der Console fuer Community-Blocklists.
+Das zentrale Dashboard unter app.crowdsec.net zeigt Statistiken über erkannte Angriffe, gebannte IPs und die aktiven Szenarien. Die lokale Engine synchronisiert sich mit der Console für Community-Blocklists.
 
 ## Verwandte Seiten
 
@@ -86,4 +86,3 @@ Das zentrale Dashboard unter app.crowdsec.net zeigt Statistiken ueber erkannte A
 - [Traefik Middlewares](traefik-middlewares.md) — Middleware Chains mit CrowdSec
 
 ---
-*Letztes Update: 21.02.2026*

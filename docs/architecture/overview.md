@@ -6,7 +6,7 @@ title: Infrastruktur-Übersicht
 
 Das Cluster besteht aus 3 Proxmox-Hosts, 6 HashiCorp-VMs (3 Server, 3 Worker), 2 Infrastruktur-VMs und 2 IoT-VMs.
 
-Vollstaendige Auflistung aller Hosts, IPs und Specs: [Proxmox Cluster](../infrastructure/proxmox-cluster.md)
+Vollständige Auflistung aller Hosts, IPs und Specs: [Proxmox Cluster](../infrastructure/proxmox-cluster.md)
 
 ## Netzwerk
 

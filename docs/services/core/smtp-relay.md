@@ -11,7 +11,7 @@ tags:
 
 # SMTP Relay
 
-## Uebersicht
+## Übersicht
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
@@ -23,11 +23,11 @@ tags:
 
 ## Beschreibung
 
-Zentraler SMTP-Relay fuer das gesamte Homelab. Nimmt Mails von internen Nodes und Services ohne Authentifizierung entgegen (Netzwerk `10.0.0.0/8`) und leitet sie via TLS an `mail.netzone.ch` weiter.
+Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes und Services ohne Authentifizierung entgegen (Netzwerk `10.0.0.0/8`) und leitet sie via TLS an `mail.netzone.ch` weiter.
 
 **Problem:** Kein Infrastruktur-Node konnte E-Mails versenden — kritische Alerts (Backup-Fehler, Disk-Warnungen, HA-Events) gingen verloren.
 
-**Loesung:** `boky/postfix` als Nomad Job mit Vault-Credentials.
+**Lösung:** `boky/postfix` als Nomad Job mit Vault-Credentials.
 
 ## Architektur
 
@@ -80,7 +80,7 @@ Datei: `infrastructure/smtp-relay.nomad`
 
 ### Sender-Rewrite
 
-`mail.netzone.ch` erlaubt nur den authentifizierten Benutzer als Absender. Alle Absender-Adressen werden via `smtp_generic_maps` auf `services@ackermann.systems` umgeschrieben. Die urspruengliche Absender-Info (z.B. `root@pve00`) ist im Mail-Body oder Subject ersichtlich.
+`mail.netzone.ch` erlaubt nur den authentifizierten Benutzer als Absender. Alle Absender-Adressen werden via `smtp_generic_maps` auf `services@ackermann.systems` umgeschrieben. Die ursprüngliche Absender-Info (z.B. `root@pve00`) ist im Mail-Body oder Subject ersichtlich.
 
 ### Vault Secret
 
@@ -106,27 +106,27 @@ Die Ansible-Role `postfix-relay` konfiguriert Postfix auf Infrastruktur-Nodes al
 | pbs-backup-server | 10.0.2.50 | Konfiguriert |
 | checkmk | 10.0.2.150 | Konfiguriert |
 
-**Wichtig:** Alle Infra-Nodes muessen `10.0.2.1` als DNS-Server verwenden, damit `smtp.service.consul` aufgeloest werden kann.
+**Wichtig:** Alle Infra-Nodes müssen `10.0.2.1` als DNS-Server verwenden, damit `smtp.service.consul` aufgelöst werden kann.
 
 ## Nomad Services
 
-Services koennen den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth). Die SMTP-Konfiguration der einzelnen Services (Vaultwarden, Keycloak, Paperless etc.) ist in den jeweiligen Nomad Jobs bzw. Docker Compose Dateien definiert.
+Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth). Die SMTP-Konfiguration der einzelnen Services (Vaultwarden, Keycloak, Paperless etc.) ist in den jeweiligen Nomad Jobs bzw. Docker Compose Dateien definiert.
 
-## Abhaengigkeiten
+## Abhängigkeiten
 
 - [x] Vault (kv/data/smtp Credentials)
-- [x] Consul DNS (smtp.service.consul Aufloesung)
+- [x] Consul DNS (smtp.service.consul Auflösung)
 - [x] Lokale Registry (boky/postfix Image)
-- [x] DNS-Proxy 10.0.2.1 (fuer .consul-Aufloesung auf Infra-Nodes)
+- [x] DNS-Proxy 10.0.2.1 (für .consul-Auflösung auf Infra-Nodes)
 - [ ] Upstream SMTP (mail.netzone.ch erreichbar)
 
 ## Troubleshooting
 
-| Problem | Ursache | Loesung |
+| Problem | Ursache | Lösung |
 | :--- | :--- | :--- |
 | SASL auth failed | Passwort abgelaufen | Vault Secret updaten, Job restarten |
-| Sender rejected | Absender nicht `services@` | Generic-Maps pruefen |
-| Host not found (.consul) | DNS nicht auf 10.0.2.1 | `/etc/resolv.conf` und `/etc/network/interfaces` pruefen |
+| Sender rejected | Absender nicht `services@` | Generic-Maps prüfen |
+| Host not found (.consul) | DNS nicht auf 10.0.2.1 | `/etc/resolv.conf` und `/etc/network/interfaces` prüfen |
 | IPv6 unreachable | Kein IPv6-Routing | `inet_protocols = ipv4` in Postfix-Config |
 
 ---

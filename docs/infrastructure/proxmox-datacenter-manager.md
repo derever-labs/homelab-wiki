@@ -9,9 +9,9 @@ tags:
 
 # Proxmox Datacenter Manager (PDM)
 
-Der Proxmox Datacenter Manager ermoeglicht die zentrale Verwaltung mehrerer Proxmox VE Cluster und Proxmox Backup Server.
+Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung mehrerer Proxmox VE Cluster und Proxmox Backup Server.
 
-## Uebersicht
+## Übersicht
 
 | Eigenschaft | Wert |
 |-------------|------|
