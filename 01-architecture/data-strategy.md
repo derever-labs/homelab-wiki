@@ -23,7 +23,11 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 
 ## 2. Litestream Replikation (SQLite)
 
-Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, nutzen wir Litestream für eine Echtzeit-Replikation.
+::: warning Potentially Deprecated
+Dieses Konzept wurde geplant, aber nie produktiv umgesetzt. Alle hier gelisteten Services (radarr, sonarr, prowlarr, jellyseerr, vaultwarden, etc.) nutzen de facto **PostgreSQL** via `postgres.service.consul:5432`. Die Litestream-Architektur und MinIO-Peer-Replicas auf Node-05/06 sind nicht aktiv. Vor einer Umsetzung neuer Services auf Basis dieses Konzepts bitte den aktuellen Stand prüfen.
+:::
+
+Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, war Litestream für eine Echtzeit-Replikation vorgesehen.
 
 ### Architektur
 
@@ -88,4 +92,4 @@ Alle Credentials sind in Vault gespeichert:
 | Thunderbolt Bandbreite | ~11 Gbps |
 
 ---
-*Letztes Update: 26.12.2025*
+*Letztes Update: 17.03.2026*
