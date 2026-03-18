@@ -21,10 +21,16 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 | **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
 | **Object Storage** | MinIO (S3) | `http://10.0.0.200:9000` | Backup-Targets, Terraform State |
 
-## 2. Litestream Replikation (SQLite)
+## 2. Aktuelle Datenbank-Strategie
 
-::: warning Potentially Deprecated
-Dieses Konzept wurde geplant, aber nie produktiv umgesetzt. Alle hier gelisteten Services (radarr, sonarr, prowlarr, jellyseerr, vaultwarden, etc.) nutzen de facto **PostgreSQL** via `postgres.service.consul:5432`. Die Litestream-Architektur und MinIO-Peer-Replicas auf Node-05/06 sind nicht aktiv. Vor einer Umsetzung neuer Services auf Basis dieses Konzepts bitte den aktuellen Stand prüfen.
+Alle datenbank-gestützten Services nutzen den **PostgreSQL 16 Shared Cluster** auf einem DRBD-replizierten Linstor CSI Volume. Details zur Architektur, Service-Zuordnung und Backup: [Datenbank-Architektur](./database-architecture.md) | [Backup-Strategie](../services/core/backup-strategy.md)
+
+## 3. Litestream Replikation (SQLite) -- Nicht umgesetzt
+
+::: danger Veraltet -- Nicht in Produktion
+Dieses Konzept wurde geplant, aber **nie produktiv umgesetzt**. Alle hier gelisteten Services (Radarr, Sonarr, Prowlarr, Jellyseerr, Vaultwarden, etc.) nutzen de facto **PostgreSQL** via `postgres.service.consul:5432`. Die Litestream-Architektur und MinIO-Peer-Replicas auf Node-05/06 sind nicht aktiv. Die zugehörigen Vault-Credentials wurden gelöscht (18.03.2026).
+
+Dieser Abschnitt bleibt als historische Referenz erhalten. Für die aktuelle Strategie siehe [Datenbank-Architektur](./database-architecture.md).
 :::
 
 Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, war Litestream für eine Echtzeit-Replikation vorgesehen.

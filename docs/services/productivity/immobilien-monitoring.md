@@ -33,28 +33,28 @@ Automatisiertes Monitoring von Mietinseraten in der Region Dottikon/Wohlen AG. D
 ```mermaid
 flowchart TB
     subgraph cron ["Cron (Mac lokal)"]
-        PW["cookie-refresh.mjs<br/>(Playwright + Chromium)"]
+        PW:::entry["cookie-refresh.mjs<br/>(Playwright + Chromium)"]
     end
 
     subgraph homegate ["homegate.ch"]
-        DD[DataDome Anti-Bot]
-        HTML["HTML + __INITIAL_STATE__"]
+        DD:::ext[DataDome Anti-Bot]
+        HTML:::ext["HTML + __INITIAL_STATE__"]
     end
 
     subgraph n8n ["n8n (Nomad)"]
-        WH[Cookie Receiver<br/>Webhook]
-        HG[Homegate Scraper<br/>Schedule 07:00 + 19:00]
-        EB[Erstbezug Scraper<br/>Schedule 08:00]
-        KI[KI Enrichment<br/>Sub-Workflow]
+        WH:::svc[Cookie Receiver<br/>Webhook]
+        HG:::svc[Homegate Scraper<br/>Schedule 07:00 + 19:00]
+        EB:::svc[Erstbezug Scraper<br/>Schedule 08:00]
+        KI:::accent[KI Enrichment<br/>Sub-Workflow]
     end
 
     subgraph pg ["PostgreSQL (Nomad)"]
-        SC[(scraping_cookies)]
-        LS[(listing)]
-        LP[(listing_photo)]
+        SC:::db[(scraping_cookies)]
+        LS:::db[(listing)]
+        LP:::db[(listing_photo)]
     end
 
-    MB[Metabase Dashboard]
+    MB:::accent[Metabase Dashboard]
 
     PW -->|1. Besucht Seite| DD
     DD -->|Cookie gesetzt| PW
@@ -72,6 +72,12 @@ flowchart TB
 
     LS --> MB
     LP --> MB
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ### Ablauf Schritt für Schritt

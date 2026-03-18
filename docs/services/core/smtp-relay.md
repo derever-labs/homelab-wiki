@@ -20,6 +20,8 @@ tags:
 | **Consul DNS** | `smtp.service.consul:25` |
 | **Upstream** | `mail.netzone.ch:587` (TLS + SASL) |
 | **Absender** | `services@ackermann.systems` |
+| **Ressourcen** | 100 MHz CPU, 128 MB RAM (max 256 MB) |
+| **Priority** | 90 |
 
 ## Beschreibung
 
@@ -31,27 +33,29 @@ Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes un
 
 ## Architektur
 
-```
-PVE/PBS/CheckMK                    Nomad Services
-┌──────────────┐                   ┌──────────────────┐
-│ postfix      │                   │ Vaultwarden      │
-│ relayhost =  │──┐               │ Keycloak         │
-│ smtp.service │  │               │ Paperless        │
-│ .consul:25   │  │               └────────┬─────────┘
-└──────────────┘  │                        │
-                  ▼                        ▼
-           ┌─────────────────────────────────────┐
-           │  smtp-relay (Nomad Job)              │
-           │  boky/postfix Container              │
-           │  smtp.service.consul:25              │
-           │  Akzeptiert von 10.0.0.0/8 ohne Auth │
-           └──────────────┬──────────────────────┘
-                          │ TLS + SASL Auth
-                          ▼
-                 ┌──────────────────┐
-                 │ mail.netzone.ch  │
-                 │ Port 587         │
-                 └──────────────────┘
+```mermaid
+flowchart TD
+    subgraph Infra["Infrastruktur-Nodes"]
+        PVE:::svc["PVE / PBS / CheckMK<br>Postfix Satellite"]
+    end
+
+    subgraph Services["Nomad Services"]
+        VW:::svc["Vaultwarden"]
+        KC:::svc["Keycloak"]
+        PL:::svc["Paperless"]
+    end
+
+    PVE -->|"smtp.service.consul:25"| SMTP:::accent["smtp-relay<br>(Nomad Job)<br>boky/postfix<br>10.0.0.0/8 ohne Auth"]
+    VW --> SMTP
+    KC --> SMTP
+    PL --> SMTP
+    SMTP -->|"TLS + SASL Auth"| EXT:::ext["mail.netzone.ch<br>Port 587"]
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ## Konfiguration
@@ -72,11 +76,13 @@ Datei: `infrastructure/smtp-relay.nomad`
 | `RELAYHOST` | Upstream SMTP Server (`[mail.netzone.ch]:587`) |
 | `RELAYHOST_USERNAME` | SASL Username (aus Vault) |
 | `RELAYHOST_PASSWORD` | SASL Passwort (aus Vault) |
-| `ALLOWED_SENDER_DOMAINS` | Erlaubte Absender-Domains |
+| `ALLOWED_SENDER_DOMAINS` | Erlaubte Absender-Domains (`ackermann.systems ackermannprivat.ch homenet.local`) |
 | `MYNETWORKS` | Netze ohne Auth (`10.0.0.0/8 127.0.0.0/8`) |
+| `POSTFIX_smtp_sasl_mechanism_filter` | SASL-Mechanismen (`plain,login`) |
 | `POSTFIX_smtp_tls_security_level` | TLS erzwungen (`encrypt`) |
 | `POSTFIX_inet_protocols` | Nur IPv4 (kein IPv6-Routing im Homelab) |
 | `POSTFIX_smtp_generic_maps` | Sender-Rewrite auf `services@ackermann.systems` |
+| `POSTFIX_myhostname` | SMTP-Hostname (`smtp-relay.ackermann.systems`) |
 
 ### Sender-Rewrite
 

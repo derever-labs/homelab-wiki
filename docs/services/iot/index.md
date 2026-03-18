@@ -6,4 +6,5 @@ order: 5
 
 # IoT
 
-- [Zigbee](./zigbee.md) -- Zigbee2MQTT, Mosquitto
+- [Zigbee2MQTT](./zigbee.md) -- Zigbee-to-MQTT Bridge mit USB-Dongle
+- [Mosquitto](./mosquitto.md) -- MQTT Message Broker (Nomad Job)

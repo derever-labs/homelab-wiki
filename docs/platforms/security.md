@@ -14,13 +14,18 @@ Der Zugriff auf interne Services wird zentral über Traefik gesteuert, welches A
 
 ```mermaid
 flowchart LR
-    User["User Request"] --> Traefik
-    Traefik --> errors["oauth2-errors"]
-    errors --> require["require-{group}"]
-    require --> Backend["Backend Service"]
-    errors -.-> backend2["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
-    require -.-> fwd["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
-    fwd -.-> KC["Keycloak OIDC<br/>(Gruppenprüfung)"]
+    User:::entry["User Request"] --> Traefik:::svc
+    Traefik --> errors:::svc["oauth2-errors"]
+    errors --> require:::svc["require-{group}"]
+    require --> Backend:::svc["Backend Service"]
+    errors -.-> backend2:::accent["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
+    require -.-> fwd:::accent["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
+    fwd -.-> KC:::ext["Keycloak OIDC<br/>(Gruppenprüfung)"]
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ## Komponenten

@@ -26,6 +26,10 @@ Alle Services greifen auf zentrale Pfade auf dem NAS (10.0.0.200) zu:
 - **Downloads:** `/nfs/downloads/`
 - **Mediathek:** `/nfs/jellyfin/` (für Sonarr/Radarr)
 
+::: info SABnzbd Storage
+SABnzbd nutzt im Gegensatz zu den anderen Arr-Services ein Linstor CSI Volume (`sabnzbd-config`) für die Konfiguration statt NFS. Die Downloads landen auf `/nfs/jellyfin/`. Der Job ist deshalb auf `vm-nomad-client-05/06` eingeschränkt (Linstor Storage Nodes).
+:::
+
 ### Datenbank (PostgreSQL)
 Sonarr, Radarr und Prowlarr nutzen die shared PostgreSQL-Instanz (`postgres.service.consul:5432`). Die DB-Passwörter werden via Vault Workload Identity injiziert:
 
@@ -33,6 +37,19 @@ Sonarr, Radarr und Prowlarr nutzen die shared PostgreSQL-Instanz (`postgres.serv
 - `kv/data/radarr` (Feld: `postgres_password`)
 - `kv/data/prowlarr` (Feld: `postgres_password`)
 
+SABnzbd hat keine eigene Datenbank.
+
+### API-Router
+
+SABnzbd hat einen separaten Traefik-Router für API-Zugriff mit `intern-api-chain@file`. Dieser erlaubt authentifizierten API-Zugriff (via API-Key im Header oder Query-Parameter) ohne OAuth2-Redirect.
+
 ## Wartung
 ### Job Updates
 Updates erfolgen durch Anpassung der Image-Version im jeweiligen Nomad-Job unter `infra/nomad-jobs/media/`.
+
+## Verwandte Seiten
+
+- [Jellyseerr](./jellyseerr.md) -- Media Request Management (leitet Anfragen an Sonarr/Radarr weiter)
+- [Media-Hilfstools](./media-tools.md) -- Janitorr (Cleanup), Jellystat (Statistiken)
+- [Jellyfin](./jellyfin.md) -- Media Server
+- [Radarr Quality Profiles](./radarr-quality-profiles.md)

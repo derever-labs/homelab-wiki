@@ -6,13 +6,14 @@ title: Nomad Job-Übersicht
 
 | Verzeichnis | Inhalt |
 |-------------|--------|
-| batch-jobs/ | Watchtower, Docker Prune, Daily Cleanup/Reboot/Restart, Reddit/PH Downloader |
-| databases/ | OpenLDAP |
-| infrastructure/ | Zot Registry, MinIO Peer (Litestream), SMTP Relay, Filebrowser |
-| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Maintainerr, JellyStat, Stash, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Janitorr |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, iperf3-to-influxdb |
-| services/ | WikiJS, Paperless, Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT |
-| system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI, Zot Registry |
+| batch-jobs/ | Watchtower, Docker Prune, Daily Cleanup/Reboot/Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup |
+| databases/ | OpenLDAP, PostgreSQL (DRBD), DbGate |
+| infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
+| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, iperf3-to-influxdb |
+| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
+| system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI |
+| test/ | Linstor Volume Test |
 
 ## Traefik Middlewares
 
@@ -26,9 +27,13 @@ Alle VMs und IPs: [Proxmox Cluster](../infrastructure/proxmox-cluster.md)
 
 Siehe [DNS-Architektur](dns-architecture.md) für die vollständige Dokumentation der DNS-Kette (Pi-hole v6, Unbound, Consul DNS).
 
-## Litestream SQLite Replikation
+## Datenbank-Architektur
 
-Siehe [Data Strategy](../architecture/data-strategy.md) für die vollständige Dokumentation der Litestream-Replikation.
+Siehe [Datenbank-Architektur](../architecture/database-architecture.md) für den PostgreSQL Shared Cluster, DRBD-Replikation und Service-Zuordnung.
+
+## Service-Abhängigkeiten
+
+Siehe [Service-Abhängigkeiten](../architecture/service-dependencies.md) für ein vollständiges Diagramm aller Abhängigkeiten.
 
 ## Job Configuration
 
@@ -37,11 +42,14 @@ Siehe [Data Strategy](../architecture/data-strategy.md) für die vollständige D
 - Bridge Networking mit Port Mappings
 - Health Checks wo anwendbar
 - Resource Limits gesetzt
+- PostgreSQL-abhängige Jobs haben `wait-for-postgres` Init-Task
 
 ## Dependencies
 
 - **NFS Storage**: Jobs erwarten NFS Mounts unter `/nfs/docker/`
 - **Docker**: Alle Jobs nutzen Docker Task Driver
-- **Network**: Jobs nutzen verschiedene Ports
+- **Consul**: Service Discovery via `*.service.consul`
+- **Vault**: Secret Injection via `template` Stanzas
+- **PostgreSQL**: Viele Services nutzen den Shared Cluster (siehe [Datenbank-Architektur](../architecture/database-architecture.md))
 
 ---

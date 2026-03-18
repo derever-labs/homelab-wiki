@@ -32,23 +32,27 @@ Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Fa
 
 ```mermaid
 flowchart TD
-    DB["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
+    DB:::db["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
     DB --- C05 & C06
 
     subgraph C05["client-05 — ACTIVE"]
-        C05a["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 200GB"]
+        C05a:::svc["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 200GB"]
     end
 
     subgraph C06["client-06 — STANDBY"]
-        C06a["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 200GB"]
+        C06a:::svc["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 200GB"]
     end
 
     C05 <-->|"Thunderbolt 25 Gbit"| C06
     C05 & C06 -->|"Management 1 Gbit"| C04
 
     subgraph C04["vm-nomad-client-04"]
-        C04a["10.0.2.124<br/>Satellite (Diskless)<br/>TieBreaker/Quorum"]
+        C04a:::entry["10.0.2.124<br/>Satellite (Diskless)<br/>TieBreaker/Quorum"]
     end
+
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
 ```
 
 **Architektur-Details:**
@@ -97,23 +101,27 @@ Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Rep
 
 ```mermaid
 flowchart TD
-    DB2["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
+    DB2:::db["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
     DB2 --- DC02 & DC03
 
     subgraph DC02["client-02 — ACTIVE"]
-        DC02a["COMBINED / drbd-reactor<br/>10.180.46.82 / DRBD: 172.180.46.82<br/>Storage: NVMe"]
+        DC02a:::svc["COMBINED / drbd-reactor<br/>10.180.46.82 / DRBD: 172.180.46.82<br/>Storage: NVMe"]
     end
 
     subgraph DC03["client-03 — STANDBY"]
-        DC03a["COMBINED / drbd-reactor<br/>10.180.46.83 / DRBD: 172.180.46.83<br/>Storage: NVMe"]
+        DC03a:::svc["COMBINED / drbd-reactor<br/>10.180.46.83 / DRBD: 172.180.46.83<br/>Storage: NVMe"]
     end
 
     DC02 <-->|"10GbE (172.180.46.x)"| DC03
     DC02 & DC03 -->|"Management 1 Gbit"| DC01
 
     subgraph DC01["vm-nomad-client-01"]
-        DC01a["10.180.46.81<br/>Satellite (Diskless)<br/>TieBreaker/Quorum<br/>KEIN 10GbE Zugang"]
+        DC01a:::entry["10.180.46.81<br/>Satellite (Diskless)<br/>TieBreaker/Quorum<br/>KEIN 10GbE Zugang"]
     end
+
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
 ```
 
 ### Netzwerk-Übersicht
@@ -189,6 +197,17 @@ Deployment via Ansible Role `drbd-reactor`. Siehe Repository `homelab-hashicorp-
 ## Nomad CSI Integration
 
 Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs.
+
+| Eigenschaft | Wert |
+|---|---|
+| **Job-Typ** | System (läuft auf allen Storage Nodes) |
+| **Plugin-ID** | `linstor.csi.linbit.com` |
+| **Plugin-Typ** | Monolith (Controller + Node in einem Container) |
+| **Image** | `kvaps/linstor-csi:latest` |
+| **Constraint** | `vm-nomad-client-05`, `vm-nomad-client-06` |
+| **Endpoint** | `http://linstor-controller.service.consul:3370` |
+
+Der Container läuft im privileged Mode, da CSI-Plugins Mount-Operationen auf dem Host durchführen müssen.
 
 **Wichtig:** Das offizielle LINBIT Image (drbd.io) erfordert Login. Stattdessen wird `kvaps/linstor-csi` von Docker Hub verwendet.
 
@@ -279,11 +298,15 @@ URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
 
 ```mermaid
 flowchart TD
-    LC["Linstor Controller<br/>(10.0.2.125:3370)"]
-    LC -->|"/metrics Endpoint"| Traefik["Traefik Proxy"]
-    Traefik -->|"https://linstor.ackermannprivat.ch/metrics"| Telegraf
-    Telegraf -->|"prometheus input plugin (60s)"| InfluxDB
-    InfluxDB -->|"telegraf bucket"| Grafana
+    LC:::svc["Linstor Controller<br/>(10.0.2.125:3370)"]
+    LC -->|"/metrics Endpoint"| Traefik:::svc["Traefik Proxy"]
+    Traefik -->|"https://linstor.ackermannprivat.ch/metrics"| Telegraf:::svc
+    Telegraf -->|"prometheus input plugin (60s)"| InfluxDB:::db
+    InfluxDB -->|"telegraf bucket"| Grafana:::accent
+
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 ### Wichtige Metriken
@@ -306,10 +329,14 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Cron["[client-05/06]<br/>cron (1min)"] -->|"lvs"| File["InfluxDB Line Protocol<br/>/nfs/docker/telegraf/metrics/<br/>lvm_thinpool_$(hostname).influx"]
-    File -->|"inputs.file"| Telegraf2["Telegraf"]
-    Telegraf2 --> InfluxDB2["InfluxDB"]
-    InfluxDB2 --> Grafana2["Grafana"]
+    Cron:::svc["[client-05/06]<br/>cron (1min)"] -->|"lvs"| File:::db["InfluxDB Line Protocol<br/>/nfs/docker/telegraf/metrics/<br/>lvm_thinpool_$(hostname).influx"]
+    File -->|"inputs.file"| Telegraf2:::svc["Telegraf"]
+    Telegraf2 --> InfluxDB2:::db["InfluxDB"]
+    InfluxDB2 --> Grafana2:::accent["Grafana"]
+
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
 **Metriken:** `lvm_thinpool` mit Tags `host`, `vg`, `pool` und Fields `data_percent`, `metadata_percent`
@@ -320,10 +347,12 @@ flowchart LR
 
 | Eigenschaft | Wert |
 |---|---|
-| URL | `https://linstor-gui.ackermannprivat.ch` |
-| Auth | OAuth Admin via Keycloak (`intern-admin-chain-v2`) |
-| Backend | `linstor-controller.service.consul:3370` (Consul DNS) |
-| Zugang | Nur internes Netzwerk (IP-Whitelist) |
+| **URL** | `https://linstor-gui.ackermannprivat.ch` |
+| **Deployment** | Nomad Service Job (`system/linstor-gui.nomad`) |
+| **Image** | `linstor-gui:v2.2.0` (self-built, lokal verfügbar) |
+| **Auth** | OAuth Admin via Keycloak (`admin-chain-v2`) |
+| **Backend** | `linstor-controller.service.consul:3370` (Consul DNS) |
+| **Constraint** | `vm-nomad-client-05`, `vm-nomad-client-06` |
 
 Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul DNS — bei einem Controller-Failover bleibt die GUI funktional.
 

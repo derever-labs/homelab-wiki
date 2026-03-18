@@ -50,6 +50,43 @@ export default withMermaid(
       }).map(item => item.items ? item : { ...item, items: [] })
     },
 
-    mermaid: {}
+    mermaid: {
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#f1f5f9',
+        primaryTextColor: '#1e293b',
+        primaryBorderColor: '#94a3b8',
+        secondaryColor: '#e2e8f0',
+        secondaryTextColor: '#334155',
+        secondaryBorderColor: '#94a3b8',
+        tertiaryColor: '#f8fafc',
+        tertiaryTextColor: '#475569',
+        tertiaryBorderColor: '#cbd5e1',
+        lineColor: '#64748b',
+        textColor: '#334155',
+        clusterBkg: '#f8fafc',
+        clusterBorder: '#cbd5e1',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontSize: '14px',
+        actorBkg: '#f1f5f9',
+        actorBorder: '#94a3b8',
+        actorTextColor: '#1e293b',
+        actorLineColor: '#64748b',
+        noteBkgColor: '#fef9c3',
+        noteTextColor: '#713f12',
+        noteBorderColor: '#eab308',
+        activationBkgColor: '#dbeafe',
+        activationBorderColor: '#3b82f6',
+        signalColor: '#64748b',
+        signalTextColor: '#334155',
+      },
+      flowchart: {
+        curve: 'basis',
+        padding: 15,
+      },
+      sequence: {
+        mirrorActors: false,
+      },
+    }
   })
 )
