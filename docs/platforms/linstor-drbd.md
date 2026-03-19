@@ -356,6 +356,14 @@ flowchart LR
 
 Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul DNS — bei einem Controller-Failover bleibt die GUI funktional.
 
+## Verwandte Seiten
+
+- [HashiCorp Stack](hashicorp-stack.md) -- Nomad/Consul-Cluster in dem die CSI-Volumes genutzt werden
+- [Netzwerk-Tuning](network-tuning.md) -- Thunderbolt-Optimierung für DRBD-Replikation
+- [Datenbank-Architektur](../architecture/database-architecture.md) -- PostgreSQL auf DRBD-Volume
+- [Backup-Strategie](../services/core/backup-strategy.md) -- Backup der DRBD-Volumes
+- [Proxmox Cluster](../infrastructure/proxmox-cluster.md) -- Host- und VM-Übersicht
+
 ## Referenzen
 
 - [LINBIT Linstor User Guide](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/)

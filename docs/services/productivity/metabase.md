@@ -22,7 +22,7 @@ tags:
 | **Netzwerk** | Intern: IP-Whitelist, Extern: OAuth2 Family |
 | **Site Name** | Immobilien-Monitor |
 
-## Beschreibung
+## Rolle im Stack
 
 Metabase stellt Daten aus der `n8n`-Datenbank als Dashboards dar. Primärer Use Case: [Immobilien-Monitoring](./immobilien-monitoring.md) mit Karten, Preisvergleichen und Inseratübersichten.
 
@@ -37,3 +37,10 @@ Metabase stellt Daten aus der `n8n`-Datenbank als Dashboards dar. Primärer Use 
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/metabase` | `db_password`, `n8n_reader_password` |
+
+## Verwandte Seiten
+
+- [Immobilien-Monitoring](./immobilien-monitoring.md) -- Primärer Use Case für Metabase-Dashboards
+- [n8n](./n8n.md) -- Datenquelle (PostgreSQL `n8n` Datenbank)
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration

@@ -1,6 +1,9 @@
 ---
 title: Services
 description: Alle laufenden Applikationen und Container
+tags:
+  - index
+  - services
 order: 4
 ---
 

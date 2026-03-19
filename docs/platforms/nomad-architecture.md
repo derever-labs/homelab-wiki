@@ -1,5 +1,10 @@
 ---
 title: Nomad Job-Übersicht
+description: Verzeichnisstruktur, Abhängigkeiten und Konfigurationsmuster der Nomad Jobs
+tags:
+  - platform
+  - nomad
+  - jobs
 ---
 
 ## Verzeichnisstruktur
@@ -52,4 +57,10 @@ Siehe [Service-Abhängigkeiten](../architecture/service-dependencies.md) für ei
 - **Vault**: Secret Injection via `template` Stanzas
 - **PostgreSQL**: Viele Services nutzen den Shared Cluster (siehe [Datenbank-Architektur](../architecture/database-architecture.md))
 
----
+## Verwandte Seiten
+
+- [HashiCorp Stack](hashicorp-stack.md) -- Cluster-Architektur (Nomad/Consul/Vault)
+- [Traefik Middlewares](traefik-middlewares.md) -- Middleware Chains für Service-Zugriffskontrolle
+- [Datenbank-Architektur](../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [Service-Abhängigkeiten](../architecture/service-dependencies.md) -- Abhängigkeitsdiagramm
+- [Linstor & DRBD](linstor-drbd.md) -- CSI-Volumes für persistenten Speicher

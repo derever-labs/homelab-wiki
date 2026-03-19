@@ -135,5 +135,9 @@ Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth
 | Host not found (.consul) | DNS nicht auf 10.0.2.1 | `/etc/resolv.conf` und `/etc/network/interfaces` prüfen |
 | IPv6 unreachable | Kein IPv6-Routing | `inet_protocols = ipv4` in Postfix-Config |
 
----
-*Dokumentation erstellt am: 21.02.2026*
+## Verwandte Seiten
+
+- [CheckMK Monitoring](../monitoring/checkmk.md) -- Nutzt SMTP Relay für Alert-E-Mails
+- [Proxmox Backup Server](./pbs.md) -- Sendet Backup-Benachrichtigungen via SMTP
+- [Proxmox-Cluster](../../infrastructure/proxmox-cluster.md) -- PVE-Nodes als Postfix Satellites
+- [DNS-Architektur](../../platforms/dns-architecture.md) -- Consul DNS für smtp.service.consul

@@ -1,6 +1,10 @@
 ---
 title: Core Services
 description: Zentrale Infrastruktur-Dienste
+tags:
+  - index
+  - services
+  - core
 order: 1
 ---
 

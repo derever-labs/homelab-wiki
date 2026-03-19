@@ -91,3 +91,11 @@ Ein Restore erfolgt durch Wiederherstellen eines Snapshots vom S3-Remote `nas-ba
 
 `/usr/local/bin/linstor-backup-monitor.sh` (auf client-05) prüft um 06:00 Uhr ob Backups in den letzten 25h erstellt wurden und meldet via Uptime Kuma Push.
 
+## Verwandte Seiten
+
+- [Proxmox Backup Server](./pbs.md) -- VM-Backups mit Deduplizierung
+- [Linstor/DRBD](../../platforms/linstor-drbd.md) -- DRBD-Storage und Snapshot-Mechanismus
+- [Monitoring Stack](../monitoring/stack.md) -- Uptime Kuma Push-Monitore für Backup-Status
+- [Batch Jobs](../../runbooks/batch-jobs.md) -- PostgreSQL Backup Nomad Job und Zeitplan
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+

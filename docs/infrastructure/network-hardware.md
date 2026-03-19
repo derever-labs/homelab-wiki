@@ -72,3 +72,9 @@ Netzwerk-Segmente und Subnetz-Zuordnung: [Netzwerk-Topologie](../architecture/ne
 | :--- | :--- | :--- | :--- |
 | pve01 <-> pve02 | 2x Thunderbolt 4 | unbekannt | DRBD + Migration |
 | Server -> Switch | unbekannt | unbekannt | - |
+
+## Verwandte Seiten
+
+- [Netzwerk-Topologie](../architecture/network-topology.md) -- VLANs, Subnets, Routing
+- [Server-Hardware](./hardware.md) -- Physische Server und Thunderbolt-Verbindung
+- [Proxmox Cluster](./proxmox-cluster.md) -- Hosts und Netzwerk-Konfiguration

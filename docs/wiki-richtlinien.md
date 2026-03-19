@@ -31,20 +31,30 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - **Keine Konfigurationsdateien** -- "Verwaltet durch Ansible" oder "Siehe `pfad/zur/datei`"
 - **Keine Installationsanleitungen** -- gehören ins Repo (README, Ansible Roles)
 
-## Single Source of Truth
+## Single Source of Truth (SSOT)
 
-Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorthin.
+Information steht genau **einmal** im Wiki. Andere Seiten verlinken mit 1-2 Sätzen Kontext dorthin -- keine Kopien.
 
-| Daten | Kanonische Quelle |
-|-------|-------------------|
-| Hosts, VMs, IPs, Specs | [Proxmox Cluster](./infrastructure/proxmox-cluster.md) |
-| NFS-Exports, Mount-Pfade | [NAS-Speicher](./infrastructure/storage-nas.md) |
-| Service-Verzeichnis (URLs) | [Infrastruktur-Übersicht](./architecture/overview.md) |
-| Middleware Chains | [Traefik Middlewares](./platforms/traefik-middlewares.md) |
-| DNS-Architektur | [DNS-Architektur](./platforms/dns-architecture.md) |
-| CrowdSec | [CrowdSec](./platforms/crowdsec.md) |
-| Backup-Architektur | [Backup-Strategie](./services/core/backup-strategy.md) |
-| LDAP & Benutzerverwaltung | [OpenLDAP](./services/core/ldap.md) |
+| Daten | Kanonische Quelle | Nicht duplizieren in |
+|-------|-------------------|----------------------|
+| Hosts, VMs, IPs, Specs | [Proxmox Cluster](./infrastructure/proxmox-cluster.md) | overview.md, network-topology.md, dns-architecture.md |
+| Hardware-Specs (CPU, RAM, Disk) | [Server-Hardware](./infrastructure/hardware.md) | proxmox-cluster.md, overview.md |
+| NFS-Exports, Mount-Pfade | [NAS-Speicher](./infrastructure/storage-nas.md) | jellyfin.md, arr-stack.md, Service-Seiten |
+| Service-Verzeichnis (URLs) | [Infrastruktur-Übersicht](./architecture/overview.md) | Service-Seiten (nur eigene URL in Übersicht-Tabelle) |
+| Middleware Chains | [Traefik Middlewares](./platforms/traefik-middlewares.md) | security.md, traefik.md, Service-Seiten |
+| DNS-Architektur | [DNS-Architektur](./platforms/dns-architecture.md) | overview.md, network-topology.md |
+| Netzwerk-Topologie (VLANs, Subnets) | [Netzwerk-Topologie](./architecture/network-topology.md) | overview.md, proxmox-cluster.md |
+| Datenbank-Zuordnung pro Service | [Datenbank-Architektur](./architecture/database-architecture.md) | Service-Seiten (nur "PostgreSQL (Shared Cluster)" in Übersicht-Tabelle) |
+| Vault Secret Pfade (DB) | [Datenbank-Architektur](./architecture/database-architecture.md) | Service-Seiten (nur service-spezifische Secrets) |
+| Nomad Job-Verzeichnis | [Nomad Architektur](./platforms/nomad-architecture.md) | Service-Seiten (nur eigener Job-Pfad) |
+| Service-Abhängigkeiten | [Service-Abhängigkeiten](./architecture/service-dependencies.md) | overview.md, Service-Seiten |
+| CrowdSec | [CrowdSec](./platforms/crowdsec.md) | security.md, traefik-middlewares.md |
+| Backup-Architektur | [Backup-Strategie](./services/core/backup-strategy.md) | pbs.md, Service-Seiten |
+| LDAP & Benutzerverwaltung | [OpenLDAP](./services/core/ldap.md) | security.md, Service-Seiten |
+
+::: tip SSOT-Regel anwenden
+Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in `security.md` zu wiederholen, schreibe "Authentifizierung über `admin-chain-v2@file` (Details: [Traefik Middlewares](./platforms/traefik-middlewares.md))".
+:::
 
 ## Struktur
 
@@ -63,17 +73,46 @@ Jede Information existiert an genau **einem** Ort. Andere Seiten verlinken dorth
 - Kleinbuchstaben mit Bindestrichen: `proxmox-cluster.md`, `backup-strategy.md`
 - Keine Leerzeichen, keine Umlaute im Dateinamen
 
-### Frontmatter
+### Frontmatter (Pflichtfelder)
 
-Jede Seite beginnt mit YAML-Frontmatter:
+Jede Seite beginnt mit YAML-Frontmatter. Alle drei Felder sind Pflicht:
+
+- **`title`** (Pflicht) -- Seitentitel auf Deutsch
+- **`description`** (Pflicht) -- Kurze Beschreibung für Suche und SEO
+- **`tags`** (Pflicht) -- YAML-Liste relevanter Tags
+- **`order`** (nur Index-Seiten) -- Sortierreihenfolge in der Sidebar
 
 ```yaml
 ---
 title: Seitentitel auf Deutsch
-description: Kurze Beschreibung
+description: Kurze Beschreibung des Inhalts
 tags:
   - relevantes-tag
+  - weiteres-tag
 ---
+```
+
+### Seitenstruktur (Inhaltsseiten)
+
+Jede Inhaltsseite (nicht Index) folgt diesem Aufbau:
+
+1. **Frontmatter** (title, description, tags)
+2. **H1 Titel** (identisch mit Frontmatter title)
+3. **Übersicht** -- Attribut-Tabelle (Status, URL, Deployment, Storage, DB, Auth)
+4. **Rolle im Stack** -- 1-3 Sätze, wie der Service ins Gesamtbild passt
+5. **Architektur** -- Mermaid-Diagramm (wenn sinnvoll)
+6. **Konfiguration / Service-spezifische Sektionen** -- keine SSOT-Duplikate
+7. **Verwandte Seiten** (Pflicht) -- Aufzählungsliste mit Links am Ende
+
+### Verwandte Seiten (Pflicht)
+
+Jede Inhaltsseite endet mit einer `## Verwandte Seiten` Sektion. Aufzählungsliste mit relativen Links und Kurzbeschreibung nach `--`:
+
+```markdown
+## Verwandte Seiten
+
+- [Traefik Middlewares](../platforms/traefik-middlewares.md) -- Middleware Chains für Authentifizierung
+- [OpenLDAP](../services/core/ldap.md) -- Zentrales Benutzerverzeichnis
 ```
 
 ### Titel
@@ -86,27 +125,19 @@ tags:
 
 ### Custom Containers
 
-VitePress unterstützt folgende Container-Typen:
+VitePress unterstützt folgende Container-Typen. Sparsam einsetzen -- maximal 3-4 Container pro Seite.
+
+| Typ | Verwendung |
+|-----|------------|
+| `::: danger` | Sicherheitsrisiken, Datenverlust-Gefahr |
+| `::: warning` | Häufige Fehler, Fallstricke |
+| `::: info` | Kontextinformationen, Erklärungen |
+| `::: tip` | Best Practices, Empfehlungen |
+| `::: details` | Optionale Vertiefungen (klappbar) |
 
 ```markdown
-::: info Titel
-Informationshinweis
-:::
-
 ::: warning Titel
-Warnung (häufige Fehler)
-:::
-
-::: danger Titel
-Sicherheitsrisiken
-:::
-
-::: tip Titel
-Best Practices
-:::
-
-::: details Titel
-Optionale Vertiefungen (klappbar)
+Warnungstext
 :::
 ```
 

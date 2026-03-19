@@ -1,6 +1,9 @@
 ---
 title: Runbooks
 description: Betriebsanleitungen für Wartung und Notfälle
+tags:
+  - index
+  - runbooks
 order: 5
 ---
 

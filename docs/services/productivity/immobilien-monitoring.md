@@ -6,72 +6,77 @@ tags:
   - n8n
   - metabase
   - nomad
+  - stagehand
 ---
 
 # Immobilien-Monitoring
 
-## Übersicht
+## Uebersicht
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Status** | Aufbau |
-| **Zweck** | Mietmarkt-Monitoring für MFH-Neubau Dottikon AG |
+| **Status** | Aktiv (v3 -- Stagehand) |
+| **Zweck** | Mietmarkt-Monitoring fuer MFH-Neubau Dottikon AG |
+| **Scraper** | Docker Container (Node.js + Stagehand + Chromium) |
 | **n8n** | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
 | **Metabase** | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
-| **Deployment** | Nomad Jobs (`services/n8n.nomad`, `services/metabase.nomad`) |
-| **Datenbank** | PostgreSQL `n8n` (Tabellen: `listing`, `listing_photo`, `scraping_cookies`) |
-| **Repo** | `nomad-jobs/services/n8n-workflows/` |
+| **Nomad Job** | `services/immoscraper.nomad` (Periodic Batch, 07:00 + 19:00) |
+| **Datenbank** | PostgreSQL `n8n` (Tabellen: `listing`, `listing_photo`, `scraper_runs`) |
+| **Repo** | `nomad-jobs/services/n8n-workflows/scraper/` |
 
 ## Beschreibung
 
-Automatisiertes Monitoring von Mietinseraten in der Region Dottikon/Wohlen AG. Das System sammelt Daten von Immobilienportalen, reichert sie mit KI-Analyse an und stellt sie in Metabase-Dashboards dar.
+Automatisiertes Monitoring von Mietinseraten in der Region Dottikon/Wohlen AG. Ein KI-gesteuerter Browser-Agent (Stagehand + Playwright) besucht Immobilienportale, extrahiert strukturierte Daten via Zod-Schema und schreibt direkt in PostgreSQL. n8n uebernimmt das Post-Processing (KI-Enrichment, Stale-Deaktivierung).
 
-## Gesamtablauf
-
-### Übersichtsdiagramm
+## Architektur (v3)
 
 ```mermaid
 flowchart TB
-    subgraph cron ["Cron (Mac lokal)"]
-        PW:::entry["cookie-refresh.mjs<br/>(Playwright + Chromium)"]
+    subgraph nomad ["Nomad (Periodic Batch 07:00 + 19:00)"]
+        SC:::entry["immoscraper Container<br/>(Node.js + Stagehand + Chromium)"]
     end
 
-    subgraph homegate ["homegate.ch"]
-        DD:::ext[DataDome Anti-Bot]
-        HTML:::ext["HTML + __INITIAL_STATE__"]
+    subgraph portale ["Immobilienportale"]
+        HG:::ext[Homegate]
+        IS:::ext[ImmoScout24]
+        CP:::ext[Comparis]
+        FF:::ext[Flatfox]
+        EB:::ext[erstbezug.ch]
     end
 
-    subgraph n8n ["n8n (Nomad)"]
-        WH:::svc[Cookie Receiver<br/>Webhook]
-        HG:::svc[Homegate Scraper<br/>Schedule 07:00 + 19:00]
-        EB:::svc[Erstbezug Scraper<br/>Schedule 08:00]
-        KI:::accent[KI Enrichment<br/>Sub-Workflow]
+    subgraph ai ["KI (extern)"]
+        GPT:::accent[OpenAI gpt-4o-mini<br/>Strukturierte Outputs]
     end
 
     subgraph pg ["PostgreSQL (Nomad)"]
-        SC:::db[(scraping_cookies)]
         LS:::db[(listing)]
         LP:::db[(listing_photo)]
+        SR:::db[(scraper_runs)]
+    end
+
+    subgraph n8n ["n8n (Post-Processing)"]
+        WH:::svc[Webhook Trigger]
+        KI:::accent[KI Enrichment<br/>Sub-Workflow]
+        ST:::svc[Stale-Deaktivierung]
     end
 
     MB:::accent[Metabase Dashboard]
 
-    PW -->|1. Besucht Seite| DD
-    DD -->|Cookie gesetzt| PW
-    PW -->|2. Sendet Cookie| WH
-    WH -->|3. UPSERT| SC
-
-    HG -->|4. Liest Cookie| SC
-    HG -->|5. HTTP mit Cookie| HTML
-    HG -->|6. Parsed Listings| LS
-    HG -->|6. Parsed Fotos| LP
-    HG -->|7. Neue Listings| KI
-    KI -->|8. Enriched Data| LS
-
-    EB -->|Direkt HTTP| LS
+    SC -->|1. Browser besucht| portale
+    SC -->|2. Stagehand extract()| GPT
+    GPT -->|3. Strukturierte JSON| SC
+    SC -->|4. UPSERT| LS
+    SC -->|4. UPSERT| LP
+    SC -->|4. INSERT| SR
+    SC -->|5. POST Summary| WH
+    WH --> KI
+    WH --> ST
+    KI -->|Enrichment| LS
+    ST -->|Deaktivierung| LS
 
     LS --> MB
     LP --> MB
+    SR --> MB
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
     classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
@@ -80,195 +85,195 @@ flowchart TB
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
-### Ablauf Schritt für Schritt
+## Kernkonzept: Smart Skipping
 
-```mermaid
-sequenceDiagram
-    participant Cron as Cron (Mac)
-    participant PW as Playwright
-    participant HG as homegate.ch
-    participant WH as n8n Webhook
-    participant DB as PostgreSQL
-    participant Scraper as n8n Scraper
-    participant AI as OpenAI
-    participant MB as Metabase
+Statt jedes Listing bei jedem Run komplett zu scrapen:
 
-    Note over Cron: 06:50 / 18:50
-    Cron->>PW: Startet cookie-refresh.mjs
-    PW->>HG: GET /mieten/immobilien/ort-dottikon/trefferliste
-    HG-->>PW: HTML + DataDome-Cookie im Browser gesetzt
-    PW->>PW: Extrahiert datadome=... aus document.cookie
-    PW->>WH: GET /webhook/cookie-refresh?portal=homegate.ch&datadome=...
-    WH->>DB: UPSERT scraping_cookies (portal, cookie_header, updated_at)
-    WH-->>PW: "Cookie aktualisiert"
+1. **Uebersichtsseite** liefert: `external_id`, Preis, Zimmer, Titel (Vorschau-Daten)
+2. **DB-Abgleich** pro Listing:
+   - `external_id` NICHT in DB -- NEU -- Detail-Scrape + Insert
+   - `external_id` in DB, Preis GLEICH -- BEKANNT -- nur `last_seen_at` updaten
+   - `external_id` in DB, Preis ANDERS -- GEAENDERT -- Detail-Re-Scrape + Update
+   - `external_id` in DB, `detail_scraped_at IS NULL` -- FEHLEND -- Detail-Scrape nachholen
 
-    Note over Scraper: 07:00 / 19:00
-    Scraper->>DB: SELECT cookie_header FROM scraping_cookies WHERE updated_at > 24h
-    DB-->>Scraper: datadome=...
-
-    loop Für jede PLZ (5605, 5604, 5504, 5607, 5612, 5610)
-        Scraper->>Scraper: Warte 3-8s (Random Delay)
-        Scraper->>HG: GET /mieten/immobilien/ort-{ort}/trefferliste (mit Cookie-Header)
-        HG-->>Scraper: HTML mit window.__INITIAL_STATE__
-        Scraper->>Scraper: JSON aus __INITIAL_STATE__ extrahieren
-        Scraper->>Scraper: listings[].listing → DB-Schema mappen
-
-        loop Für jedes Listing
-            Scraper->>DB: INSERT listing ON CONFLICT UPDATE (UPSERT)
-            DB-->>Scraper: id, is_new
-
-            alt Neues Listing
-                Scraper->>DB: INSERT listing_photo (Foto-URLs)
-                Scraper->>AI: Beschreibung → strukturierte Daten
-                AI-->>Scraper: JSON (Stockwerk, Balkon, Minergie, ...)
-                Scraper->>DB: UPDATE listing SET raw_data.enriched = ...
-            end
-        end
-    end
-
-    Scraper->>DB: UPDATE listing SET is_active=false WHERE last_seen_at < 3 Tage
-
-    MB->>DB: SELECT * FROM listing (read-only, User metabase_reader)
-```
+Erster Tag: ~200 Detail-Scrapes. Danach: ~5-20 pro Tag. Massiv guenstigere LLM-Kosten.
 
 ## Datenquellen
 
-| Portal | Methode | Anti-Bot | Frequenz |
+| Portal | Uebersichts-Extractor | Detail-Extractor | Anti-Bot |
 | :--- | :--- | :--- | :--- |
-| **Homegate** | Playwright Cookie-Refresh + n8n HTTP | DataDome (automatisiert) | 2x täglich (07:00, 19:00) |
-| **erstbezug.ch** | Direkter HTTP Request | Keines | 1x täglich (08:00) |
+| **Homegate** | `__INITIAL_STATE__` (deterministisch, 0 LLM) | Stagehand + gpt-4o-mini | DataDome (Browser umgeht) |
+| **ImmoScout24** | Stagehand (geplant) | Stagehand + gpt-4o-mini | DataDome |
+| **Comparis** | Stagehand (geplant) | Stagehand + gpt-4o-mini | DataDome |
+| **Flatfox** | Stagehand (geplant) | Stagehand + gpt-4o-mini | Keines |
+| **erstbezug.ch** | HTML Parsing (geplant) | Stagehand + gpt-4o-mini | Keines |
 
 ### Region / PLZ
 
-Dottikon (5605), Hendschiken (5604), Othmarsingen (5504), Hägglingen (5607), Villmergen (5612), Wohlen AG (5610)
+Dottikon (5605), Hendschiken (5604), Othmarsingen (5504), Haegglingen (5607), Villmergen (5612), Wohlen AG (5610)
 
-### Homegate __INITIAL_STATE__ Feld-Mapping
+## Ablauf pro Scraper-Run
 
-| Homegate JSON Pfad | DB-Feld |
-| :--- | :--- |
-| `listing.id` | `external_id` |
-| `listing.localization.de.text.title` | `title` |
-| `listing.localization.de.text.description` | `description` |
-| `listing.address.postalCode` | `zip_code` |
-| `listing.address.locality` | `city` |
-| `listing.address.geoCoordinates.latitude` | `latitude` |
-| `listing.address.geoCoordinates.longitude` | `longitude` |
-| `listing.characteristics.numberOfRooms` | `rooms` |
-| `listing.characteristics.livingSpace` | `area_m2` |
-| `listing.prices.rent.gross` | `rent_gross` |
-| `listing.prices.rent.net` | `rent_net` |
-| `listing.localization.de.attachments[]` | `listing_photo.url` |
-| Ganzes `listing` Objekt | `raw_data` (JSONB) |
+```mermaid
+sequenceDiagram
+    participant SC as immoscraper
+    participant HG as homegate.ch
+    participant GPT as OpenAI gpt-4o-mini
+    participant DB as PostgreSQL
+    participant N8N as n8n Webhook
+
+    Note over SC: Nomad startet Container (07:00 / 19:00)
+    SC->>DB: Schema-Migrationen (ALTER TABLE IF NOT EXISTS)
+    SC->>SC: Stagehand + Chromium starten
+
+    loop Fuer jede PLZ
+        SC->>HG: Browser navigiert zu Uebersichtsseite
+        HG-->>SC: HTML mit __INITIAL_STATE__
+        SC->>SC: JSON parsen (deterministisch, kein LLM)
+    end
+
+    SC->>DB: SELECT existing listings (Skip-Check)
+    SC->>DB: UPSERT alle Listings (last_seen_at)
+
+    loop Fuer neue/geaenderte Listings
+        SC->>SC: Warte 3-8s (Random Delay)
+        SC->>HG: Browser navigiert zu Detailseite
+        HG-->>SC: Detail-HTML
+        SC->>GPT: Accessibility-Tree + Zod-Schema
+        GPT-->>SC: Strukturiertes JSON (typsicher)
+        SC->>DB: UPDATE listing (Detail-Felder)
+        SC->>DB: UPSERT listing_photo (mit Grundriss-Erkennung)
+    end
+
+    SC->>DB: Stale-Listings deaktivieren (last_seen_at > 3 Tage)
+    SC->>DB: INSERT scraper_runs (Statistiken)
+    SC->>N8N: POST Summary (neue, aktualisierte, Fehler)
+    N8N->>DB: KI-Enrichment fuer neue Listings
+```
 
 ## Komponenten
 
-### 1. Playwright Cookie-Refresh
+### 1. immoscraper (Docker Container)
 
-**Was:** Headless Chromium besucht Homegate, extrahiert den DataDome-Cookie, sendet ihn an n8n.
+TypeScript-Projekt mit Stagehand (KI Browser Agent) und Playwright.
 
-**Warum:** Homegate nutzt DataDome Anti-Bot. Normale HTTP Requests ohne gültigen Cookie werden geblockt. Playwright wird (Stand März 2026) nicht von DataDome erkannt und erhält automatisch einen gültigen Cookie.
+**Warum Stagehand statt Cookie-Relay:**
+- Echter Browser umgeht DataDome ohne Cookie-Management
+- KI-Extraktion mit Zod-Schema liefert typsichere, strukturierte Daten
+- Selector-Caching spart ~80% LLM-Kosten bei Wiederholungen
+- Accessibility-Tree statt Screenshots: 10x guenstiger als Vision
 
-**Wo:** Läuft lokal auf dem Mac als Cron-Job.
+**Konfiguration:** Portal-Definitionen in `src/config/portals.ts`
 
-**Wann:** 06:50 und 18:50 (10 Minuten vor dem n8n Scraper).
-
-**Datei:** `services/n8n-workflows/cookie-refresh.mjs`
-
-**Cron:** `50 6,18 * * * cd /path/to/n8n-workflows && node cookie-refresh.mjs`
-
-**Log:** `~/.local/log/cookie-refresh.log`
+**LLM:** OpenAI gpt-4o-mini ($0.15/1M Input, $0.60/1M Output) -- strukturierte Outputs via Zod-Schema garantieren valides JSON.
 
 ### 2. n8n Workflows
 
-Alle Workflow-Definitionen liegen als JSON-Export im Repo unter `services/n8n-workflows/`. Import via n8n UI.
-
 | Workflow | Trigger | Funktion |
 | :--- | :--- | :--- |
-| **Cookie Receiver** | Webhook GET `/webhook/cookie-refresh` | Empfängt DataDome-Cookie, UPSERT in `scraping_cookies` |
-| **Homegate Scraper** | Schedule 07:00 + 19:00 | Liest Cookie aus DB, scrapet 6 PLZ, UPSERT Listings + Fotos |
-| **KI Enrichment** | Sub-Workflow (von Homegate Scraper) | OpenAI gpt-4o-mini analysiert Beschreibung neuer Listings |
-| **Erstbezug Scraper** | Schedule 08:00 | Neubauprojekte aus erstbezug.ch HTML parsen |
+| **Scraper Post-Processing** | Webhook POST `/webhook/scraper-summary` | Empfaengt Summary, startet KI-Enrichment, deaktiviert Stale |
+| **KI Enrichment** | Sub-Workflow | OpenAI gpt-4o-mini analysiert Beschreibung (Stockwerk, Balkon, Minergie, etc.) |
+
+::: info Deprecated Workflows
+Die folgenden Workflows aus v2 werden nicht mehr benoetigt:
+- `01-cookie-receiver.json` -- Cookie-Management entfaellt
+- `02-homegate-scraper.json` -- Durch immoscraper ersetzt
+- `04-erstbezug-scraper.json` -- Wird in immoscraper integriert
+- `cookie-refresh.mjs` -- Playwright laeuft direkt im Container
+:::
 
 ### 3. Metabase
 
-BI-Dashboard für die Visualisierung der gesammelten Daten.
+BI-Dashboard fuer die Visualisierung der gesammelten Daten.
 
 - **Datenquelle:** PostgreSQL `n8n`, User `metabase_reader` (read-only)
-- **Geplante Dashboards:** Übersicht (Scorecards), Karte (Pin Map), Detailtabelle, Preisvergleich
+- **Dashboards:** Uebersicht (Scorecards), Karte (Pin Map), Detailtabelle, Preisvergleich, Scraper-Statistiken
 
 ## Datenbank-Schema
 
 ### listing
 
-Haupttabelle für alle Inserate. Unique Constraint auf `(portal, external_id)` für UPSERT-Logik.
+Haupttabelle fuer alle Inserate. Unique Constraint auf `(portal, external_id)` fuer UPSERT-Logik.
 
-Wichtige Felder: `portal`, `external_id`, `title`, `description`, `zip_code`, `city`, `latitude`, `longitude`, `rooms`, `area_m2`, `rent_net`, `rent_gross`, `raw_data` (JSONB), `first_seen_at`, `last_seen_at`, `is_active`
+Basis-Felder: `portal`, `external_id`, `url`, `title`, `description`, `listing_type`, `address_raw`, `zip_code`, `city`, `canton`, `latitude`, `longitude`, `rooms`, `area_m2`, `rent_net`, `rent_gross`, `costs_additional`, `available_from`, `raw_data` (JSONB), `first_seen_at`, `last_seen_at`, `is_active`
 
-Das Feld `raw_data` enthält das komplette Portal-JSON plus KI-Enrichment unter dem Key `enriched`.
+Detail-Felder (v3, via Stagehand): `floor`, `year_built`, `year_renovated`, `heating_type`, `energy_label`, `pets_allowed`, `laundry`, `amenities` (JSONB), `detail_scraped_at`
 
 ### listing_photo
 
-Foto-URLs zu Inseraten, verknüpft via `listing_id` Foreign Key (CASCADE DELETE).
+Foto-URLs zu Inseraten, verknuepft via `listing_id` Foreign Key (CASCADE DELETE).
 
-### scraping_cookies
+v3 Erweiterungen: `is_floorplan` (boolean), `caption` (text)
 
-DataDome-Cookies pro Portal. Unique auf `portal`. Wird automatisch via Playwright aktualisiert. Der Homegate Scraper prüft `updated_at > NOW() - 24h` und stoppt sauber wenn kein gültiger Cookie vorhanden ist.
+### scraper_runs (neu in v3)
+
+Zusammenfassung pro Scraper-Lauf fuer Monitoring.
+
+Felder: `portal`, `started_at`, `finished_at`, `listings_new`, `listings_updated`, `listings_skipped`, `details_scraped`, `errors`, `error_details` (JSONB), `duration_ms`
 
 ## Betrieb
 
 ### Normalbetrieb
 
-Alles läuft automatisch:
+Alles laeuft automatisch via Nomad Periodic Batch:
 
-1. **06:50** — Cron startet `cookie-refresh.mjs`, Cookie wird in DB geschrieben
-2. **07:00** — n8n Homegate Scraper liest Cookie, scrapet 6 PLZ, speichert Listings
-3. **08:00** — n8n Erstbezug Scraper scrapet Neubauprojekte
-4. **18:50** — Cron: zweiter Cookie-Refresh
-5. **19:00** — n8n: zweiter Homegate Scraper-Lauf
+1. **07:00** -- Nomad startet immoscraper Container
+2. Container: Chromium starten, Uebersichtsseiten besuchen, Smart Skipping, Detail-Scrapes
+3. Container: Summary an n8n Webhook senden
+4. n8n: KI-Enrichment + Stale-Deaktivierung
+5. Container beendet sich, Nomad raeaumt auf
+6. **19:00** -- Zweiter Lauf
+
+### Monitoring
+
+| Ebene | Was | Wo sichtbar |
+| :--- | :--- | :--- |
+| **Nomad Logs** | Strukturierte JSON-Logs pro Lauf | `nomad alloc logs <alloc-id>` |
+| **n8n Executions** | Post-Processing Workflow | n8n UI -- Executions Tab |
+| **DB: scraper_runs** | Statistiken pro Lauf | Metabase Dashboard |
+| **Metabase** | Listings/Tag, Fehlerrate, Portal-Vergleich | Metabase UI |
 
 ### Troubleshooting
 
-**Kein Cookie / Scraper stoppt:**
-- Log prüfen: `cat ~/.local/log/cookie-refresh.log`
-- Manuell testen: `cd n8n-workflows && node cookie-refresh.mjs`
-- DB prüfen: `SELECT updated_at FROM scraping_cookies WHERE portal = 'homegate.ch'`
+**Container startet nicht:**
+- `nomad job status immoscraper` -- Allocation-Status pruefen
+- `nomad alloc logs <alloc>` -- Fehlerlogs lesen
 
-**Playwright wird von DataDome geblockt:**
-- Fallback auf manuelles Bookmarklet (siehe unten)
+**DataDome blockiert Stagehand:**
+- Unwahrscheinlich (echter Chromium-Browser), aber moeglich bei Fingerprint-Aenderungen
+- Pruefe ob `__INITIAL_STATE__` in den Logs erscheint
+- Fallback: User-Agent oder Viewport in `localBrowserLaunchOptions` anpassen
 
-**n8n Workflow-Fehler:**
-- n8n UI: Executions-Tab prüfen
-- Häufigste Ursache: Cookie abgelaufen oder `__INITIAL_STATE__` Struktur geändert
+**Keine neuen Listings:**
+- `SELECT * FROM scraper_runs ORDER BY id DESC LIMIT 5` -- Lauf-Statistiken pruefen
+- Wenn `listings_new = 0` und `listings_skipped > 0`: Smart Skipping funktioniert korrekt, keine neuen Inserate
+
+**Detail-Extraktion schlaegt fehl:**
+- Stagehand-Cache loeschen: NFS Volume `/nfs/docker/immoscraper/cache/` leeren
+- Pruefe ob sich die Seitenstruktur von Homegate geaendert hat
 
 ### Vault Secrets
 
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/n8n` | `db_password`, `encryption_key` |
+| `kv/data/immoscraper` | `openai_api_key` |
 | `kv/data/metabase` | `db_password`, `n8n_reader_password` |
 
-## Fallback: Manuelles Bookmarklet
+### Kostenabschaetzung
 
-::: details Falls Playwright von DataDome geblockt wird
+| Posten | Berechnung | Kosten/Monat |
+| :--- | :--- | :--- |
+| Neue Detail-Scrapes | ~20/Tag x 30 x $0.003 | ~$1.80 |
+| Re-Scrapes (geaenderte) | ~10/Tag x 30 x $0.003 | ~$0.90 |
+| KI-Enrichment (neue) | ~20/Tag x 30 x $0.002 | ~$1.20 |
+| **Total** | | **~$3.90 (~CHF 3.50)** |
 
-Falls DataDome irgendwann Playwright erkennt und blockiert, gibt es einen manuellen Fallback. Die n8n Workflows brauchen keine Änderung — nur die Cookie-Quelle wechselt.
+Deutlich unter CHF 10/Monat dank Smart Skipping und Stagehand Selector-Caching.
 
-**Bookmarklet einrichten:**
+## Verwandte Seiten
 
-Neues Lesezeichen im Browser erstellen mit folgendem Code als URL:
-
-```
-javascript:(function(){var dd=document.cookie.match(/datadome=([^;]+)/);if(!dd){alert('Kein DataDome Cookie!');return;}var img=new Image();img.src='https://n8n.ackermannprivat.ch/webhook/cookie-refresh?portal='+location.hostname.replace('www.','')+'&datadome='+encodeURIComponent(dd[1]);alert('Cookie gesendet!');})()
-```
-
-**Verwendung:**
-
-1. Im Browser auf [homegate.ch](https://www.homegate.ch) navigieren
-2. Bookmarklet klicken
-3. "Cookie gesendet!" bestätigen
-
-Muss ca. 1x pro Tag ausgeführt werden (DataDome-Cookie ist ~24h gültig). Bei abgelaufenem Cookie stoppt der Homegate Scraper sauber (kein Crash, nur Log-Eintrag).
-
-Das Bookmarklet nutzt ein Image-Tag statt fetch, um CORS-Probleme zu vermeiden.
-
-:::
+- [n8n](./n8n.md) -- Workflow-Automation für Post-Processing und KI-Enrichment
+- [Metabase](./metabase.md) -- BI-Dashboard für die Visualisierung der Daten
+- [ChangeDetection](./changedetection.md) -- Ergänzende Website-Überwachung
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster

@@ -57,4 +57,8 @@ Verbindungskonfigurationen und gespeicherte Queries werden unter `/root/.dbgate`
 | CPU | 256 MHz |
 | Memory | 256 MB (max 512 MB) |
 
----
+## Verwandte Seiten
+
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster und Datenbankzuordnung
+- [Backup-Strategie](./backup-strategy.md) -- PostgreSQL Backup via pg_dumpall
+- [Traefik Reverse Proxy](./traefik.md) -- Ingress mit admin-chain-v2 Middleware

@@ -149,4 +149,10 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 ### Grafana Dashboards
 Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-dashboards/` verwaltet oder direkt in der UI erstellt.
 
----
+## Verwandte Seiten
+
+- [CheckMK Monitoring](./checkmk.md) -- Host-Level Monitoring (CPU, RAM, Disk)
+- [Gatus](./gatus.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
+- [Backup-Strategie](../core/backup-strategy.md) -- Backup-Monitoring via Uptime Kuma Push
+- [Linstor/DRBD](../../platforms/linstor-drbd.md) -- CSI Volumes für Grafana und Loki
+- [Batch Jobs](../../runbooks/batch-jobs.md) -- iperf3-to-influxdb und weitere periodische Monitoring-Jobs

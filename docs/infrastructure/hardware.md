@@ -72,7 +72,6 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | Eigenschaft | Wert |
 | :--- | :--- |
 | Typ | Synology (Modell unbekannt) |
-| IP | 10.0.0.200 |
 | Funktion | NFS-Exports, MinIO S3, Backup-Ziel |
 | Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
 
@@ -84,3 +83,10 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](./storage-nas.md)
 | :--- | :--- | :--- |
 | 2x Thunderbolt 4 Kabel | DRBD-Replikation, VM-Migration | pve01 <-> pve02 |
 | USV | unbekannt | unbekannt |
+
+## Verwandte Seiten
+
+- [Proxmox Cluster](./proxmox-cluster.md) -- VM-Zuordnung und IPs der Hosts
+- [NAS-Speicher](./storage-nas.md) -- NFS-Exports, MinIO, Wartung
+- [Netzwerk-Hardware](./network-hardware.md) -- Switches, Access Points, Verkabelung
+- [Netzwerk-Topologie](../architecture/network-topology.md) -- Thunderbolt-Netzwerk

@@ -1,6 +1,9 @@
 ---
 title: Plattformen
 description: HashiCorp Stack, Traefik, Linstor und Security
+tags:
+  - index
+  - platforms
 order: 3
 ---
 

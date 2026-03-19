@@ -1,12 +1,11 @@
 ---
 title: Datenstrategie & Replikation
-description: Speicher-Konzepte, Litestream Replikation und Backups
+description: Speicher-Ebenen, PostgreSQL-Strategie und Backup-Konzepte im Homelab
 tags:
   - architecture
   - backup
-  - sqlite
-  - litestream
   - storage
+  - postgresql
 ---
 
 # Datenstrategie
@@ -19,7 +18,9 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 |-------|-------------|------|------------------|
 | **Hot Storage** | Lokales SSD/ZFS | `/local-docker/` | Performance-kritische DBs (SQLite) |
 | **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
-| **Object Storage** | MinIO (S3) | `http://10.0.0.200:9000` | Backup-Targets, Terraform State |
+| **Object Storage** | MinIO (S3) | NAS | Backup-Targets, Terraform State |
+
+Details zu NFS-Exports: [NAS-Speicher](../infrastructure/storage-nas.md)
 
 ## 2. Aktuelle Datenbank-Strategie
 
@@ -28,74 +29,40 @@ Alle datenbank-gestützten Services nutzen den **PostgreSQL 16 Shared Cluster** 
 ## 3. Litestream Replikation (SQLite) -- Nicht umgesetzt
 
 ::: danger Veraltet -- Nicht in Produktion
-Dieses Konzept wurde geplant, aber **nie produktiv umgesetzt**. Alle hier gelisteten Services (Radarr, Sonarr, Prowlarr, Jellyseerr, Vaultwarden, etc.) nutzen de facto **PostgreSQL** via `postgres.service.consul:5432`. Die Litestream-Architektur und MinIO-Peer-Replicas auf Node-05/06 sind nicht aktiv. Die zugehörigen Vault-Credentials wurden gelöscht (18.03.2026).
+Dieses Konzept wurde geplant, aber **nie produktiv umgesetzt**. Alle ursprünglich vorgesehenen Services nutzen de facto **PostgreSQL** via `postgres.service.consul:5432`. Die zugehörigen Vault-Credentials wurden gelöscht (18.03.2026).
 
-Dieser Abschnitt bleibt als historische Referenz erhalten. Für die aktuelle Strategie siehe [Datenbank-Architektur](./database-architecture.md).
+Für die aktuelle Strategie siehe [Datenbank-Architektur](./database-architecture.md).
 :::
 
-Um SQLite-Datenbanken (die lokal liegen müssen) hochverfügbar zu machen, war Litestream für eine Echtzeit-Replikation vorgesehen.
+Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanzen zu replizieren. Zwei MinIO-Peers auf Node-05/06 (verbunden über Thunderbolt) hätten als schnelle Replicas gedient, mit dem NAS-MinIO als Langzeit-Backup.
 
-### Architektur
+```mermaid
+flowchart TB
+    subgraph Peers["Peer Replicas (Thunderbolt)"]
+        N05:::svc["Node-05 MinIO"]
+        N06:::svc["Node-06 MinIO"]
+    end
 
+    subgraph Backup["Langzeit-Backup"]
+        NAS:::db["NAS MinIO<br/>Retention: 7 Tage"]
+    end
+
+    SVC:::entry["Service mit SQLite"] -->|"Litestream sync: 5s"| N05
+    SVC -->|"Litestream sync: 5s"| N06
+    N05 <-->|"Thunderbolt ~11 Gbps"| N06
+    N05 -->|"sync: 60s"| NAS
+    N06 -->|"sync: 60s"| NAS
+
+    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
+    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Litestream Replikation                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Node-05 ◄───── Thunderbolt ─────► Node-06                     │
-│   MinIO:9100      (11 Gbps)         MinIO:9100                  │
-│   10.99.1.105                       10.99.1.106                 │
-│        │                                 │                       │
-│        └──────► Peer Replica ◄───────────┘                      │
-│                   (sync: 5s)                                     │
-│                       │                                          │
-│                       ▼                                          │
-│                  NAS MinIO                                       │
-│               10.0.0.200:9000                                    │
-│                (sync: 60s)                                       │
-│              (retention: 7d)                                     │
-└─────────────────────────────────────────────────────────────────┘
-```
 
-### Komponenten
+## Verwandte Seiten
 
-| Komponente | Endpoint | Zweck |
-|------------|----------|-------|
-| NAS MinIO | http://10.0.0.200:9000 | Langzeit-Backup (7 Tage Retention) |
-| Node-05 MinIO | http://10.99.1.105:9100 | Peer-Replica via Thunderbolt |
-| Node-06 MinIO | http://10.99.1.106:9100 | Peer-Replica via Thunderbolt |
-
-### Services mit Litestream
-
-| Service | DB-Pfad | Job-Datei |
-|---------|---------|-----------|
-| uptime-kuma | `/data/kuma.db` | monitoring/uptime-kuma-litestream.nomad |
-| jellyseerr | `/data/db/db.sqlite3` | media/jellyseerr.nomad |
-| maintainerr | `/data/maintainerr.sqlite` | media/maintainerr.nomad |
-| radarr | `/data/radarr.db` | media/radarr.nomad |
-| sonarr | `/data/sonarr.db` | media/sonarr.nomad |
-| prowlarr | `/data/prowlarr.db` | media/prowlarr.nomad |
-| vaultwarden | `/data/db.sqlite3` | services/vaultwarden.nomad |
-
-**Hinweis:** Alle Jobs können auf `vm-nomad-client-05` oder `vm-nomad-client-06` laufen.
-Bei Job-Start wird automatisch von der Peer-Replica (schnell) oder NAS (Fallback) restored.
-
-### Credentials
-
-::: warning Veraltet
-Die Litestream-Credentials wurden aus Vault entfernt, da dieses Konzept nie produktiv ging:
-- `kv/litestream-s3` — gelöscht (18.03.2026)
-- `kv/minio-nas` — nach 1Password migriert (18.03.2026)
-- `kv/minio-peer` — nach 1Password migriert (18.03.2026)
-:::
-
-### Performance
-
-| Metrik | Wert |
-|--------|------|
-| Peer Sync-Interval | 5 Sekunden |
-| NAS Sync-Interval | 60 Sekunden |
-| Restore-Zeit (15MB DB) | ~1-2 Sekunden |
-| RPO (Recovery Point Objective) | 5 Sekunden (Peer) |
-| Thunderbolt Bandbreite | ~11 Gbps |
-
+- [Datenbank-Architektur](./database-architecture.md) -- PostgreSQL Cluster, Service-Zuordnung
+- [Backup-Strategie](../services/core/backup-strategy.md) -- pg_dumpall, Linstor Snapshots, PBS
+- [NAS-Speicher](../infrastructure/storage-nas.md) -- NFS-Exports und MinIO
+- [Netzwerk-Topologie](./network-topology.md) -- Thunderbolt-Netzwerk für Replikation

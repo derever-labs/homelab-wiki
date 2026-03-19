@@ -54,5 +54,7 @@ PostgreSQL-Datenbank `djangodb` mit Benutzer `djangouser` auf dem Shared Cluster
 
 ## Verwandte Seiten
 
-- [Traefik](../core/traefik.md)
-- [Backup-Strategie](../core/backup-strategy.md)
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [Backup-Strategie](../core/backup-strategy.md) -- Übergeordnetes Backup-Konzept
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Medien und Static Files

@@ -93,5 +93,6 @@ Der Service ist bewusst nur intern erreichbar (`intern-chain@file`). Obsidian-Cl
 
 ## Verwandte Seiten
 
-- [Traefik](../core/traefik.md)
-- [Backup-Strategie](../core/backup-strategy.md)
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- CORS-Middleware und IP-Whitelist
+- [Backup-Strategie](../core/backup-strategy.md) -- Übergeordnetes Backup-Konzept
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für CouchDB-Daten

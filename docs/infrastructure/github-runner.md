@@ -73,4 +73,9 @@ Das PAT wird über Vault-Integration als Umgebungsvariable `ACCESS_TOKEN` injizi
 
 Der Runner ist ein zentraler Bestandteil der Wiki CI/CD Pipeline. Der vollständige Ablauf ist in der [Wiki-Dokumentation](../services/core/wiki.md) beschrieben.
 
----
+## Verwandte Seiten
+
+- [Wiki](../services/core/wiki.md) -- CI/CD Pipeline und Deployment-Ablauf
+- [Proxmox Cluster](./proxmox-cluster.md) -- Nomad-Client-Nodes (Placement)
+- [HashiCorp Stack](../platforms/hashicorp-stack.md) -- Vault-Integration für Secrets
+- [Nomad Architektur](../platforms/nomad-architecture.md) -- Job-Übersicht

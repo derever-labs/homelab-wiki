@@ -1,6 +1,10 @@
 ---
 title: Monitoring
 description: Überwachung und Alerting
+tags:
+  - index
+  - services
+  - monitoring
 order: 3
 ---
 

@@ -1,21 +1,57 @@
 ---
 title: HashiCorp Stack
+description: Nomad, Consul und Vault -- Cluster-Architektur und Zusammenspiel
+tags:
+  - platform
+  - hashicorp
+  - nomad
+  - consul
+  - vault
 ---
 
 ## Übersicht
 
-- **Infrastruktur**: Proxmox VE 8.x (3 Hosts: pve00, pve01, pve02)
-- **OS**: Ubuntu 24.04 LTS
-- **Tools**: Consul v1.21.1, Nomad v1.10.1, Vault v1.18.3
-- **Automatisierung**: Packer, Terraform, Ansible
-- **Storage**: rpool (ZFS)
+| Eigenschaft | Wert |
+|-------------|------|
+| Infrastruktur | Proxmox VE 8.x (3 Hosts: pve00, pve01, pve02) |
+| OS | Ubuntu 24.04 LTS |
+| Consul | v1.21.1 |
+| Nomad | v1.10.1 |
+| Vault | v1.18.3 |
+| Automatisierung | Packer, Terraform, Ansible |
 
-## Nodes
+## Zusammenspiel der Komponenten
 
-Der Stack läuft auf 3 Server-Nodes (Consul/Nomad/Vault) und 3 Worker-Nodes (Nomad Client/Docker), jeweils 1 pro Proxmox-Host.
+Die drei HashiCorp-Tools bilden zusammen die Container-Plattform:
 
-- **Server**: Nomad Server, Consul Server, Vault
-- **Worker**: Nomad Client, Consul Client, Docker
+- **Nomad** ist der Workload-Scheduler. Er entscheidet auf welchem Worker-Node ein Container läuft, überwacht die Ausführung und sorgt für Restarts bei Fehlern.
+- **Consul** stellt Service Discovery und DNS bereit. Jeder Container registriert sich automatisch als Consul Service und ist danach über `<service>.service.consul` erreichbar. Consul verwaltet ausserdem Health Checks und stellt ein Key-Value Store bereit.
+- **Vault** ist das zentrale Secrets Management. Nomad Jobs authentifizieren sich über Workload Identity (JWT) und erhalten Secrets zur Laufzeit, ohne dass statische Tokens in Job-Definitionen stehen.
+
+```mermaid
+flowchart TD
+    Nomad:::svc["Nomad Server<br/>(Scheduling, Job-Lifecycle)"]
+    Consul:::svc["Consul Server<br/>(Service Discovery, DNS, KV)"]
+    Vault:::accent["Vault<br/>(Secrets Management)"]
+    Worker:::entry["Nomad Client + Docker<br/>(Container-Ausführung)"]
+
+    Nomad -->|"Job placement"| Worker
+    Worker -->|"Service Registration"| Consul
+    Worker -->|"JWT Auth → Secrets"| Vault
+    Nomad -->|"Service Health"| Consul
+    Nomad -->|"Workload Identity"| Vault
+
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+```
+
+## Cluster-Topologie
+
+Der Stack läuft auf 3 Server-Nodes (Consul/Nomad/Vault) und 3 Worker-Nodes (Nomad Client/Docker), jeweils 1 pro Proxmox-Host. Die Server bilden einen Raft-Consensus-Cluster -- bei Ausfall eines Servers übernehmen die verbleibenden zwei.
+
+- **Server-Nodes**: Nomad Server, Consul Server, Vault
+- **Worker-Nodes**: Nomad Client, Consul Client, Docker
 
 Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../infrastructure/proxmox-cluster.md#hashicorp-stack-vms)
 
@@ -42,21 +78,7 @@ Siehe README.md im Repository `homelab-hashicorp-stack`.
 
 ## Repository Struktur
 
-```
-homelab-hashicorp-stack/
-├── packer/           # VM-Templates
-│   └── cloud-init/   # Cloud-init Konfigurationen
-├── terraform/        # Infrastructure as Code
-├── ansible/          # Konfigurationsmanagement
-│   ├── inventory/    # Host-Definitionen
-│   ├── playbooks/    # Ansible Playbooks
-│   └── roles/        # Ansible Roles
-├── consul-configs/   # Consul Konfigurationen
-├── vault-configs/    # Vault Policies & Configs
-├── scripts/          # Hilfs-Scripts
-├── docs/             # Dokumentation
-└── backups/          # Backup Verzeichnis
-```
+Das Repository `homelab-hashicorp-stack` enthält die vollständige IaC-Pipeline: `packer/` für VM-Templates (inkl. Cloud-init), `terraform/` für die Infrastruktur-Provisionierung, `ansible/` für Konfigurationsmanagement (Inventory, Playbooks, Roles), sowie `consul-configs/` und `vault-configs/` für die jeweiligen Service-Konfigurationen.
 
 ## Konfiguration
 
@@ -66,7 +88,7 @@ homelab-hashicorp-stack/
 | Netzwerk | 10.0.2.0/22 |
 | Gateway | 10.0.0.1 |
 | DNS | 10.0.2.1, 10.0.2.2 |
-| NFS Server | 10.0.0.200 |
+| NFS Server | [NAS-Speicher](../infrastructure/storage-nas.md) |
 | Storage Pool | rpool (ZFS) |
 
 ## Security
@@ -114,4 +136,10 @@ Vault wird nach Neustart automatisch via systemd entsperrt:
 
 Siehe [DNS-Architektur](dns-architecture.md) für die vollständige DNS-Dokumentation inkl. Consul-Forwarding.
 
----
+## Verwandte Seiten
+
+- [Nomad Job-Übersicht](nomad-architecture.md) -- Alle Nomad Jobs und deren Konfiguration
+- [DNS-Architektur](dns-architecture.md) -- DNS-Kette inkl. Consul-Forwarding
+- [Sicherheit](security.md) -- Keycloak, OAuth2-Proxy und Zugriffskontrolle
+- [Linstor & DRBD](linstor-drbd.md) -- Distributed Storage mit CSI-Integration in Nomad
+- [Proxmox Cluster](../infrastructure/proxmox-cluster.md) -- Host- und VM-Übersicht

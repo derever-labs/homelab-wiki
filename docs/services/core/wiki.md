@@ -108,13 +108,14 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 
 ## Lokale Entwicklung
 
-```bash
-cd wiki
-npm ci
-npm run dev    # Dev-Server auf http://localhost:5173
-npm run build  # Produktions-Build
-```
+Für die lokale Entwicklung wird `npm ci` im Wiki-Verzeichnis ausgeführt, danach `npm run dev` für den Dev-Server (Port 5173) oder `npm run build` für einen Produktions-Build.
 
 ## Richtlinien
 
 Inhaltliche Regeln und Formatierungs-Konventionen: [Wiki-Richtlinien](../../wiki-richtlinien.md)
+
+## Verwandte Seiten
+
+- [GitHub Runner](../../infrastructure/github-runner.md) -- Self-Hosted Runner für CI/CD des Wiki-Builds
+- [Traefik Reverse Proxy](./traefik.md) -- Ingress und SSL-Terminierung für wiki.ackermannprivat.ch
+- [Wiki-Richtlinien](../../wiki-richtlinien.md) -- Formatierungs- und Inhaltskonventionen

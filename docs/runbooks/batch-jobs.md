@@ -104,3 +104,10 @@ Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewus
 
 - **Jellyfin-Neustarts:** Drei Jobs starten Jellyfin neu (`daily_reboot`, `daily_container_restart`, `daily_restart_jellyfin`). Einer davon würde genügen.
 - **Docker Prune:** Läuft sowohl in `docker_prune` als auch in `daily_cleanup`. Könnte in einem Job zusammengefasst werden.
+
+## Verwandte Seiten
+
+- [Backup-Strategie](../services/core/backup-strategy.md) -- PostgreSQL Backup Architektur und Restore-Konzept
+- [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess der durch daily_reboot ausgelöst wird
+- [Monitoring Stack](../services/monitoring/stack.md) -- Uptime Kuma Push-Monitore für Backup-Status
+- [Zot Container Registry](../services/core/docker-registry.md) -- Watchtower aktualisiert Images via Zot

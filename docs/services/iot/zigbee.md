@@ -83,3 +83,9 @@ Falls der USB-Stick nicht erkannt wird: prüfen ob das Device unter `/dev/serial
 - [Mosquitto](./mosquitto.md) -- MQTT Broker
 - NFS (Synology) -- Config und Daten
 - USB-Passthrough -- Physischer Dongle an `vm-nomad-client-06`
+
+## Verwandte Seiten
+
+- [Mosquitto](./mosquitto.md) -- MQTT Broker für Zigbee-Nachrichten
+- [Storage NAS](../../infrastructure/storage-nas.md) -- NFS-Speicher für Konfiguration und Daten
+- [Traefik Reverse Proxy](../core/traefik.md) -- Ingress mit admin-chain-v2 für Web-Frontend

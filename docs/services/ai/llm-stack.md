@@ -120,3 +120,9 @@ HolLama ist ein minimales, rein clientseitiges UI. Es hat keine Datenbank, keine
 - **Ollama CPU-only:** Kein GPU-Passthrough im Proxmox-Cluster vorhanden. Inferenz laeuft komplett auf CPU mit 16 Threads und 32 GB RAM.
 - **Zwei UIs parallel:** Open WebUI deckt den Hauptanwendungsfall ab (Chat mit Historie, OAuth). HolLama bietet eine schnelle Alternative ohne Login fuer einfache Anfragen.
 - **CORS-Konfiguration:** HolLama benoetigt CORS, da es clientseitig direkt die Ollama-API aufruft. Die erlaubten Origins sind in der Ollama-Konfiguration explizit gesetzt.
+
+## Verwandte Seiten
+
+- [Traefik Reverse Proxy](../core/traefik.md) -- Ingress und Middleware-Chains für alle drei Komponenten
+- [OpenLDAP & Benutzerverwaltung](../core/ldap.md) -- Keycloak OAuth für Open WebUI
+- [Storage NAS](../../infrastructure/storage-nas.md) -- NFS-Speicher für Ollama-Modelle und Open WebUI Daten

@@ -68,3 +68,9 @@ Beide Ports sind als Consul Services registriert und können über `mosquitto.se
 
 - NFS (Synology) -- Config, Daten und Logs
 - [Zigbee2MQTT](./zigbee.md) -- Hauptproduzent von MQTT-Nachrichten
+
+## Verwandte Seiten
+
+- [Zigbee2MQTT](./zigbee.md) -- Zigbee-to-MQTT Bridge als Hauptproduzent
+- [Storage NAS](../../infrastructure/storage-nas.md) -- NFS-Speicher für Config, Daten und Logs
+- [DNS-Architektur](../../platforms/dns-architecture.md) -- Consul DNS für mosquitto.service.consul
