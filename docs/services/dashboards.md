@@ -49,3 +49,9 @@ Flame Intra und Homepage verwenden beide `intra.ackermannprivat.ch`. Nur einer d
 | Pfad | Keys | Verwendet von |
 | :--- | :--- | :--- |
 | `kv/data/flame` | `password` | Flame (Public + Intra) |
+
+## Verwandte Seiten
+
+- [Traefik Reverse Proxy](./core/traefik.md) -- Ingress und Middleware-Chains (public-guest vs. admin)
+- [Traefik Middleware Chains](../platforms/traefik-middlewares.md) -- Unterschied public-guest vs. admin Chains
+- [CrowdSec](../platforms/crowdsec.md) -- IP-Blocking für die öffentliche Flame-Instanz

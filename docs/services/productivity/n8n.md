@@ -21,9 +21,9 @@ tags:
 | **Auth** | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilitaet) |
 | **Netzwerk** | Intern (`intern-chain@file`) |
 
-## Beschreibung
+## Rolle im Stack
 
-n8n ist eine Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
+n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
 
 Aktive Workflows:
 - [Immobilien-Monitoring](./immobilien-monitoring.md)
@@ -52,3 +52,10 @@ Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job freigeschaltet w
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/n8n` | `db_password`, `encryption_key` |
+
+## Verwandte Seiten
+
+- [Zeiterfassung](./zeiterfassung.md) -- Geofence-Automation und Git-Commit Tracking via n8n Workflows
+- [Immobilien-Monitoring](./immobilien-monitoring.md) -- Scraper Post-Processing und KI-Enrichment
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Webhook-Routing und IP-Whitelist

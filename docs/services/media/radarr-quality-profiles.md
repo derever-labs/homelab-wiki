@@ -349,3 +349,9 @@ Die SQP Profile nutzen Custom Formats um Releases zu bewerten:
 - [TRaSH Guides - Custom Formats](https://trash-guides.info/Radarr/Radarr-collection-of-custom-formats/)
 - [TRaSH Guides - SQP (Discord)](https://trash-guides.info/SQP/)
 - [Recyclarr Config Templates](https://github.com/recyclarr/config-templates)
+
+## Verwandte Seiten
+
+- [Arr Stack](./arr-stack.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
+- [Jellyfin](./jellyfin.md) -- Media Server der die Inhalte abspielt
+- [Notifiarr](../productivity/notifiarr.md) -- Synchronisiert Quality Profiles über Arr-Apps

@@ -57,5 +57,6 @@ Der Container mountet `/var/run/utmp` und `/etc/machine-id` vom Host für System
 
 ## Verwandte Seiten
 
-- [Arr-Stack](../media/arr-stack.md)
-- [Traefik](../core/traefik.md)
+- [Arr-Stack](../media/arr-stack.md) -- Sonarr, Radarr und weitere Media-Services
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Konfiguration

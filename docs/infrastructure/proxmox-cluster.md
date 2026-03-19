@@ -82,4 +82,11 @@ Detaillierte Dokumentation: Siehe `homelab-hashicorp-stack/docs/THUNDERBOLT_NETW
 ## Management
 Die Web-UI ist unter `https://<node-ip>:8006` erreichbar. SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
 
----
+## Verwandte Seiten
+
+- [Server-Hardware](./hardware.md) -- Physische Hardware-Details der Nodes
+- [Proxmox Datacenter Manager](./proxmox-datacenter-manager.md) -- Zentrale Cluster-Verwaltung
+- [Netzwerk-Topologie](../architecture/network-topology.md) -- VLANs, Subnets, Thunderbolt
+- [NAS-Speicher](./storage-nas.md) -- NFS-Exports und Mount-Pfade
+- [HashiCorp Stack](../platforms/hashicorp-stack.md) -- Nomad, Consul, Vault auf den VMs
+- [Proxmox Backup Server](../services/core/pbs.md) -- Inkrementelle VM-Backups

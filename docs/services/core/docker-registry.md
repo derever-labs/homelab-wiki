@@ -20,7 +20,7 @@ tags:
 | **Primary URL** | localhost:5000 (jeder Node) |
 | **External URL** | [registry.ackermannprivat.ch](https://registry.ackermannprivat.ch) |
 | **Deployment** | Nomad System Job (`infrastructure/zot-registry.nomad`) |
-| **Storage Backend** | MinIO S3 auf NAS (10.0.0.200:9000) |
+| **Storage Backend** | MinIO S3 auf [NAS](../../infrastructure/storage-nas.md) |
 | **UI** | Eingebaut (Zot UI Extension) |
 
 ## Warum Zot statt Docker Registry v2?
@@ -37,7 +37,7 @@ tags:
 
 ```mermaid
 flowchart TD
-    S3:::db["MinIO S3 (NAS 10.0.0.200:9000)<br/>Bucket: zot-registry"]
+    S3:::db["MinIO S3 (NAS)<br/>Bucket: zot-registry"]
     S3 --- Zot1:::svc["Zot 124<br/>localhost:5000<br/>(client-04)"]
     S3 --- Zot2:::svc["Zot 125<br/>localhost:5000<br/>(client-05)"]
     S3 --- Zot3:::svc["Zot 126<br/>localhost:5000<br/>(client-06)"]
@@ -134,4 +134,10 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 | 21.02.2026 | Fix: `compat: ["docker2s2"]` für Multi-Arch Push Support |
 | 22.02.2026 | Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` — verhindert 5min+ Blockierungen bei DNS- oder Rate-Limit-Problemen |
 | 18.03.2026 | S3-Credentials aus Nomad-Job in Vault migriert (`kv/data/zot-s3`), Vault Workload Identity aktiviert |
+
+## Verwandte Seiten
+
+- [Storage NAS](../../infrastructure/storage-nas.md) -- MinIO S3 Backend auf Synology NAS
+- [DNS-Architektur](../../platforms/dns-architecture.md) -- DNS-Auflösung für Upstream-Registries
+- [Cluster-Neustart](../../runbooks/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart
 

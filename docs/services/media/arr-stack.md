@@ -10,7 +10,7 @@ tags:
 # Media Management Stack
 
 ## Übersicht
-Der Media Stack automatisiert die Suche, den Download und die Organisation von Medieninhalten. Alle Services laufen als Nomad Jobs und nutzen PostgreSQL (`postgres.service.consul:5432`) als Datenbank.
+Der Media Stack automatisiert die Suche, den Download und die Organisation von Medieninhalten. Alle Services laufen als Nomad Jobs und nutzen den [PostgreSQL Shared Cluster](../../architecture/database-architecture.md) als Datenbank.
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
@@ -21,7 +21,7 @@ Der Media Stack automatisiert die Suche, den Download und die Organisation von M
 
 ## Konfiguration
 ### Speicherpfade (NFS)
-Alle Services greifen auf zentrale Pfade auf dem NAS (10.0.0.200) zu:
+Alle Services greifen auf zentrale Pfade auf dem [NAS](../../infrastructure/storage-nas.md) zu:
 - **Konfiguration:** `/nfs/docker/<service>/config/`
 - **Downloads:** `/nfs/downloads/`
 - **Mediathek:** `/nfs/jellyfin/` (für Sonarr/Radarr)
@@ -31,13 +31,7 @@ SABnzbd nutzt im Gegensatz zu den anderen Arr-Services ein Linstor CSI Volume (`
 :::
 
 ### Datenbank (PostgreSQL)
-Sonarr, Radarr und Prowlarr nutzen die shared PostgreSQL-Instanz (`postgres.service.consul:5432`). Die DB-Passwörter werden via Vault Workload Identity injiziert:
-
-- `kv/data/sonarr` (Feld: `postgres_password`)
-- `kv/data/radarr` (Feld: `postgres_password`)
-- `kv/data/prowlarr` (Feld: `postgres_password`)
-
-SABnzbd hat keine eigene Datenbank.
+Sonarr, Radarr und Prowlarr nutzen den [PostgreSQL Shared Cluster](../../architecture/database-architecture.md). Die DB-Passwörter werden via Vault Workload Identity injiziert. SABnzbd hat keine eigene Datenbank.
 
 ### API-Router
 
@@ -52,4 +46,6 @@ Updates erfolgen durch Anpassung der Image-Version im jeweiligen Nomad-Job unter
 - [Jellyseerr](./jellyseerr.md) -- Media Request Management (leitet Anfragen an Sonarr/Radarr weiter)
 - [Media-Hilfstools](./media-tools.md) -- Janitorr (Cleanup), Jellystat (Statistiken)
 - [Jellyfin](./jellyfin.md) -- Media Server
-- [Radarr Quality Profiles](./radarr-quality-profiles.md)
+- [Radarr Quality Profiles](./radarr-quality-profiles.md) -- Detaillierte Profil-Konfiguration
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Medien und Konfiguration

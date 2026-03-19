@@ -1,41 +1,67 @@
 ---
 title: NAS-Speicher
-description: Zentraler NFS Speicher
+description: Synology NAS als zentraler NFS- und S3-Speicher im Homelab
 tags:
   - infrastructure
   - storage
   - nfs
+  - minio
+  - nas
 ---
 
 # NAS Storage
 
 ## Übersicht
+
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **IP** | 10.0.0.200 |
-| **Typ** | Synology NFS |
+| **Typ** | Synology NAS |
+| **Netzwerk** | IoT VLAN |
+| **Funktion** | NFS-Exports, MinIO S3, Backup-Ziel |
 
-## Exports
-Die folgenden Pfade werden als NFS-Shares bereitgestellt und im Cluster gemountet:
+Hardware-Details (Modell, Festplatten, RAID): [Server-Hardware](./hardware.md#nas)
 
-| Pfad | Verwendung |
+## Rolle im Stack
+
+Das NAS ist der zentrale Shared-Storage-Knoten im Cluster. Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über MinIO einen S3-kompatiblen Object Store für Backups und Terraform State.
+
+## NFS-Exports
+
+Die folgenden Pfade werden als NFS-Shares bereitgestellt und auf allen Nomad-Client-VMs gemountet:
+
+| Export-Pfad | Mount auf Clients | Verwendung |
+| :--- | :--- | :--- |
+| `/nfs/docker/` | `/nfs/docker/` | Persistente Daten für Container (Configs, DB-Dateien) |
+| `/nfs/jellyfin/` | `/nfs/media/` | Medien-Bibliothek für Jellyfin und arr-Stack |
+| `/nfs/nomad/jobs/` | `/nfs/nomad/jobs/` | Nomad Job-Spezifikationen |
+| `/nfs/cert/` | `/nfs/cert/` | TLS-Zertifikate (Read-Only) |
+| `/nfs/backup/` | `/nfs/backup/` | Backup-Ziel für pg_dumpall und weitere Jobs |
+| `/nfs/logs/` | `/nfs/logs/` | Log-Dateien für Batch-Jobs |
+
+Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfiguriert.
+
+## MinIO S3
+
+Das NAS betreibt eine MinIO-Instanz als S3-kompatiblen Object Store.
+
+| Attribut | Wert |
 | :--- | :--- |
-| `/nfs/docker/` | Persistente Daten für Docker Container |
-| `/nfs/jellyfin/` | Medien-Bibliothek für Jellyfin & arr-Stack |
-| `/nfs/nomad/jobs/` | Job-Spezifikationen für Nomad |
-| `/nfs/cert/` | Zertifikate (Read-Only für Services) |
-| `/nfs/backup/` | Ziel für Backups (falls nicht via PBS) |
-| `/nfs/logs/` | Logs für Batch-Jobs (z.B. Reddit Downloader) |
+| **Zweck** | Linstor S3 Shipping, Terraform State |
+| **Buckets** | `linstor-backups`, `terraform-state` |
 
-## Einbindung
-Die Clients (Nomad Nodes, VMs) mounten die Shares meist via `/etc/fstab` oder direkt über den Docker-Volume-Driver.
+Credentials werden in 1Password verwaltet.
 
-Die Mount-Punkte sind in `/etc/fstab` der jeweiligen VMs konfiguriert (verwaltet durch Ansible).
+## Wartung
 
-## Maintenance
-Das NAS verwaltet seine eigene RAID-Konsistenz (meist SHR oder RAID5/6).
-Wichtig: Snapshots werden auf dem NAS selbst gesteuert.
+- Das NAS verwaltet seine eigene RAID-Konsistenz (SHR/RAID)
+- Snapshots werden auf dem NAS selbst gesteuert
+- Monitoring via CheckMK (SNMP oder Agent)
 
----
-*Dokumentation erstellt am: 26.12.2025*
+## Verwandte Seiten
+
+- [Server-Hardware](./hardware.md) -- NAS-Hardware-Details
+- [Datenstrategie](../architecture/data-strategy.md) -- Speicher-Ebenen und Replikation
+- [Backup-Strategie](../services/core/backup-strategy.md) -- pg_dumpall und Linstor Snapshots auf NFS/MinIO
+- [Datenbank-Architektur](../architecture/database-architecture.md) -- PostgreSQL Backup-Ziele
+- [Proxmox Cluster](./proxmox-cluster.md) -- Nomad-Client-VMs, die NFS mounten

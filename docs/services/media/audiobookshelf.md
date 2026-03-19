@@ -44,7 +44,7 @@ flowchart LR
         ABS:::accent["Audiobookshelf"]
     end
 
-    subgraph NFS["NAS (10.0.0.200)"]
+    subgraph NFS["NAS"]
         CFG:::db["/nfs/docker/audiobookshelf/<br>config + metadata"]
         BOOKS:::db["/nfs/jellyfin/media/books/"]
     end

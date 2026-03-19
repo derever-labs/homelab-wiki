@@ -82,3 +82,10 @@ Gatus speichert keine Daten persistent. Nach einem Neustart beginnt die Uptime-H
 ## Entscheidungslog
 
 - **Gatus statt Uptime Kuma als Status-Seite gewählt**, weil Gatus als leichtgewichtige, config-basierte Lösung besser zur Infrastructure-as-Code-Philosophie passt. Uptime Kuma bleibt intern für Push-basiertes Monitoring (Batch Jobs).
+
+## Verwandte Seiten
+
+- [Monitoring Stack](./stack.md) -- Grafana, Loki, Uptime Kuma und Alloy
+- [CheckMK Monitoring](./checkmk.md) -- Host-Level Monitoring
+- [Traefik Reverse Proxy](../core/traefik.md) -- Ingress mit public-guest-chain-v2
+- [CrowdSec](../../platforms/crowdsec.md) -- IP-Blocking für die öffentliche Status-Seite

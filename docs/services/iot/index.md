@@ -1,6 +1,10 @@
 ---
 title: IoT
 description: Smart Home und Sensoren
+tags:
+  - index
+  - services
+  - iot
 order: 5
 ---
 

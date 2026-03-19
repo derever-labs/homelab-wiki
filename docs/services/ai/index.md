@@ -1,21 +1,15 @@
 ---
 title: AI Services
-description: Lokale KI-Services fuer Textgenerierung und Chat
-order: 5
+description: Lokale KI-Services für Textgenerierung und Chat
 tags:
-  - service
+  - index
+  - services
   - ai
-  - llm
+order: 5
 ---
 
 # AI Services
 
-Lokale LLM-Infrastruktur fuer Textgenerierung, Chat und Experimentieren mit Sprachmodellen. Alle Modelle laufen on-premise auf den 48-GB-Worker-Nodes -- keine Cloud-Abhaengigkeit.
+Lokale LLM-Infrastruktur für Textgenerierung, Chat und Experimentieren mit Sprachmodellen. Alle Modelle laufen on-premise auf den 48-GB-Worker-Nodes -- keine Cloud-Abhängigkeit.
 
-## Komponenten
-
-| Service | Funktion | Seite |
-| :--- | :--- | :--- |
-| Ollama | LLM-Backend (Modell-Hosting und Inferenz) | [LLM-Stack](./llm-stack.md) |
-| Open WebUI | Feature-reiches Chat-Interface mit OAuth | [LLM-Stack](./llm-stack.md) |
-| HolLama | Leichtgewichtiges alternatives Chat-UI | [LLM-Stack](./llm-stack.md) |
+- [LLM-Stack](./llm-stack.md) -- Ollama, Open WebUI und HolLama

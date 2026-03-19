@@ -50,3 +50,10 @@ Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung mehrerer Prox
 | `/etc/proxmox-datacenter-manager/remotes.shadow` | Token Storage |
 
 Die Traefik-Route ist in der Traefik Dynamic Config definiert (`/nfs/docker/traefik/configurations/config.yml`).
+
+## Verwandte Seiten
+
+- [Proxmox Cluster](./proxmox-cluster.md) -- Verwaltete Nodes und VMs
+- [Proxmox Backup Server](../services/core/pbs.md) -- Verwalteter Backup Server
+- [Traefik Middlewares](../platforms/traefik-middlewares.md) -- `intern-admin-chain-v2` Middleware
+- [Server-Hardware](./hardware.md) -- Physische Hardware der Nodes

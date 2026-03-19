@@ -162,3 +162,11 @@ Vollständige Backup-Dokumentation: [Backup-Strategie](../services/core/backup-s
 DbGate (dbgate.ackermannprivat.ch) steht als Web-UI für die Datenbankverwaltung zur Verfügung.
 
 Nomad Job: `databases/dbgate.nomad`
+
+## Verwandte Seiten
+
+- [Backup-Strategie](../services/core/backup-strategy.md) -- pg_dumpall, Linstor Snapshots, Retention
+- [Datenstrategie](./data-strategy.md) -- Speicher-Ebenen und Replikationskonzepte
+- [Proxmox Cluster](../infrastructure/proxmox-cluster.md) -- Nomad-Client-Nodes für DRBD
+- [NAS-Speicher](../infrastructure/storage-nas.md) -- NFS-Backup-Ziel und MinIO
+- [Service-Abhängigkeiten](./service-dependencies.md) -- PostgreSQL als zentrale Dependency

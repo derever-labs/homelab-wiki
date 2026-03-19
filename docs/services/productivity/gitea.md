@@ -97,5 +97,7 @@ Der integrierte SSH-Server lauscht auf Port 2222 (static). Registriert als separ
 
 ## Verwandte Seiten
 
-- [Traefik](../core/traefik.md)
-- [Backup-Strategie](../core/backup-strategy.md)
+- [Datenbank-Architektur](../../architecture/database-architecture.md) -- PostgreSQL Shared Cluster
+- [Linstor](../../platforms/linstor-drbd.md) -- CSI Storage für Gitea-Daten
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [Backup-Strategie](../core/backup-strategy.md) -- Übergeordnetes Backup-Konzept

@@ -102,5 +102,11 @@ Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](
 - **OAuth2-Proxy:** `/home/sam/docker-compose.yml` (auf vm-proxy-dns-01)
 - **Traefik Static Config:** `/nfs/docker/traefik/traefik.yml` (auf vm-proxy-dns-01)
 
+## Verwandte Seiten
+
+- [Sicherheit](security.md) -- Gesamte Security-Architektur mit Keycloak und OAuth2
+- [CrowdSec](crowdsec.md) -- Intrusion Detection als erste Middleware-Stufe
+- [Nomad Job-Übersicht](nomad-architecture.md) -- Jobs die diese Middleware Chains nutzen
+
 ---
 *Aktualisiert: 21.02.2026 (v1 → v2 Migration)*

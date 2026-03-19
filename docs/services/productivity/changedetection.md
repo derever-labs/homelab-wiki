@@ -81,6 +81,7 @@ Der Sidecar benötigt erhebliche Ressourcen (3 GiB Memory, max 6 GiB).
 
 ## Verwandte Seiten
 
-- [Immobilien-Monitoring](./immobilien-monitoring.md)
-- [n8n](./n8n.md)
-- [Traefik](../core/traefik.md)
+- [Immobilien-Monitoring](./immobilien-monitoring.md) -- Nutzt ChangeDetection für Webseiten-Überwachung
+- [n8n](./n8n.md) -- Workflow-Automation für Benachrichtigungen
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Watches und Snapshots

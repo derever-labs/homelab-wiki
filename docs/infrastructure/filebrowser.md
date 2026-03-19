@@ -82,4 +82,9 @@ Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Contai
 | Memory | 128 MB |
 | Priorität | 90 (hoch -- soll auch bei Ressourcenknappheit laufen) |
 
----
+## Verwandte Seiten
+
+- [Proxmox Cluster](./proxmox-cluster.md) -- Nomad-Client-Nodes
+- [NAS-Speicher](./storage-nas.md) -- NFS-Mounts die über Filebrowser inspiziert werden
+- [Traefik Middlewares](../platforms/traefik-middlewares.md) -- `admin-chain-v2` Authentifizierung
+- [Nomad Architektur](../platforms/nomad-architecture.md) -- System Job Deployment

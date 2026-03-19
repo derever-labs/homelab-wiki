@@ -129,3 +129,12 @@ Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CG
 Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik auf vm-proxy-dns-01 (10.0.2.1) terminiert TLS mit Cloudflare-Zertifikaten.
 
 Middleware-Chains und Zugangssteuerung: [Traefik Middlewares](../platforms/traefik-middlewares.md)
+
+## Verwandte Seiten
+
+- [Infrastruktur-Übersicht](./overview.md) -- Gesamtübersicht aller Services und Netzwerke
+- [Proxmox Cluster](../infrastructure/proxmox-cluster.md) -- Host- und VM-IPs im Detail
+- [Netzwerk-Hardware](../infrastructure/network-hardware.md) -- UniFi Switches, Access Points
+- [DNS-Architektur](../platforms/dns-architecture.md) -- Pi-hole, Unbound, Consul DNS
+- [Traefik Middlewares](../platforms/traefik-middlewares.md) -- Middleware Chains und Zugangssteuerung
+- [Sicherheit](../platforms/security.md) -- Zugriffsgruppen und Firewall

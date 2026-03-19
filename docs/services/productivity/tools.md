@@ -73,5 +73,6 @@ MeshCommander hat die höchste Nomad-Priority (100), da es für Out-of-Band-Mana
 
 ## Verwandte Seiten
 
-- [Jellyfin](../media/jellyfin.md) (Czkawka scannt Medienbibliothek)
-- [Traefik](../core/traefik.md)
+- [Jellyfin](../media/jellyfin.md) -- Czkawka scannt die Medienbibliothek
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [Proxmox Cluster](../../infrastructure/proxmox-cluster.md) -- MeshCommander verwaltet AMT-fähige Hardware

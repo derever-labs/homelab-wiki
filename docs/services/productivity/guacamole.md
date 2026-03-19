@@ -83,5 +83,7 @@ Der Container erhält 1024 MiB Memory (max 2048 MiB), da Remote-Desktop-Sessions
 
 ## Verwandte Seiten
 
-- [OpenLDAP & Benutzerverwaltung](../core/ldap.md)
-- [Traefik](../core/traefik.md)
+- [OpenLDAP & Benutzerverwaltung](../core/ldap.md) -- LDAP-Authentifizierung
+- [Traefik Middlewares](../../platforms/traefik-middlewares.md) -- Auth-Chain-Konfiguration
+- [Proxmox Cluster](../../infrastructure/proxmox-cluster.md) -- VMs die via Guacamole erreichbar sind
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Konfiguration

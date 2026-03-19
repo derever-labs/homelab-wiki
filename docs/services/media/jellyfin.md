@@ -20,7 +20,7 @@ tags:
 | **Deployment** | Nomad Job (`media/jellyfin.nomad`) |
 | **Nodes** | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
 | **Config Storage** | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
-| **Media Storage** | NFS `/nfs/jellyfin` (Synology NAS) |
+| **Media Storage** | NFS `/nfs/jellyfin` ([NAS](../../infrastructure/storage-nas.md)) |
 | **Auth** | Kein OAuth -- [LDAP Bind](../core/ldap.md) direkt in Jellyfin |
 | **Ressourcen** | 4096 MHz CPU, 12 GB RAM (max 16 GB) |
 | **Priority** | 95 (kritischer Service) |
@@ -61,7 +61,7 @@ Transcode-Dateien und Caches werden auf dem lokalen `/tmp/jellyfin/`-Verzeichnis
 | Config | `/config` | CSI Volume `jellyfin-config` | Linstor (DRBD-repliziert) |
 | Cache | `/config/cache` | `/tmp/jellyfin/cache` | Lokal (flüchtig) |
 | Transcodes | `/config/data/transcodes` | `/tmp/jellyfin/transcodes` | Lokal (flüchtig) |
-| Medienbibliothek | `/jellyfin` | `/nfs/jellyfin` | NFS (Synology) |
+| Medienbibliothek | `/jellyfin` | `/nfs/jellyfin` | NFS ([NAS](../../infrastructure/storage-nas.md)) |
 
 ::: info Lokaler Cache
 Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt auf NFS. Das reduziert die Netzwerklast und verbessert die Transcoding-Performance erheblich.
@@ -88,11 +88,20 @@ Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet J
 - [OpenLDAP](../core/ldap.md) -- LDAP Bind Authentifizierung
 - [Jellyseerr](./jellyseerr.md) -- Media Request Management
 - [Arr Stack](./arr-stack.md) -- Automatisierte Medien-Akquisition
-- NFS (Synology) -- Medienbibliothek unter `/nfs/jellyfin`
-- Linstor CSI -- Repliziertes Config-Volume
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- Medienbibliothek unter `/nfs/jellyfin`
+- [Linstor](../../platforms/linstor-drbd.md) -- CSI Storage für das Config-Volume
 
 ## Backup
 
 - **Config:** Linstor CSI Volume `jellyfin-config` -- DRBD-repliziert über `client-05/06`. Zusätzlich durch die allgemeine [Backup-Strategie](../core/backup-strategy.md) abgedeckt.
 - **Cache/Transcodes:** Flüchtig auf `/tmp`, kein Backup notwendig.
-- **Mediendaten:** NFS-Share auf dem Synology NAS, unterliegt der NAS-eigenen Backup-Strategie.
+- **Mediendaten:** NFS-Share auf dem [NAS](../../infrastructure/storage-nas.md), unterliegt der NAS-eigenen Backup-Strategie.
+
+## Verwandte Seiten
+
+- [Jellyseerr](./jellyseerr.md) -- Media Request Management
+- [Arr Stack](./arr-stack.md) -- Automatisierte Medien-Akquisition
+- [Audiobookshelf](./audiobookshelf.md) -- Teilt die Bücher-Mediathek
+- [OpenLDAP](../core/ldap.md) -- Authentifizierung
+- [NAS-Speicher](../../infrastructure/storage-nas.md) -- NFS-Storage für Medien
+- [Batch Jobs](../../runbooks/batch-jobs.md) -- Täglicher Restart-Job

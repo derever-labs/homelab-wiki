@@ -7,7 +7,7 @@ tags:
   - keycloak
 ---
 
-# Security Architecture
+# Sicherheit & Authentifizierung
 
 ## Übersicht
 Der Zugriff auf interne Services wird zentral über Traefik gesteuert, welches Authentifizierungsanfragen an Keycloak delegiert.
@@ -70,37 +70,30 @@ Detaillierte Beschreibung siehe [Traefik Middleware Chains](traefik-middlewares.
 
 ### Kurzübersicht
 
-| Anwendungsfall | Chain | Beschreibung |
-|----------------|-------|--------------|
-| Öffentlich, nur Admin | `public-admin-chain-v2@file` | CrowdSec + OAuth2 Admin |
-| Öffentlich, Family | `public-family-chain-v2@file` | CrowdSec + OAuth2 Family |
-| Öffentlich, Guest | `public-guest-chain-v2@file` | CrowdSec + OAuth2 Guest |
-| Intern, nur Admin | `intern-admin-chain-v2@file` | OAuth2 Admin + IP-Whitelist |
-| Intern, Family | `intern-family-chain-v2@file` | OAuth2 Family + IP-Whitelist |
-| Intern, nur IP | `intern-chain@file` | Nur IP-Whitelist |
-| API intern | `intern-api-chain@file` | Nur IP-Whitelist |
+| Chain | Beschreibung |
+|-------|--------------|
+| `public-admin-chain-v2@file` | CrowdSec + OAuth2 Admin |
+| `public-family-chain-v2@file` | CrowdSec + OAuth2 Family |
+| `public-guest-chain-v2@file` | CrowdSec + OAuth2 Guest |
+| `intern-admin-chain-v2@file` | OAuth2 Admin + IP-Whitelist |
+| `intern-family-chain-v2@file` | OAuth2 Family + IP-Whitelist |
+| `intern-chain@file` | Nur IP-Whitelist |
+
+Vollständige Dokumentation: [Traefik Middlewares](traefik-middlewares.md)
 
 ## Konfiguration neuer Services
 
-Um einen Service zu schützen, muss in Traefik (bzw. im Nomad Job) die entsprechende Middleware aktiviert werden:
+Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware als Tag gesetzt, z.B. `traefik.http.routers.my-service.middlewares=public-admin-chain-v2@file`.
 
-```hcl
-tags = [
-  "traefik.http.routers.my-service.middlewares=public-admin-chain-v2@file"
-]
-```
-
-**Wichtig:** Für jeden neuen Service mit OAuth2 muss in der Traefik Dynamic Config eine Callback-Route definiert werden:
-
-```yaml
-oauth2-myservice:
-  rule: "Host(`myservice.ackermannprivat.ch`) && PathPrefix(`/oauth2/`)"
-  service: oauth2-backend
-  priority: 1000
-```
+Zusätzlich muss für jeden neuen Service mit OAuth2 eine Callback-Route in der Traefik Dynamic Config definiert werden (siehe `standalone-stacks/traefik-proxy/templates/` im Repo). Diese Route leitet `/oauth2/`-Pfade an den oauth2-backend weiter und muss eine hohe Priorität (1000) haben.
 
 ## Tailscale-Zugriff
 
 Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in der `intern-chain` IP-Whitelist enthalten, sodass Zugriff über Tailscale auf interne Services möglich ist.
 
----
+## Verwandte Seiten
+
+- [Traefik Middlewares](traefik-middlewares.md) -- Vollständige Middleware-Chain-Dokumentation
+- [CrowdSec](crowdsec.md) -- Intrusion Detection und IP-Blocking
+- [OpenLDAP & Benutzerverwaltung](../services/core/ldap.md) -- Zentrales Benutzerverzeichnis
+- [DNS-Architektur](dns-architecture.md) -- DNS-Kette inkl. vm-proxy-dns-01

@@ -108,4 +108,10 @@ Seit 22.02.2026 werden beide TB-Interfaces in einem Bond aggregiert. Löst das P
 - Die Proxmox Migration ist auf das Thunderbolt-Netzwerk konfiguriert (10.99.1.0/24).
 - Ein Wechsel auf `balance-rr` Bonding könnte die Multi-Stream-Bandbreite verdoppeln, birgt aber Risiken für DRBD durch TCP-Reordering.
 
+## Verwandte Seiten
+
+- [Linstor & DRBD](linstor-drbd.md) -- DRBD-Replikation über das Thunderbolt-Netzwerk
+- [HashiCorp Stack](hashicorp-stack.md) -- Cluster-VMs auf denen das Netzwerk-Tuning greift
+- [Proxmox Cluster](../infrastructure/proxmox-cluster.md) -- Host-Konfiguration und Netzwerk-Interfaces
+
 ---
