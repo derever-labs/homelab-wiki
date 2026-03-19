@@ -1,0 +1,105 @@
+---
+title: Nomad
+description: Workload Scheduler fuer Container im Homelab-Cluster
+tags:
+  - platform
+  - hashicorp
+  - nomad
+  - scheduling
+---
+
+# Nomad
+
+## Übersicht
+
+| Eigenschaft | Wert |
+|-------------|------|
+| Version | v1.10.1 |
+| Server | 3 (vm-nomad-server-04/05/06) |
+| Clients | 3 (vm-nomad-client-04/05/06) |
+| UI | `http://10.0.2.104:4646` |
+| ACLs | Aktiv |
+| IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
+
+## Rolle im Stack
+
+Nomad ist der Workload-Scheduler. Er entscheidet auf welchem Worker-Node ein Container läuft, überwacht die Ausführung und sorgt für Restarts bei Fehlern. Zusammen mit Consul (Service Discovery) und Vault (Secrets) bildet Nomad die Container-Plattform des Homelabs.
+
+## Architektur
+
+```mermaid
+flowchart TD
+    Nomad:::svc["Nomad Server<br/>(Scheduling, Job-Lifecycle)"]
+    Consul:::svc["Consul Server<br/>(Service Discovery, DNS, KV)"]
+    Vault:::accent["Vault<br/>(Secrets Management)"]
+    Worker:::entry["Nomad Client + Docker<br/>(Container-Ausführung)"]
+
+    Nomad -->|"Job placement"| Worker
+    Worker -->|"Service Registration"| Consul
+    Worker -->|"JWT Auth → Secrets"| Vault
+    Nomad -->|"Service Health"| Consul
+    Nomad -->|"Workload Identity"| Vault
+
+    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+```
+
+## Cluster-Topologie
+
+Der Stack läuft auf 3 Server-Nodes und 3 Worker-Nodes, jeweils 1 pro Proxmox-Host. Die Server bilden einen Raft-Consensus-Cluster -- bei Ausfall eines Servers übernehmen die verbleibenden zwei.
+
+- **Server-Nodes**: Nomad Server, Consul Server, Vault
+- **Worker-Nodes**: Nomad Client, Consul Client, Docker
+
+Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms)
+
+## Job Configuration
+
+Alle Nomad Jobs folgen einheitlichen Mustern:
+
+- **Docker** als Task Driver für alle Container
+- **NFS Volumes** von `/nfs/docker/` für persistente Daten
+- **Bridge Networking** mit Port Mappings
+- **Health Checks** wo anwendbar
+- **Resource Limits** (CPU, Memory) auf allen Tasks gesetzt
+- **Vault Integration** via `vault {}` Stanza und Workload Identity für Secrets
+- **Consul Service Registration** via `service {}` Stanza für automatisches Routing
+
+PostgreSQL-abhängige Jobs haben einen `wait-for-postgres` Init-Task, der wartet bis die Datenbank erreichbar ist.
+
+## Dependencies
+
+| Abhängigkeit | Beschreibung |
+|-------------|-------------|
+| NFS Storage | Jobs erwarten NFS Mounts unter `/nfs/docker/` -- siehe [NAS-Speicher](../nas-storage/) |
+| Docker | Alle Jobs nutzen den Docker Task Driver |
+| Consul | Service Discovery via `*.service.consul` -- siehe [Consul](../consul/) |
+| Vault | Secret Injection via `template` Stanzas -- siehe [Vault](../vault/) |
+| PostgreSQL | Viele Services nutzen den Shared Cluster -- siehe [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) |
+| Linstor | CSI-Volumes für replizierten Speicher -- siehe [Linstor](../linstor-storage/) |
+
+## Service URLs
+
+| Service | URL |
+|---------|-----|
+| Nomad UI | `http://10.0.2.104:4646` |
+| Consul UI | `http://10.0.2.104:8500` |
+
+## Wichtige Pfade
+
+| Pfad | Verwendung |
+|------|------------|
+| `/nfs/nomad/jobs/` | Nomad Job-Definitionen (NFS) |
+| `/opt/nomad` | Nomad Daten |
+
+## Verwandte Seiten
+
+- [Nomad Referenz](referenz.md) -- Verzeichnisstruktur und Job-Konfigurationsmuster
+- [Nomad Betrieb](betrieb.md) -- Deployment, Node Drain, Troubleshooting
+- [Consul](../consul/) -- Service Discovery und DNS
+- [Vault](../vault/) -- Secrets Management und Workload Identity
+- [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [Traefik](../traefik/) -- Reverse Proxy mit Consul Catalog Integration
+- [Linstor](../linstor-storage/) -- CSI-Volumes für persistenten Speicher
+- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
