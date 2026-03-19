@@ -223,6 +223,17 @@ Nomad Periodic Batch (07:00 + 19:00):
 | **n8n Executions** | Post-Processing Workflow | n8n UI |
 | **Metabase** | Listings/Tag, Preisaenderungen, Neubauten | Metabase UI |
 
+### Metabase-Dashboards
+
+Collection "Immobilien-Monitoring" unter [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch):
+
+- **Active Listings** -- Pin Map (Kartenansicht aller Inserate) + Tabellenübersicht mit Foto, Titel, Zimmer, Fläche, Miete brutto, Preis/m2, Tage am Markt
+- **New Today** -- Heute neu entdeckte Inserate + Übersicht der letzten 7 Tage
+- **Market Analytics** -- Kennzahlen (Total, mit Details, Durchschnittsmiete, Neubauten), Durchschnittspreis/Stadt, Listings/Stadt, Zimmerverteilung, Preis/m2-Verteilung, Amenities Top 10
+- **Price Drops** -- Preisänderungen mit altem/neuem Preis und Differenz (basiert auf `listing_price_history`)
+
+Datenquelle: `v_listing_active` (primär) + Junction-Tables für Amenities. User `metabase_reader` (read-only). Semantic Types: Currency CHF, Latitude/Longitude, ImageURL für Fotos.
+
 ### Troubleshooting
 
 **MCP Playwright: DataDome CAPTCHA:**
