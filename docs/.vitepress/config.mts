@@ -29,11 +29,8 @@ export default withMermaid(
       },
 
       nav: [
-        { text: 'Architektur', link: '/architecture/' },
-        { text: 'Infrastruktur', link: '/infrastructure/' },
-        { text: 'Plattformen', link: '/platforms/' },
-        { text: 'Services', link: '/services/' },
-        { text: 'Runbooks', link: '/runbooks/' },
+        { text: 'Systeme', link: '/traefik/' },
+        { text: 'Referenz', link: '/_referenz/hosts-und-ips' },
         { text: 'Richtlinien', link: '/wiki-richtlinien' },
       ],
 
@@ -45,8 +42,7 @@ export default withMermaid(
         includeFolderIndexFile: false,
         collapsed: true,
         collapseDepth: 1,
-        sortMenusByFrontmatterOrder: true,
-        sortMenusOrderByDescending: false,
+        sortMenusByName: true,
       }).map(item => item.items ? item : { ...item, items: [] })
     },
 
