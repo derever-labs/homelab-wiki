@@ -13,7 +13,7 @@ tags:
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Status** | Aufbau (Setup-Wizard offen) |
+| **Status** | Aktiv |
 | **URL** | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/metabase.nomad`) |
 | **Datenbank** | PostgreSQL `metabase` (eigene DB fuer Metabase-Metadaten) |
@@ -26,11 +26,25 @@ tags:
 
 Metabase stellt Daten aus der `n8n`-Datenbank als Dashboards dar. Primärer Use Case: [Immobilien-Monitoring](../immobilien-monitoring/index.md) mit Karten, Preisvergleichen und Inseratübersichten.
 
-## Ersteinrichtung
+## Datenquelle
 
-1. `/setup` aufrufen und Admin-Account erstellen
-2. Datenquelle hinzufügen: PostgreSQL, Host `postgres.service.consul`, DB `n8n`, User `metabase_reader`
-3. Dashboards für Immobilien-Monitoring aufbauen
+PostgreSQL `n8n` ist als "Immobilien (n8n DB)" konfiguriert. Der User `metabase_reader` hat read-only Zugriff auf alle relevanten Tabellen:
+
+- `listing`, `listing_photo`, `listing_price_history`
+- `amenity`, `listing_amenity`, `listing_note`
+- `scraper_runs`
+- `v_listing_active` (View mit berechneten Feldern)
+
+Semantic Types sind konfiguriert: Latitude/Longitude, Currency CHF für Preisfelder, ImageURL für `photo_url`, `raw_data` und `amenities` JSONB sind versteckt.
+
+## Dashboards
+
+Alle Dashboards liegen in der Collection "Immobilien-Monitoring":
+
+- **Active Listings** -- Kartenansicht (Pin Map) + Tabellenübersicht aller aktiven Inserate
+- **New Today** -- Heute neu entdeckte Inserate + letzte 7 Tage
+- **Market Analytics** -- Kennzahlen, Durchschnittspreis/Stadt, Zimmerverteilung (Pie), Preis/m2, Amenities Top 10
+- **Price Drops** -- Listings mit Preisänderungen (basiert auf `listing_price_history`)
 
 ## Vault Secrets
 
