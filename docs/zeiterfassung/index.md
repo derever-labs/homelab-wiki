@@ -20,7 +20,7 @@ Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel i
 | **URL** | [time.ackermannprivat.ch](https://time.ackermannprivat.ch) | [kimai.ackermannprivat.ch](https://kimai.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/solidtime.nomad`) | Nomad Job (`services/kimai.nomad`) |
 | **Datenbank** | PostgreSQL `solidtime` (Shared Cluster) | MariaDB 11 (Sidecar-Container) |
-| **Storage** | NFS `/nfs/docker/solidtime/storage` | NFS `/nfs/docker/kimai/{data,plugins,mariadb}` |
+| **Storage** | Redis Sidecar (ephemeral, Cache + Sessions) | Linstor CSI (`kimai-data`) fuer MariaDB, NFS fuer data/plugins |
 | **Mobile** | PWA (Homescreen) | Native App (iOS/Android, kostenpflichtig) |
 | **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) | OAuth2 via Keycloak (`admin-chain-v2`) |
 | **API** | Bearer Token (Passport JWT) | API-Key (`X-AUTH-TOKEN`) |
@@ -202,3 +202,4 @@ Keine Plugins installiert. GPS-Tracking ist nicht verfuegbar (weder nativ noch v
 - **2026-03-18:** Kimai Docker-Image unterstuetzt nur MySQL/MariaDB im Startup-Script. PostgreSQL ging nicht out-of-the-box, darum MariaDB-Sidecar statt Shared PostgreSQL Cluster.
 - **2026-03-18:** Geofence-Automation via n8n Webhooks + iOS Shortcuts implementiert, da solidtime und Kimai kein natives iOS-Geofencing bieten.
 - **2026-03-18:** Git-Commit Tracking fuer Finanzen und Tieffurt Repos. Ansatz: 1h-Bloecke pro Commit mit automatischer Zusammenfassung bei Ueberlappung. Bewusst einfach gehalten statt Editor-Plugin (Wakapi), da Commit-basiert ausreichend genau.
+- **2026-03-20:** solidtime Storage von NFS auf Redis Sidecar (ephemeral) migriert -- kein persistenter Storage mehr noetig, Cache und Sessions laufen ueber Redis. Kimai MariaDB von NFS auf Linstor CSI (`kimai-data`) migriert fuer bessere Performance; NFS bleibt nur noch fuer data/plugins.

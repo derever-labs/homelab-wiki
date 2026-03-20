@@ -22,7 +22,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 | infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, iperf3-to-influxdb |
-| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
+| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
 | system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI |
 | test/ | Linstor Volume Test |
 
@@ -44,6 +44,12 @@ Alle Nomad Jobs setzen folgende Infrastruktur voraus:
 - Health Checks wo anwendbar
 - Resource Limits gesetzt
 - PostgreSQL-abhängige Jobs haben `wait-for-postgres` Init-Task
+
+## Deprecated Jobs
+
+| Datei | Ersetzt durch | Grund |
+| :--- | :--- | :--- |
+| `services/paperless-workload.nomad` | `services/paperless-simple.nomad` | Vereinfachtes Single-Container-Deployment |
 
 ## Verwandte Seiten
 

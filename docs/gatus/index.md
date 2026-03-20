@@ -18,7 +18,7 @@ tags:
 | **URL** | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`monitoring/gatus.nomad`) |
 | **Storage** | In-Memory (stateless) |
-| **Konfiguration** | NFS `/nfs/docker/gatus/config.yaml` |
+| **Konfiguration** | Nomad Template (eingebettet im Job) |
 | **Auth** | Öffentlich via `public-guest-chain-v2` (CrowdSec + OAuth2 Guest) |
 | **Port** | 8080 (static) |
 | **Priorität** | 100 (kritische Infrastruktur) |
@@ -37,7 +37,7 @@ flowchart LR
 
     subgraph Nomad["Nomad Cluster"]
         Gatus:::accent["Gatus<br>(Port 8080)"]
-        Config:::db["config.yaml<br>(NFS)"]
+        Config:::db["config.yaml<br>(Nomad Template)"]
     end
 
     subgraph Services["Überwachte Services"]
@@ -48,7 +48,7 @@ flowchart LR
 
     User -->|HTTPS| Router
     Router --> Gatus
-    Config -.->|mount| Gatus
+    Config -.->|template| Gatus
     Gatus -->|HTTP/TCP Checks| S1
     Gatus -->|HTTP/TCP Checks| S2
     Gatus -->|HTTP/TCP Checks| S3
@@ -73,7 +73,7 @@ Gatus ist die öffentliche Status-Seite des Homelabs. Es prüft periodisch die E
 
 ## Konfiguration
 
-Die gesamte Konfiguration erfolgt über eine einzelne YAML-Datei auf NFS (`/nfs/docker/gatus/config.yaml`). Gatus liest diese beim Start und prüft die darin definierten Endpoints.
+Die gesamte Konfiguration ist als Nomad Template direkt im Job eingebettet (siehe `monitoring/gatus.nomad`). Gatus hat keine NFS-Abhängigkeit und ist vollständig stateless.
 
 ::: tip Stateless
 Gatus speichert keine Daten persistent. Nach einem Neustart beginnt die Uptime-Historie von vorne. Dies ist bewusst so gewählt, da die Status-Seite den aktuellen Zustand zeigt, nicht die langfristige Historie.

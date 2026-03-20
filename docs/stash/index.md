@@ -12,7 +12,7 @@ tags:
 
 ## Uebersicht
 
-Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet automatisches Tagging, Metadaten-Management, Szenen-Erkennung und eine durchsuchbare Mediathek. Es laufen zwei getrennte Instanzen mit unterschiedlichen Storage-Strategien.
+Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet automatisches Tagging, Metadaten-Management, Szenen-Erkennung und eine durchsuchbare Mediathek. Es laufen zwei getrennte Instanzen mit identischer Storage-Strategie (Linstor CSI fuer Config/Cache/Metadaten, NFS fuer Medien-Daten).
 
 | Attribut | stash | stash-secure |
 | :--- | :--- | :--- |
@@ -21,10 +21,10 @@ Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet
 | **Deployment** | Nomad Job (`media/stash.nomad`) | Nomad Job (`media/stash-secure.nomad`) |
 | **Image** | `stashapp/stash:latest` | `stashapp/stash:latest` |
 | **Prioritaet** | 95 (kritisch) | 95 (kritisch) |
-| **Config-Storage** | Linstor CSI Volume (`stash-data`) | NFS (`/nfs/docker/stash-secure/config`) |
+| **Config-Storage** | Linstor CSI Volume (`stash-data`) | Linstor CSI Volume (`stash-secure-data`) |
 | **Media-Storage** | NFS (shared mit Downloadern) | NFS (separates Verzeichnis) |
 | **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) | OAuth2 via Keycloak (`admin-chain-v2`) |
-| **Node-Constraint** | `vm-nomad-client-05` oder `06` (Linstor) | `vm-nomad-client-05` (fix) |
+| **Node-Constraint** | `vm-nomad-client-05` oder `06` (Linstor) | `vm-nomad-client-05` oder `06` (Linstor) |
 
 ## Architektur
 
@@ -46,9 +46,9 @@ flowchart TD
 
     subgraph Storage["Storage"]
         LCSI:::db["Linstor CSI<br>stash-data"]
+        LCSI2:::db["Linstor CSI<br>stash-secure-data"]
         NFS1:::db["NFS<br>/nfs/logs/.../data"]
         NFS2:::db["NFS<br>/nfs/logs/.../secure"]
-        NFS3:::db["NFS<br>/nfs/docker/stash-secure"]
     end
 
     subgraph Batch["Batch Jobs"]
@@ -62,8 +62,8 @@ flowchart TD
     R2 --> S2
     S1 --> LCSI
     S1 --> NFS1
+    S2 --> LCSI2
     S2 --> NFS2
-    S2 --> NFS3
     PH -.->|Stash API: Scan + Generate| S1
     RD -.->|Stash API: Scan + Generate| S1
 
@@ -91,9 +91,9 @@ Die Haupt-Instanz hat deutlich hoehere Ressourcen, da sie fuer Metadaten-Generie
 - **stash:** 2000 MHz CPU, 4 GB RAM (Burst bis 8 GB), SQLite Cache 16 MiB
 - **stash-secure:** 1024 MHz CPU, 128 MB RAM (Burst bis 256 MB)
 
-### Linstor CSI Volume
+### Linstor CSI Volumes
 
-Die Haupt-Instanz nutzt ein Linstor CSI Volume (`stash-data`) fuer die Konfiguration und SQLite-Datenbank. Das erfordert, dass der Job auf einem Linstor Storage Node (`vm-nomad-client-05` oder `06`) laeuft. Siehe [Linstor](../linstor-storage/index.md) fuer Details zum CSI-Setup.
+Beide Instanzen nutzen Linstor CSI Volumes fuer Konfiguration, Cache und Metadaten (`stash-data` bzw. `stash-secure-data`). Das erfordert, dass die Jobs auf einem Linstor Storage Node (`vm-nomad-client-05` oder `06`) laufen. Die Medien-Daten liegen weiterhin auf NFS. Siehe [Linstor](../linstor-storage/index.md) fuer Details zum CSI-Setup.
 
 ### Stash API
 
@@ -116,4 +116,4 @@ Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizi
 - [Video-Download-Tools](../video-download/index.md) -- Manuelle Download-UIs
 - [Arr-Stack](../arr-stack/index.md) -- Medien-Automatisierung (Sonarr, Radarr, etc.)
 - [Jellyfin](../jellyfin/index.md) -- Media Player
-- [Linstor](../linstor-storage/index.md) -- CSI Storage fuer die Haupt-Instanz
+- [Linstor](../linstor-storage/index.md) -- CSI Storage fuer beide Instanzen

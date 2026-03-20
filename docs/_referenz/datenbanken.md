@@ -1,6 +1,6 @@
 ---
 title: Datenbanken
-description: Zentrale Referenz fuer die Zuordnung von Services zu Datenbanken, Vault-Pfaden und Nomad Jobs
+description: Zentrale Referenz für die Zuordnung von Services zu Datenbanken, Vault-Pfaden und Nomad Jobs
 tags:
   - referenz
   - postgresql
@@ -11,7 +11,7 @@ tags:
 # Datenbanken
 
 ::: info SSOT
-Diese Seite ist die zentrale Referenz fuer die Zuordnung von Services zu Datenbanken.
+Diese Seite ist die zentrale Referenz für die Zuordnung von Services zu Datenbanken.
 :::
 
 ## Shared PostgreSQL Cluster
@@ -32,6 +32,7 @@ Alle folgenden Services nutzen `postgres.service.consul:5432` mit eigenen Datenb
 | solidtime | via Vault | via Vault | `kv/data/solidtime` | `services/solidtime.nomad` |
 | n8n | `n8n` | `n8n` | `kv/data/n8n` | `services/n8n.nomad` |
 | Metabase | via Vault | via Vault | `kv/data/metabase` | `services/metabase.nomad` |
+| Grafana | `grafana` | `grafana` | `kv/data/grafana` (`db_password`) | `monitoring/grafana.nomad` |
 
 ## Sidecar-Datenbanken
 
@@ -39,8 +40,8 @@ Services die nicht mit dem Shared Cluster kompatibel sind.
 
 | Service | DB-Engine | Grund | Nomad Job |
 | :--- | :--- | :--- | :--- |
-| Kimai | MariaDB 11 (Sidecar) | Startup-Script unterstuetzt nur MySQL/MariaDB | `services/kimai.nomad` |
-| Obsidian LiveSync | CouchDB (Sidecar) | Benoetigt CouchDB fuer Sync-Protokoll | `services/obsidian-livesync.nomad` |
+| Kimai | MariaDB 11 (Sidecar) | Startup-Script unterstützt nur MySQL/MariaDB | `services/kimai.nomad` |
+| Obsidian LiveSync | CouchDB (Sidecar) | Benötigt CouchDB für Sync-Protokoll | `services/obsidian-livesync.nomad` |
 
 ## Keine Datenbank
 
@@ -66,7 +67,7 @@ Services die nicht mit dem Shared Cluster kompatibel sind.
 
 ## Verwaltung
 
-DbGate (`dbgate.ackermannprivat.ch`) steht als Web-UI fuer die Datenbankverwaltung zur Verfuegung. Nomad Job: `databases/dbgate.nomad`.
+DbGate (`dbgate.ackermannprivat.ch`) steht als Web-UI für die Datenbankverwaltung zur Verfügung. Nomad Job: `databases/dbgate.nomad`.
 
 ## Verwandte Seiten
 
