@@ -57,17 +57,22 @@ Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren,
 | Volume | Grösse | Verwendung |
 |--------|---------|------------|
 | **linstor_db** | 500 MiB | Linstor Controller H2 Datenbank (HA) |
+| flame-data | 1 GiB | Flame Dashboard |
+| flame-intra-data | 1 GiB | Flame-Intra Dashboard |
+| gitea-data | 5 GiB | Gitea Git Server |
 | influxdb-data | 3 GiB | InfluxDB Time Series DB |
 | jellyfin-config | 15 GiB | Jellyfin Media Server Config |
+| kimai-data | 2 GiB | Kimai MariaDB |
+| loki-data | 20 GiB | Loki Log Aggregation |
+| mosquitto-data | 1 GiB | MQTT Persistence |
+| obsidian-livesync-data | 1 GiB | CouchDB |
 | paperless-data | 20 GiB | Paperless-ngx Dokumente |
 | postgres-data | 10 GiB | PostgreSQL Datenbank (zentral) |
 | sabnzbd-config | 1 GiB | SABnzbd Download Client |
 | stash-data | 10 GiB | Stash Media Organizer |
+| stash-secure-data | 2 GiB | Stash-Secure Config/Cache/Metadata |
 | uptime-kuma-data | 5 GiB | Uptime Kuma Monitoring |
 | vaultwarden-data | 1 GiB | Vaultwarden Password Manager |
-| loki-data | 20 GiB | Loki Log Aggregation |
-| grafana-data | 1 GiB | Grafana Dashboards |
-| gitea-data | 5 GiB | Gitea Git Server |
 
 Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
 

@@ -29,11 +29,12 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 Erfolgt via OAuth2 (Keycloak). Nur Benutzer der Gruppe `admin` haben Zugriff.
 
 ### Deployment
-Grafana läuft mit persistentem Storage (Linstor CSI Volume `grafana-data`, 1 GiB) für Unified Alerting State:
-- **Dashboards:** JSON Dateien unter `/nfs/docker/grafana/dashboards/` (aus Git).
+Grafana nutzt PostgreSQL (`postgres.service.consul`) als Backend-Datenbank für Session-State, Unified Alerting und Konfiguration. Das frühere Linstor CSI Volume `grafana-data` (SQLite) wurde entfernt und deregistriert.
+
+- **Dashboards:** JSON-Dateien unter `/nfs/docker/grafana/dashboards/` (aus Git, read-only gemountet).
 - **Datasources:** Via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`, `kv/jellystat`) provisioniert.
 - **Alerting:** Unified Alerting aktiv, Alert Rules via File Provisioning (siehe unten).
-- **Constraint:** Nur auf client-05/06 (Linstor CSI Volume verfügbar).
+- **Scheduling:** Kein Node-Constraint mehr (CSI-Abhängigkeit entfällt), Affinität auf client-05/06 für NFS-Nähe beibehalten.
 
 ### Alerting (Unified Alerting)
 Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alerts.
@@ -154,5 +155,5 @@ Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-das
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
 - [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
-- [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volumes für Grafana und Loki
+- [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- iperf3-to-influxdb und weitere periodische Monitoring-Jobs

@@ -17,8 +17,8 @@ tags:
 | **URL** | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/n8n.nomad`) |
 | **Datenbank** | PostgreSQL `n8n` (User: `n8n`) |
-| **Storage** | NFS `/nfs/docker/n8n` |
-| **Auth** | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilitaet) |
+| **Storage** | Ephemeral (Binary Data in PostgreSQL) |
+| **Auth** | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität) |
 | **Netzwerk** | Intern (`intern-chain@file`) |
 
 ## Rolle im Stack
@@ -27,12 +27,14 @@ n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-I
 
 Aktive Workflows:
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md)
-- [Zeiterfassung](../zeiterfassung/index.md) (Geofence-Automation fuer solidtime)
+- [Zeiterfassung](../zeiterfassung/index.md) (Geofence-Automation für solidtime)
 
 ## Konfiguration
 
 - **Timezone:** Europe/Zurich
 - **Telemetrie:** Deaktiviert
+- **Binary Data Mode:** `database` (`N8N_DEFAULT_BINARY_DATA_MODE=database`) -- alle Binärdaten werden in PostgreSQL gespeichert, kein persistentes Volume nötig
+- **Encryption Key:** Aus Vault (`kv/data/n8n`)
 
 ## Netzwerk und Webhooks
 
@@ -45,7 +47,7 @@ Die n8n-UI ist nur intern erreichbar (`intern-chain@file`). Webhooks sind **einz
 | `/webhook/git-commit` | Ja | [Zeiterfassung](../zeiterfassung/index.md): Git-Commit Tracking |
 | Alle anderen `/webhook/*` | Nein | Hinter IP-Whitelist |
 
-Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
+Neue Webhooks müssen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
 
 ## Vault Secrets
 

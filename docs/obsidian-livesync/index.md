@@ -17,7 +17,7 @@ tags:
 | **Status** | Produktion |
 | **URL** | [obsidian-sync.ackermannprivat.ch](https://obsidian-sync.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/obsidian-livesync.nomad`) |
-| **Storage** | NFS `/nfs/docker/obsidian-livesync/data` |
+| **Storage** | Linstor CSI (`obsidian-livesync-data`) |
 | **Datenbank** | CouchDB 3.3.3 (integriert) |
 | **Auth** | `intern-chain@file` + CouchDB Basic Auth |
 
@@ -43,13 +43,13 @@ flowchart LR
     end
 
     subgraph Storage
-        NFS:::db["NFS<br>/nfs/docker/obsidian-livesync"]
+        LINSTOR:::db["Linstor CSI<br>obsidian-livesync-data"]
     end
 
     MAC -->|HTTPS + Basic Auth| R1
     IOS -->|HTTPS + Basic Auth| R1
     R1 --> CDB
-    CDB --> NFS
+    CDB --> LINSTOR
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
     classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
@@ -62,7 +62,9 @@ flowchart LR
 
 ### Storage
 
-CouchDB-Daten liegen auf NFS unter `/nfs/docker/obsidian-livesync/data`. Die CouchDB-Konfiguration (`local.ini`) wird ebenfalls über NFS eingebunden.
+CouchDB-Daten liegen auf einem replizierten Linstor-CSI-Volume (`obsidian-livesync-data`) mit DRBD-Replikation. CouchDB verwendet die eingebauten Defaults -- eine separate `local.ini` wird nicht eingebunden.
+
+Der Job ist auf `vm-nomad-client-05` / `vm-nomad-client-06` eingeschränkt (Constraint), da nur diese Nodes Linstor-Storage bereitstellen.
 
 ### CORS
 
@@ -89,10 +91,10 @@ Der Service ist bewusst nur intern erreichbar (`intern-chain@file`). Obsidian-Cl
 ## Abhängigkeiten
 
 - **Traefik** -- HTTPS-Routing, CORS-Middleware und IP-Whitelist
-- **NFS** -- Datenpersistenz für CouchDB
+- **Linstor CSI** -- Replizierter Block-Storage für CouchDB-Daten
 
 ## Verwandte Seiten
 
 - [Traefik Middlewares](../traefik/referenz.md) -- CORS-Middleware und IP-Whitelist
 - [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für CouchDB-Daten
+- [Linstor CSI](../linstor-storage/index.md) -- Replizierter Block-Storage (DRBD)

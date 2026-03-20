@@ -20,7 +20,7 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | **Deployment** | Nomad Job (`media/jellystat.nomad`) |
 | **Image** | `cyfershepard/jellystat:1.1.7` |
 | **Datenbank** | PostgreSQL (Shared Cluster) |
-| **Storage** | NFS `/nfs/docker/jellystat/config/backup/` |
+| **Storage** | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
 | **Auth** | `admin-chain-v2@file` |
 | **Vault Secrets** | `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
 
@@ -44,12 +44,12 @@ Statistik- und Analyse-Dashboard für Jellyfin. Zeigt Wiedergabe-Historie, belie
 | **URL** | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
 | **Deployment** | Nomad Job (`media/janitorr.nomad`) |
 | **Image** | `ghcr.io/schaka/janitorr:stable` |
-| **Storage** | NFS `/nfs/docker/janitorr/` (Config, Logs) |
+| **Storage** | Kein NFS (Config via Nomad Template, kein Log-Mount) |
 | **Traefik** | Deaktiviert (`traefik.enable=false`) |
 
 ### Rolle
 
-Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder veraltete Medien aus Jellyfin, Radarr und Sonarr basierend auf konfigurierbaren Regeln. Die Konfiguration erfolgt über `application.yml` auf dem NFS-Share.
+Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder veraltete Medien aus Jellyfin, Radarr und Sonarr basierend auf konfigurierbaren Regeln. Die Konfiguration (`application.yml`) ist als Nomad Template direkt im Job eingebettet.
 
 ### Besonderheiten
 

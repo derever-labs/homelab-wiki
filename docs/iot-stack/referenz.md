@@ -5,6 +5,7 @@ tags:
   - iot
   - mqtt
   - mosquitto
+  - linstor
   - referenz
 ---
 
@@ -20,7 +21,9 @@ tags:
 | **Nodes** | `vm-nomad-client-05/06` (Constraint) |
 | **Ports** | 1883 (MQTT), 9001 (WebSocket) |
 | **Consul Services** | `mosquitto` (MQTT), `mosquitto-websocket` (WS) |
-| **Storage** | NFS `/nfs/docker/mosquitto/` |
+| **Config** | Nomad Template (embedded `mosquitto.conf`) |
+| **Data-Storage** | Linstor CSI Volume (`mosquitto-data`) |
+| **passwd** | NFS `/nfs/docker/mosquitto/config/passwd` (read-only) |
 | **Priority** | 100 (IoT Infrastruktur) |
 
 ## Rolle im Stack
@@ -42,11 +45,13 @@ flowchart LR
 
 ## Storage
 
-| Mount | Pfad im Container | Pfad auf Host |
+| Mount | Pfad im Container | Quelle |
 | :--- | :--- | :--- |
-| Config | `/mosquitto/config` | `/nfs/docker/mosquitto/config` |
-| Daten (Persistence) | `/mosquitto/data` | `/nfs/docker/mosquitto/data` |
-| Logs | `/mosquitto/log` | `/nfs/docker/mosquitto/log` |
+| Config | `/mosquitto/config/mosquitto.conf` | Nomad Template (embedded im Job) |
+| Daten (Persistence) | `/mosquitto/data` | Linstor CSI Volume (`mosquitto-data`) |
+| passwd | `/mosquitto/config/passwd` | NFS `/nfs/docker/mosquitto/config/passwd` (read-only) |
+
+Logs werden direkt auf stdout geschrieben und von Nomad eingesammelt -- kein separates Log-Volume noetig.
 
 ## Netzwerk
 
@@ -68,4 +73,5 @@ Beide Ports sind als Consul Services registriert und koennen ueber `mosquitto.se
 
 - [IoT Stack](./index.md) -- Zigbee2MQTT und IoT-Architektur
 - [DNS](../dns/) -- Consul DNS fuer `mosquitto.service.consul`
-- [NAS Storage](../nas-storage/) -- NFS-Speicher fuer Config, Daten und Logs
+- [Linstor](../linstor-storage/index.md) -- CSI Storage fuer Persistence-Daten
+- [NAS Storage](../nas-storage/) -- NFS fuer passwd-Datei
