@@ -131,6 +131,12 @@ Service Discovery für den HashiCorp-Cluster. Jeder Consul Server stellt DNS auf
 
 SRV-Records liefern neben der IP auch den dynamischen Port des Services, was für Nomad-Jobs mit dynamischer Port-Zuweisung relevant ist.
 
+## Docker Daemon DNS
+
+Alle Nomad Clients haben in `/etc/docker/daemon.json` die DNS-Server `10.0.2.1` und `10.0.2.2` konfiguriert. Damit können Docker-Container `.consul`-Domains auflösen, ohne dass einzelne Nomad Jobs `dns_servers` im Docker-Block setzen müssen.
+
+Die Konfiguration wird über die Ansible-Rolle `docker` verwaltet (Variable `docker_dns` in `defaults/main.yml`).
+
 ## Consul-Forwarding
 
 Pi-hole (10.0.2.1) bzw. dnsmasq (10.0.2.2) leiten alle `.consul`-Anfragen an alle drei Consul Server weiter. Die Konfiguration liegt in `/etc/dnsmasq.d/05-custom.conf` (Pi-hole) bzw. `/opt/dnsmasq.conf` (dnsmasq):
