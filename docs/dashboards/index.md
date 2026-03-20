@@ -12,7 +12,7 @@ tags:
 
 ## Übersicht
 
-Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlichzugängliche Startseite und Homepage als internes Administrations-Dashboard.
+Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlich zugängliche Startseite und Homepage als internes Administrations-Dashboard.
 
 | Attribut | Flame (Public) | Flame (Intra) | Homepage |
 | :--- | :--- | :--- | :--- |
@@ -32,8 +32,8 @@ Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlichzug
 
 Flame ist ein einfaches Application Dashboard mit Bookmark-Verwaltung. Es läuft in zwei getrennten Instanzen:
 
-- **Public (`welcome.ackermannprivat.ch`):** Oeffentlich zugängliche Startseite mit Links zu externen Services. Geschuetzt durch `public-guest-chain-v2` (CrowdSec + OAuth2 Guest-Gruppe).
-- **Intra (`intra.ackermannprivat.ch`):** Internes Dashboard mit Links zu allen Admin-Tools und Services. Geschuetzt durch `admin-chain-v2` (OAuth2 Admin-Gruppe).
+- **Public (`welcome.ackermannprivat.ch`):** Öffentlich zugängliche Startseite mit Links zu externen Services. Geschützt durch `public-guest-chain-v2` (CrowdSec + OAuth2 Guest-Gruppe).
+- **Intra (`intra.ackermannprivat.ch`):** Internes Dashboard mit Links zu allen Admin-Tools und Services. Geschützt durch `admin-chain-v2` (OAuth2 Admin-Gruppe).
 
 Beide Instanzen verwenden das gleiche Docker-Image, aber getrennte Linstor CSI Volumes und unterschiedliche Traefik-Middleware-Chains.
 
