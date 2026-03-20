@@ -122,6 +122,7 @@ Automatische Zeiterfassung fuer private Repos basierend auf Git-Commits. Jeder C
 | :--- | :--- | :--- | :--- |
 | Finanzen | `/Users/Shared/git/gitea/finanzen/` | Finanzen | Privat |
 | Tieffurt | `/Users/Shared/git/gitea/tieffurt/` | Tieffurt | Privat |
+| Immo-Monitor | `/Users/Shared/git/github/PRIVAT/immo-monitor/` | Immo-Monitor | Privat |
 
 ### Ablauf
 
