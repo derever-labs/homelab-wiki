@@ -46,6 +46,30 @@ Bei 3 Worker-Nodes und aktivem Drain eines Nodes laufen alle Container auf 2 Nod
 
 Nomad hält abgeschlossene Allocations und Evaluations für eine konfigurierbare Zeit vor. Bei vielen Batch-Jobs kann das zu Speicherverbrauch führen. Eine manuelle Garbage Collection kann über die API oder `nomad system gc` ausgelöst werden.
 
+## Preemption
+
+Service- und Batch-Preemption ist seit 01.04.2026 aktiviert. Nomad kann niedrigprioritäre Jobs verdrängen, um Platz für höherprioritäre zu schaffen.
+
+**Anlass:** Am 20.03.2026 fiel ein Node aus und wurde 10 Tage nicht bemerkt. Postgres (Priorität 100) konnte nicht platziert werden, während niedrigprioritäre Jobs wie Handbrake (Priorität 60) die CPU-Kapazität belegten.
+
+**Verhalten:**
+- Mindest-Delta: 10 Prioritätspunkte (Prio 100 kann Prio 90 oder tiefer verdrängen)
+- Verdrängte Jobs werden automatisch auf anderen Nodes neu platziert (sofern `reschedule` konfiguriert)
+- Verdrängte Allocations haben `DesiredStatus = evict`
+- Prüfen: `nomad operator scheduler get-config`
+
+## Restart/Reschedule Policies
+
+Alle CSI-Jobs haben `restart` und `reschedule` Stanzas für automatische Recovery:
+
+- **restart**: Lokaler Neustart des Tasks bei Crashes (3 Versuche in 5 Minuten)
+- **reschedule**: Platzierung auf einem anderen Node wenn lokale Restarts erschöpft sind
+- **max_client_disconnect**: Wartet 5 Minuten bei kurzen Netzwerk-Ausfällen bevor rescheduled wird
+
+::: warning Postgres-Sonderbehandlung
+PostgreSQL hat eine begrenzte `reschedule`-Policy (max 3 Versuche in 30 Minuten, `mode = "fail"`). Bei wiederholtem Failure muss manuell eingegriffen werden -- endloses Failover zwischen Nodes mit DRBD `single-node-writer` kann zu Datenkorruption führen. DRBD ist die eigentliche Fencing-Schicht, nicht Nomad.
+:::
+
 ## Troubleshooting
 
 ### Job startet nicht
@@ -68,6 +92,15 @@ Nomad hält abgeschlossene Allocations und Evaluations für eine konfigurierbare
 2. Häufigste Ursache: Nicht genügend Ressourcen auf den Worker-Nodes
 3. `nomad node status` auf allen Clients prüfen -- verfügbare Kapazität anzeigen
 4. Bei Volume-Constraints: Ist der NFS-Mount vorhanden? Ist das Linstor-Volume verfügbar?
+
+**CSI Boot Race Condition:** Nach einem Node-Reboot können CSI-abhängige Jobs pending bleiben, weil das CSI Plugin beim Evaluation-Zeitpunkt noch nicht healthy ist. Nomad erstellt eine "blocked eval", die normalerweise nach 30-60s aufgelöst wird wenn das Plugin healthy wird. Falls das nicht passiert:
+
+1. CSI Plugin Status prüfen: `nomad plugin status linstor.csi.linbit.com`
+2. Blocked Evals prüfen: `nomad eval list -status=blocked`
+3. Manuell re-evaluieren: `nomad job eval <job-name>`
+4. Timer-Log prüfen: `journalctl -u nomad-csi-reeval` (läuft auf client-05/06)
+
+Auf client-05/06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Jobs re-evaluiert. Details: [Linstor Betrieb](../linstor-storage/betrieb.md#csi-boot-race-condition)
 
 ### Node nicht erreichbar
 
