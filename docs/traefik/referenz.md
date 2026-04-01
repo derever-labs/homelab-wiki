@@ -38,8 +38,8 @@ Diese Chains erfordern sowohl OAuth2-Authentifizierung als auch eine interne IP:
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-admin-chain-v2` | oauth2-errors → require-admin → intern-chain | OAuth2 Admin + IP-Whitelist |
-| `intern-family-chain-v2` | oauth2-errors → require-family → intern-chain | OAuth2 Family + IP-Whitelist |
+| `admin-chain-v2` | oauth2-errors → require-admin → intern-chain | OAuth2 Admin + IP-Whitelist |
+| `family-chain-v2` | oauth2-errors → require-family → intern-chain | OAuth2 Family + IP-Whitelist |
 
 ### Nur IP-Whitelist (ohne OAuth2)
 

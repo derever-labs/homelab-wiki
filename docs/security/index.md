@@ -75,8 +75,8 @@ Detaillierte Beschreibung siehe [Traefik Middleware Chains](../traefik/referenz.
 | `public-admin-chain-v2@file` | CrowdSec + OAuth2 Admin |
 | `public-family-chain-v2@file` | CrowdSec + OAuth2 Family |
 | `public-guest-chain-v2@file` | CrowdSec + OAuth2 Guest |
-| `intern-admin-chain-v2@file` | OAuth2 Admin + IP-Whitelist |
-| `intern-family-chain-v2@file` | OAuth2 Family + IP-Whitelist |
+| `admin-chain-v2@file` | OAuth2 Admin + IP-Whitelist |
+| `family-chain-v2@file` | OAuth2 Family + IP-Whitelist |
 | `intern-chain@file` | Nur IP-Whitelist |
 
 Vollständige Dokumentation: [Traefik Middlewares](../traefik/referenz.md)

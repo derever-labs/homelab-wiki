@@ -67,7 +67,7 @@ Deshalb nutzen diese Services **Traefik-URLs** (`*.ackermannprivat.ch`) für die
 :::
 
 ::: info SABnzbd nur intern erreichbar
-SABnzbd nutzt `intern-admin-chain-v2` -- die Web-UI ist nur aus dem lokalen Netz erreichbar.
+SABnzbd nutzt `admin-chain-v2` -- die Web-UI ist nur aus dem lokalen Netz erreichbar.
 :::
 
 ## Wartung

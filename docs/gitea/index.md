@@ -20,7 +20,7 @@ tags:
 | **Deployment** | Nomad Job (`services/gitea.nomad`) |
 | **Storage** | Linstor CSI (`gitea-data`, 5 GiB replicated) |
 | **Datenbank** | PostgreSQL `gitea` (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | Keycloak OIDC (konfiguriert via Gitea UI) + `intern-admin-chain-v2@file` |
+| **Auth** | Keycloak OIDC (konfiguriert via Gitea UI) + `admin-chain-v2@file` |
 
 ## Rolle im Stack
 
@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.1)"]
-        R1:::svc["Router: gitea.*<br>intern-admin-chain-v2"]
+        R1:::svc["Router: gitea.*<br>admin-chain-v2"]
     end
 
     subgraph Nomad["Nomad Cluster"]

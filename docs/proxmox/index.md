@@ -108,7 +108,7 @@ Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung des PVE Clust
 
 ### Authentifizierung
 
-- **Traefik Middleware:** `intern-admin-chain-v2` (OAuth2 Admin + IP Whitelist)
+- **Traefik Middleware:** `admin-chain-v2` (OAuth2 Admin + IP Whitelist)
 - **API Token:** `root@pam!datacenter-manager` (auf allen PVE/PBS Nodes)
 
 ### Konfigurationsdateien

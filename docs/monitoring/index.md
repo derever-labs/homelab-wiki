@@ -85,7 +85,7 @@ NAS / Router                 → Syslog → Alloy Receiver   ──┘
 - **Storage:** Linstor CSI Volume `loki-data` (20 GiB, repliziert)
 - **Port:** 3100 (statisch)
 - **Retention:** 30 Tage (720h)
-- **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-admin-chain-v2@file`)
+- **Zugang:** `loki.ackermannprivat.ch` (intern, `admin-chain-v2@file`)
 - **Consul DNS:** `loki.service.consul`
 
 ### Grafana Alloy (Log-Collector)
