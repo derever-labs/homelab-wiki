@@ -66,6 +66,20 @@ Das Audit Log erfasst jeden API-Aufruf an Vault, einschliesslich Auth-Versuche, 
 | `/opt/vault/audit/vault-audit.log` | Audit Log |
 | `/etc/vault.d/unseal-keys` | Auto-Unseal Keys (chmod 600) |
 
+## Vault Service Discovery
+
+Nomad verbindet sich zu Vault über Consul DNS statt einer hardcodierten IP:
+
+```
+address = "http://vault.service.consul:8200"
+```
+
+Vault registriert sich automatisch bei Consul mit Tags (`active` für den Leader, `standby` für Follower). Standby-Nodes leiten Requests per HTTP 307 an den aktiven Leader weiter. Dadurch ist die Verbindung resilient -- bei einem Leader-Wechsel löst Consul DNS automatisch den neuen Leader auf.
+
+::: info
+`vault.service.consul` gibt alle Vault-Nodes zurück (active + standby). Falls nur der Leader gewünscht ist: `active.vault.service.consul`.
+:::
+
 ## Verwandte Seiten
 
 - [Vault Übersicht](index.md) -- Architektur und Designentscheide
