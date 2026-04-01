@@ -47,7 +47,7 @@ CrowdSec läuft als Bouncer-Plugin in Traefik und blockiert automatisch IP-Adres
 
 ## Docker Compose Deployment
 
-Traefik läuft als Docker Compose Stack auf vm-proxy-dns-01 zusammen mit weiteren Infrastruktur-Services (OpenLDAP, Keycloak, OAuth2-Proxy, Pi-hole). Die Compose-Konfiguration wird durch die Ansible-Rolle `traefik-proxy` verwaltet und aus Templates generiert.
+Traefik läuft als Docker Compose Stack auf vm-proxy-dns-01 zusammen mit weiteren Infrastruktur-Services (Keycloak, OAuth2-Proxy, Pi-hole). Die Compose-Konfiguration wird durch die Ansible-Rolle `traefik-proxy` verwaltet und aus Templates generiert.
 
 ## Wartung
 
@@ -84,5 +84,5 @@ Falls Traefik nach einem Reboot nicht läuft: `docker start traefik`. Danach oau
 - [Traefik Middleware Chains](./referenz.md) -- Vollständige Middleware-Dokumentation
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking und Threat Intelligence
 - [DNS-Architektur](../dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
-- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Keycloak/LDAP-Stack auf derselben VM
+- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Zentrales Benutzerverzeichnis (Nomad Job)
 - [Netzwerk-Topologie](../netzwerk/index.md) -- Netzwerkarchitektur und Routing
