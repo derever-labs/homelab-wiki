@@ -49,22 +49,25 @@ SABnzbd hat einen separaten Traefik-Router für API-Zugriff mit `intern-api-chai
 
 ## Interne Service-Kommunikation
 
-Alle arr-Services kommunizieren untereinander über Consul DNS, nicht über externe URLs:
+| Verbindung | Adresse | Grund |
+| :--- | :--- | :--- |
+| Sonarr/Radarr → SABnzbd | `sabnzbd.ackermannprivat.ch:443` (Traefik) | musl/DNS-Limitation |
+| Sonarr/Radarr → Prowlarr | `prowlarr.ackermannprivat.ch` (via Prowlarr App-Sync) | musl/DNS-Limitation |
+| Prowlarr → Sonarr | `sonarr.ackermannprivat.ch` (Prowlarr App-Sync) | musl/DNS-Limitation |
+| Prowlarr → Radarr | `radarr.ackermannprivat.ch` (Prowlarr App-Sync) | musl/DNS-Limitation |
+| Alle → PostgreSQL | `postgres.service.consul:5432` | Consul DNS (funktioniert) |
+| Jellyseerr → Sonarr | `sonarr.service.consul:8989` | Consul DNS (Node.js) |
+| Jellyseerr → Radarr | `radarr.service.consul:7878` | Consul DNS (Node.js) |
+| Jellyseerr → Jellyfin | `jellyfin.service.consul:8096` | Consul DNS (Node.js) |
 
-| Verbindung | Adresse |
-| :--- | :--- |
-| Sonarr/Radarr → SABnzbd | `sabnzbd.service.consul:5667` |
-| Sonarr/Radarr → Prowlarr | `prowlarr.service.consul:9696` (via Prowlarr App-Sync) |
-| Prowlarr → Sonarr | `sonarr.service.consul:8989` |
-| Prowlarr → Radarr | `radarr.service.consul:7878` |
-| Alle → PostgreSQL | `postgres.service.consul:5432` |
+::: warning musl libc und .consul-Domains
+Die .NET-basierten arr-Services (Sonarr, Radarr, Prowlarr) laufen auf Alpine Linux mit musl libc. musl's `getaddrinfo`-Implementation kann `.consul`-Domains und non-standard TLDs nicht zuverlässig auflösen -- `nslookup` funktioniert, aber die Namensauflösung in .NET schlägt intermittierend fehl.
 
-::: warning Keine externen URLs für Service-zu-Service-Kommunikation
-Externe URLs (`*.ackermannprivat.ch`) dürfen nicht für die Kommunikation zwischen Cluster-Services verwendet werden. Die Verbindung über Traefik ist unnötig und fällt aus wenn Traefik nicht verfügbar ist.
+Deshalb nutzen diese Services **Traefik-URLs** (`*.ackermannprivat.ch`) für die Kommunikation untereinander. Jellyseerr (Node.js) hat dieses Problem nicht und nutzt Consul DNS direkt.
 :::
 
 ::: info SABnzbd nur intern erreichbar
-SABnzbd nutzt `intern-admin-chain-v2` -- die Web-UI ist nur aus dem lokalen Netz erreichbar. API-Zugriff erfolgt ausschliesslich über Consul DNS von Sonarr/Radarr.
+SABnzbd nutzt `intern-admin-chain-v2` -- die Web-UI ist nur aus dem lokalen Netz erreichbar.
 :::
 
 ## Wartung
