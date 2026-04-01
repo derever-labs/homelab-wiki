@@ -15,12 +15,12 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **Deployment** | Docker Compose auf vm-proxy-dns-01 |
+| **Deployment** | Nomad Job (`databases/open-ldap.nomad`) |
 | **Consul Service** | `ldap.service.consul` |
 | **Base DN** | `dc=ackermannprivat,dc=ch` |
 | **Users DN** | `ou=users,dc=ackermannprivat,dc=ch` |
 | **Admin Bind DN** | `cn=admin,dc=ackermannprivat,dc=ch` |
-| **Web-UI** | phpldapadmin (`admin-chain-v2@file`) |
+| **Secrets** | Vault (`kv/data/openldap`) |
 
 ## Rolle im Stack
 
@@ -28,13 +28,11 @@ OpenLDAP ist das zentrale Benutzerverzeichnis. Alle User-Accounts (Name, E-Mail,
 
 ```mermaid
 flowchart TD
-    PLA:::entry["User-Verwaltung<br/>(phpldapadmin)"] --> LDAP:::accent["OpenLDAP"]
-    KC:::svc["Keycloak LDAP Federation<br/>(WRITABLE)"] --> LDAP
+    KC:::svc["Keycloak LDAP Federation<br/>(WRITABLE)"] --> LDAP:::accent["OpenLDAP<br/>(Nomad Job)"]
     LDAP --> Bind:::svc["Direkter Bind<br/>(Jellyfin, etc.)"]
     KC --> OAuth:::svc["OAuth2/OIDC<br/>(Traefik Services)"]
 
     classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
@@ -68,7 +66,7 @@ Es gibt zwei verschiedene Wege, wie Services User authentifizieren:
 
 Die meisten Services nutzen Traefik Middleware Chains mit oauth2-proxy → Keycloak. Keycloak prüft die Credentials und die Gruppenzugehörigkeit.
 
-**Betroffene Services:** Alle Services mit `public-*-chain-v2` oder `intern-*-chain-v2` Middleware.
+**Betroffene Services:** Alle Services mit `public-*-chain-v2` oder `admin-chain-v2` / `family-chain-v2` Middleware.
 
 ### 2. Direkt gegen LDAP (LDAP Bind)
 
@@ -82,18 +80,20 @@ Die Gruppenverwaltung erfolgt in Keycloak (Realm `traefik`), nicht in LDAP. Sieh
 
 ## Technische Details
 
-### Container
+### Nomad Job
 
-| Container | Image | Funktion |
-|-----------|-------|----------|
-| `openldap` | `osixia/openldap` | LDAP Server (Port 389) |
-| `phpldapadmin` | `osixia/phpldapadmin` | Web-UI für LDAP-Administration |
+| Parameter | Wert |
+|-----------|------|
+| **Image** | `osixia/openldap:1.5.0` |
+| **Job** | `databases/open-ldap.nomad` |
+| **Port** | 389 (statisch) |
+| **Constraint** | vm-nomad-client-05 |
 
 ### Persistenz
 
 Die Daten liegen auf NFS:
-- **Datenbank:** `/nfs/docker/ldap/ldap/` (die eigentlichen LDAP-Einträge)
-- **Konfiguration:** `/nfs/docker/ldap/slapd.d/` (slapd Backend-Konfiguration im LDIF-Format)
+- **Datenbank:** `/nfs/docker/ldap/ldap` -> `/var/lib/ldap`
+- **Konfiguration:** `/nfs/docker/ldap/slapd.d` -> `/etc/ldap/slapd.d`
 
 ### TLS
 
@@ -107,6 +107,6 @@ OpenLDAP speichert seine Konfiguration im LDIF-Format unter `slapd.d/`. Jede LDI
 
 ## Konfiguration
 
-Verwaltet durch Docker Compose. Siehe `standalone-stacks/traefik-proxy/templates/docker-compose.yml.j2` im Repository.
+Verwaltet als Nomad Job. Siehe `nomad-jobs/databases/open-ldap.nomad` im Repository. Admin-Passwort wird aus Vault (`kv/data/openldap`) bezogen.
 
 ---
