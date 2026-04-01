@@ -70,7 +70,7 @@ Alle Shared-Verzeichnisse nutzen die Gruppe `github` mit setgid-Bit. Siehe `gite
 - **Dateien:** 664 (`-rw-rw-r--`)
 - **Scripts:** 775 (`-rwxrwxr-x`)
 - **ssh-config-shared:** 644 (`-rw-r--r--`) -- SSH verweigert group-writable Configs
-- **`.git/`-Interna:** Nicht manuell aendern, stattdessen `core.sharedRepository = group`
+- **`.git/`-Interna:** `setup-permissions.sh` setzt `g+w` und `g+s` auf alle `.git/`-Verzeichnisse und -Dateien. `core.sharedRepository = group` sorgt dafuer dass neue Objekte korrekt erstellt werden. Bei "Permission denied" in einem Repo: `sudo chmod -R g+w /path/to/repo/.git`
 - **safe.directory:** Muss fuer beide User in `.gitconfig` konfiguriert sein
 
 ## Neuen Skill hinzufuegen
