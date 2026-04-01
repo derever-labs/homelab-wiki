@@ -61,6 +61,24 @@ Traefik läuft als Docker Compose Stack auf vm-proxy-dns-01 zusammen mit weitere
 
 **Hinweis:** Die dynamische Konfiguration (Middlewares, OAuth2-Callbacks) wird direkt auf der VM bearbeitet und ist nicht im Git versioniert.
 
+## Boot-Abhängigkeit (NFS)
+
+Traefik mountet Konfiguration und ACME-Zertifikate von NFS (`/nfs/docker/traefik/`). Beim Systemstart muss der NFS-Mount bereit sein bevor Docker die Container startet, sonst schlägt der Bind-Mount von `acme.json` fehl (Docker erstellt ein Verzeichnis statt die Datei zu finden → OCI runtime error).
+
+**Lösung:** Ein systemd Drop-In `/etc/systemd/system/docker.service.d/wait-for-nfs.conf` stellt sicher, dass Docker erst nach den NFS-Mounts startet:
+
+```ini
+[Unit]
+After=nfs-docker.mount nfs-cert.mount
+Requires=nfs-docker.mount nfs-cert.mount
+```
+
+Wird automatisch über die Ansible-Rolle `traefik-proxy` verteilt.
+
+::: warning Traefik startet nicht nach Reboot
+Falls Traefik nach einem Reboot nicht läuft: `docker start traefik`. Danach oauth2-proxy prüfen (`docker logs oauth2-proxy`) -- er braucht Traefik + Keycloak für OIDC Discovery und restartet automatisch.
+:::
+
 ## Verwandte Seiten
 
 - [Traefik Middleware Chains](./referenz.md) -- Vollständige Middleware-Dokumentation
