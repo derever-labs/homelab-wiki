@@ -74,6 +74,37 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 Jellyseerr nutzt `public-guest-chain-v2` statt der üblichen Admin-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Keycloak ohne Admin-Berechtigung.
 :::
 
+## Request Sync Sidecar
+
+Jellyseerr hat keinen eingebauten Retry-Mechanismus: Wenn ein approved Request nicht an Sonarr/Radarr übermittelt werden kann (z.B. Service kurzzeitig nicht erreichbar), bleibt der Request im Status "Processing" hängen und wird nie wiederholt.
+
+Der Sidecar-Task `request-sync` prüft alle 6 Stunden die Jellyseerr-Datenbank auf hängende Requests und ruft für jeden den Jellyseerr `/retry`-Endpoint auf. Dadurch nutzt Jellyseerr seine eigene Logik für Qualitätsprofile, Tags, Root-Folder usw. beim Anlegen in Sonarr/Radarr.
+
+| Attribut | Wert |
+| :--- | :--- |
+| **Task** | `request-sync` (Sidecar im Jellyseerr Job) |
+| **Image** | `python:3.10-slim` |
+| **Intervall** | 6 Stunden (konfigurierbar via `SYNC_INTERVAL_HOURS`) |
+| **Script** | `nomad-jobs/media/scripts/jellyseerr-request-sync.py` |
+| **Ressourcen** | 100 MHz CPU, 128 MB RAM |
+
+Der Sidecar kommuniziert ausschliesslich mit der Jellyseerr API (`/api/v1/request/{id}/retry`). Jellyseerr entscheidet selbst ob ein Film/Serie in Sonarr/Radarr hinzugefügt oder nur der Status aktualisiert werden muss.
+
+## Service-Verbindungen
+
+Jellyseerr verbindet sich intern über Consul DNS zu allen Diensten:
+
+| Service | Adresse | Konfiguriert in |
+| :--- | :--- | :--- |
+| Sonarr | `sonarr.service.consul:8989` | `settings.json` |
+| Radarr | `radarr.service.consul:7878` | `settings.json` |
+| Jellyfin | `jellyfin.service.consul:8096` | `settings.json` |
+| PostgreSQL | `postgres.service.consul:5432` | Nomad Job (env) |
+
+::: warning Keine externen URLs verwenden
+Jellyseerr darf nicht über externe URLs (`*.ackermannprivat.ch`) mit Sonarr/Radarr/Jellyfin kommunizieren. Die Verbindung über Traefik ist aus dem Cluster heraus unzuverlässig und führt zu stillen Sync-Ausfällen.
+:::
+
 ## Abhängigkeiten
 
 - [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr für die Mediensuche
