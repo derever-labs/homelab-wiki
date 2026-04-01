@@ -95,6 +95,28 @@ Der integrierte SSH-Server lauscht auf Port 2222 (static). Registriert als separ
 - **Keycloak** -- OIDC-Provider (konfiguriert in Gitea UI)
 - **Consul** -- Service Discovery und DNS
 
+## SSH über ProxyJump
+
+Gitea läuft als Nomad Job und kann zwischen `vm-nomad-client-05` und `vm-nomad-client-06` wechseln. Die SSH-IP ist deshalb nicht stabil -- nach einem Reschedule stimmt ein direkt konfigurierter SSH-Alias nicht mehr.
+
+**Lösung:** ProxyJump über einen Nomad Server. Die Server-VMs sind fix und haben Zugang zum Cluster-Netzwerk mit Consul DNS. Über den Proxy wird `gitea.service.consul` zur Laufzeit aufgelöst.
+
+`~/.ssh/config` Eintrag:
+
+```
+Host gitea
+  HostName gitea.service.consul
+  User git
+  Port 2222
+  ProxyJump vm-nomad-server-04
+```
+
+Danach funktioniert `git clone gitea:sam/<repo>.git` unabhängig davon, auf welchem Client Gitea gerade läuft.
+
+::: info ProxyJump-Host
+`vm-nomad-server-04` ist der bevorzugte Jump-Host (fest konfiguriert, immer erreichbar). Alternativ sind `vm-nomad-server-05` und `-06` gleichwertig.
+:::
+
 ## Verwandte Seiten
 
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
