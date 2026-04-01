@@ -16,6 +16,8 @@ tags:
 |-------------|------|
 | Cluster-Name | lenzburg |
 | Knoten | 3 (pve00, pve01, pve02) |
+| PVE Version | 9.1.7 |
+| PBS Version | 4.1.5 |
 | HA-Modus | Migrate bei Shutdown |
 | Migration-Netzwerk | 10.99.1.0/24 (Thunderbolt) |
 | Web-UI | `https://<node-ip>:8006` |
