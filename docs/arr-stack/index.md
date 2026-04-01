@@ -37,6 +37,26 @@ Sonarr, Radarr und Prowlarr nutzen den [PostgreSQL Shared Cluster](../_querschni
 
 SABnzbd hat einen separaten Traefik-Router für API-Zugriff mit `intern-api-chain@file`. Dieser erlaubt authentifizierten API-Zugriff (via API-Key im Header oder Query-Parameter) ohne OAuth2-Redirect.
 
+## Interne Service-Kommunikation
+
+Alle arr-Services kommunizieren untereinander über Consul DNS, nicht über externe URLs:
+
+| Verbindung | Adresse |
+| :--- | :--- |
+| Sonarr/Radarr → SABnzbd | `sabnzbd.service.consul:5667` |
+| Sonarr/Radarr → Prowlarr | `prowlarr.service.consul:9696` (via Prowlarr App-Sync) |
+| Prowlarr → Sonarr | `sonarr.service.consul:8989` |
+| Prowlarr → Radarr | `radarr.service.consul:7878` |
+| Alle → PostgreSQL | `postgres.service.consul:5432` |
+
+::: warning Keine externen URLs für Service-zu-Service-Kommunikation
+Externe URLs (`*.ackermannprivat.ch`) dürfen nicht für die Kommunikation zwischen Cluster-Services verwendet werden. Die Verbindung über Traefik ist unnötig und fällt aus wenn Traefik nicht verfügbar ist.
+:::
+
+::: info SABnzbd nur intern erreichbar
+SABnzbd nutzt `intern-admin-chain-v2` -- die Web-UI ist nur aus dem lokalen Netz erreichbar. API-Zugriff erfolgt ausschliesslich über Consul DNS von Sonarr/Radarr.
+:::
+
 ## Wartung
 ### Job Updates
 Updates erfolgen durch Anpassung der Image-Version im jeweiligen Nomad-Job unter `infra/nomad-jobs/media/`.
