@@ -61,19 +61,19 @@ Traefik läuft als Docker Compose Stack auf vm-proxy-dns-01 zusammen mit weitere
 
 **Hinweis:** Die dynamische Konfiguration (Middlewares, OAuth2-Callbacks) wird direkt auf der VM bearbeitet und ist nicht im Git versioniert.
 
-## Boot-Abhängigkeit (NFS)
+## Storage (lokal, kein NFS!)
 
-Traefik mountet Konfiguration und ACME-Zertifikate von NFS (`/nfs/docker/traefik/`). Beim Systemstart muss der NFS-Mount bereit sein bevor Docker die Container startet, sonst schlägt der Bind-Mount von `acme.json` fehl (Docker erstellt ein Verzeichnis statt die Datei zu finden → OCI runtime error).
+Traefik nutzt ausschliesslich lokalen Storage auf vm-proxy-dns-01. NFS wird bewusst **nicht** verwendet -- ein Netzwerk-Storage für den zentralen Reverse Proxy ist ein Anti-Pattern (Boot-Abhängigkeit, inotify funktioniert nicht über NFS).
 
-**Lösung:** Ein systemd Drop-In `/etc/systemd/system/docker.service.d/wait-for-nfs.conf` stellt sicher, dass Docker erst nach den NFS-Mounts startet:
+| Pfad | Inhalt | Zugriff |
+|------|--------|---------|
+| `/opt/traefik/traefik.yml` | Statische Konfiguration | readonly |
+| `/opt/traefik/acme/acme.json` | Let's Encrypt Zertifikate | read-write, chmod 600 |
+| `/opt/traefik/configurations/` | Dynamische Config (Middlewares, Routen) | readonly |
 
-```ini
-[Unit]
-After=nfs-docker.mount nfs-cert.mount
-Requires=nfs-docker.mount nfs-cert.mount
-```
+Die Configs werden per Ansible-Rolle `traefik-proxy` verteilt. `acme.json` wird bei Verlust automatisch neu generiert (Let's Encrypt stellt innerhalb von Minuten neu aus).
 
-Wird automatisch über die Ansible-Rolle `traefik-proxy` verteilt.
+Der Certs-Dumper schreibt die exportierten PEM-Zertifikate weiterhin auf NFS (`/nfs/cert/`), da andere Services sie von dort lesen.
 
 ::: warning Traefik startet nicht nach Reboot
 Falls Traefik nach einem Reboot nicht läuft: `docker start traefik`. Danach oauth2-proxy prüfen (`docker logs oauth2-proxy`) -- er braucht Traefik + Keycloak für OIDC Discovery und restartet automatisch.
