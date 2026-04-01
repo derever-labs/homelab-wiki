@@ -54,6 +54,19 @@ Der Stack läuft auf 3 Server-Nodes und 3 Worker-Nodes, jeweils 1 pro Proxmox-Ho
 
 Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms)
 
+## Scheduler-Konfiguration
+
+| Eigenschaft | Wert |
+|-------------|------|
+| Algorithmus | `spread` (gleichmässige Verteilung) |
+| Service Preemption | Aktiv (seit 01.04.2026) |
+| Batch Preemption | Aktiv |
+| Memory Oversubscription | Aktiv |
+
+**Preemption** erlaubt Nomad, niedrigprioritäre Jobs zu verdrängen, um Platz für höherprioritäre zu schaffen. Es gilt ein Mindest-Delta von 10 Prioritätspunkten -- ein Job mit Priorität 100 kann nur Jobs mit Priorität 90 oder tiefer verdrängen.
+
+Konfiguration: `nomad operator scheduler get-config` zum Prüfen, `nomad operator scheduler set-config` zum Ändern. Die Einstellung wird über Raft repliziert. Details: [Betrieb](betrieb.md#preemption)
+
 ## Job Configuration
 
 Alle Nomad Jobs folgen einheitlichen Mustern:
@@ -65,6 +78,8 @@ Alle Nomad Jobs folgen einheitlichen Mustern:
 - **Resource Limits** (CPU, Memory) auf allen Tasks gesetzt
 - **Vault Integration** via `vault {}` Stanza und Workload Identity für Secrets
 - **Consul Service Registration** via `service {}` Stanza für automatisches Routing
+- **restart/reschedule** auf allen CSI-Jobs für automatische Recovery bei Crashes und Node-Ausfällen
+- **max_client_disconnect** auf CSI-Jobs um bei kurzen Netzwerk-Glitches nicht sofort zu reschedulen
 
 PostgreSQL-abhängige Jobs haben einen `wait-for-postgres` Init-Task, der wartet bis die Datenbank erreichbar ist.
 

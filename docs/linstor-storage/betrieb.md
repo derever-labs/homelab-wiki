@@ -134,6 +134,39 @@ Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert u
 
 Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul DNS -- bei einem Controller-Failover bleibt die GUI funktional.
 
+## CSI Boot Race Condition
+
+### Problem
+
+Nach einem Node-Reboot kann es vorkommen, dass CSI-abhängige Nomad Jobs (Postgres, Vaultwarden, etc.) in `pending` hängen bleiben. Die Ursache ist eine Timing-Lücke: Die Jobs werden evaluiert bevor das Linstor CSI Plugin als "healthy" registriert ist. Nomad erstellt eine "blocked eval", die normalerweise aufgelöst wird wenn das Plugin healthy wird -- aber in manchen Fällen bleibt sie stecken (dokumentiert in GitHub Issues #8994, #13028, #11784).
+
+### Lösung: nomad-csi-reeval Timer
+
+Auf client-05 und client-06 läuft ein systemd Timer (`nomad-csi-reeval.timer`), der 60 Sekunden nach dem Boot ein poll-basiertes Script startet:
+
+1. Wartet bis die Nomad API erreichbar ist
+2. Wartet bis das CSI Plugin `linstor.csi.linbit.com` mindestens einen healthy Node hat
+3. Sucht nach blockierten Evaluations und re-evaluiert diese
+
+Das Script ist idempotent -- bei bereits laufenden Jobs passiert nichts.
+
+### Troubleshooting
+
+- Timer-Status: `systemctl status nomad-csi-reeval.timer`
+- Letzte Ausführung: `journalctl -u nomad-csi-reeval --no-pager -n 20`
+- Manuell auslösen: `sudo systemctl start nomad-csi-reeval.service`
+- Blocked evals prüfen: `nomad eval list -status=blocked`
+- Manuell re-evaluieren: `nomad job eval <job-name>`
+
+### Dateien
+
+| Datei | Beschreibung |
+|-------|--------------|
+| `/usr/local/bin/nomad-csi-reeval.sh` | Poll-basiertes Re-Evaluation Script |
+| `/etc/systemd/system/nomad-csi-reeval.service` | Oneshot Service |
+| `/etc/systemd/system/nomad-csi-reeval.timer` | Boot-Timer (60s nach Start) |
+| `/etc/nomad.d/nomad-csi-reeval.env` | Nomad Token (0600) |
+
 ## Backup
 
 Die Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentation](../backup/) beschrieben.

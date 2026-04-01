@@ -50,6 +50,19 @@ Jeder Task hat CPU- und Memory-Limits gesetzt. Nomad nutzt diese Werte für die 
 
 Services, die Secrets benötigen, nutzen die `vault {}` Stanza zusammen mit Workload Identity. Secrets werden via `template` Stanza als Umgebungsvariablen oder Dateien injiziert. Details: [Vault](../vault/)
 
+### Restart/Reschedule/Disconnect
+
+CSI-Jobs haben Resilience-Stanzas auf Group-Level:
+
+- **restart**: Lokale Neustarts bei Task-Crashes (`attempts = 3, interval = "5m", delay = "15s"`)
+- **reschedule**: Rescheduling auf anderen Node (`delay = "30s", delay_function = "exponential", max_delay = "10m"`)
+- **max_client_disconnect**: Wartezeit bei kurzen Netzwerk-Ausfällen (`"5m"`)
+- **kill_timeout**: Für Datenbanken erhöht (`"30s"` bei PostgreSQL für WAL flush)
+
+::: info Postgres-Sonderfall
+PostgreSQL hat `reschedule { unlimited = false, attempts = 3, interval = "30m" }` und `restart { mode = "fail" }` -- bei wiederholtem Failure wird manuelles Eingreifen erwartet.
+:::
+
 ### PostgreSQL-Abhängigkeiten
 
 Jobs, die PostgreSQL benötigen, enthalten einen `wait-for-postgres` Init-Task. Dieser prüft die Erreichbarkeit der Datenbank bevor der Haupt-Task startet. Details: [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md)
