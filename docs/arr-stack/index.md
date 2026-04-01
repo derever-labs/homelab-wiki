@@ -30,6 +30,16 @@ Alle Services greifen auf zentrale Pfade auf dem [NAS](../nas-storage/index.md) 
 SABnzbd nutzt im Gegensatz zu den anderen Arr-Services ein Linstor CSI Volume (`sabnzbd-config`) für die Konfiguration statt NFS. Die Downloads landen auf `/nfs/jellyfin/`. Der Job ist deshalb auf `vm-nomad-client-05/06` eingeschränkt (Linstor Storage Nodes).
 :::
 
+::: warning SABnzbd Memory-Limits
+SABnzbd benötigt ausreichend Memory für Unpack-Operationen. Zu niedrige Limits machen den HTTP-Server unresponsive, was dazu führt, dass Consul Health Checks fehlschlagen und SABnzbd aus dem Cluster deregistriert wird.
+
+Aktuell konfiguriert (seit 01.04.2026):
+- `memory`: 1024 MiB (erhöht von 256 MiB)
+- `memory_max`: 8192 MiB
+
+Bei Symptomen wie "SABnzbd nicht erreichbar während Extraktion" zuerst Memory-Auslastung prüfen.
+:::
+
 ### Datenbank (PostgreSQL)
 Sonarr, Radarr und Prowlarr nutzen den [PostgreSQL Shared Cluster](../_querschnitt/datenbank-architektur.md). Die DB-Passwörter werden via Vault Workload Identity injiziert. SABnzbd hat keine eigene Datenbank.
 
