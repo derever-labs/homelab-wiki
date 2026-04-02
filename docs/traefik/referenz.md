@@ -26,21 +26,36 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-auth` | ipAllowList → authentik-forward-auth → compress | IP-Allowlist + Authentik ForwardAuth |
+| `intern-auth` | ipAllowList → secure-headers → authentik-forward-auth → compress | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth |
 
 ### Für externen Zugriff mit Authentik-Login
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `public-auth` | crowdsec → authentik-forward-auth → compress | CrowdSec + Authentik ForwardAuth |
+| `public-auth` | crowdsec → secure-headers → authentik-forward-auth → compress | CrowdSec + Sicherheits-Header + Authentik ForwardAuth |
 
 ### Ohne Login
 
 | Chain | Komponenten | Beschreibung |
 |-------|-------------|--------------|
-| `public-noauth` | crowdsec → compress | Öffentlich erreichbar, kein Login |
-| `intern-noauth` | ipAllowList → compress | Nur IP-Allowlist, kein Login |
-| `intern-api` | ipAllowList | IP-Allowlist für API-Endpunkte (ohne Compression) |
+| `public-noauth` | crowdsec → secure-headers → compress | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
+| `intern-noauth` | ipAllowList → compress | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
+| `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen (ohne Compression) |
+
+### Legacy (entfernt)
+
+::: warning Entfernte Chains
+Die folgenden Chains aus der Keycloak/oauth2-proxy-Ära wurden entfernt und sind nicht mehr verfügbar. Alle darauf basierenden Nomad-Jobs wurden auf die neuen Chains migriert.
+:::
+
+| Chain | Ersetzt durch |
+|-------|---------------|
+| `admin-chain-v2@file` | `intern-auth@file` |
+| `family-chain-v2@file` | `intern-auth@file` |
+| `intern-chain@file` | `intern-noauth@file` |
+| `public-admin-chain-v2@file` | `public-auth@file` |
+| `public-family-chain-v2@file` | `public-auth@file` |
+| `public-guest-chain-v2@file` | `public-auth@file` |
 
 ### IP-Allowlist Ranges
 
