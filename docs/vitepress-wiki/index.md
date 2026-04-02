@@ -18,7 +18,7 @@ tags:
 | **URL** | [wiki.ackermannprivat.ch](https://wiki.ackermannprivat.ch) |
 | **Source** | GitHub: `derever/homelab-wiki` (Branch: main) |
 | **Deployment** | Nomad Job (`services/vitepress-wiki.nomad`) |
-| **Auth** | OAuth2 Admin (`admin-chain-v2@file`) |
+| **Auth** | Authentik ForwardAuth (`intern-auth@file`) |
 | **Auto-Update** | GitHub Webhook (sofort) + git pull alle 5 Min (Fallback) |
 
 ## Architektur

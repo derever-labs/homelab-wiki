@@ -22,7 +22,7 @@ tags:
 | **USB Dongle** | Sonoff Zigbee 3.0 USB Dongle Plus |
 | **MQTT Broker** | Mosquitto (separater Nomad Job) |
 | **Storage** | NFS `/nfs/docker/zigbee2mqtt/data` |
-| **Auth** | `admin-chain-v2@file` (OAuth Admin) |
+| **Auth** | `intern-auth@file` (Authentik ForwardAuth Admin) |
 | **Priority** | 100 (IoT Infrastruktur) |
 
 ## Architektur
@@ -82,4 +82,4 @@ Falls der USB-Stick nicht erkannt wird: pruefen ob das Device unter `/dev/serial
 
 - [IoT Referenz](./referenz.md) -- Mosquitto MQTT Broker Details
 - [NAS Storage](../nas-storage/) -- NFS-Speicher fuer Konfiguration und Daten
-- [Traefik](../traefik/) -- Ingress mit admin-chain-v2 fuer Web-Frontend
+- [Traefik](../traefik/) -- Ingress mit intern-auth fuer Web-Frontend

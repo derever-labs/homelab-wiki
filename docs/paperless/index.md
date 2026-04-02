@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`services/paperless-simple.nomad`) |
 | **Storage** | NFS `/nfs/docker/paperless/{media,consume,data,export}` |
 | **Datenbank** | PostgreSQL (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ## Rolle im Stack
 
@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: paperless.*<br>admin-chain-v2"]
+        R1:::svc["Router: paperless.*<br>intern-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]

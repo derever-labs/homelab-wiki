@@ -16,7 +16,7 @@ tags:
 | :--- | :--- |
 | **Status** | Produktion |
 | **Deployment** | Nomad System Job (`infrastructure/filebrowser.nomad`) |
-| **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) |
+| **Auth** | Authentik ForwardAuth (`intern-auth`) |
 | **Zugriff** | Read-only auf gesamtes lokales Dateisystem |
 | **Image** | `filebrowser/filebrowser:latest` (via lokale Registry) |
 
@@ -33,7 +33,7 @@ Filebrowser läuft als **System Job** -- das heisst eine Instanz pro Nomad Clien
 ```mermaid
 flowchart LR
     User:::entry["Admin User"]
-    User -->|HTTPS| Traefik:::svc["Traefik<br/>admin-chain-v2"]
+    User -->|HTTPS| Traefik:::svc["Traefik<br/>intern-auth"]
 
     Traefik --> FB04:::svc["Filebrowser<br/>client-04"]
     Traefik --> FB05:::svc["Filebrowser<br/>client-05"]
@@ -71,8 +71,8 @@ Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Contai
 ## Sicherheit
 
 - **Read-only:** Der Container kann keine Dateien verändern (`/:/srv:ro`)
-- **Keine eigene Auth:** Filebrowser läuft mit `--noauth`, die gesamte Authentifizierung erfolgt über Traefik (`admin-chain-v2`)
-- **Nur Admins:** Durch die Admin-Chain ist der Zugriff auf Benutzer mit Admin-Gruppenzugehörigkeit in Keycloak beschränkt
+- **Keine eigene Auth:** Filebrowser läuft mit `--noauth`, die gesamte Authentifizierung erfolgt über Traefik (`intern-auth`)
+- **Nur Admins:** Durch die Auth-Chain ist der Zugriff auf Benutzer mit Admin-Gruppenzugehörigkeit in Authentik beschränkt
 
 ## Ressourcen
 
@@ -86,5 +86,5 @@ Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Contai
 
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-Nodes
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Mounts die über Filebrowser inspiziert werden
-- [Traefik Middlewares](../traefik/referenz.md) -- `admin-chain-v2` Authentifizierung
+- [Traefik Middlewares](../traefik/referenz.md) -- `intern-auth` Authentifizierung
 - [Nomad Architektur](../nomad/index.md) -- System Job Deployment

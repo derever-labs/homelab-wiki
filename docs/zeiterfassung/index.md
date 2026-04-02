@@ -22,7 +22,7 @@ Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel i
 | **Datenbank** | PostgreSQL `solidtime` (Shared Cluster) | MariaDB 11 (Sidecar-Container) |
 | **Storage** | Redis Sidecar (ephemeral, Cache + Sessions) | Linstor CSI (`kimai-data`) fuer MariaDB, NFS fuer data/plugins |
 | **Mobile** | PWA (Homescreen) | Native App (iOS/Android, kostenpflichtig) |
-| **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) | OAuth2 via Keycloak (`admin-chain-v2`) |
+| **Auth** | Authentik ForwardAuth (`intern-auth`) | Authentik ForwardAuth (`intern-auth`) |
 | **API** | Bearer Token (Passport JWT) | API-Key (`X-AUTH-TOKEN`) |
 
 ## Architektur
@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: time.*<br>admin-chain-v2"]
+        R1:::svc["Router: time.*<br>intern-auth"]
         R2:::svc["Router: time.*/api<br>kein OAuth"]
         R3:::svc["Router: n8n.*/webhook<br>kein OAuth"]
     end
@@ -51,7 +51,7 @@ flowchart LR
     PWA -->|HTTPS| R1
     SC1 -->|GET /webhook/arbeit-start| R3
     SC2 -->|GET /webhook/arbeit-stop| R3
-    R1 -->|OAuth2| ST
+    R1 -->|Authentik ForwardAuth| ST
     R2 --> ST
     R3 --> N8N
     N8N -->|API: Timer Start/Stop| R2

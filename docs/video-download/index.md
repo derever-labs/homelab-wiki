@@ -12,7 +12,7 @@ tags:
 
 ## Uebersicht
 
-Vier Web-UIs fuer den manuellen Download von Videos. Jedes Tool hat einen spezifischen Zweck und Ziel-Storage. Alle sind ueber Traefik mit OAuth2-Schutz (`admin-chain-v2`) erreichbar.
+Vier Web-UIs fuer den manuellen Download von Videos. Jedes Tool hat einen spezifischen Zweck und Ziel-Storage. Alle sind ueber Traefik mit Authentik ForwardAuth (`intern-auth`) erreichbar.
 
 | Attribut | youtube-dl | special-youtube-dl | special-yt-dlp | video-grabber |
 | :--- | :--- | :--- | :--- | :--- |

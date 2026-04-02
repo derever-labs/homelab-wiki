@@ -18,7 +18,7 @@ Ersetzt die Kombination aus Metabase + Leaflet + NocoDB durch eine fokussierte S
 - **DB:** Drizzle ORM → PostgreSQL (n8n-DB, gleicher User)
 - **Karten:** Leaflet + CartoDB Positron + leaflet.heat
 - **Charts:** Chart.js
-- **Auth:** Traefik intern-chain (IP-Whitelist) + public-family-chain-v2 (OAuth2 extern)
+- **Auth:** Traefik intern-api (IP-Whitelist) + public-auth (Authentik ForwardAuth extern)
 
 ## Architektur
 
@@ -55,8 +55,8 @@ Schreibzugriff nur auf `listing_note` (Favoriten, Notizen, Ablehnungen).
 
 `https://immo-monitor.ackermannprivat.ch`
 
-- Intern (LAN/VPN): Direkt via intern-chain (IP-Whitelist)
-- Extern: Via public-family-chain-v2 (OAuth2 Authentik)
+- Intern (LAN/VPN): Direkt via intern-api (IP-Whitelist)
+- Extern: Via public-auth (Authentik ForwardAuth)
 
 ## Datenbank
 

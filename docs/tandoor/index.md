@@ -18,7 +18,7 @@ tags:
 | **Deployment** | Nomad Job (`services/tandoor.nomad`) |
 | **Storage** | NFS `/nfs/docker/tandoor/{staticfiles,mediafiles}` |
 | **Datenbank** | PostgreSQL `djangodb` (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ## Rolle im Stack
 
@@ -48,8 +48,8 @@ PostgreSQL-Datenbank `djangodb` mit Benutzer `djangouser` auf dem Shared Cluster
 ## Abhängigkeiten
 
 - **PostgreSQL** -- Shared Cluster (`postgres.service.consul`)
-- **Traefik** -- HTTPS-Routing und OAuth2 Middleware
-- **Keycloak** -- OAuth2-Provider (über `admin-chain-v2`)
+- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
+- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
 - **NFS** -- Datenpersistenz für Medien und Static Files
 
 ## Verwandte Seiten

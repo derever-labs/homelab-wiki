@@ -19,7 +19,7 @@ tags:
 | **Image** | `ghcr.io/advplyr/audiobookshelf:latest` |
 | **Storage** | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
 | **Mediathek** | NFS `/nfs/jellyfin/media/books/` |
-| **Auth** | Intern: `intern-chain@file` / Extern: `public-admin-chain-v2@file` |
+| **Auth** | Intern: `intern-api@file` / Extern: `public-auth@file` |
 | **Consul Service** | `audiobookshelf` |
 
 ## Rolle im Stack
@@ -36,8 +36,8 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        INT:::svc["Router: intern<br>intern-chain"]
-        EXT:::svc["Router: extern<br>public-admin-chain-v2"]
+        INT:::svc["Router: intern<br>intern-api"]
+        EXT:::svc["Router: extern<br>public-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -76,7 +76,7 @@ flowchart LR
 
 ### Traefik Routing
 
-Audiobookshelf nutzt ein Dual-Router-Setup: Intern ohne OAuth (nur IP-Whitelist), extern mit OAuth2 via Keycloak. Das ist wichtig, damit die mobilen Apps im Heimnetz ohne OAuth-Redirect funktionieren.
+Audiobookshelf nutzt ein Dual-Router-Setup: Intern ohne Auth (nur IP-Whitelist), extern mit Authentik ForwardAuth. Das ist wichtig, damit die mobilen Apps im Heimnetz ohne Auth-Redirect funktionieren.
 
 ### Ressourcen
 
