@@ -50,7 +50,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Docker Registry](./docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
 | [Wiki](./vitepress-wiki/) | VitePress Dokumentations-Deployment |
-| [Security](./security/) | CrowdSec, Keycloak, OAuth2-Proxy |
+| [Security](./security/) | CrowdSec, Authentik, Zugriffskontrolle |
 | [DbGate](./dbgate/) | Datenbank-Verwaltungs-UI |
 
 ## Media

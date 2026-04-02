@@ -2,22 +2,21 @@
 title: Authentik
 description: Identity Provider für SSO, ForwardAuth und OIDC im Homelab
 tags:
-  - platform
+  - identity
   - security
   - authentik
-  - sso
-  - oidc
 ---
 
 # Authentik
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Status** | Produktion |
+| **Status** | Aktiv |
 | **URL** | [auth.ackermannprivat.ch](https://auth.ackermannprivat.ch) |
-| **Deployment** | Nomad Job |
+| **Deployment** | Nomad Job (`identity/authentik.nomad`) |
 | **Auth** | Eigenständig (kein ForwardAuth auf der Login-Seite selbst) |
-| **Storage** | PostgreSQL (`authentik` Datenbank), Redis (Cache/Sessions) |
+| **Storage** | PostgreSQL (`postgres.service.consul`, Datenbank `authentik`) |
+| **Secrets** | Vault (`kv/data/authentik`, `kv/data/authentik-outpost`) |
 
 ## Rolle im Stack
 
@@ -33,30 +32,28 @@ flowchart LR
 
     subgraph Traefik["Traefik (10.0.2.20 VIP)"]
         TR:::svc["Reverse Proxy"]
-        FWD:::svc["ForwardAuth Middleware\n(authentik-forward-auth)"]
+        FWD:::svc["ForwardAuth Middleware\n(intern-auth / public-auth)"]
     end
 
-    subgraph Authentik["Authentik (Nomad)"]
-        AK:::accent["Authentik Server"]
-        OUTPOST:::accent["Embedded Outpost\n(/outpost.goauthentik.io/...)"]
-        LDAP_OUT:::accent["LDAP Outpost\n(:636 intern)"]
+    subgraph Authentik["Authentik (Nomad Job)"]
+        AK:::accent["Authentik Server\n(:9000)"]
+        WRK:::accent["Authentik Worker"]
+        PROXY:::accent["Proxy Outpost\n(:9010 statisch)"]
+        LDAP_OUT:::accent["LDAP Outpost\n(:3389 statisch)"]
     end
 
     subgraph Backend["Backend-Services"]
-        SVC:::svc["Geschützte Services\n(intern-auth / public-auth)"]
-        OIDC:::svc["OIDC-Services\n(Grafana, Open-WebUI, Paperless)"]
+        SVC:::svc["Geschützte Services\n(ForwardAuth)"]
+        OIDC:::svc["OIDC-Services\n(Grafana, Gitea)"]
     end
 
-    subgraph Verzeichnis["Benutzerverwaltung"]
-        LDAP:::db["OpenLDAP\n(Benutzer-SSOT)"]
-        PG:::db["PostgreSQL\n(Authentik DB)"]
-    end
+    PG:::db["PostgreSQL\n(postgres.service.consul)"]
 
     User --> TR
     TR --> FWD
-    FWD -.->|"ForwardAuth Check"| OUTPOST
-    OUTPOST --> AK
-    AK --> LDAP
+    FWD -.->|"ForwardAuth Check"| PROXY
+    PROXY --> AK
+    AK --> WRK
     AK --> PG
     FWD -->|"Zugriff erlaubt"| SVC
     OIDC -.->|"OIDC Discovery"| AK
@@ -67,79 +64,92 @@ flowchart LR
     classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
 ```
 
-## Authentifizierungsmethoden
+## Komponenten
 
-Authentik schützt Services auf zwei Arten:
+Der Nomad Job `authentik` läuft als einzelne Gruppe mit vier Tasks auf `vm-nomad-client-05` oder `vm-nomad-client-06` (Affinity auf client-06).
 
-### ForwardAuth (über Traefik-Middleware)
+| Task | Image | Ports | Zweck |
+| :--- | :--- | :--- | :--- |
+| `server` | `ghcr.io/goauthentik/server` | 9000 (http), 9443 (https), 9300 (metrics) | Authentik Hauptprozess, API, Login-Flows |
+| `worker` | `ghcr.io/goauthentik/server` | -- | Background-Tasks (Zertifikate, E-Mail, Events) |
+| `proxy` | `ghcr.io/goauthentik/proxy` | 9010 (statisch), 9301 (metrics) | Proxy Outpost für Traefik ForwardAuth |
+| `ldap` | `ghcr.io/goauthentik/ldap` | 3389 (statisch), 9303 (metrics) | LDAP Outpost für Jellyfin |
 
-Traefik delegiert jeden Request an den Authentik Embedded Outpost unter `/outpost.goauthentik.io/`. Ist der Benutzer nicht eingeloggt, leitet Authentik zum Login-Flow weiter. Nach erfolgreichem Login wird der ursprüngliche Request durchgelassen.
+### Server
 
-Diese Methode wird für alle Services mit `intern-auth@file` oder `public-auth@file` verwendet. Die App selbst benötigt keine Authentifizierungslogik -- Authentik übernimmt das vollständig.
+Läuft mit `args = ["server"]`. Stellt die Authentik-UI, die API und alle Login-Flows bereit. Consul-Service `authentik` registriert den HTTP-Port für Traefik.
 
-Details zur Middleware-Konfiguration: [Traefik Middleware Chains](../traefik/referenz.md)
+### Worker
 
-### Natives OIDC (App-integriert)
+Läuft mit `args = ["worker"]`. Teilt die gleiche Konfiguration (Vault-Secrets, DB-Verbindung) wie der Server und übernimmt asynchrone Aufgaben: Zertifikatserneuerung, E-Mail-Versand, Event-Verarbeitung.
 
-Apps, die OIDC nativ unterstützen, werden direkt als OIDC-Provider-Client konfiguriert. In diesen Fällen übernimmt die App den Login-Dialog selbst und tauscht Token mit Authentik aus. Die Traefik-Chain ist dann `intern-noauth@file` (IP-Allowlist reicht, die App kümmert sich um Auth).
+### Proxy Outpost (ForwardAuth für Traefik)
 
-Services mit nativem OIDC:
-- Grafana
-- Open-WebUI
-- Paperless
+Der Proxy Outpost verbindet sich beim Start zum Authentik Server (`AUTHENTIK_HOST`) und holt die Outpost-Konfiguration. Er lauscht auf Port 9010 (statisch) und antwortet auf ForwardAuth-Anfragen von Traefik. Der Consul-Service `authentik-proxy` macht ihn für Traefik via `auth-routes.yml` erreichbar.
 
-## Outposts
+Der Token für die Authentik-API wird aus `kv/data/authentik-outpost` → `proxy_token` gelesen.
 
-Authentik nutzt sogenannte Outposts für die Protokoll-Integration:
+### LDAP Outpost (für Jellyfin)
 
-| Outpost | Protokoll | Zweck |
-|---------|-----------|-------|
-| Embedded Outpost | HTTP/ForwardAuth | Traefik-Integration via `/outpost.goauthentik.io/` |
-| LDAP Outpost | LDAPS `:636` | Authentifizierung für Services ohne OIDC-Support |
-
-Der Embedded Outpost läuft direkt im Authentik-Container und ist intern über `authentik.service.consul` erreichbar. Er muss nach einem Traefik-Neustart gegebenenfalls neu starten, da er OIDC Discovery über die eigene URL durchführt.
-
-::: warning Authentik nach Traefik-Neustart
-Falls Authentik nach einem Traefik-Neustart nicht mehr antwortet: den Authentik-Container neu starten. Der Embedded Outpost führt beim Start OIDC Discovery durch und braucht dafür erreichbares Traefik.
-:::
+Stellt einen LDAP-kompatiblen Endpunkt auf Port 3389 (statisch) bereit. Jellyfin authentifiziert sich gegen diesen Port, anstatt direkt OIDC zu nutzen. Der Token kommt aus `kv/data/authentik-outpost` → `ldap_token`.
 
 ## Flows
 
-Authentik arbeitet mit konfigurierbaren Flows. Im Homelab sind folgende Flows aktiv:
-
 | Flow | Zweck |
-|------|-------|
-| Authentication Flow | Login mit Username/Passwort (LDAP-Backend) |
-| Authorization Flow | Bestätigt den Zugriff auf OIDC-Clients (implicit consent) |
-| Invalidation Flow | Logout (Session-Invalidierung) |
+| :--- | :--- |
+| Default Authentication | Login mit Username/Passwort |
+| Default Invalidation | Logout (Session-Invalidierung) |
 
-Die Flows sind über die Authentik-UI unter `auth.ackermannprivat.ch` konfigurierbar.
+Die Flows sind über die Authentik-UI konfigurierbar. Der Authorization Flow (OIDC Consent) ist auf "implicit consent" gesetzt -- Benutzer werden nicht bei jedem OIDC-Login nach Erlaubnis gefragt.
+
+## Integration mit Traefik
+
+### ForwardAuth-Middleware
+
+Traefik sendet jeden Request an den Proxy Outpost. Ist der Benutzer nicht eingeloggt, leitet der Outpost zum Login-Flow weiter. Nach erfolgreichem Login wird der ursprüngliche Request mit gesetzten `X-authentik-*` Headern durchgelassen.
+
+Die Middleware-Chains `intern-auth@file` und `public-auth@file` binden die ForwardAuth-Middleware ein. Details: [Traefik Middleware Chains](../traefik/referenz.md)
+
+### Callback-Route (auth-routes.yml, Priority 1000)
+
+Die Datei `auth-routes.yml` definiert eine Traefik-Route mit hoher Priorität (1000) für den Authentik-Callback-Pfad (`/outpost.goauthentik.io/`). Diese Route muss höher priorisiert sein als die Service-Routen, damit Authentik den Login-Redirect abfangen kann, bevor Traefik den Request an den eigentlichen Service weiterleitet.
+
+Authentik selbst ist hinter `intern-noauth@file` (nur IP-Allowlist) -- die Login-Seite darf keinen ForwardAuth-Check haben.
+
+## OIDC Providers
+
+Services mit nativer OIDC-Unterstützung werden direkt als Provider-Client in Authentik konfiguriert. Die App übernimmt den Login-Dialog selbst und tauscht Token mit Authentik aus. Die Traefik-Chain ist in diesen Fällen `intern-noauth@file`.
+
+| Service | Methode | Traefik Chain |
+| :--- | :--- | :--- |
+| Grafana | Natives OIDC | `intern-noauth@file` |
+| Gitea | Natives OIDC | `intern-noauth@file` |
+| Alle anderen | ForwardAuth via Proxy Outpost | `intern-auth@file` oder `public-auth@file` |
 
 ## Benutzerverwaltung
 
-Authentik liest Benutzer aus OpenLDAP (LDAP-Source). OpenLDAP ist der Single Source of Truth für alle User-Accounts. Passwort-Änderungen in Authentik schreiben zurück nach LDAP.
-
-Details: [OpenLDAP & Benutzerverwaltung](../ldap/index.md)
+Authentik verwaltet Benutzer intern. Passwort-Änderungen und Gruppen-Management erfolgen über die Authentik-UI.
 
 | Gruppe | Zugriff |
-|--------|---------|
+| :--- | :--- |
 | `admin` | Voller Zugriff auf alle Services |
 | `family` | Familien-Zugriff (Jellyfin, Jellyseerr etc.) |
 
-## Migration von Keycloak
+## Bootstrap (Ersteinrichtung)
 
-Authentik ersetzt Keycloak (`sso.ackermannprivat.ch`) und oauth2-proxy. Die Migration umfasste:
-
-- Alle Nomad-Jobs von `*-chain-v2@file` auf die neuen Authentik-Chains umgestellt
-- Stash und Stash-Secure auf `intern-auth` migriert
-- uptime-kuma, metabase, gatus von extern auf intern umgestellt
-- Keycloak und oauth2-proxy gestoppt und entfernt
-- DNS-Eintrag: `auth.ackermannprivat.ch` (statt `sso.ackermannprivat.ch`)
+::: info Reihenfolge bei Erstdeploy
+1. Vault-Secrets anlegen (`kv/authentik`: `secret_key`, `db_password`)
+2. PostgreSQL-Datenbank und User erstellen
+3. Nur Server und Worker deployen (Outpost-Tasks auskommentieren)
+4. In der Authentik-UI: Outposts erstellen und Tokens kopieren
+5. Tokens in Vault schreiben (`kv/authentik-outpost`: `proxy_token`, `ldap_token`)
+6. Job erneut deployen -- alle vier Tasks starten
+:::
 
 ## Verwandte Seiten
 
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth-Konfiguration und Chain-Übersicht
 - [Traefik Reverse Proxy](../traefik/index.md) -- Reverse Proxy Architektur
-- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Benutzer-SSOT
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking als erste Middleware-Stufe
+- [Security](../security/index.md) -- Sicherheitskonzept Übersicht
 - [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht

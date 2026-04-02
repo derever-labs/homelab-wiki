@@ -22,7 +22,7 @@ Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 | **Deployment** | Nomad Job (`services/ollama.nomad`) | Nomad Job (`services/open-webui.nomad`) | Nomad Job (`services/hollama.nomad`) |
 | **Port** | 11434 (static) | 8080 (dynamic) | 4173 (static) |
 | **Storage** | NFS `/nfs/docker/ollama` | NFS `/nfs/docker/open-webui` | Kein persistenter Speicher |
-| **Auth** | `intern-chain@file` (IP-Whitelist) | OAuth via Keycloak + `intern-chain@file` | `intern-chain@file` (IP-Whitelist) |
+| **Auth** | `intern-noauth@file` (IP-Allowlist) | Natives OIDC via Authentik + `intern-noauth@file` | `intern-noauth@file` (IP-Allowlist) |
 | **Ressourcen** | 12 CPU / 32 GB RAM | 2 CPU / 1-2 GB RAM | 200 MHz / 256 MB RAM |
 
 ## Architektur
@@ -34,9 +34,9 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        RC:::svc["Router: chat.*<br>intern-chain"]
-        RH:::svc["Router: hollama.*<br>intern-chain"]
-        RO:::svc["Router: ollama.*<br>intern-chain"]
+        RC:::svc["Router: chat.*<br>intern-noauth"]
+        RH:::svc["Router: hollama.*<br>intern-noauth"]
+        RO:::svc["Router: ollama.*<br>intern-noauth"]
     end
 
     subgraph Nomad["Nomad Cluster (48 GB Nodes)"]
@@ -98,7 +98,7 @@ Ollama registriert sich als `ollama.service.consul` und ist damit fuer andere Se
 
 ### Auth
 
-Open WebUI authentifiziert ueber OAuth2/OIDC direkt gegen Keycloak (Realm `traefik`, Client `open-webui`). Das klassische Passwort-Login ist deaktiviert (`ENABLE_LOGIN_FORM=false`). Die OAuth-Konfiguration wird ausschliesslich ueber Umgebungsvariablen gesteuert (`ENABLE_OAUTH_PERSISTENT_CONFIG=false`).
+Open WebUI authentifiziert ueber OIDC direkt gegen Authentik (Provider `open-webui-oidc`). Das klassische Passwort-Login ist deaktiviert (`ENABLE_LOGIN_FORM=false`). Die OAuth-Konfiguration wird ausschliesslich ueber Umgebungsvariablen gesteuert (`ENABLE_OAUTH_PERSISTENT_CONFIG=false`).
 
 ### Vault Secrets
 
@@ -108,7 +108,7 @@ Open WebUI authentifiziert ueber OAuth2/OIDC direkt gegen Keycloak (Realm `traef
 
 ## HolLama
 
-HolLama ist ein minimales, rein clientseitiges UI. Es hat keine Datenbank, keine Benutzerverwaltung und keinen serverseitigen State. Der Zugriff ist ueber IP-Whitelist (`intern-chain@file`) eingeschraenkt.
+HolLama ist ein minimales, rein clientseitiges UI. Es hat keine Datenbank, keine Benutzerverwaltung und keinen serverseitigen State. Der Zugriff ist ueber IP-Whitelist (`intern-noauth@file`) eingeschraenkt.
 
 ::: tip Wann welches UI?
 - **Open WebUI** fuer den Alltag: Chat-Historien, mehrere Modelle vergleichen, laengere Konversationen
@@ -124,5 +124,5 @@ HolLama ist ein minimales, rein clientseitiges UI. Es hat keine Datenbank, keine
 ## Verwandte Seiten
 
 - [Traefik Reverse Proxy](../traefik/index.md) -- Ingress und Middleware-Chains für alle drei Komponenten
-- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Keycloak OAuth für Open WebUI
+- [Authentik](../authentik/index.md) -- OIDC-Provider für Open WebUI
 - [Storage NAS](../nas-storage/index.md) -- NFS-Speicher für Ollama-Modelle und Open WebUI Daten
