@@ -148,6 +148,25 @@ Alle Konfigurationsdateien liegen im Git unter `standalone-stacks/traefik-proxy/
 | `services-external.yml` | Routen für externe/interne File-Provider-Services |
 | `tcp-meeting.yml` | TCP Passthrough |
 
+## Failover-Test
+
+Getestete Szenarien (G2-Test bestanden):
+
+**Failover (MASTER ausgefallen):**
+- Keepalived auf vm-traefik-01 stoppen
+- Erwartetes Verhalten: VIP wechselt innerhalb ~4s auf vm-traefik-02
+- Prüfen: `ip addr show` auf vm-traefik-02 zeigt 10.0.2.20; Services über VIP erreichbar
+
+**Failback (MASTER wieder verfügbar):**
+- Keepalived auf vm-traefik-01 starten
+- Erwartetes Verhalten: VIP wechselt zurück auf vm-traefik-01 (Priorität 150 > 100)
+- Prüfen: `ip addr show` auf vm-traefik-01 zeigt 10.0.2.20; Services weiterhin erreichbar
+
+**Split-Brain-Check nach Deployment:**
+- Nach dem Ansible-Deploy: `ip addr show` auf beiden Nodes prüfen
+- Nur ein Node darf 10.0.2.20 zeigen
+- Falls beide die VIP halten: VRRP-Auth-Konfiguration und Keepalived-Status prüfen (`systemctl status keepalived`)
+
 ## Verwandte Seiten
 
 - [Traefik Übersicht](./index.md) -- Architektur und Deployment

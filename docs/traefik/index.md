@@ -54,6 +54,16 @@ Traefik läuft im HA-Setup auf zwei VMs mit Keepalived VIP. Bei Ausfall eines No
 
 Keepalived prüft per VRRP-Script ob Traefik antwortet. Bei Ausfall wechselt die VIP automatisch zum BACKUP-Node.
 
+### Split-Brain-Prevention
+
+Drei Massnahmen verhindern, dass beide Nodes gleichzeitig die VIP halten:
+
+**Gateway-Track-Script (`chk_gateway`):** Pingt Pi-hole DNS (10.0.2.1). Bei Ausfall sinkt die Priority des MASTER um 60 (von 150 auf 90, unter BACKUP's 100). Der MASTER gibt die VIP ab. Schützt gegen Netzwerk-Partitionen, bei denen VRRP-Heartbeats noch durchkommen, echter Traffic aber nicht.
+
+**`nopreempt` auf BACKUP:** Der BACKUP übernimmt die VIP nur, wenn kein VRRP-Heartbeat mehr eintrifft. Ein kurzzeitig erhöhter Priority-Wert des BACKUP (z.B. nach Gateway-Ausfall auf MASTER) führt nicht zu einer sofortigen VIP-Übernahme und damit zu keinem Flapping.
+
+**Atomarer Keepalived-Restart:** Das Ansible-Deployment startet Keepalived auf allen Hosts gleichzeitig (`serial: 0`, separater Play am Ende). Rolling-Restarts würden einen kurzen Auth-Mismatch erzeugen, bei dem MASTER und BACKUP unterschiedliche VRRP-Auth-Passwörter verwenden und beide gleichzeitig die VIP beanspruchen.
+
 ## SSL-Terminierung
 
 Wildcard-Zertifikate für `*.ackermannprivat.ch` und `*.ackermann.systems` werden automatisch via Let's Encrypt (ACME, Cloudflare DNS Challenge, EC256) bezogen. Beide Nodes haben eigene `acme.json` mit gültigen Zertifikaten.
@@ -93,8 +103,9 @@ ansible-playbook standalone-stacks/traefik-ha/deploy.yml --ask-vault-pass
 Das Playbook:
 1. Synchronisiert Templates (docker-compose, traefik.yml, keepalived.conf)
 2. Synchronisiert dynamische Konfiguration aus `traefik-proxy/configurations/`
-3. Startet Docker Compose Stack neu
+3. Startet Docker Compose Stack neu (rolling, serial: 1)
 4. Verifiziert Traefik Health + Keepalived Status
+5. Startet Keepalived auf allen Hosts gleichzeitig neu (serial: 0, verhindert Auth-Mismatch)
 
 ### Härtungen (aktiv auf vm-traefik-01 + vm-traefik-02)
 
