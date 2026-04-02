@@ -23,9 +23,9 @@ tags:
 ```mermaid
 flowchart LR
     Internet:::ext --> Traefik:::svc
-    Traefik --> Bouncer:::accent["CrowdSec Bouncer<br/>(ForwardAuth)"]
-    Bouncer --> Backend:::svc["Backend Service"]
-    Bouncer -.-> Engine:::accent["CrowdSec Engine<br/>(LAPI)"]
+    Traefik --> Plugin:::accent["CrowdSec Bouncer<br/>(Traefik Plugin)"]
+    Plugin --> Backend:::svc["Backend Service"]
+    Plugin -.-> Engine:::accent["CrowdSec Engine<br/>(LAPI)"]
     Engine -.-> Logs:::db["Traefik Logs<br/>(/var/log/docker/traefik/)"]
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
@@ -34,7 +34,7 @@ flowchart LR
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
-Der Bouncer prüft eingehende Requests gegen die Engine. Wird eine IP als böswillig erkannt, blockiert der Bouncer den Zugriff bevor der Request das Backend erreicht.
+Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream-Modus werden Entscheidungen periodisch von der Engine abgeholt und gecacht — kein API-Call pro Request.
 
 ## Komponenten
 
@@ -49,15 +49,16 @@ Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien
 | Config | `/nfs/docker/crowdsec/config` |
 | Daten | `/nfs/docker/crowdsec/data` |
 
-### CrowdSec Bouncer
+### CrowdSec Bouncer (Traefik Plugin)
 
-ForwardAuth-Middleware in Traefik. Prüft bei jedem Request, ob die Quell-IP von der Engine gebannt wurde.
+Natives Traefik-Plugin, das als Middleware direkt in Traefik läuft. Kein separater Container nötig.
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Image | `fbonalair/traefik-crowdsec-bouncer` |
+| Plugin | `maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.7 |
 | Verbindung | `crowdsec:8080` (LAPI) |
-| Modus | ForwardAuth |
+| Modus | Stream (gecachte Entscheidungen, Update alle 15s) |
+| API-Key | `/run/secrets/crowdsec_bouncer_key` (Datei-Mount) |
 
 ## Collections
 
@@ -68,16 +69,18 @@ Die Engine verwendet folgende Collections zur Angriffserkennung:
 | `crowdsecurity/traefik` | Traefik-spezifische Szenarien (Log-Parsing) |
 | `crowdsecurity/http-cve` | Bekannte HTTP-Schwachstellen (CVEs) |
 | `crowdsecurity/base-http-scenarios` | Allgemeine HTTP-Angriffe (Brute-Force, Crawling) |
+| `crowdsecurity/linux-ssh` | SSH Brute-Force-Erkennung |
+| `LePresidente/jellyfin` | Jellyfin-spezifische Szenarien |
+| `firix/authentik` | Authentik-spezifische Szenarien |
 
 ## Integration mit Traefik Middleware Chains
 
-CrowdSec ist als erste Middleware in allen `public-*-chain-v2` Chains eingebunden. Damit werden alle öffentlich erreichbaren Services geschützt, bevor die OAuth2-Authentifizierung greift.
+CrowdSec ist als erste Middleware in allen `public-*` Chains eingebunden. Damit werden alle öffentlich erreichbaren Services geschützt, bevor die Authentik-Authentifizierung greift.
 
 | Chain | Reihenfolge |
 |-------|-------------|
-| `public-guest-chain-v2` | crowdsec → oauth2-errors → require-guest |
-| `public-admin-chain-v2` | crowdsec → oauth2-errors → require-admin |
-| `public-family-chain-v2` | crowdsec → oauth2-errors → require-family |
+| `public-auth` | crowdsec → secure-headers → authentik-forward-auth |
+| `public-noauth` | crowdsec → secure-headers |
 
 Details zu den Middleware Chains: [Traefik Middlewares](../traefik/referenz.md)
 

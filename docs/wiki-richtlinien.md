@@ -57,7 +57,7 @@ Jede Information existiert an genau **einem** Ort. Andere Stellen verlinken mit 
 | NFS-Exports, Mount-Pfade | [NAS-Speicher](./nas-storage/) | System-Seiten |
 
 ::: tip SSOT-Regel anwenden
-Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in einer System-Seite zu wiederholen, schreibe "Authentifizierung über `admin-chain-v2@file` (Details: [Traefik Referenz](./traefik/referenz.md))".
+Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in einer System-Seite zu wiederholen, schreibe "Authentifizierung über `intern-auth@file` (Details: [Traefik Referenz](./traefik/referenz.md))".
 :::
 
 ## Struktur

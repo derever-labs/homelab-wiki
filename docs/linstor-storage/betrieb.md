@@ -128,7 +128,7 @@ Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert u
 | URL | `https://linstor-gui.ackermannprivat.ch` |
 | Deployment | Nomad Service Job (`system/linstor-gui.nomad`) |
 | Image | `linstor-gui:v2.2.0` (self-built, lokal verfügbar) |
-| Auth | OAuth Admin via Keycloak (`admin-chain-v2`) |
+| Auth | Authentik ForwardAuth (`intern-auth`) |
 | Backend | `linstor-controller.service.consul:3370` (Consul DNS) |
 | Constraint | `vm-nomad-client-05`, `vm-nomad-client-06` |
 

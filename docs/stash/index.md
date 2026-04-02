@@ -23,7 +23,7 @@ Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet
 | **Prioritaet** | 95 (kritisch) | 95 (kritisch) |
 | **Config-Storage** | Linstor CSI Volume (`stash-data`) | Linstor CSI Volume (`stash-secure-data`) |
 | **Media-Storage** | NFS (shared mit Downloadern) | NFS (separates Verzeichnis) |
-| **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) | OAuth2 via Keycloak (`admin-chain-v2`) |
+| **Auth** | Authentik ForwardAuth (`intern-auth`) | Authentik ForwardAuth (`intern-auth`) |
 | **Node-Constraint** | `vm-nomad-client-05` oder `06` (Linstor) | `vm-nomad-client-05` oder `06` (Linstor) |
 
 ## Architektur
@@ -35,8 +35,8 @@ flowchart TD
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: s.*<br>admin-chain-v2"]
-        R2:::svc["Router: secure.*<br>admin-chain-v2"]
+        R1:::svc["Router: s.*<br>intern-auth"]
+        R2:::svc["Router: secure.*<br>intern-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]

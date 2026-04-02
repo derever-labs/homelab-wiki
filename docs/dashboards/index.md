@@ -22,7 +22,7 @@ Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlich zu
 | **Deployment** | Nomad Job (`services/flame.nomad`) | Nomad Job (`services/flame-intra.nomad`) | Nomad Job (`services/homepage-intra.nomad`) |
 | **Image** | `pawelmalak/flame` | `pawelmalak/flame` | `gethomepage/homepage` |
 | **Storage** | Linstor CSI (`flame-data`) | Linstor CSI (`flame-intra-data`) | Nomad Templates (embedded YAML) |
-| **Auth** | `public-guest-chain-v2@file` (OAuth Guest) | `admin-chain-v2@file` (OAuth Admin) | `admin-chain-v2@file` (OAuth Admin) |
+| **Auth** | `public-auth@file` (Authentik Guest) | `intern-auth@file` (Authentik Admin) | `intern-auth@file` (Authentik Admin) |
 | **Vault Secrets** | `kv/data/flame` | `kv/data/flame` | Keine |
 | **Ressourcen** | 256 MB (max 1 GB) | 256 MB (max 1 GB) | 256 MB (max 512 MB) |
 
@@ -32,8 +32,8 @@ Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlich zu
 
 Flame ist ein einfaches Application Dashboard mit Bookmark-Verwaltung. Es läuft in zwei getrennten Instanzen:
 
-- **Public (`welcome.ackermannprivat.ch`):** Öffentlich zugängliche Startseite mit Links zu externen Services. Geschützt durch `public-guest-chain-v2` (CrowdSec + OAuth2 Guest-Gruppe).
-- **Intra (`intra.ackermannprivat.ch`):** Internes Dashboard mit Links zu allen Admin-Tools und Services. Geschützt durch `admin-chain-v2` (OAuth2 Admin-Gruppe).
+- **Public (`welcome.ackermannprivat.ch`):** Öffentlich zugängliche Startseite mit Links zu externen Services. Geschützt durch `public-auth` (CrowdSec + Authentik ForwardAuth Guest-Gruppe).
+- **Intra (`intra.ackermannprivat.ch`):** Internes Dashboard mit Links zu allen Admin-Tools und Services. Geschützt durch `intern-auth` (Authentik ForwardAuth Admin-Gruppe).
 
 Beide Instanzen verwenden das gleiche Docker-Image, aber getrennte Linstor CSI Volumes und unterschiedliche Traefik-Middleware-Chains.
 

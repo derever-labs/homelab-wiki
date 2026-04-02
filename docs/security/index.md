@@ -1,26 +1,26 @@
 ---
 title: Sicherheit & Authentifizierung
-description: Keycloak, OAuth2-Proxy und Zugriffskontrolle
+description: Authentik, CrowdSec und Zugriffskontrolle
 tags:
   - platform
   - security
-  - keycloak
+  - authentik
 ---
 
 # Sicherheit & Authentifizierung
 
 ## Übersicht
-Der Zugriff auf interne Services wird zentral über Traefik gesteuert, welches Authentifizierungsanfragen an Keycloak delegiert.
+
+Der Zugriff auf interne Services wird zentral über Traefik gesteuert. Authentifizierungsanfragen werden an Authentik delegiert. CrowdSec läuft als natives Traefik-Plugin und blockiert böswillige IPs im Stream-Modus, bevor der Request überhaupt die Middleware-Chain erreicht.
 
 ```mermaid
 flowchart LR
-    User:::entry["User Request"] --> Traefik:::svc
-    Traefik --> errors:::svc["oauth2-errors"]
-    errors --> require:::svc["require-{group}"]
-    require --> Backend:::svc["Backend Service"]
-    errors -.-> backend2:::accent["oauth2-backend<br/>(Redirect zu<br/>Keycloak Login)"]
-    require -.-> fwd:::accent["ForwardAuth<br/>/oauth2/auth?allowed_groups=X"]
-    fwd -.-> KC:::ext["Keycloak OIDC<br/>(Gruppenprüfung)"]
+    User:::entry["User Request"] --> CS:::svc["CrowdSec Plugin<br/>(Stream-Modus)"]
+    CS --> Chain:::svc["Middleware Chain<br/>(secure-headers)"]
+    Chain --> FWD:::svc["Authentik ForwardAuth"]
+    FWD -.-> AK:::ext["Authentik<br/>auth.ackermannprivat.ch"]
+    FWD --> Backend:::svc["Backend Service"]
+    CS -.-> Block:::accent["Blockiert<br/>(böswillige IP)"]
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
     classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
@@ -32,23 +32,23 @@ flowchart LR
 
 ### OpenLDAP (Benutzerverzeichnis)
 
-Zentraler Identity Store für alle User-Accounts. Keycloak ist per LDAP Federation (WRITABLE) angebunden und synchronisiert Passwort-Änderungen zurück nach LDAP. Services wie Jellyfin authentifizieren direkt gegen LDAP.
+Zentraler Identity Store für alle User-Accounts. Authentik ist per LDAP angebunden. Services wie Jellyfin authentifizieren direkt gegen LDAP.
 
 Details: [OpenLDAP & Benutzerverwaltung](../ldap/index.md)
 
-### Keycloak (SSO Provider)
-- **URL:** `https://sso.ackermannprivat.ch`
-- **Realm:** `traefik`
-- **Client:** `traefik-forward-auth`
-- **Deployment:** Nomad Job (ehemals Docker Compose auf vm-proxy-dns-01)
-- **LDAP Federation:** WRITABLE (Änderungen in Keycloak werden nach LDAP geschrieben)
+### Authentik (SSO Provider)
 
-### oauth2-proxy (v2)
-Zentraler oauth2-proxy mit ForwardAuth. Prüft das Session-Cookie und validiert die Gruppenzugehörigkeit via `allowed_groups` Query-Parameter.
+- **URL:** `https://auth.ackermannprivat.ch`
+- **Deployment:** Nomad Job
+- **ForwardAuth-Endpunkt:** Eingebunden in Middleware Chains `intern-auth` und `public-auth`
 
-- **Container:** `oauth2-proxy` (einzelne Instanz)
-- **Auth-Endpoint:** `/oauth2/auth?allowed_groups=...`
-- **Sign-In:** `/oauth2/sign_in?rd={url}`
+Authentik ersetzt Keycloak (ehemals `sso.ackermannprivat.ch`). Die ForwardAuth-Integration läuft direkt in Traefik -- kein separater oauth2-proxy-Container mehr.
+
+### CrowdSec (natives Traefik-Plugin)
+
+CrowdSec läuft als natives Traefik-Plugin (`maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.7) im Stream-Modus. Es ist kein separater ForwardAuth-Container mehr nötig. Das Plugin ist in den `public-*` Chains aktiv.
+
+Details: [CrowdSec](../crowdsec/index.md)
 
 ## Zugriffsgruppen
 
@@ -58,12 +58,6 @@ Zentraler oauth2-proxy mit ForwardAuth. Prüft das Session-Cookie und validiert 
 | `family` | corinna, + weitere | Familien-Zugriff (Jellyseerr, Jellyfin, etc.) |
 | `guest` | Weitere | Limitierter Zugriff |
 
-## CrowdSec (Intrusion Detection)
-
-CrowdSec analysiert Traefik-Logs und blockiert böswillige IPs per ForwardAuth-Bouncer. In den `public-*-chain-v2` Middleware Chains ist CrowdSec als erste Stufe eingebunden.
-
-Details: [CrowdSec](../crowdsec/index.md)
-
 ## Middleware Chains
 
 Detaillierte Beschreibung siehe [Traefik Middleware Chains](../traefik/referenz.md).
@@ -72,24 +66,20 @@ Detaillierte Beschreibung siehe [Traefik Middleware Chains](../traefik/referenz.
 
 | Chain | Beschreibung |
 |-------|--------------|
-| `public-admin-chain-v2@file` | CrowdSec + OAuth2 Admin |
-| `public-family-chain-v2@file` | CrowdSec + OAuth2 Family |
-| `public-guest-chain-v2@file` | CrowdSec + OAuth2 Guest |
-| `admin-chain-v2@file` | OAuth2 Admin + IP-Whitelist |
-| `family-chain-v2@file` | OAuth2 Family + IP-Whitelist |
-| `intern-chain@file` | Nur IP-Whitelist |
+| `intern-api@file` | Nur IP-Allowlist (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10) |
+| `intern-auth@file` | secure-headers + Authentik ForwardAuth + IP-Allowlist |
+| `public-auth@file` | CrowdSec + secure-headers + Authentik ForwardAuth |
+| `public-noauth@file` | CrowdSec + secure-headers |
 
 Vollständige Dokumentation: [Traefik Middlewares](../traefik/referenz.md)
 
 ## Konfiguration neuer Services
 
-Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware als Tag gesetzt, z.B. `traefik.http.routers.my-service.middlewares=public-admin-chain-v2@file`.
-
-Zusätzlich muss für jeden neuen Service mit OAuth2 eine Callback-Route in der Traefik Dynamic Config definiert werden (siehe `standalone-stacks/traefik-proxy/templates/` im Repo). Diese Route leitet `/oauth2/`-Pfade an den oauth2-backend weiter und muss eine hohe Priorität (1000) haben.
+Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware als Tag gesetzt, z.B. `traefik.http.routers.my-service.middlewares=intern-auth@file`.
 
 ## Tailscale-Zugriff
 
-Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in der `intern-chain` IP-Whitelist enthalten, sodass Zugriff über Tailscale auf interne Services möglich ist.
+Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in der `intern-api` und `intern-auth` IP-Allowlist enthalten, sodass Zugriff über Tailscale auf interne Services möglich ist.
 
 ## Verwandte Seiten
 

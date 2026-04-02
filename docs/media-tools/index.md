@@ -21,7 +21,7 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | **Image** | `cyfershepard/jellystat:1.1.7` |
 | **Datenbank** | PostgreSQL (Shared Cluster) |
 | **Storage** | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 | **Vault Secrets** | `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
 
 ### Rolle
@@ -68,7 +68,7 @@ Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder 
 | **Deployment** | Nomad Job (`media/handbrake.nomad`) |
 | **Image** | `jlesage/handbrake:latest` |
 | **Storage** | NFS `/nfs/docker/handbrake/config/` |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ### Rolle
 
@@ -99,7 +99,7 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 | **Image** | `linuxserver/lazylibrarian:latest` |
 | **Storage** | NFS `/nfs/docker/lazylibrarian/config/` |
 | **Mediathek** | NFS `/nfs/jellyfin/` |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ### Rolle
 

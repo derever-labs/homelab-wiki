@@ -19,7 +19,7 @@ tags:
 | **Image** | `fallenbagel/jellyseerr:latest` |
 | **Datenbank** | PostgreSQL `jellyseerr` (Shared Cluster) |
 | **Storage** | NFS `/nfs/docker/jellyseerr/config/` |
-| **Auth** | `public-guest-chain-v2@file` |
+| **Auth** | `public-auth@file` |
 | **Consul Service** | `jellyseerr` |
 
 ## Rolle im Stack
@@ -70,8 +70,8 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 | CPU | 256 MHz |
 | Memory | 768 MB (max 1024 MB) |
 
-::: warning Guest-Chain
-Jellyseerr nutzt `public-guest-chain-v2` statt der üblichen Admin-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Keycloak ohne Admin-Berechtigung.
+::: warning Öffentliche Auth-Chain
+Jellyseerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
 
 ## Request Sync Sidecar

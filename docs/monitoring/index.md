@@ -26,7 +26,7 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 - **CheckMK:** Integriert über das CheckMK-Plugin für Infrastruktur-Status.
 
 ### Authentifizierung
-Erfolgt via OAuth2 (Keycloak). Nur Benutzer der Gruppe `admin` haben Zugriff.
+Erfolgt via Authentik ForwardAuth. Nur Benutzer der Gruppe `admin` haben Zugriff.
 
 ### Deployment
 Grafana nutzt PostgreSQL (`postgres.service.consul`) als Backend-Datenbank für Session-State, Unified Alerting und Konfiguration. Das frühere Linstor CSI Volume `grafana-data` (SQLite) wurde entfernt und deregistriert.
@@ -85,7 +85,7 @@ NAS / Router                 → Syslog → Alloy Receiver   ──┘
 - **Storage:** Linstor CSI Volume `loki-data` (20 GiB, repliziert)
 - **Port:** 3100 (statisch)
 - **Retention:** 30 Tage (720h)
-- **Zugang:** `loki.ackermannprivat.ch` (intern, `admin-chain-v2@file`)
+- **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-auth@file`)
 - **Consul DNS:** `loki.service.consul`
 
 ### Grafana Alloy (Log-Collector)

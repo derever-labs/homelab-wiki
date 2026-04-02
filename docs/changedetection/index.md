@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`services/changedetection.nomad`) |
 | **Storage** | NFS `/nfs/docker/changedetection/datastore` |
 | **Datenbank** | Keine (Dateibasiert) |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ## Rolle im Stack
 
@@ -32,7 +32,7 @@ flowchart LR
     USER:::entry["Browser"]
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: change.*<br>admin-chain-v2"]
+        R1:::svc["Router: change.*<br>intern-auth"]
     end
 
     subgraph Nomad["Nomad Job"]
@@ -75,8 +75,8 @@ Der Sidecar benötigt erhebliche Ressourcen (3 GiB Memory, max 6 GiB).
 
 ## Abhängigkeiten
 
-- **Traefik** -- HTTPS-Routing und OAuth2 Middleware
-- **Keycloak** -- OAuth2-Provider (über `admin-chain-v2`)
+- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
+- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
 - **NFS** -- Datenpersistenz
 
 ## Verwandte Seiten

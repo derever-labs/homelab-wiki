@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`monitoring/gatus.nomad`) |
 | **Storage** | In-Memory (stateless) |
 | **Konfiguration** | Nomad Template (eingebettet im Job) |
-| **Auth** | Öffentlich via `public-guest-chain-v2` (CrowdSec + OAuth2 Guest) |
+| **Auth** | Öffentlich via `public-auth` (CrowdSec + Authentik ForwardAuth) |
 | **Port** | 8080 (static) |
 | **Priorität** | 100 (kritische Infrastruktur) |
 
@@ -32,7 +32,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        Router:::svc["Router: status.*<br>public-guest-chain-v2"]
+        Router:::svc["Router: status.*<br>public-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -87,5 +87,5 @@ Gatus speichert keine Daten persistent. Nach einem Neustart beginnt die Uptime-H
 
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Uptime Kuma und Alloy
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress mit public-guest-chain-v2
+- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress mit public-auth
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking für die öffentliche Status-Seite

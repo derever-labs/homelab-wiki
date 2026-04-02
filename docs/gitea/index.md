@@ -20,7 +20,7 @@ tags:
 | **Deployment** | Nomad Job (`services/gitea.nomad`) |
 | **Storage** | Linstor CSI (`gitea-data`, 5 GiB replicated) |
 | **Datenbank** | PostgreSQL `gitea` (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | Keycloak OIDC (konfiguriert via Gitea UI) + `admin-chain-v2@file` |
+| **Auth** | Authentik OIDC (konfiguriert via Gitea UI) + `intern-auth@file` |
 
 ## Rolle im Stack
 
@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: gitea.*<br>admin-chain-v2"]
+        R1:::svc["Router: gitea.*<br>intern-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -92,7 +92,7 @@ Der integrierte SSH-Server lauscht auf Port 2222 (static). Registriert als separ
 - **PostgreSQL** -- Shared Cluster (`postgres.service.consul`)
 - **Traefik** -- HTTPS-Routing und Middleware
 - **Linstor** -- CSI Volume für Daten-Persistenz
-- **Keycloak** -- OIDC-Provider (konfiguriert in Gitea UI)
+- **Authentik** -- OIDC-Provider (konfiguriert in Gitea UI)
 - **Consul** -- Service Discovery und DNS
 
 ## SSH über ProxyJump

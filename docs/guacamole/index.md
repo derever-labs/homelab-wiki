@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`services/guacamole.nomad`) |
 | **Storage** | NFS `/nfs/docker/guacamole/config` |
 | **Datenbank** | Keine (Embedded) |
-| **Auth** | LDAP-Extension + `admin-chain-v2@file` |
+| **Auth** | Authentik ForwardAuth + `intern-auth@file` |
 
 ## Rolle im Stack
 
@@ -34,7 +34,7 @@ flowchart LR
     USER:::entry["Browser"]
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: remote.*<br>admin-chain-v2"]
+        R1:::svc["Router: remote.*<br>intern-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -68,7 +68,7 @@ Konfiguration (Verbindungen, Benutzer) liegt auf NFS unter `/nfs/docker/guacamol
 
 ### Authentifizierung
 
-Die LDAP-Extension (`auth-ldap`) ist aktiviert und ermöglicht die Anmeldung mit LDAP-Credentials. Zusätzlich schützt Traefik den Zugang mit der `admin-chain-v2` Middleware (OAuth2 via Keycloak).
+Die Authentik-Extension ist aktiviert und ermöglicht die Anmeldung via Authentik ForwardAuth. Zusätzlich schützt Traefik den Zugang mit der `intern-auth` Middleware (Authentik ForwardAuth).
 
 ### Ressourcen
 
@@ -76,8 +76,8 @@ Der Container erhält 1024 MiB Memory (max 2048 MiB), da Remote-Desktop-Sessions
 
 ## Abhängigkeiten
 
-- **Traefik** -- HTTPS-Routing und OAuth2 Middleware
-- **Keycloak** -- OAuth2-Provider (über `admin-chain-v2`)
+- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
+- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
 - **OpenLDAP** -- Benutzerauthentifizierung via LDAP-Extension
 - **NFS** -- Konfigurationspersistenz
 

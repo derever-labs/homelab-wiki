@@ -22,7 +22,7 @@ Diese Seite dokumentiert kleinere Utility-Services, die keinen eigenen umfangrei
 | **URL** | [double.ackermannprivat.ch](https://double.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/czkawka.nomad`) |
 | **Storage** | NFS `/nfs/docker/czkawka/config` |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ### Rolle im Stack
 
@@ -52,7 +52,7 @@ Czkawka benötigt bis zu 8 GiB Memory und 2000 MHz CPU beim Scannen grosser Verz
 | **URL** | [mesh.ackermannprivat.ch](https://mesh.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/meshcmd.nomad`) |
 | **Storage** | Keine (stateless) |
-| **Auth** | `admin-chain-v2@file` |
+| **Auth** | `intern-auth@file` |
 
 ### Rolle im Stack
 
@@ -68,8 +68,8 @@ MeshCommander hat die höchste Nomad-Priority (100), da es für Out-of-Band-Mana
 
 ## Abhängigkeiten (beide Services)
 
-- **Traefik** -- HTTPS-Routing und OAuth2 Middleware
-- **Keycloak** -- OAuth2-Provider (über `admin-chain-v2`)
+- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
+- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
 
 ## Verwandte Seiten
 

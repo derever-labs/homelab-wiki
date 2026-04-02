@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`services/notifiarr.nomad`) |
 | **Storage** | NFS `/nfs/docker/notifiarr/config` |
 | **Datenbank** | Keine (BoltDB/Konfigurationsdateien) |
-| **Auth** | `admin-chain-v2@file` (UI), `intern-chain@file` (API) |
+| **Auth** | `intern-auth@file` (UI), `intern-api@file` (API) |
 
 ## Rolle im Stack
 
@@ -35,8 +35,8 @@ Die Konfiguration und BoltDB-Daten liegen auf NFS unter `/nfs/docker/notifiarr/c
 
 Notifiarr hat zwei Traefik-Router:
 
-- **UI-Router** (`notifiarr`) -- Geschützt mit `admin-chain-v2@file` für Browser-Zugriff
-- **API-Router** (`notifiarr-api`) -- Geschützt mit `intern-chain@file`, erfordert gültigen API-Key als Header (`X-Api-Key`) oder Query-Parameter. Wird von Arr-Apps für Callbacks verwendet.
+- **UI-Router** (`notifiarr`) -- Geschützt mit `intern-auth@file` für Browser-Zugriff
+- **API-Router** (`notifiarr-api`) -- Geschützt mit `intern-api@file`, erfordert gültigen API-Key als Header (`X-Api-Key`) oder Query-Parameter. Wird von Arr-Apps für Callbacks verwendet.
 
 ### Vault Secrets
 
@@ -51,7 +51,7 @@ Der Container mountet `/var/run/utmp` und `/etc/machine-id` vom Host für System
 ## Abhängigkeiten
 
 - **Traefik** -- HTTPS-Routing und Middleware
-- **Keycloak** -- OAuth2-Provider (über `admin-chain-v2`)
+- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
 - **NFS** -- Konfigurationspersistenz
 - **Arr-Apps** -- Radarr, Sonarr und weitere Media-Services senden Events an Notifiarr
 

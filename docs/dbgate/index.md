@@ -17,7 +17,7 @@ tags:
 | **Status** | Produktion |
 | **URL** | [dbgate.ackermannprivat.ch](https://dbgate.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`databases/dbgate.nomad`) |
-| **Auth** | OAuth2 via Keycloak (`admin-chain-v2`) |
+| **Auth** | Authentik ForwardAuth (`intern-auth`) |
 | **Image** | `dbgate/dbgate:alpine` (via lokale Registry) |
 | **Storage** | NFS `/nfs/docker/dbgate/data` |
 
@@ -28,7 +28,7 @@ DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bie
 ```mermaid
 flowchart LR
     User:::entry["Admin User"]
-    User -->|HTTPS| Traefik:::svc["Traefik<br/>admin-chain-v2"]
+    User -->|HTTPS| Traefik:::svc["Traefik<br/>intern-auth"]
     Traefik --> DbGate:::svc["DbGate<br/>(host network)"]
     DbGate -->|"localhost:5432"| PG:::db["PostgreSQL<br/>Shared Cluster"]
     DbGate -->|"Verbindungsdaten"| NFS:::db["NFS<br/>/nfs/docker/dbgate/data"]
@@ -61,4 +61,4 @@ Verbindungskonfigurationen und gespeicherte Queries werden unter `/root/.dbgate`
 
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster und Datenbankzuordnung
 - [Backup-Strategie](../backup/index.md) -- PostgreSQL Backup via pg_dumpall
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress mit admin-chain-v2 Middleware
+- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress mit intern-auth Middleware

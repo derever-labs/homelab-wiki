@@ -18,7 +18,7 @@ tags:
 | **Deployment** | Nomad Job (`services/vaultwarden.nomad`) |
 | **Storage** | NFS `/nfs/docker/vaultwarden` |
 | **Datenbank** | SQLite (`db.sqlite3`), repliziert via Litestream |
-| **Auth** | `public-admin-chain-v2@file` |
+| **Auth** | `public-auth@file` |
 
 ## Rolle im Stack
 
@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: p.*<br>public-admin-chain-v2"]
+        R1:::svc["Router: p.*<br>public-auth"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -67,7 +67,7 @@ Vaultwarden speichert alle Daten in einer SQLite-Datei (`db.sqlite3`). Litestrea
 
 ### Sicherheit
 
-- Traefik schützt den Zugang mit `public-admin-chain-v2@file` (CrowdSec + OAuth2 Admin)
+- Traefik schützt den Zugang mit `public-auth@file` (CrowdSec + Authentik ForwardAuth)
 - Die Kommunikation erfolgt ausschliesslich verschlüsselt via HTTPS
 - Registrierung neuer Benutzer ist deaktiviert
 
