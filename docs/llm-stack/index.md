@@ -33,7 +33,7 @@ flowchart LR
         Browser:::entry["Browser"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         RC:::svc["Router: chat.*<br>intern-chain"]
         RH:::svc["Router: hollama.*<br>intern-chain"]
         RO:::svc["Router: ollama.*<br>intern-chain"]

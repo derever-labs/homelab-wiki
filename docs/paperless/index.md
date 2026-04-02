@@ -35,7 +35,7 @@ flowchart LR
         SCAN:::entry["Scanner / E-Mail"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: paperless.*<br>admin-chain-v2"]
     end
 

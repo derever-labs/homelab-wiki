@@ -34,7 +34,7 @@ flowchart TD
         Browser:::entry["Browser"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: s.*<br>admin-chain-v2"]
         R2:::svc["Router: secure.*<br>admin-chain-v2"]
     end

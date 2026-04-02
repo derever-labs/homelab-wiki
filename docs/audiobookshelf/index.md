@@ -35,7 +35,7 @@ flowchart LR
         WEB:::entry["Web-UI"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         INT:::svc["Router: intern<br>intern-chain"]
         EXT:::svc["Router: extern<br>public-admin-chain-v2"]
     end

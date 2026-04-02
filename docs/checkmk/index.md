@@ -30,7 +30,7 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Proxmox Hosts:** pve00, pve01, pve02 -- Hypervisor-Gesundheit, ZFS-Pools, SMART-Werte
 - **Nomad Server:** vm-nomad-server-04/05/06 -- Systemdienste, Ressourcenauslastung
 - **Nomad Clients:** vm-nomad-client-04/05/06 -- CPU, RAM, Disk, Docker-Daemon
-- **Infrastruktur-VMs:** vm-proxy-dns-01, PBS, CheckMK selbst
+- **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
 - **NAS (Synology):** Disk-Status, Volume-Auslastung, RAID-Zustand
 - **Netzwerk:** Erreichbarkeit kritischer Endpunkte
 

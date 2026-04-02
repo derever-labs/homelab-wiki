@@ -30,15 +30,25 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | pve01 | 10.0.2.41 | Main Compute Node | 16 CPU / 64 GB |
 | pve02 | 10.0.2.42 | Main Compute Node | 16 CPU / 64 GB |
 
-## Infrastruktur-VMs
+## Infrastruktur
 
-| VM | IP | VM-ID | Host | Rolle |
+| Ressource | IP | VM-ID | Host | Rolle |
 | :--- | :--- | :--- | :--- | :--- |
-| vm-proxy-dns-01 | 10.0.2.1 | 4001 | pve01 | Primary DNS, Traefik, Keycloak, CrowdSec |
-| vm-vpn-dns-01 | 10.0.2.2 | 4002 | pve02 | Secondary DNS, ZeroTier VPN |
+| lxc-dns-01 | 10.0.2.1 | 4021 | pve01 | Pi-hole v6 + Unbound (Primary DNS) |
+| lxc-dns-02 | 10.0.2.2 | 4022 | pve02 | Pi-hole v6 + Unbound (Secondary DNS) |
+| vm-traefik-01 | 10.0.2.21 | 4011 | pve01 | Traefik HA (MASTER) + CrowdSec |
+| vm-traefik-02 | 10.0.2.22 | 4012 | pve02 | Traefik HA (BACKUP) + CrowdSec |
+| Traefik VIP | 10.0.2.20 | -- | Keepalived | VRRP Virtual IP |
 | checkmk | 10.0.2.150 | 2000 | pve01 | Monitoring System |
 | pbs-backup-server | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
 | datacenter-manager | 10.0.2.60 | 99998 | pve01 | Management Tools |
+
+### Stillgelegte VMs (Parallelbetrieb)
+
+| VM | IP | VM-ID | Host | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| vm-proxy-dns-01 | 10.0.2.3 | 4001 | pve01 | IP verschoben, wird stillgelegt |
+| vm-vpn-dns-01 | 10.0.2.4 | 4002 | pve02 | IP verschoben, wird stillgelegt |
 
 ## Nomad Server
 

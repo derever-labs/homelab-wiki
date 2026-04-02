@@ -47,7 +47,7 @@ graph LR
     cli -->|Service Registration| srv
     srv -->|Health Checks| cli
     TRF[Traefik] -->|Consul Catalog| srv
-    DNS["Pi-hole (10.0.2.1)"] -->|".consul :8600"| srv
+    DNS["Pi-hole (lxc-dns-01/02)"] -->|".consul :8600"| srv
 ```
 
 Consul läuft auf denselben VMs wie Nomad und Vault:
@@ -71,7 +71,7 @@ Der typische Fluss:
 
 ## DNS-Integration
 
-Consul stellt einen DNS-Server auf Port 8600 bereit. Über diesen können Services nach dem Schema `<service>.service.consul` aufgelöst werden. Pi-hole (10.0.2.1) leitet alle DNS-Anfragen für die Domain `.consul` an die drei Consul Server weiter, sodass alle Geräte im Netzwerk Consul-Dienste über DNS erreichen können.
+Consul stellt einen DNS-Server auf Port 8600 bereit. Über diesen können Services nach dem Schema `<service>.service.consul` aufgelöst werden. Pi-hole (lxc-dns-01 10.0.2.1, lxc-dns-02 10.0.2.2) leitet alle DNS-Anfragen für die Domain `.consul` an die drei Consul Server weiter, sodass alle Geräte im Netzwerk Consul-Dienste über DNS erreichen können.
 
 Vollständige DNS-Dokumentation: [DNS-Architektur](../dns/)
 
