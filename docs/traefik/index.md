@@ -14,8 +14,8 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion (HA) |
-| **Version** | v3.4 (gepinnt) |
-| **Deployment** | Docker Compose auf vm-traefik-01 + vm-traefik-02 |
+| **Version** | traefik:v3.4 (gepinnt) |
+| **Deployment** | Docker Compose auf vm-traefik-01 + vm-traefik-02 (Ansible rolling deployed) |
 | **VIP** | 10.0.2.20 (Keepalived) |
 | **Dashboard** | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) |
 | **Auth** | `intern-auth@file` (Authentik) |
@@ -95,6 +95,14 @@ Das Playbook:
 2. Synchronisiert dynamische Konfiguration aus `traefik-proxy/configurations/`
 3. Startet Docker Compose Stack neu
 4. Verifiziert Traefik Health + Keepalived Status
+
+### Härtungen (aktiv auf vm-traefik-01 + vm-traefik-02)
+
+- Docker Provider eliminiert (kein `docker.sock`-Mount)
+- Images gepinnt: `traefik:v3.4`, `nginx:1.28`, `crowdsec:v1.7.7`, `certs-dumper:v2.10`
+- VRRP-Authentifizierung aktiv (keepalived `auth_pass`)
+- Dashboard-Port 8080 nur auf localhost gebunden
+- CrowdSec als natives Traefik-Plugin (kein separater ForwardAuth-Bouncer)
 
 ### Konfigurationsstruktur
 

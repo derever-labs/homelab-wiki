@@ -114,7 +114,11 @@ Die Middleware-Chains `intern-auth@file` und `public-auth@file` binden die Forwa
 
 Die Datei `auth-routes.yml` definiert eine Traefik-Route mit hoher Priorität (1000) für den Authentik-Callback-Pfad (`/outpost.goauthentik.io/`). Diese Route muss höher priorisiert sein als die Service-Routen, damit Authentik den Login-Redirect abfangen kann, bevor Traefik den Request an den eigentlichen Service weiterleitet.
 
-Authentik selbst ist hinter `intern-noauth@file` (nur IP-Allowlist) -- die Login-Seite darf keinen ForwardAuth-Check haben.
+Authentik selbst ist hinter `login-ratelimit@file,crowdsec@file,secure-headers@file` -- die Login-Seite muss öffentlich erreichbar sein, da externe Clients (Tailscale, Mobilnetz) nach dem ForwardAuth-Redirect auf `auth.ackermannprivat.ch` landen. Eine IP-Allowlist würde diesen Redirect blockieren.
+
+::: warning Keine IP-Allowlist auf der Authentik-Login-Route
+`intern-noauth@file` blockiert alle nicht-privaten IPs. Da externe Clients nach dem ForwardAuth-Redirect auf die Authentik-Login-Seite weitergeleitet werden, wäre der Login von ausserhalb des lokalen Netzes nicht möglich. Die Absicherung erfolgt stattdessen über CrowdSec (IP-Blocking) und `secure-headers`.
+:::
 
 ## OIDC Providers
 
@@ -124,6 +128,7 @@ Services mit nativer OIDC-Unterstützung werden direkt als Provider-Client in Au
 | :--- | :--- | :--- |
 | Grafana | Natives OIDC | `intern-noauth@file` |
 | Gitea | Natives OIDC | `intern-noauth@file` |
+| Authentik selbst | -- | `login-ratelimit@file,crowdsec@file,secure-headers@file` |
 | Alle anderen | ForwardAuth via Proxy Outpost | `intern-auth@file` oder `public-auth@file` |
 
 ## Benutzerverwaltung

@@ -46,7 +46,7 @@ Authentik ersetzt Keycloak (ehemals `sso.ackermannprivat.ch`). Die ForwardAuth-I
 
 ### CrowdSec (natives Traefik-Plugin)
 
-CrowdSec läuft als natives Traefik-Plugin (`maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.7) im Stream-Modus. Es ist kein separater ForwardAuth-Container mehr nötig. Das Plugin ist in den `public-*` Chains aktiv.
+CrowdSec läuft als natives Traefik-Plugin (`maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.7) im Stream-Modus. Es ist kein separater ForwardAuth-Container mehr nötig. Das Plugin ist in den `public-*` Chains sowie auf der Authentik-Login-Route aktiv.
 
 Details: [CrowdSec](../crowdsec/index.md)
 

@@ -42,6 +42,10 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 | `intern-noauth` | ipAllowList → compress | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
 | `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen (ohne Compression) |
 
+### Sonderfall: Authentik Login-Route
+
+Die Authentik-Route selbst verwendet keine der obigen Chains, sondern direkt: `login-ratelimit@file,crowdsec@file,secure-headers@file`. Eine IP-Allowlist ist hier nicht möglich, da externe Clients nach dem ForwardAuth-Redirect auf die Authentik-Login-Seite weitergeleitet werden. Details: [Authentik Integration](../authentik/index.md#integration-mit-traefik).
+
 ### Legacy (entfernt)
 
 ::: warning Entfernte Chains
@@ -103,6 +107,10 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
 Leitet HTTP-5xx-Antworten an einen Maintenance-Page-Service weiter. Nicht in allen Chains standardmässig enthalten -- bei Bedarf separat hinzufügen.
 
 Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
+
+### login-ratelimit
+
+Rate-Limiting für Login-Endpunkte (Authentik). Aktuelle Werte: 50 req/min, Burst 100 (temporär erhöht für Testphase; ursprünglich 10 req/min, Burst 20). Definiert in `middlewares.yml`.
 
 ### ipAllowList
 
