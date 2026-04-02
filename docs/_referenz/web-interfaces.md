@@ -30,7 +30,7 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Service | URL | Beschreibung |
 | :--- | :--- | :--- |
 | Traefik | `https://traefik.ackermannprivat.ch` | Reverse Proxy Dashboard |
-| Keycloak | `https://sso.ackermannprivat.ch` | Identity Provider, OAuth2/OIDC |
+| Authentik | `https://auth.ackermannprivat.ch` | Identity Provider, SSO/OIDC |
 | Wiki | `https://wiki.ackermannprivat.ch` | Homelab-Dokumentation |
 | Gitea | `https://gitea.ackermannprivat.ch` | Git Server |
 | DbGate | `https://dbgate.ackermannprivat.ch` | Datenbank-Verwaltung |
