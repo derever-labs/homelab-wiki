@@ -17,7 +17,7 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 
 | Port | Protokoll | Dienst | Bemerkung |
 | :--- | :--- | :--- | :--- |
-| 53 | TCP/UDP | DNS (Pi-hole) | vm-proxy-dns-01 (10.0.2.1), vm-vpn-dns-01 (10.0.2.2) |
+| 53 | TCP/UDP | DNS (Pi-hole) | lxc-dns-01 (10.0.2.1), lxc-dns-02 (10.0.2.2) |
 | 2049 | TCP | NFS | Synology NAS (10.0.0.200) |
 | 8006 | TCP | Proxmox Web-UI | Auf jedem Proxmox-Node |
 | 8007 | TCP | PBS Web-UI | Proxmox Backup Server (10.0.2.50) |

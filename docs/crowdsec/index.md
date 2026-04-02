@@ -14,7 +14,7 @@ tags:
 | Eigenschaft | Wert |
 |-------------|------|
 | Status | Aktiv |
-| Deployment | Docker Compose auf vm-proxy-dns-01 |
+| Deployment | Docker Compose auf vm-traefik-01/vm-traefik-02 |
 | Dashboard | app.crowdsec.net (CrowdSec Console) |
 | Datenquelle | Traefik Access Logs |
 

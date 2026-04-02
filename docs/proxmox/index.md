@@ -34,12 +34,14 @@ Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zuga
 
 ## VM-Übersicht
 
-### Infrastructure VMs
+### Infrastructure VMs und LXCs
 
-| VM | IP | VM-ID | Host | Rolle |
+| Host | IP | VM-ID | Host | Rolle |
 |----|-----|-------|------|-------|
-| **vm-proxy-dns-01** | 10.0.2.1 | 4001 | pve01 | Primary DNS, Traefik, Keycloak, CrowdSec |
-| **vm-vpn-dns-01** | 10.0.2.2 | 4002 | pve02 | Secondary DNS, ZeroTier VPN |
+| **lxc-dns-01** | 10.0.2.1 | -- | pve01 | Pi-hole v6 + Unbound (Primary DNS) |
+| **lxc-dns-02** | 10.0.2.2 | -- | pve02 | Pi-hole v6 + Unbound (Secondary DNS) |
+| **vm-traefik-01** | 10.0.2.21 | -- | pve01 | Traefik Reverse Proxy (VIP: 10.0.2.20) |
+| **vm-traefik-02** | 10.0.2.22 | -- | pve02 | Traefik Reverse Proxy (VIP: 10.0.2.20, Keepalived HA) |
 | **checkmk** | 10.0.2.150 | 2000 | pve01 | Monitoring System |
 | **pbs-backup-server** | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
 | **datacenter-manager** | 10.0.2.60 | 99998 | pve01 | Management Tools |

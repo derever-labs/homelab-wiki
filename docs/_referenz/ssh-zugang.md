@@ -41,15 +41,22 @@ IPs und Specs: [Hosts und IPs](./hosts-und-ips.md)
 | vm-nomad-client-05 | 10.0.2.125 | sam |
 | vm-nomad-client-06 | 10.0.2.126 | sam |
 
-## Infrastruktur-VMs
+## Infrastruktur-VMs und LXCs
 
-| VM | IP | Benutzer | Bemerkung |
+| Host | IP | Benutzer | Bemerkung |
 | :--- | :--- | :--- | :--- |
-| vm-proxy-dns-01 | 10.0.2.1 | sam | Primary DNS, Traefik |
-| vm-vpn-dns-01 | 10.0.2.2 | sam | Secondary DNS, VPN |
+| lxc-dns-01 | 10.0.2.1 | root | Pi-hole DNS (Primary) -- ProxyJump via Proxmox Node |
+| lxc-dns-02 | 10.0.2.2 | root | Pi-hole DNS (Secondary) -- ProxyJump via Proxmox Node |
+| vm-traefik-01 | 10.0.2.21 | sam | Traefik Node 1 (VIP: 10.0.2.20) |
+| vm-traefik-02 | 10.0.2.22 | sam | Traefik Node 2 (VIP: 10.0.2.20) |
 | checkmk | 10.0.2.150 | sam | Monitoring |
 | pbs-backup-server | 10.0.2.50 | root | Proxmox Backup Server |
 | datacenter-manager | 10.0.2.60 | root | Proxmox Datacenter Manager |
+
+::: info ProxyJump für LXCs
+LXC-Container sind nicht direkt per SSH erreichbar. Zugriff via ProxyJump über den Proxmox-Host, z.B.:
+`ssh -J pve01 root@10.0.2.1`
+:::
 
 ## IoT-VMs
 

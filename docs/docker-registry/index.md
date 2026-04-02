@@ -109,14 +109,14 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 Zot läuft mit `network_mode = "host"` im Nomad Job. Das bedeutet:
 
 - `dns_servers` in der Nomad Docker-Config wird **ignoriert** — Zot nutzt die DNS-Konfiguration des Hosts (systemd-resolved).
-- Wenn der DNS-Server (10.0.2.1) nicht erreichbar ist, können keine Upstream-Registries aufgelöst werden.
+- Wenn die DNS-Server (lxc-dns-01 10.0.2.1 / lxc-dns-02 10.0.2.2) nicht erreichbar sind, können keine Upstream-Registries aufgelöst werden.
 - systemd-resolved hat eingebaute Fallback-DNS (1.1.1.1, 8.8.8.8) die bei DNS-Ausfall greifen, aber mit Verzögerung.
 
 ## Troubleshooting
 
 ### Langsame Image Pulls (>15s)
 
-1. **DNS prüfen:** `dig @10.0.2.1 registry-1.docker.io +short +timeout=3` — muss sofort antworten
+1. **DNS prüfen:** `dig @10.0.2.1 registry-1.docker.io +short +timeout=3` (lxc-dns-01) — muss sofort antworten
 2. **Rate Limit prüfen:** `docker logs <zot-container> 2>&1 | grep TOOMANYREQUESTS` — wenn Docker Hub 429 zurückgibt, warten bis Rate Limit abläuft
 3. **Zot Health prüfen:** `curl -s http://localhost:5000/v2/` — muss 200 zurückgeben
 

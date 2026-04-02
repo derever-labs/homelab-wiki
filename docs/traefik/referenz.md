@@ -14,7 +14,7 @@ Diese Dokumentation beschreibt die verfügbaren Middleware Chains für Traefik u
 
 ## Übersicht
 
-Alle Services werden über Traefik (vm-proxy-dns-01, 10.0.2.1) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
+Alle Services werden über Traefik (VIP 10.0.2.20, vm-traefik-01/02) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
 
 ::: info Migration von OAuth2-Proxy/Keycloak auf Authentik
 Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie alle OAuth2-Callback-Routen wurden im Rahmen der Keycloak-Abschaltung entfernt. Alle Services nutzen neu die unten dokumentierten Authentik-Chains.

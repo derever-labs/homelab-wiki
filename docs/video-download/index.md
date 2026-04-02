@@ -66,7 +66,7 @@ flowchart LR
         Browser:::entry["Browser"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         T1:::svc["download.*"]
         T2:::svc["s-download.*"]
         T3:::svc["s2-download.*"]

@@ -15,7 +15,7 @@ tags:
 | :--- | :--- |
 | **Status** | Produktion |
 | **URL** | [auth.ackermannprivat.ch](https://auth.ackermannprivat.ch) |
-| **Deployment** | Docker Compose auf vm-proxy-dns-01 |
+| **Deployment** | Nomad Job |
 | **Auth** | Eigenständig (kein ForwardAuth auf der Login-Seite selbst) |
 | **Storage** | PostgreSQL (`authentik` Datenbank), Redis (Cache/Sessions) |
 
@@ -31,12 +31,12 @@ flowchart LR
         User:::entry["Benutzer"]
     end
 
-    subgraph Traefik["Traefik (vm-proxy-dns-01)"]
+    subgraph Traefik["Traefik (10.0.2.20 VIP)"]
         TR:::svc["Reverse Proxy"]
         FWD:::svc["ForwardAuth Middleware\n(authentik-forward-auth)"]
     end
 
-    subgraph Authentik["Authentik (vm-proxy-dns-01)"]
+    subgraph Authentik["Authentik (Nomad)"]
         AK:::accent["Authentik Server"]
         OUTPOST:::accent["Embedded Outpost\n(/outpost.goauthentik.io/...)"]
         LDAP_OUT:::accent["LDAP Outpost\n(:636 intern)"]

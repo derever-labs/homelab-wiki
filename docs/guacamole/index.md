@@ -33,7 +33,7 @@ Das verwendete Image (`oznu/guacamole`) ist ein All-in-One-Container, der sowohl
 flowchart LR
     USER:::entry["Browser"]
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: remote.*<br>admin-chain-v2"]
     end
 

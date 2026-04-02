@@ -112,7 +112,7 @@ Die Ansible-Role `postfix-relay` konfiguriert Postfix auf Infrastruktur-Nodes al
 | pbs-backup-server | 10.0.2.50 | Konfiguriert |
 | checkmk | 10.0.2.150 | Konfiguriert |
 
-**Wichtig:** Alle Infra-Nodes müssen `10.0.2.1` als DNS-Server verwenden, damit `smtp.service.consul` aufgelöst werden kann.
+**Wichtig:** Alle Infra-Nodes müssen `10.0.2.1` (lxc-dns-01) als DNS-Server verwenden, damit `smtp.service.consul` aufgelöst werden kann.
 
 ## Nomad Services
 
@@ -123,7 +123,7 @@ Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth
 - [x] Vault (kv/data/smtp Credentials)
 - [x] Consul DNS (smtp.service.consul Auflösung)
 - [x] Lokale Registry (boky/postfix Image)
-- [x] DNS-Proxy 10.0.2.1 (für .consul-Auflösung auf Infra-Nodes)
+- [x] DNS 10.0.2.1/10.0.2.2 (lxc-dns-01/02, für .consul-Auflösung auf Infra-Nodes)
 - [ ] Upstream SMTP (mail.netzone.ch erreichbar)
 
 ## Troubleshooting
@@ -132,7 +132,7 @@ Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth
 | :--- | :--- | :--- |
 | SASL auth failed | Passwort abgelaufen | Vault Secret updaten, Job restarten |
 | Sender rejected | Absender nicht `services@` | Generic-Maps prüfen |
-| Host not found (.consul) | DNS nicht auf 10.0.2.1 | `/etc/resolv.conf` und `/etc/network/interfaces` prüfen |
+| Host not found (.consul) | DNS nicht auf 10.0.2.1/10.0.2.2 | `/etc/resolv.conf` und `/etc/network/interfaces` prüfen |
 | IPv6 unreachable | Kein IPv6-Routing | `inet_protocols = ipv4` in Postfix-Config |
 
 ## Verwandte Seiten

@@ -41,8 +41,10 @@ flowchart TB
         PVE00:::svc["pve00 - 10.0.2.40"]
         PVE01:::svc["pve01 - 10.0.2.41"]
         PVE02:::svc["pve02 - 10.0.2.42"]
-        PROXY:::entry["vm-proxy-dns-01 - 10.0.2.1"]
-        VPN:::svc["vm-vpn-dns-01 - 10.0.2.2"]
+        DNS01:::entry["lxc-dns-01 - 10.0.2.1"]
+        DNS02:::entry["lxc-dns-02 - 10.0.2.2"]
+        TRF01:::svc["vm-traefik-01 - 10.0.2.21"]
+        TRF02:::svc["vm-traefik-02 - 10.0.2.22"]
         NS04:::svc["vm-nomad-server-04 - 10.0.2.104"]
         NS05:::svc["vm-nomad-server-05 - 10.0.2.105"]
         NS06:::svc["vm-nomad-server-06 - 10.0.2.106"]
@@ -97,8 +99,9 @@ flowchart TB
 
 | Rolle | IP | Host | Beschreibung |
 |-------|-----|------|-------------|
-| Primärer DNS | 10.0.2.1 | vm-proxy-dns-01 | Pi-hole v6 + Unbound + Consul DNS |
-| Sekundärer DNS | 10.0.2.2 | vm-vpn-dns-01 | Pi-hole (Fallback) |
+| Primärer DNS | 10.0.2.1 | lxc-dns-01 | Pi-hole v6 + Unbound + Consul DNS |
+| Sekundärer DNS | 10.0.2.2 | lxc-dns-02 | Pi-hole v6 + Unbound + Consul DNS |
+| Traefik VIP | 10.0.2.20 | Keepalived | Reverse Proxy HA (vm-traefik-01/02) |
 
 Vollständige DNS-Architektur: [DNS](../dns/)
 
@@ -128,7 +131,7 @@ Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CG
 
 ## Externe Erreichbarkeit
 
-Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik auf vm-proxy-dns-01 (10.0.2.1) terminiert TLS mit Cloudflare-Zertifikaten.
+Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik (VIP 10.0.2.20, Keepalived HA) terminiert TLS mit Cloudflare-Zertifikaten.
 
 Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 

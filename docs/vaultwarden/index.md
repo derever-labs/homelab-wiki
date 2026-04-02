@@ -35,7 +35,7 @@ flowchart LR
         APP:::entry["Bitwarden App<br>(iOS/Android/Desktop)"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: p.*<br>public-admin-chain-v2"]
     end
 

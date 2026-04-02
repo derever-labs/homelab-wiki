@@ -34,7 +34,7 @@ flowchart LR
         IOS:::entry["Obsidian<br>(iOS)"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: obsidian-sync.*<br>intern-chain + CORS"]
     end
 

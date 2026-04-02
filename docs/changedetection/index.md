@@ -31,7 +31,7 @@ ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachri
 flowchart LR
     USER:::entry["Browser"]
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: change.*<br>admin-chain-v2"]
     end
 

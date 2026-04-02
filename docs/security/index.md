@@ -40,7 +40,7 @@ Details: [OpenLDAP & Benutzerverwaltung](../ldap/index.md)
 - **URL:** `https://sso.ackermannprivat.ch`
 - **Realm:** `traefik`
 - **Client:** `traefik-forward-auth`
-- **Deployment:** Docker Compose auf vm-proxy-dns-01
+- **Deployment:** Nomad Job (ehemals Docker Compose auf vm-proxy-dns-01)
 - **LDAP Federation:** WRITABLE (Änderungen in Keycloak werden nach LDAP geschrieben)
 
 ### oauth2-proxy (v2)
@@ -96,4 +96,4 @@ Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in d
 - [Traefik Middlewares](../traefik/referenz.md) -- Vollständige Middleware-Chain-Dokumentation
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection und IP-Blocking
 - [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Zentrales Benutzerverzeichnis
-- [DNS-Architektur](../dns/index.md) -- DNS-Kette inkl. vm-proxy-dns-01
+- [DNS-Architektur](../dns/index.md) -- DNS-Kette inkl. lxc-dns-01/02

@@ -31,7 +31,7 @@ flowchart LR
         User:::entry["Besucher"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         Router:::svc["Router: status.*<br>public-guest-chain-v2"]
     end
 

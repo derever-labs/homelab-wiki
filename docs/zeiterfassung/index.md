@@ -35,7 +35,7 @@ flowchart LR
         SC2:::entry["iOS Shortcut<br>Verlassen Horw"]
     end
 
-    subgraph Traefik["Traefik (10.0.2.1)"]
+    subgraph Traefik["Traefik (10.0.2.20)"]
         R1:::svc["Router: time.*<br>admin-chain-v2"]
         R2:::svc["Router: time.*/api<br>kein OAuth"]
         R3:::svc["Router: n8n.*/webhook<br>kein OAuth"]

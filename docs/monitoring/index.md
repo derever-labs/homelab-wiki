@@ -74,7 +74,7 @@ Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und
 Nomad Container (3 Nodes)   → Alloy System-Job (Nomad)  ──┐
 HashiCorp Server VMs (3x)   → Alloy systemd-Service     ──┤
 HashiCorp Client VMs (3x)   → Alloy systemd-Service     ──┤
-vm-proxy-dns-01              → Alloy Docker-Container    ──┼──→ Loki → Grafana
+vm-traefik-01/02             → Alloy systemd-Service     ──┼──→ Loki → Grafana
 Proxmox Hosts (3x)           → Alloy systemd-Service     ──┤
 Infra VMs (CheckMK, etc.)   → Alloy systemd-Service     ──┤
 NAS / Router                 → Syslog → Alloy Receiver   ──┘
@@ -109,12 +109,12 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | :--- | :--- | :--- | :--- |
 | `deploy-alloy.yml` | Server- & Client-Nodes | `journal` / `nomad-client` | Client-Nodes: Linstor-Logs als File-Target |
 | `deploy-alloy-proxmox.yml` | pve00, pve01, pve02 | `proxmox` | `www-data`-Gruppe für pveproxy-Logs |
-| `deploy-alloy-infra.yml` | CheckMK, PBS, PDM, VPN-DNS, Zigbee | je nach Host | CheckMK: Core/Web/Notify-Logs |
+| `deploy-alloy-infra.yml` | CheckMK, PBS, PDM, lxc-dns-01/02, Traefik, Zigbee | je nach Host | CheckMK: Core/Web/Notify-Logs |
 
-#### Variante 3: Docker-Container (vm-proxy-dns-01)
-- **Config:** `standalone-stacks/traefik-proxy/templates/alloy-config.alloy.j2`
-- **Quelle:** Docker-Socket Discovery (Traefik, Keycloak, etc.)
-- **DNS:** Container nutzt `10.0.2.1` / `10.0.2.2` für Consul-Auflösung
+#### Variante 3: Systemd-Service (vm-traefik-01/02)
+- **Config:** Ansible-Rolle `alloy`
+- **Quelle:** systemd-Journal + optionale Datei-Targets (Traefik Access Logs)
+- **DNS:** `10.0.2.1` / `10.0.2.2` für Consul-Auflösung
 
 ### Übersicht aller Log-Quellen
 
@@ -123,12 +123,12 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | vm-nomad-client-04/05/06 | Nomad System-Job | `docker` |
 | vm-nomad-server-04/05/06 | Ansible (systemd) | `journal` |
 | vm-nomad-client-04/05/06 | Ansible (systemd) | `nomad-client` |
-| vm-proxy-dns-01 | Docker-Container | `docker-compose` |
+| vm-traefik-01/02 | Ansible (systemd) | `traefik` |
 | pve00, pve01, pve02 | Ansible (systemd) | `proxmox` |
 | CheckMK (10.0.2.150) | Ansible (systemd) | `checkmk` |
 | PBS (10.0.2.50) | Ansible (systemd) | `pbs` |
 | Datacenter Manager (10.0.2.60) | Ansible (systemd) | `datacenter-manager` |
-| vm-vpn-dns-01 (10.0.2.2) | Ansible (systemd) | `vpn-dns` |
+| lxc-dns-01/02 (10.0.2.1/2) | Ansible (systemd) | `dns` |
 | Zigbee-Node (10.0.0.110) | Ansible (systemd) | `iot` |
 | Synology NAS | Syslog → Alloy Receiver | `syslog` |
 | UniFi | Syslog → Alloy Receiver | `syslog` |
