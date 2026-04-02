@@ -19,7 +19,7 @@ tags:
 | **Datenbank** | PostgreSQL `n8n` (User: `n8n`) |
 | **Storage** | Ephemeral (Binary Data in PostgreSQL) |
 | **Auth** | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität) |
-| **Netzwerk** | Intern (`intern-chain@file`) |
+| **Netzwerk** | Intern (`intern-noauth@file`) |
 
 ## Rolle im Stack
 
@@ -38,7 +38,7 @@ Aktive Workflows:
 
 ## Netzwerk und Webhooks
 
-Die n8n-UI ist nur intern erreichbar (`intern-chain@file`). Webhooks sind **einzeln freigeschaltet** via separatem Traefik-Router:
+Die n8n-UI ist nur intern erreichbar (`intern-noauth@file`). Webhooks sind **einzeln freigeschaltet** via separatem Traefik-Router:
 
 | Webhook | Extern | Zweck |
 | :--- | :--- | :--- |

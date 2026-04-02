@@ -174,7 +174,7 @@ Beide Tools haben dedizierte Traefik-Router fuer API-Pfade ohne OAuth2-Middlewar
 ::: danger Sicherheitskonzept n8n Webhooks
 n8n Webhooks haben **keine eigene Authentifizierung**. Die Sicherheit basiert auf zwei Ebenen:
 
-1. **Traefik-Whitelist:** Nur explizit freigegebene Pfade sind extern erreichbar (`/webhook/arbeit-start`, `/webhook/arbeit-stop`, `/webhook/git-commit` und deren `-test` Varianten). Alle anderen Webhooks und die n8n-UI bleiben hinter `intern-chain@file` (IP-Whitelist).
+1. **Traefik-Whitelist:** Nur explizit freigegebene Pfade sind extern erreichbar (`/webhook/arbeit-start`, `/webhook/arbeit-stop`, `/webhook/git-commit` und deren `-test` Varianten). Alle anderen Webhooks und die n8n-UI bleiben hinter `intern-noauth@file` (IP-Allowlist).
 2. **Obscurity:** Die Webhook-URLs sind nicht erratbar, aber auch kein echtes Secret.
 
 Neue Webhooks muessen explizit in der Traefik-Rule im Nomad Job (`services/n8n.nomad`) freigeschaltet werden.

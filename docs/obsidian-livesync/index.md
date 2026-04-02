@@ -19,7 +19,7 @@ tags:
 | **Deployment** | Nomad Job (`services/obsidian-livesync.nomad`) |
 | **Storage** | Linstor CSI (`obsidian-livesync-data`) |
 | **Datenbank** | CouchDB 3.3.3 (integriert) |
-| **Auth** | `intern-chain@file` + CouchDB Basic Auth |
+| **Auth** | `intern-noauth@file` + CouchDB Basic Auth |
 
 ## Rolle im Stack
 
@@ -35,7 +35,7 @@ flowchart LR
     end
 
     subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: obsidian-sync.*<br>intern-chain + CORS"]
+        R1:::svc["Router: obsidian-sync.*<br>intern-noauth + CORS"]
     end
 
     subgraph Nomad["Nomad Cluster"]
@@ -82,10 +82,10 @@ Für die Kommunikation zwischen Obsidian-Clients und CouchDB sind spezielle CORS
 
 ### Authentifizierung
 
-Doppelte Absicherung: Traefik schützt den Zugang mit `intern-chain@file` (IP-Whitelist). CouchDB selbst authentifiziert zusätzlich mit Basic Auth (Benutzer `obsidian`).
+Doppelte Absicherung: Traefik schützt den Zugang mit `intern-noauth@file` (IP-Whitelist). CouchDB selbst authentifiziert zusätzlich mit Basic Auth (Benutzer `obsidian`).
 
 ::: warning Nur interner Zugriff
-Der Service ist bewusst nur intern erreichbar (`intern-chain@file`). Obsidian-Clients müssen sich im lokalen Netzwerk oder über VPN befinden.
+Der Service ist bewusst nur intern erreichbar (`intern-noauth@file`). Obsidian-Clients müssen sich im lokalen Netzwerk oder über VPN befinden.
 :::
 
 ## Abhängigkeiten
