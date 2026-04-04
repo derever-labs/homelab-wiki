@@ -92,6 +92,39 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration 
 | PBS | Proxmox Backup Server (VM-ID 99999) auf pve02 für inkrementelle Backups |
 | Linstor/DRBD | Replizierter Block-Storage über Thunderbolt für CSI-Volumes (Nomad) |
 
+## Authentifizierung (SSO)
+
+Die PVE-Nodes nutzen Authentik als OpenID Connect Provider für SSO-Login.
+
+| Eigenschaft | Wert |
+|-------------|------|
+| Realm | `authentik` (Default) |
+| Typ | OpenID Connect |
+| Issuer URL | `https://auth.ackermannprivat.ch/application/o/proxmox/` |
+| Client ID | `proxmox` |
+| Username Claim | `email` |
+| Autocreate | Ja |
+
+### Web-Zugang (mit gültigen ACME-Zertifikaten)
+
+| Node | URL |
+|------|-----|
+| pve00 | `https://pve00.ackermannprivat.ch:8006` |
+| pve01 | `https://pve01.ackermannprivat.ch:8006` |
+| pve02 | `https://pve02.ackermannprivat.ch:8006` |
+
+Die Zertifikate werden automatisch via Let's Encrypt (ACME) mit Cloudflare DNS-Challenge erneuert. DNS-Einträge liegen in den Pi-hole Overrides (`06-specific-overrides.conf`).
+
+### SSO-Benutzer
+
+| User | Realm | Rolle |
+|------|-------|-------|
+| `samuel@ackermannprivat.ch` | authentik | Administrator |
+
+::: info Fallback
+PAM-Login (`root@pam`) bleibt als Fallback verfügbar -- einfach im Realm-Dropdown wechseln.
+:::
+
 ## Datacenter Manager (PDM)
 
 Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung des PVE Clusters und des Proxmox Backup Servers.
