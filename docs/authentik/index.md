@@ -133,12 +133,34 @@ Authentik selbst ist hinter `login-ratelimit@file,crowdsec@file,secure-headers@f
 
 Services mit nativer OIDC-Unterstützung werden direkt als Provider-Client in Authentik konfiguriert. Die App übernimmt den Login-Dialog selbst und tauscht Token mit Authentik aus. Die Traefik-Chain ist in diesen Fällen `intern-noauth@file`.
 
-| Service | Methode | Traefik Chain |
-| :--- | :--- | :--- |
-| Grafana | Natives OIDC | `intern-noauth@file` |
-| Gitea | Natives OIDC | `intern-noauth@file` |
-| Authentik selbst | -- | `login-ratelimit@file,crowdsec@file,secure-headers@file` |
-| Alle anderen | ForwardAuth via Proxy Outpost | `intern-auth@file` oder `public-auth@file` |
+| Service | Methode | Traefik Chain | Besonderheiten |
+| :--- | :--- | :--- | :--- |
+| Grafana | Natives OIDC | `intern-noauth@file` | `GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP=true` für Account-Linking |
+| Gitea | Natives OIDC | `intern-noauth@file` | Auth-Source via `gitea admin auth update-oauth` konfiguriert |
+| Open-WebUI | Natives OIDC | `intern-noauth@file` | `OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true` für Account-Linking |
+| Paperless | Natives OIDC | `intern-noauth@file` | OIDC via `allauth.socialaccount.providers.openid_connect` |
+| Proxmox VE | Natives OIDC | -- (direkt :8006) | OpenID Realm `authentik`, ACME-Certs via Cloudflare DNS |
+| Authentik selbst | -- | `login-ratelimit@file,crowdsec@file,secure-headers@file` | |
+| Alle anderen | ForwardAuth via Proxy Outpost | `intern-auth@file` oder `public-auth@file` | |
+
+### OIDC Provider-Konfiguration
+
+Alle OIDC-Provider verwenden:
+- **Signing Key:** Gemeinsamer Authentik-Schlüssel (kein `None`)
+- **Sub Mode:** `user_email` (nicht `hashed_user_id`) -- damit Services den User per Email identifizieren
+- **Invalidation Flow:** Default Invalidation Flow
+- **Property Mappings:** `profile`, `openid`, `email`
+
+### Proxmox SSO
+
+Proxmox ist als OpenID-Realm direkt auf den PVE-Nodes konfiguriert (kein Traefik):
+
+- **Realm:** `authentik` (Default-Realm)
+- **Issuer URL:** `https://auth.ackermannprivat.ch/application/o/proxmox/`
+- **Username Claim:** `email`
+- **Autocreate:** aktiviert
+- **Zugriff:** `https://pve00/01/02.ackermannprivat.ch:8006` (ACME-Certs via Cloudflare DNS-Challenge)
+- **Admin-User:** `samuel@ackermannprivat.ch@authentik` mit Rolle `Administrator`
 
 ## Benutzerverwaltung
 
