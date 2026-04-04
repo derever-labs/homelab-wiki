@@ -97,10 +97,19 @@ Stellt einen LDAP-kompatiblen Endpunkt auf Port 3389 (statisch) bereit. Jellyfin
 
 | Flow | Zweck |
 | :--- | :--- |
-| Default Authentication | Login mit Username/Passwort |
+| Default Authentication | Login mit E-Mail/Passwort (Single-Page) |
 | Default Invalidation | Logout (Session-Invalidierung) |
 
 Die Flows sind über die Authentik-UI konfigurierbar. Der Authorization Flow (OIDC Consent) ist auf "implicit consent" gesetzt -- Benutzer werden nicht bei jedem OIDC-Login nach Erlaubnis gefragt.
+
+### Login-Flow Anpassungen
+
+Der Default Authentication Flow wurde für Passwortmanager-Kompatibilität optimiert:
+
+- **Single-Page Login:** Die Password Stage ist direkt in der Identification Stage eingebunden (`password_stage` Feld), sodass E-Mail und Passwort auf einer Seite erscheinen
+- **Nur E-Mail:** `user_fields` ist auf `["email"]` gesetzt (kein Username-Login)
+- **Custom CSS:** Über die Brand-Einstellungen (`branding_custom_css`) wird das Login-Formular minimalistisch gestaltet -- Labels, Sprachauswahl, Footer und Pflichtfeld-Sternchen sind ausgeblendet, Placeholder-Texte per CSS-Trick auf "E-Mail" und "Passwort" vereinfacht
+- **CSS-Backup:** `PRIVAT/infra/authentik-custom-css.txt`
 
 ## Integration mit Traefik
 
