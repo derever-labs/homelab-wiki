@@ -132,7 +132,7 @@ Nomad, Consul und Vault laufen ohne TLS. Das ist eine bewusste Entscheidung für
 Docker `allow_privileged = true` und `raw_exec` sind auf allen Clients aktiviert. Das ist notwendig für:
 
 - **LINSTOR CSI**: Braucht privileged für bidirektionales Mount Propagation
-- **Maintenance-Jobs**: daily_reboot, docker_prune, daily_cleanup brauchen raw_exec für Host-Zugriff
+- **Maintenance-Jobs**: docker_prune, daily_cleanup brauchen raw_exec für Host-Zugriff
 
 Deaktivierung würde CSI-Storage und alle Maintenance-Batch-Jobs brechen.
 
