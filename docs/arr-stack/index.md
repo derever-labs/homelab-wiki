@@ -30,7 +30,7 @@ Alle Services greifen auf zentrale Pfade auf dem [NAS](../nas-storage/index.md) 
 SABnzbd nutzt im Gegensatz zu den anderen Arr-Services ein Linstor CSI Volume (`sabnzbd-config`) für die Konfiguration statt NFS. Die Downloads landen auf `/nfs/jellyfin/`. Der Job ist deshalb auf `vm-nomad-client-05/06` eingeschränkt (Linstor Storage Nodes).
 :::
 
-::: warning SABnzbd Memory-Limits
+::: warning SABnzbd Memory-Limits und NFS-Cache
 SABnzbd benötigt ausreichend Memory für Unpack-Operationen. Zu niedrige Limits machen den HTTP-Server unresponsive, was dazu führt, dass Consul Health Checks fehlschlagen und SABnzbd aus dem Cluster deregistriert wird.
 
 Aktuell konfiguriert (seit 01.04.2026):
@@ -38,6 +38,8 @@ Aktuell konfiguriert (seit 01.04.2026):
 - `memory_max`: 8192 MiB
 
 Bei Symptomen wie "SABnzbd nicht erreichbar während Extraktion" zuerst Memory-Auslastung prüfen.
+
+SABnzbd-Downloads können auch durch stale NFS-Directory-Caches fehlschlagen (`FileNotFoundError` auf `/jellyfin/downloads/incomplete/`). Wenn `acdirmin/acdirmax` zu hoch sind, sieht der NFS-Client veraltete Verzeichnisinhalte. Siehe [NAS Troubleshooting](../nas-storage/index.md#troubleshooting).
 :::
 
 ### Datenbank (PostgreSQL)
