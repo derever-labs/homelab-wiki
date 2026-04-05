@@ -49,7 +49,7 @@ Das Monitoring nutzt zwei Telegraf-Instanzen, die unterschiedliche Metriken samm
 
 ### SNMP (remote, via bestehender Telegraf Nomad Job)
 
-Der zentrale Telegraf Nomad Job fragt das NAS via SNMPv3 (authPriv) ab. Die SNMP-Konfiguration ist Teil der bestehenden Telegraf-Config auf NFS.
+Der zentrale Telegraf Nomad Job fragt das NAS via SNMPv3 (authPriv) ab. Die Telegraf-Config wird in Git verwaltet (`nomad-jobs/monitoring/telegraf/telegraf.conf`) und via NFS bereitgestellt.
 
 **Measurements:**
 
@@ -59,6 +59,7 @@ Der zentrale Telegraf Nomad Job fragt das NAS via SNMPv3 (authPriv) ab. Die SNMP
 - `snmp.Synology.smart` -- SMART-Attribute (Reallocated, Pending, PowerOn Hours)
 - `snmp.Synology.spaceio` -- Volume-I/O und Cache-Load
 - `snmp.Synology.services` -- NFS, CIFS, HTTP Connections
+- `snmp.Synology.network` -- Netzwerk-Interface-Durchsatz (ifHCInOctets/ifHCOutOctets via IF-MIB)
 - `snmp.Synology` -- Uptime, System-Temperatur, Volume-Kapazität
 
 ### Telegraf lokal (Docker Container auf NAS)
@@ -87,11 +88,11 @@ Das Dashboard `synology-nas-health` ist in drei Zonen aufgebaut, nach dem Prinzi
 **Zone A -- Status-Bar (8 Stat-Panels):**
 RAID-Status, Volume belegt, Bad Sectors, IO Wait, Hintergrund-Jobs, System-Temperatur, Uptime, SSD Remaining Life
 
-**Zone B -- Performance (6 Timeseries):**
-Disk Latenz (Await), Throughput R+W, CPU, RAM, Load + Background Jobs, Netzwerk + Service Connections
+**Zone B -- Performance (7 Timeseries):**
+Disk Latenz (Await), Disk Utilization %, Throughput R+W, CPU, RAM, Load + Background Jobs, Netzwerk + Service Connections
 
-**Zone C -- Detail (7 Panels):**
-SMART Health Table, Disk-Temperatur, SSD Cache I/O, Volume Trend, Disk Utilization %, RAID Benchmark, RAID Benchmark Latenz
+**Zone C -- Detail (4 Panels + collapsed Benchmark Row):**
+SMART Health Table, Disk-Temperatur, SSD Cache I/O, Volume Trend. RAID Benchmark Panels in collapsed Row (pausiert bis Bay 6 Disk ersetzt).
 
 Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisioning bereitgestellt (read-only).
 
