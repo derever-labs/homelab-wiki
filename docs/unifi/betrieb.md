@@ -74,7 +74,7 @@ Findings aus der Bestandsaufnahme vom 2026-04-05, gruppiert nach Prioritaet.
 
 ### KRITISCH -- Sofort handeln
 
-- **Root-Partition 99% voll**: `du -sh /*` auf dem UDM Pro ausfuehren, haeufige Ursachen sind alte Firmware-Images oder aufgeblahte Logs. Behebt akutes Risiko fuer Systeminstabilitaet und fehlschlagende Firmware-Updates.
+- ~~**Root-Partition 99% voll**~~: Normales Verhalten -- `/boot/firmware` enthält genau 2 Firmware-Images (aktiv + Rollback). Daten-Partition `/mnt/.rwfs` hat 6.4 GB frei. Kein Handlungsbedarf.
 - **Synology-Ports im Internet (40000, 40001, 6690)**: DSM-Ports sofort schliessen, Zugriff nur noch ueber VPN oder Traefik mit Auth-Middleware. Port 6690 (Synology Drive) ueber VPN tunneln.
 
 ### HOCH -- Innerhalb 1-2 Wochen
