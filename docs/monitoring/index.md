@@ -157,3 +157,4 @@ Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-das
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- iperf3-to-influxdb und weitere periodische Monitoring-Jobs
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard mit Telegraf SNMP und Alerting

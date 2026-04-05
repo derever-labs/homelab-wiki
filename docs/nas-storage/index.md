@@ -56,7 +56,7 @@ Credentials werden in 1Password verwaltet.
 
 - Das NAS verwaltet seine eigene RAID-Konsistenz (SHR/RAID)
 - Snapshots werden auf dem NAS selbst gesteuert
-- Monitoring via CheckMK (SNMP oder Agent)
+- Monitoring: Siehe [Synology NAS Monitoring](../synology-monitoring/index.md)
 
 ## Verwandte Seiten
 
@@ -65,3 +65,4 @@ Credentials werden in 1Password verwaltet.
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall und Linstor Snapshots auf NFS/MinIO
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Telegraf SNMP, Grafana Dashboard, Alerting
