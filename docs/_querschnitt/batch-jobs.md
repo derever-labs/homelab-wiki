@@ -26,14 +26,11 @@ gantt
 
     section Backup
     postgres-backup        :03:00, 15min
+    influxdb-backup        :03:30, 15min
 
     section Neustart
-    daily_reboot           :04:00, 35min
     daily_restart_jellyfin :04:00, 5min
     watchtower (intern)    :04:15, 30min
-
-    section Monitoring
-    iperf3-to-influxdb     :05:00, 5min
 
     section Container
     daily_container_restart:06:00, 5min
@@ -47,7 +44,6 @@ gantt
 |:----|:----|:---------|:------|:----------------|:---------------|
 | `daily_cleanup` | sysbatch | Täglich 05:00 | APT-Bereinigung, Journal-Vacuum, Jellyfin-Caches, /tmp, Docker Prune | Alle Nodes (count=3, distinct_hosts) | raw_exec, Priorität 100 |
 | `docker_prune` | sysbatch | Täglich 01:00 | Docker System Prune (Images, Volumes, Container) | Alle Nodes | raw_exec, aggressiv (`-a --volumes`) |
-| `daily_reboot` | sysbatch | Täglich 04:00 | Kontrollierter Node-Neustart mit Drain | Alle Nodes | Random Sleep 0-30min, Drain → Wait 4min → Disable → Reboot |
 
 ::: warning Überlappung daily_cleanup und docker_prune
 `daily_cleanup` enthält ebenfalls `docker system prune -f --volumes`. `docker_prune` läuft zusätzlich mit `-a` (entfernt auch ungenutzte Images). Beide Jobs sind bewusst getrennt, da `docker_prune` aggressiver ist.
@@ -69,6 +65,7 @@ gantt
 | Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
 |:----|:----|:---------|:------|:----------------|:---------------|
 | `postgres-backup` | batch | Täglich 03:00 | pg_dumpall mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Uptime Kuma Push, Retry 2x |
+| `influxdb-backup` | batch | Täglich 03:30 | influx backup mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Retry 2x |
 
 Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../backup/index.md)
 
@@ -82,32 +79,26 @@ Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../ba
 Watchtower läuft als Dauerservice (Typ `service`), der intern seinen eigenen Cron-Schedule verwaltet. Er wird hier aufgeführt, weil er funktional ein periodischer Job ist.
 :::
 
-### Monitoring
-
-| Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
-|:----|:----|:---------|:------|:----------------|:---------------|
-| `iperf3-to-influxdb` | batch | Täglich 05:00 | Netzwerk-Speedtest, Metriken nach InfluxDB | Affinität `vm-nomad-client-0[56]` | exec, Line Protocol nach InfluxDB v2 |
-
 ## Reihenfolge und Abhängigkeiten
 
 Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewusst gewählt:
 
-1. **01:00** -- `docker_prune`: Bereinigt Docker-Ressourcen vor den Neustarts
-2. **03:00** -- `postgres-backup`: Datenbank-Backup vor dem täglichen Reboot
-3. **04:00** -- `daily_reboot`: Node-Neustart (Random Sleep 0-30min für gestaffelte Reboots)
-4. **04:15** -- `watchtower`: Image-Updates nach Reboot
-5. **05:00** -- `daily_cleanup`: System-Bereinigung auf frisch gestarteten Nodes
-6. **05:00** -- `iperf3-to-influxdb`: Netzwerk-Messung nach Stabilisierung
-7. **06:00** -- `daily_container_restart`: Finaler Jellyfin-Neustart
+1. **01:00** -- `docker_prune`: Bereinigt Docker-Ressourcen
+2. **03:00** -- `postgres-backup`: Datenbank-Backup
+3. **03:30** -- `influxdb-backup`: Metriken-Backup (nach PostgreSQL)
+4. **04:00** -- `daily_restart_jellyfin`: Jellyfin-Neustart
+4. **04:15** -- `watchtower`: Image-Updates
+5. **05:00** -- `daily_cleanup`: System-Bereinigung
+6. **06:00** -- `daily_container_restart`: Jellyfin-Neustart (Duplikat, konsolidieren)
 
 ## Konsolidierungspotenzial
 
-- **Jellyfin-Neustarts:** Drei Jobs starten Jellyfin neu (`daily_reboot`, `daily_container_restart`, `daily_restart_jellyfin`). Einer davon würde genügen.
+- **Jellyfin-Neustarts:** Zwei Jobs starten Jellyfin neu (`daily_container_restart`, `daily_restart_jellyfin`). Einer davon würde genügen.
 - **Docker Prune:** Läuft sowohl in `docker_prune` als auch in `daily_cleanup`. Könnte in einem Job zusammengefasst werden.
 
 ## Verwandte Seiten
 
 - [Backup-Strategie](../backup/index.md) -- PostgreSQL Backup Architektur und Restore-Konzept
-- [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess der durch daily_reboot ausgelöst wird
+- [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess bei Wartungsarbeiten
 - [Monitoring Stack](../monitoring/index.md) -- Uptime Kuma Push-Monitore für Backup-Status
 - [Zot Container Registry](../docker-registry/index.md) -- Watchtower aktualisiert Images via Zot

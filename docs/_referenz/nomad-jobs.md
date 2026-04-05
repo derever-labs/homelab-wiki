@@ -21,7 +21,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 | databases/ | OpenLDAP, PostgreSQL (DRBD), DbGate |
 | infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, iperf3-to-influxdb |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus |
 | services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
 | system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI |
 | test/ | Linstor Volume Test |

@@ -14,10 +14,14 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
-| **Grafana** | Dashboards & Metriken | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
+| **Grafana** | Dashboards, Metriken, Log-Alerts | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
+| **InfluxDB** | Time-Series Metriken-Backend | [influx.ackermannprivat.ch](https://influx.ackermannprivat.ch) |
+| **Telegraf** | Metriken-Collector (SNMP, Prometheus, Exec) | — (Nomad Job) |
 | **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
 | **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
+| **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [checkmk.ackermannprivat.ch](https://checkmk.ackermannprivat.ch) |
 | **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
+| **Gatus** | Öffentliche Status-Seite | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
 
 ## Grafana
 ### Datenquellen
@@ -42,7 +46,7 @@ Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alert
 **Contact Point:** Telegram (Bot-Token aus `kv/data/telegram` via Vault)
 **Notification Policy:** Alle Alerts → Telegram, Group-Wait 30s, Repeat 4h
 
-**Alert Rules (provisioniert via Nomad Template):**
+**Metrik-basierte Alert Rules (InfluxDB):**
 
 | Rule | Bedingung | For | Severity |
 | :--- | :--- | :--- | :--- |
@@ -51,6 +55,15 @@ Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alert
 | LVM Metadata > 75% | `metadata_percent > 75` | 5min | Warning |
 | DRBD Out-of-Sync | `outofsync_bytes > 0` | 10min | Warning |
 | DRBD Disconnected | `Connected != 1` | 5min | Critical |
+
+**Log-basierte Alert Rules (Loki):**
+
+| Rule | Bedingung | For | Severity |
+| :--- | :--- | :--- | :--- |
+| Failed SSH Logins | `>5 "Failed password" in 5min` | sofort | Warning |
+| Traefik 5xx Spike | `>20 HTTP-5xx in 5min` | sofort | Warning |
+| Nomad Alloc Failed | `"alloc failed" in 10min` | sofort | Critical |
+| Vault Permission Denied | `>10 "permission denied" in 5min` | sofort | Warning |
 
 **Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
 
@@ -69,15 +82,32 @@ Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und
 
 ## Zentrales Logging (Loki + Alloy)
 
-### Architektur
+### Gesamtarchitektur
+
 ```
-Nomad Container (3 Nodes)   → Alloy System-Job (Nomad)  ──┐
-HashiCorp Server VMs (3x)   → Alloy systemd-Service     ──┤
-HashiCorp Client VMs (3x)   → Alloy systemd-Service     ──┤
-vm-traefik-01/02             → Alloy systemd-Service     ──┼──→ Loki → Grafana
-Proxmox Hosts (3x)           → Alloy systemd-Service     ──┤
-Infra VMs (CheckMK, etc.)   → Alloy systemd-Service     ──┤
-NAS / Router                 → Syslog → Alloy Receiver   ──┘
+                            ┌── LOGS ──────────────────────────────────┐
+Nomad Container (3 Nodes) ──┤                                          │
+HashiCorp Server VMs (3x) ──┤  Alloy (System-Job + systemd)           │
+HashiCorp Client VMs (3x) ──┤  ────────────────────────────→ Loki ──→ │
+Traefik VMs (2x)           ──┤                                         │
+Proxmox Hosts (3x)         ──┤                                         │
+Infra VMs (CheckMK, PBS) ──┤                                          │
+Vault Audit-Log            ──┤                                         │
+NAS / Router               ──┤  Syslog → Alloy Receiver               │
+                             │                                    Grafana
+                             ├── METRIKEN ─────────────────────────────┤
+Synology NAS (SNMP)        ──┤                                         │
+Nomad (Prometheus)         ──┤  Telegraf ──→ InfluxDB ───────────────→ │
+Linstor / DRBD             ──┤                                         │
+Proxmox VMs (nativ)        ──┤  ──────────→ InfluxDB ───────────────→ │
+                             │                                         │
+                             ├── HOST-MONITORING ──────────────────────┤
+Alle VMs + Proxmox (18x)  ──┤  CheckMK Agent ──→ CheckMK ──────────→ │
+                             │                                         │
+                             ├── VERFUEGBARKEIT ───────────────────────┤
+HTTP/TCP Endpoints         ──┤  Uptime Kuma                            │
+Öffentliche Endpoints      ──┤  Gatus                                  │
+                             └─────────────────────────────────────────┘
 ```
 
 ### Loki (Log-Storage)
@@ -130,10 +160,24 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | Datacenter Manager (10.0.2.60) | Ansible (systemd) | `datacenter-manager` |
 | lxc-dns-01/02 (10.0.2.1/2) | Ansible (systemd) | `dns` |
 | Zigbee-Node (10.0.0.110) | Ansible (systemd) | `iot` |
+| Vault Audit-Log (Server VMs) | Ansible (systemd) | `vault-audit` |
 | Synology NAS | Syslog → Alloy Receiver | `syslog` |
 | UniFi | Syslog → Alloy Receiver | `syslog` |
 
 **Hinweis:** Synology und UniFi Syslog-Integration sind noch in Arbeit (siehe GitHub Issues #5 und #6).
+
+### Log-Levels
+
+| Komponente | Log-Level | Konfigurationsort |
+| :--- | :--- | :--- |
+| Loki | `warn` | `monitoring/loki.nomad` |
+| Grafana | `info` | `monitoring/grafana.nomad` |
+| Nomad | `INFO` | `ansible/roles/nomad/defaults/main.yml` |
+| Consul | `WARN` | `ansible/roles/consul/defaults/main.yml` |
+| Vault | `INFO` | `ansible/roles/vault/defaults/main.yml` |
+| Authentik | `info` | `identity/authentik.nomad` |
+| Traefik (Core) | `WARN` | `traefik.yml.j2` |
+| Traefik (Access) | aktiv (JSON) | Separates Access-Log, `minDuration: 10ms` |
 
 ### Log-Abfrage in Grafana
 - Datasource: **Loki** (uid: `loki-logs`)
@@ -156,5 +200,6 @@ Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-das
 - [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
-- [Batch Jobs](../_querschnitt/batch-jobs.md) -- iperf3-to-influxdb und weitere periodische Monitoring-Jobs
+- [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs
 - [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard mit Telegraf SNMP und Alerting
+- [USV (APC)](../ups/index.md) -- USV-Monitoring via NUT und Grafana Alerting
