@@ -63,8 +63,8 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | VM | IP | VM-ID | Host | Specs |
 | :--- | :--- | :--- | :--- | :--- |
 | vm-nomad-client-04 | 10.0.2.124 | 3104 | pve00 | 4 CPU, 12 GB RAM |
-| vm-nomad-client-05 | 10.0.2.125 | 3105 | pve01 | 16 CPU, 48 GB RAM |
-| vm-nomad-client-06 | 10.0.2.126 | 3106 | pve02 | 16 CPU, 48 GB RAM |
+| vm-nomad-client-05 | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM |
+| vm-nomad-client-06 | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM |
 
 ## IoT-VMs
 
