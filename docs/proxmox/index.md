@@ -93,6 +93,33 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration 
 | PBS | Proxmox Backup Server (VM-ID 99999) auf pve02 für inkrementelle Backups |
 | Linstor/DRBD | Replizierter Block-Storage über Thunderbolt für CSI-Volumes (Nomad) |
 
+## VM Disk-Konfiguration
+
+Alle VMs nutzen **virtio-blk** (statt virtio-scsi) mit folgenden Flags:
+
+| Parameter | Wert | Grund |
+|-----------|------|-------|
+| Bus | `virtio` (virtio-blk) | Dünnerer Emulations-Stack, 10-20% mehr IOPS als virtio-scsi |
+| `aio` | `io_uring` | Modernster async I/O, beste Performance auf ZFS |
+| `cache` | `none` | Kein doppeltes Caching (ZFS ARC cached bereits) |
+| `discard` | `on` | TRIM/Unmap bis ZFS durchreichen |
+| `iothread` | `1` | Separater I/O-Thread pro Disk |
+
+::: warning Umstellung von scsi auf virtio
+Die VM muss gestoppt sein. Boot-Order auf `virtio0` setzen. `ssd=1` wird bei virtio-blk nicht unterstützt (und nicht nötig -- virtio-blk ist immer non-rotational).
+:::
+
+### ZFS Performance Tuning
+
+Auf allen Proxmox-Hosts (`/etc/modprobe.d/zfs.conf`):
+
+- `zfs_arc_max=26843545600` -- 25 GB ARC (ca. 25% vom RAM)
+- `metaslab_lba_weighting_enabled=0` -- HDD-optimierte Allokation deaktiviert (reiner SSD-Pool)
+- `zfs_vdev_async_read_max_active=8` -- Mehr parallele Async-Reads (Default 3)
+- `zfs_txg_timeout=3` -- Kürzere Sync-Intervalle für bessere Write-Latenz (Default 5)
+
+Nach Änderung: `update-initramfs -u -k all`
+
 ## Authentifizierung (SSO)
 
 Die PVE-Nodes nutzen Authentik als OpenID Connect Provider für SSO-Login.

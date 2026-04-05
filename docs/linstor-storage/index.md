@@ -79,6 +79,25 @@ flowchart TD
 - Node 04 ist diskless Witness (nur Quorum, keine Daten)
 - Verhindert Split-Brain bei Netzwerkpartitionierung
 
+## Performance Tuning
+
+Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
+
+**Network Tuning (optimiert für 10G Thunderbolt):**
+- `DrbdOptions/Net/sndbuf-size` = 1048576 (1 MB, Default 128K)
+- `DrbdOptions/Net/rcvbuf-size` = 2097152 (2 MB)
+- `DrbdOptions/Net/max-buffers` = 8000
+- `DrbdOptions/Net/max-epoch-size` = 8000
+
+**Disk Tuning (sicher weil ZFS darunter):**
+- `DrbdOptions/Disk/disk-flushes` = no (ZFS hat eigene Barrier-Logik)
+- `DrbdOptions/Disk/md-flushes` = no
+- `DrbdOptions/Disk/al-extents` = 6433 (mehr parallele Write-Hotspots auf NVMe)
+
+::: warning disk-flushes deaktivieren
+`disk-flushes no` ist nur sicher wenn ZFS als unterliegendes Dateisystem genutzt wird. Bei LVM/ext4 als Backend NICHT deaktivieren -- Datenverlust-Risiko bei Stromausfall.
+:::
+
 ## DClab Konfiguration
 
 Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Replikation zwischen den Storage-Nodes.
