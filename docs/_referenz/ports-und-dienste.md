@@ -55,14 +55,90 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 | :--- | :--- | :--- | :--- |
 | 5432 | TCP | PostgreSQL | Shared Cluster via `postgres.service.consul` |
 
-## Services
+## Ingress
 
 | Port | Protokoll | Dienst | Bemerkung |
 | :--- | :--- | :--- | :--- |
 | 80 | TCP | Traefik HTTP | Weiterleitung auf HTTPS |
 | 443 | TCP | Traefik HTTPS | Reverse Proxy Eingang |
-| 1883 | TCP | MQTT (Mosquitto) | IoT Message Broker |
-| 9001 | TCP | MQTT WebSocket | Mosquitto WebSocket Interface |
+
+## Nomad Jobs -- Statische Ports
+
+::: warning Port-Kollisionen vermeiden
+Alle hier gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinzufügen neuer statischer Ports diese Liste prüfen. Services hinter Traefik können alternativ dynamische Ports mit Consul Service Discovery nutzen.
+:::
+
+### Datenbanken und Infrastruktur
+
+| Port | Protokoll | Dienst | Nomad Job | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| 5000 | TCP | Container Registry | `zot-registry` | OCI Registry |
+| 5432 | TCP | PostgreSQL | `postgres` | Shared Cluster, `postgres.service.consul` |
+| 16379 | TCP | Redis | `paperless` | Ephemeral, nur Task Queue |
+
+### Identity und Auth
+
+| Port | Protokoll | Dienst | Nomad Job | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| 3389 | TCP | LDAP Outpost | `authentik` | Achtung: gleicher Port wie RDP |
+| 9010 | TCP | Authentik Proxy | `authentik` | Forward Auth Outpost |
+
+### Services
+
+| Port | Protokoll | Dienst | Nomad Job | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| 25 | TCP | SMTP Relay | `smtp-relay` | Ausgehend |
+| 1883 | TCP | MQTT | `mosquitto` | IoT Message Broker |
+| 2222 | TCP | Gitea SSH | `gitea` | Git über SSH |
+| 3002 | TCP | DbGate | `dbgate` | DB-Manager, hinter Traefik |
+| 3003 | TCP | Gitea HTTP | `gitea` | Web-UI, hinter Traefik |
+| 4173 | TCP | Hollama | `hollama` | LLM Chat UI, hinter Traefik |
+| 5984 | TCP | Obsidian LiveSync | `obsidian-livesync` | CouchDB Sync |
+| 8000 | TCP | Paperless Web | `paperless` | DMS, hinter Traefik |
+| 8081 | TCP | Paperless-GPT | `paperless` | AI-Tagging, hinter Traefik |
+| 9001 | TCP | MQTT WebSocket | `mosquitto` | WebSocket Interface |
+| 11434 | TCP | Ollama API | `ollama` | LLM Inference |
+
+### Media
+
+| Port | Protokoll | Dienst | Nomad Job | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| 3000 | TCP | Paperless-AI | `paperless` | AI-Assistent, hinter Traefik |
+| 3033 | TCP | yt-dlp | `special-yt-dlp` | Download UI, hinter Traefik |
+| 5055 | TCP | Jellyseerr | `jellyseerr` | Request Management, hinter Traefik |
+| 5667 | TCP | SABnzbd | `sabnzbd` | Usenet Downloader, hinter Traefik |
+| 7878 | TCP | Radarr | `radarr` | Film-Management, hinter Traefik |
+| 8096 | TCP | Jellyfin | `jellyfin` | Media Server |
+| 8098 | TCP | Stash-Jellyfin-Proxy | `stash-jellyfin-proxy` | Jellyfin API Proxy |
+| 8989 | TCP | Sonarr | `sonarr` | Serien-Management, hinter Traefik |
+| 9696 | TCP | Prowlarr | `prowlarr` | Indexer-Manager, hinter Traefik |
+
+### Monitoring
+
+| Port | Protokoll | Dienst | Nomad Job | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| 1514 | TCP | Syslog | `alloy` | Log-Collector (bridge mode) |
+| 3001 | TCP | Uptime Kuma | `uptime-kuma` | Monitoring, hinter Traefik |
+| 3100 | TCP | Loki | `loki` | Log-Aggregation |
+| 8080 | TCP | Gatus | `gatus` | Health Dashboard, hinter Traefik |
+| 8086 | TCP | InfluxDB | `influxdb` | Metriken-Datenbank |
+
+### Kandidaten für dynamische Ports
+
+Diese Services werden ausschliesslich über Traefik angesprochen und könnten auf dynamische Ports mit Consul Service Discovery umgestellt werden. Das würde Port-Kollisionen grundsätzlich verhindern:
+
+- `dbgate`, `hollama`, `obsidian-livesync`, `paperless-ai`, `paperless-gpt`
+- `special-yt-dlp`, `jellyseerr`, `sabnzbd`, `radarr`, `sonarr`, `prowlarr`
+- `uptime-kuma`, `gatus`
+
+Services die statisch bleiben sollten (direkt angesprochen oder von anderen Services referenziert):
+
+- PostgreSQL (5432), Redis (16379), MQTT (1883/9001), SMTP (25)
+- Ollama (11434) -- von mehreren AI-Jobs referenziert
+- Jellyfin (8096) -- von externen Clients (Infuse/ATV) direkt angesprochen
+- Loki (3100), InfluxDB (8086) -- von Agents/Telegraf direkt angesprochen
+- Gitea SSH (2222) -- Git SSH-Zugriff
+- Authentik LDAP (3389) -- AD-Integration
 
 ## Verwandte Seiten
 
