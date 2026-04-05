@@ -84,6 +84,23 @@ Alle Shared-Verzeichnisse nutzen die Gruppe `github` mit setgid-Bit. Siehe `gite
 2. Permissions pruefen: Datei muss 644 bleiben (nicht 664!)
 3. Committen und pushen -- beide User haben den Host sofort
 
+## Statusline: ccstatusline + kanban-code
+
+Beide User nutzen [ccstatusline](https://github.com/sirmalloc/ccstatusline) (npm global) fuer die Claude Code Statusline. Die Config ist geteilt via Symlink auf `gitea:sam/dotfiles/ccstatusline-settings.json`.
+
+**kanban-code Integration (nur hslu_samuel_ackermann):**
+
+`hslu_samuel_ackermann` nutzt zusaetzlich kanban-code, das Session-Context-Daten (Token-Verbrauch, Kosten, Modell) nach `~/.kanban-code/context/<session_id>.json` schreibt. Dies laeuft als unsichtbares **Custom Command Widget** in ccstatusline:
+
+- Widget-Typ: `custom-command` mit `maxWidth: 0` (keine sichtbare Ausgabe)
+- Kommando: `[ -x "$HOME/.kanban-code/statusline.sh" ] && "$HOME/.kanban-code/statusline.sh" >/dev/null; true`
+- Der Existenz-Check (`-x`) sorgt dafuer, dass `samuel_ackermann` (ohne kanban-code) nicht betroffen ist
+- ccstatusline leitet den vollen Claude Code JSON-Payload via stdin weiter -- kanban-code erhaelt dieselben Daten wie als eigene Statusline
+
+**kanban-code Hooks (unabhaengig von Statusline):**
+
+Die kanban-code Event-Hooks (`~/.kanban-code/hook.sh`) laufen separat ueber die Claude Code Hook-Events (SessionStart, SessionEnd, Stop, Notification, UserPromptSubmit) und sind nicht von der Statusline-Konfiguration abhaengig.
+
 ## Gitea API Zugang
 
 Die Gitea API ist von lokal nur via SSH-Tunnel erreichbar:
