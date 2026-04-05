@@ -69,7 +69,9 @@ Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt 
 
 ## Authentifizierung
 
-Jellyfin nutzt direkte LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
+Jellyfin nutzt LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
+
+Der LDAP Provider nutzt **Cached Bind + Cached Search Mode**: Der erste Login pro User nach einem Outpost-Neustart durchläuft den vollen Authentik-Flow (~2s), alle weiteren Logins kommen aus dem Outpost-Memory (<5ms). Der LDAP-Provider verwendet einen eigenen minimalen Flow (`ldap-authentication-flow`) ohne MFA und GeoIP.
 
 ::: tip Kein OAuth auf Traefik-Ebene
 Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.

@@ -93,11 +93,23 @@ Der Token für die Authentik-API wird aus `kv/data/authentik-outpost` → `proxy
 
 Stellt einen LDAP-kompatiblen Endpunkt auf Port 3389 (statisch) bereit. Jellyfin authentifiziert sich gegen diesen Port, anstatt direkt OIDC zu nutzen. Der Token kommt aus `kv/data/authentik-outpost` → `ldap_token`.
 
+Der LDAP Provider (`homelab-ldap`) ist für Performance optimiert:
+
+- **Bind Mode:** `cached` -- nach dem ersten erfolgreichen Login wird das Ergebnis im Outpost-Memory gecacht. Nachfolgende Logins desselben Users brauchen <5ms statt ~2s
+- **Search Mode:** `cached` -- alle User/Groups werden periodisch vom Authentik-Server geladen und im Outpost-RAM gehalten
+- **MFA:** deaktiviert (der dedizierte `ldap-authentication-flow` hat keine MFA-Stage)
+- **Bind Flow:** `ldap-authentication-flow` (nur Identification + Password + Login, kein MFA, keine Reputation)
+
+::: warning Cache-Invalidierung
+Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der erste Login pro User durchläuft den vollen Authentik-Flow (~2s). Passwortänderungen werden erst nach Ablauf der Session im Cache wirksam.
+:::
+
 ## Flows
 
 | Flow | Zweck |
 | :--- | :--- |
-| Default Authentication | Login mit E-Mail/Passwort (Single-Page) |
+| Default Authentication | Login mit E-Mail/Passwort (Single-Page, inkl. MFA) |
+| `ldap-authentication-flow` | Minimaler Flow nur für LDAP-Binds (Password + Login, kein MFA) |
 | Default Invalidation | Logout (Session-Invalidierung) |
 
 Die Flows sind über die Authentik-UI konfigurierbar. Der Authorization Flow (OIDC Consent) ist auf "implicit consent" gesetzt -- Benutzer werden nicht bei jedem OIDC-Login nach Erlaubnis gefragt.
@@ -170,6 +182,25 @@ Authentik verwaltet Benutzer intern. Passwort-Änderungen und Gruppen-Management
 | :--- | :--- |
 | `admin` | Voller Zugriff auf alle Services |
 | `family` | Familien-Zugriff (Jellyfin, Jellyseerr etc.) |
+
+## Performance-Tuning
+
+Der Authentik-Server hat folgende Performance-Optimierungen:
+
+- **CPU:** 2000 MHz (Server), 750 MHz (Worker) -- Flow-Execution ist CPU-bound
+- **Gunicorn:** 3 Workers, 4 Threads (`AUTHENTIK_WEB__WORKERS=3`, `AUTHENTIK_WEB__THREADS=4`)
+- **Worker:** 4 Threads (`AUTHENTIK_WORKER__THREADS=4`)
+- **Cache-Timeouts:** 600s für Flows und Policies (`AUTHENTIK_CACHE__TIMEOUT=600`)
+- **GeoIP:** deaktiviert (Pfade auf nicht-existierende Dateien gesetzt, spart Startup-Zeit und Event-Overhead)
+
+PostgreSQL-seitig:
+
+- **JIT:** deaktiviert (`ALTER SYSTEM SET jit = off`) -- JIT-Kompilierung schadet bei kleinen OLTP-Queries
+- **Autovacuum:** aggressiver für `authentik_core_session`, `django_postgres_cache_cacheentry`, `django_channels_postgres_message` (vacuum_scale_factor=0.05)
+
+::: info Kein Redis seit Authentik 2025.10
+Authentik hat Redis in Version 2025.10 vollständig entfernt. Cache, Sessions, WebSockets und Task-Queue laufen über PostgreSQL. Die `AUTHENTIK_REDIS__*` Variablen existieren nicht mehr.
+:::
 
 ## Bootstrap (Ersteinrichtung)
 
