@@ -21,7 +21,7 @@ tags:
 | **Nodes** | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
 | **Config Storage** | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
 | **Media Storage** | NFS `/nfs/jellyfin` ([NAS](../nas-storage/index.md)) |
-| **Auth** | Kein OAuth -- LDAP Bind via [Authentik LDAP Outpost](../identity/index.md) direkt in Jellyfin |
+| **Auth** | Kein OAuth -- LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) direkt in Jellyfin |
 | **Ressourcen** | 4096 MHz CPU, 12 GB RAM (max 16 GB) |
 | **Priority** | 95 (kritischer Service) |
 
@@ -69,7 +69,7 @@ Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt 
 
 ## Authentifizierung
 
-Jellyfin nutzt direkte LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../identity/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
+Jellyfin nutzt direkte LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
 
 ::: tip Kein OAuth auf Traefik-Ebene
 Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.
@@ -85,7 +85,7 @@ Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet J
 
 ## Abhängigkeiten
 
-- [Authentik](../identity/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
+- [Authentik](../authentik/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
 - [NAS-Speicher](../nas-storage/index.md) -- Medienbibliothek unter `/nfs/jellyfin`
@@ -102,6 +102,6 @@ Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet J
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
 - [Audiobookshelf](../audiobookshelf/index.md) -- Teilt die Bücher-Mediathek
-- [Authentik](../identity/index.md) -- Authentifizierung (LDAP Outpost)
+- [Authentik](../authentik/index.md) -- Authentifizierung (LDAP Outpost)
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Medien
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Täglicher Restart-Job
