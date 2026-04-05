@@ -82,6 +82,7 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration 
 
 - **shutdown_policy:** `migrate` -- VMs werden bei geplanten Host-Shutdowns automatisch migriert
 - **Migration Network:** 10.99.1.0/24 (Thunderbolt Bridge)
+- **Letzte HA-Prüfung:** 2026-04-05 (Details: [Betrieb](./betrieb.md))
 
 ## Storage
 
@@ -159,6 +160,7 @@ Die Traefik-Route ist in der Traefik Dynamic Config definiert (`/nfs/docker/trae
 
 ## Verwandte Seiten
 
+- [Betrieb](./betrieb.md) -- HA-Prüfungen, Wartung, bekannte Probleme
 - [Netzwerk](../netzwerk/) -- VLANs, Subnets, Hardware
 - [Backup](../backup/) -- Backup-Strategie und PBS
 - [Hardware-Inventar](../_referenz/hardware-inventar.md) -- Physische Hardware-Details
