@@ -77,6 +77,28 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 
 NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
 
+## UniFi Netzwerk-Hardware
+
+| Gerät | Modell | Typ | Ports | Standort |
+| :--- | :--- | :--- | :--- | :--- |
+| UDM Pro | UDM Pro | Gateway + Controller | 1x SFP+ WAN, 8x RJ45 LAN | Rack |
+| Aggregation Switch | USL8A | 10G Switch | 8x SFP+ | Rack |
+| Rack Switch | US-24 | 1G Switch | 24x RJ45 | Kämmerli |
+| Switch (unbekannt) | US-24 | 1G Switch | 24x RJ45 | unbekannt |
+| PoE Switch Keller | US-8-60W | PoE Switch | 8x RJ45, 60W PoE | Keller |
+| PoE Switch (unbekannt) | US-8-150W | PoE Switch | 8x RJ45, 150W PoE | unbekannt |
+| Mini Switch Dani | USW Flex Mini | Mini Switch | 5x RJ45 | Dani |
+| Mini Switch Gäste | USW Flex Mini | Mini Switch | 5x RJ45 | Gäste |
+| AP Nina | UAP-U6-Pro | Access Point | Wi-Fi 6, 2.4+5 GHz | -- |
+| AP Küche | UAP-U6-Pro | Access Point | Wi-Fi 6, 2.4+5 GHz | -- |
+| AP Dani | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| AP Gäste | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| AP Koffer | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| AP Werkstatt | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| AP Garage | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+
+IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwerk)
+
 ## Peripherie
 
 | Gerät | Funktion | Standort |

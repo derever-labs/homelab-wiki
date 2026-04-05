@@ -38,6 +38,17 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 | 8302 | TCP/UDP | Consul Serf WAN | Gossip zwischen Datacentern |
 | 8300 | TCP | Consul Server RPC | Client-zu-Server Kommunikation |
 
+## UniFi
+
+| Port | Protokoll | Dienst | Bemerkung |
+| :--- | :--- | :--- | :--- |
+| 22 | TCP | SSH | UDM Pro (10.0.0.1), root, keyboard-interactive |
+| 443 | TCP | UniFi OS Web-UI | UDM Pro (10.0.0.1) |
+| 3478 | UDP | STUN | UniFi |
+| 6789 | TCP | Speed Test | UniFi |
+| 8080 | TCP | Device Inform | UniFi Controller |
+| 10001 | UDP | Device Discovery | UniFi |
+
 ## Datenbanken
 
 | Port | Protokoll | Dienst | Bemerkung |

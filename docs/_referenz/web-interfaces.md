@@ -24,6 +24,7 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Datacenter Manager | `https://10.0.2.60:8443` | Proxmox Datacenter Manager |
 | Nomad UI | `http://10.0.2.104:4646` | Job-Orchestrierung (ACL Token erforderlich) |
 | Consul UI | `http://10.0.2.104:8500` | Service Discovery und KV Store |
+| UniFi Network | `https://10.0.0.1` | Lokaler Zugang, UI.com SSO |
 
 ## Core
 

@@ -13,12 +13,10 @@ tags:
 
 ## Übersicht
 
-Das Homelab ist in mehrere Netzwerk-Segmente aufgeteilt, die über einen UniFi-Router verbunden sind.
+Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch.
 
 ::: warning Unvollständig
 Folgende Details fehlen noch:
-- ISP- und WAN-Anbindung (Provider, Bandbreite, öffentliche IP)
-- Router-Modell und Firmware-Version
 - Firewall-Regeln zwischen VLANs
 - Inter-VLAN Routing-Konfiguration
 - Tailscale Exit-Node Konfiguration
@@ -33,11 +31,11 @@ flowchart TB
     end
 
     subgraph Core["Core Network"]
-        Router:::accent["UniFi Router"]
-        SW:::accent["UniFi Switch"]
+        UDMPRO:::accent["UDM Pro (Router)"]
+        USL8A:::accent["USL8A (10G Aggregation)"]
     end
 
-    subgraph MGMT["Management VLAN 10.0.2.0/24"]
+    subgraph MGMT["Management (native) 10.0.0.0/22"]
         PVE00:::svc["pve00 - 10.0.2.40"]
         PVE01:::svc["pve01 - 10.0.2.41"]
         PVE02:::svc["pve02 - 10.0.2.42"]
@@ -56,10 +54,22 @@ flowchart TB
         DCM:::svc["datacenter-manager - 10.0.2.60"]
     end
 
-    subgraph IOT["IoT VLAN 10.0.0.0/24"]
+    subgraph DEV["Device Network VLAN 10"]
+        DEVGW:::entry["Gateway - 10.0.10.1"]
+    end
+
+    subgraph GUEST["Guest Network VLAN 30"]
+        GUESTGW:::entry["Gateway - 10.0.30.1"]
+    end
+
+    subgraph RACK["Rack Network VLAN 100"]
+        RACKGW:::entry["Gateway - 10.0.100.1"]
+    end
+
+    subgraph IOT["IoT Network VLAN 200"]
         NAS:::db["Synology NAS - 10.0.0.200"]
-        HA:::svc["Home Assistant - 10.0.0.100"]
-        ZIG:::svc["Zigbee Node - 10.0.0.110"]
+        HA:::svc["Home Assistant"]
+        ZIG:::svc["Zigbee Node"]
     end
 
     subgraph TB["Thunderbolt P2P 10.99.1.0/24"]
@@ -71,12 +81,15 @@ flowchart TB
         TAIL:::ext["Tailscale CGNAT"]
     end
 
-    ISP --> Router
-    Router --> SW
-    SW --> MGMT
-    SW --> IOT
+    ISP -->|"SFP+ (eth9)"| UDMPRO
+    UDMPRO --> USL8A
+    USL8A --> MGMT
+    USL8A --> DEV
+    USL8A --> GUEST
+    USL8A --> RACK
+    USL8A --> IOT
     TB01 <-->|"~20 Gbps DRBD + Migration"| TB02
-    TAIL -.->|"VPN Overlay"| Router
+    TAIL -.->|"VPN Overlay"| UDMPRO
 
     classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
     classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
@@ -85,12 +98,34 @@ flowchart TB
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
+## VLAN-Diagramm
+
+```mermaid
+flowchart LR
+    UDMPRO["UDM Pro<br>10.0.0.1"]
+
+    MGMT["Management (native)<br>10.0.0.0/22"]
+    DEV["Device Network<br>VLAN 10 -- 10.0.10.0/24"]
+    GUEST["Guest Network<br>VLAN 30 -- 10.0.30.0/24"]
+    RACK["Rack Network<br>VLAN 100 -- 10.0.100.0/24"]
+    IOT["IoT Network<br>VLAN 200 -- 10.0.200.0/24"]
+
+    UDMPRO --- MGMT
+    UDMPRO --- DEV
+    UDMPRO --- GUEST
+    UDMPRO --- RACK
+    UDMPRO --- IOT
+```
+
 ## Netzwerk-Segmente
 
 | Segment | Subnetz | VLAN | Verwendung | Gateway |
 |---------|---------|------|------------|---------|
-| **Management** | 10.0.2.0/24 | - | VMs, Proxmox, Services | unbekannt |
-| **IoT** | 10.0.0.0/24 | - | Home Assistant, Zigbee, NAS | unbekannt |
+| **Management** | 10.0.0.0/22 | native | VMs, Proxmox, Services | 10.0.0.1 |
+| **Device Network** | 10.0.10.0/24 | 10 | Endgeräte | 10.0.10.1 |
+| **Guest Network** | 10.0.30.0/24 | 30 | Gäste-WLAN | 10.0.30.1 |
+| **Rack Network** | 10.0.100.0/24 | 100 | Rack-Infrastruktur | 10.0.100.1 |
+| **IoT Network** | 10.0.200.0/24 | 200 | Home Assistant, Zigbee, NAS | 10.0.200.1 |
 | **Docker Proxy** | 192.168.90.0/24 | - | Traefik Proxy Network (intern) | - |
 | **Thunderbolt** | 10.99.1.0/24 | - | Peer-to-Peer DRBD-Replikation, VM-Migration | - |
 | **Tailscale** | 100.64.0.0/10 | - | Remote Access (CGNAT Overlay) | - |
@@ -137,45 +172,50 @@ Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 
 ## Hardware
 
-::: warning Unvollständig
-Die meisten Hardware-Details müssen noch ergänzt werden (Modelle, Ports, Firmware-Versionen, PoE-Budget, Patchfeld-Belegung).
-:::
-
 ### Router
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Modell | unbekannt |
-| Firmware | unbekannt |
-| WAN | unbekannt |
-| LAN-Ports | unbekannt |
+| Modell | UniFi Dream Machine Pro (UDMPRO) |
+| Firmware | 5.0.16 |
+| WAN | SFP+ (eth9) via ISP-Router, öffentliche IP dynamisch |
+| LAN-Ports | 8x RJ45 1G, 1x RJ45 WAN (nicht verbunden), 1x SFP+ WAN (aktiv), 1x SFP+ LAN |
+| Controller | Integriert (UniFi Network 5.0.16) |
+| URL | `https://10.0.0.1` |
 
 ### Switches
 
 | Switch | Modell | Ports | PoE | Standort |
 |--------|--------|-------|-----|----------|
-| unbekannt | unbekannt | unbekannt | unbekannt | unbekannt |
+| 10G-Switch-Rack | USL8A (Aggregation) | 8x SFP+ | - | Rack |
+| POE-Switch-Keller | US-8-60W | 8 | 60W | Keller |
+| 1G-Switch-Kammerli | US-24 | 24 | - | Kämmerli |
+| US-24 | US-24 | 24 | - | unbekannt |
+| US-8-150W | US-8-150W | 8 | 150W | unbekannt |
+| USW-Flex-Mini-Dani | USW Flex Mini | 5 | - | Zimmer Dani |
+| USW-Flex-Mini-Gaeste | USW Flex Mini | 5 | - | Gästezimmer |
 
 ### Access Points
 
 | AP | Modell | Standort | Band | PoE |
 |----|--------|----------|------|-----|
-| unbekannt | unbekannt | unbekannt | unbekannt | unbekannt |
-
-### UniFi Controller
-
-| Eigenschaft | Wert |
-|-------------|------|
-| Typ | unbekannt (Cloud Key / VM / Docker) |
-| Version | unbekannt |
-| URL | unbekannt |
+| AP-AC-LR-Werkstadt | UAP-AC-LR | Werkstatt | 2.4+5 GHz | ja |
+| AP-AC-LR-Dani | UAP-AC-LR | Zimmer Dani | 2.4+5 GHz | ja |
+| AP-AC-LR-Gaste | UAP-AC-LR | Gästezimmer | 2.4+5 GHz | ja |
+| AP-AC-LR-Koffer | UAP-AC-LR | Kofferraum(?) | 2.4+5 GHz | ja |
+| AP-AC-LR-Garage | UAP-AC-LR | Garage | 2.4+5 GHz | ja |
+| AP-U6-PRO-Nina | UAP-U6-Pro | Zimmer Nina | 2.4+5 GHz | ja |
+| AP-U6-PRO-Kuche | UAP-U6-Pro | Küche | 2.4+5 GHz | ja |
 
 ### VLAN-Konfiguration
 
-| VLAN ID | Name | Subnetz | Beschreibung | Switch-Ports |
-|---------|------|---------|--------------|-------------|
-| - | Management | 10.0.2.0/24 | VMs, Proxmox, Services | unbekannt |
-| - | IoT | 10.0.0.0/24 | Home Assistant, Zigbee, NAS | unbekannt |
+| VLAN ID | Name | Subnetz | Gateway | Beschreibung |
+|---------|------|---------|---------|--------------|
+| native | Management | 10.0.0.0/22 | 10.0.0.1 | VMs, Proxmox, Services |
+| 10 | Device Network | 10.0.10.0/24 | 10.0.10.1 | Endgeräte |
+| 30 | Guest Network | 10.0.30.0/24 | 10.0.30.1 | Gäste-WLAN |
+| 100 | Rack Network | 10.0.100.0/24 | 10.0.100.1 | Rack-Infrastruktur |
+| 200 | IoT Network | 10.0.200.0/24 | 10.0.200.1 | Home Assistant, Zigbee, NAS |
 
 ### Verkabelung
 
@@ -186,6 +226,7 @@ Die meisten Hardware-Details müssen noch ergänzt werden (Modelle, Ports, Firmw
 
 ## Verwandte Seiten
 
+- [UniFi](../unifi/) -- Controller, Geräte, WLAN, Firewall-Konfiguration
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS
 - [Traefik](../traefik/) -- Reverse Proxy und Middleware Chains

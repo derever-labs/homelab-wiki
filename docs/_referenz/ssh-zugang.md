@@ -58,6 +58,12 @@ LXC-Container sind nicht direkt per SSH erreichbar. Zugriff via ProxyJump über 
 `ssh -J pve01 root@10.0.2.1`
 :::
 
+## UniFi
+
+| Gerät | IP | Benutzer | Auth | Bemerkung |
+| :--- | :--- | :--- | :--- | :--- |
+| UDM Pro | 10.0.0.1 | root | keyboard-interactive | Passwort in 1Password (Vault: PRIVAT Agent, Item: Ubiquiti Unifi Konto Ackermann) |
+
 ## IoT-VMs
 
 | VM | IP | Benutzer | Bemerkung |
