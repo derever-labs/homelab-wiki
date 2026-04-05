@@ -15,12 +15,33 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 ## Netzwerk-Bereiche
 
-| Netzwerk | Bereich | Verwendung |
+| Netzwerk | Bereich | VLAN | Verwendung |
+| :--- | :--- | :--- | :--- |
+| Management | 10.0.0.0/22 | -- | UniFi-Geräte, Gateway, UDM Pro |
+| Device | 10.0.10.0/24 | 10 | Endgeräte |
+| Guest | 10.0.30.0/24 | 30 | Gästenetz |
+| Rack | 10.0.100.0/24 | 100 | VMs, Proxmox, Services |
+| IoT | 10.0.200.0/24 | 200 | Home Assistant, Zigbee |
+| Docker Proxy | 192.168.90.0/24 | -- | Traefik Proxy Network |
+| Thunderbolt | 10.99.1.0/24 | -- | Peer-to-Peer Replikation |
+
+## UniFi Netzwerk
+
+| Gerät | IP | Rolle |
 | :--- | :--- | :--- |
-| Management | 10.0.2.0/24 | VMs, Proxmox, Services |
-| IoT | 10.0.0.0/24 | Home Assistant, Zigbee |
-| Docker Proxy | 192.168.90.0/24 | Traefik Proxy Network |
-| Thunderbolt | 10.99.1.0/24 | Peer-to-Peer Replikation |
+| UDM Pro Lenzburg | 10.0.0.1 | Gateway + Controller |
+| 10G-Switch-Rack | 10.0.0.172 | Aggregation Switch (10 GbE) |
+| 1G-Switch-Kammerli | 10.0.0.181 | Zugangsswitch Kämmerli |
+| POE-Switch-Keller | 10.0.0.184 | PoE Switch Keller |
+| USW-Flex-Mini-Dani | 10.0.0.185 | Mini Switch Dani |
+| USW-Flex-Mini-Gaeste | 10.0.0.186 | Mini Switch Gäste |
+| AP-U6-PRO-Nina | 10.0.0.191 | Access Point Wi-Fi 6 |
+| AP-AC-LR-Dani | 10.0.0.192 | Access Point Wi-Fi 5 |
+| AP-AC-LR-Gaste | 10.0.0.193 | Access Point Wi-Fi 5 |
+| AP-U6-PRO-Kuche | 10.0.0.194 | Access Point Wi-Fi 6 |
+| AP-AC-LR-Koffer | 10.0.0.195 | Access Point Wi-Fi 5 |
+| AP-AC-LR-Werkstadt | 10.0.0.196 | Access Point Wi-Fi 5 |
+| AP-AC-LR-Garage | 10.0.0.197 | Access Point Wi-Fi 5 |
 
 ## Proxmox Cluster
 

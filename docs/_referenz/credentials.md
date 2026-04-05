@@ -42,6 +42,12 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbank-Architektur](../_querschni
 | Nomad Management Token | `infra/.nomad-token` | Vollzugriff auf Nomad API / UI |
 | Vault Unseal Keys | `/etc/vault.d/unseal-keys` (auf Server-Nodes) | Automatisches Entsiegeln nach Reboot |
 
+## 1Password
+
+| Service | Vault | Item | Inhalt |
+| :--- | :--- | :--- | :--- |
+| UniFi | PRIVAT Agent | Ubiquiti Unifi Konto Ackermann | UI.com SSO + SSH-Passwort (UDM Pro) |
+
 ## Vault Authentifizierung
 
 | Methode | Beschreibung |
