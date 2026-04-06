@@ -60,7 +60,7 @@ Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren,
 | flame-data | 1 GiB | Flame Dashboard |
 | flame-intra-data | 1 GiB | Flame-Intra Dashboard |
 | gitea-data | 5 GiB | Gitea Git Server |
-| influxdb-data | 3 GiB | InfluxDB Time Series DB |
+| influxdb-data | 30 GiB | InfluxDB Time Series DB |
 | jellyfin-config | 15 GiB | Jellyfin Media Server Config |
 | kimai-data | 2 GiB | Kimai MariaDB |
 | loki-data | 20 GiB | Loki Log Aggregation |
