@@ -17,7 +17,7 @@ tags:
 | **InfluxDB** | v2.x (Nomad Job `monitoring/influx.nomad`) |
 | **Telegraf** | Im selben Nomad-Job als zweite Task-Group |
 | **URL** | [influx.ackermannprivat.ch](https://influx.ackermannprivat.ch) |
-| **Storage** | Linstor CSI Volume `influxdb-data` (10 GiB, repliziert) |
+| **Storage** | Linstor CSI Volume `influxdb-data` (30 GiB, repliziert) |
 | **Secrets** | Vault `kv/data/shared/influxdb` (username, password, url, token) |
 | **Organisation** | `ackermann` |
 

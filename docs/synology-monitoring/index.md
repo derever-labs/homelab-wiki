@@ -38,7 +38,7 @@ graph LR
     NAS -->|"SNMPv3<br/>UDP 161"| TEL_REMOTE
     TEL_REMOTE --> INFLUX
     TEL_LOCAL -->|"Exec Scripts<br/>(diskio, services, jobs)"| TEL_LOCAL
-    TEL_LOCAL --> INFLUX
+    TEL_LOCAL -->|"Consul DNS"| INFLUX
     INFLUX --> GRAF
     GRAF -->|"Alert Rules"| TG
 ```
