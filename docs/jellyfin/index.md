@@ -1,6 +1,6 @@
 ---
 title: Jellyfin
-description: Medienserver fuer Filme und Serien mit Hardware-Transcoding und LDAP-Authentifizierung
+description: Medienserver fuer Filme und Serien mit Intel QSV Hardware-Transcoding und LDAP-Authentifizierung
 tags:
   - service
   - nomad
@@ -22,7 +22,9 @@ tags:
 | **Config Storage** | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
 | **Media Storage** | NFS `/nfs/jellyfin` ([NAS](../nas-storage/index.md)) |
 | **Auth** | Kein OAuth -- LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) direkt in Jellyfin |
-| **Ressourcen** | 4096 MHz CPU, 12 GB RAM (max 16 GB) |
+| **GPU** | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
+| **Transcoding** | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
+| **Ressourcen** | 2048 MHz CPU, 2 GB RAM (max 16 GB) |
 | **Priority** | 95 (kritischer Service) |
 
 ## Architektur
@@ -48,9 +50,34 @@ flowchart LR
     classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
 ```
 
-## Transcoding
+## Hardware-Transcoding
 
-Jellyfin benötigt hohe Ressourcen (4096 MHz CPU, bis 16 GB RAM) wegen Software-Transcoding. Es ist kein Hardware-Transcoding (GPU/iGPU Passthrough) konfiguriert -- alle Transcode-Operationen laufen auf der CPU.
+Jellyfin nutzt **Intel QuickSync (QSV)** über die Intel Iris Xe iGPU der MS-01 Hosts. Die iGPU wird per Full Passthrough von Proxmox an die Nomad-Client VMs durchgereicht (`/dev/dri/renderD128`). Beide Nodes (client-05/06) haben GPU-Zugriff, sodass Jellyfin auf jedem der beiden Nodes HW-Transcoding nutzen kann.
+
+### Konfiguration
+
+| Einstellung | Wert | Begründung |
+| :--- | :--- | :--- |
+| Hardware-Beschleunigung | Intel QuickSync (QSV) | Iris Xe, 96 EU, zwei MFX-Engines |
+| Decode | H.264, HEVC (8/10/12-bit), VP9, AV1 | Alle relevanten Quell-Codecs |
+| Encode | H.264 (h264_qsv) | HEVC-Encoding deaktiviert -- H.264 ist ~2x schneller und browser-kompatibler |
+| Tone Mapping | OpenCL (hable) | HDR10/HLG/DoVi → SDR. VPP deaktiviert wegen Regression-Bug in 10.11.x (Issue #15576) |
+| Low-Power Encoder | Aus (in UI) | Auf Alder Lake im Kernel automatisch aktiv |
+| Preset | fast | Guter Kompromiss aus Qualität und Speed |
+| Segment-Löschung | An | Verhindert unbegrenztes Cache-Wachstum |
+
+### Warum H.264 statt HEVC als Output
+
+HEVC-Encoding ist nur in Safari nativ abspielbar. H.264 funktioniert in allen Browsern, ist ~2x schneller beim Encoding, und bei 20 Mbps 1080p Zielbitrate ist der Qualitätsunterschied vernachlässigbar. Infuse/Apple TV nutzen Direct Play und sind nicht betroffen.
+
+### Performance
+
+Die Iris Xe schafft 10+ gleichzeitige 4K-Transcodes bei nahe null CPU-Last. Ein typischer 4K HDR HEVC → 1080p H.264 SDR Transcode läuft mit ~4-6x Echtzeit.
+
+### Bekannte Einschränkungen
+
+- **OpenCL Tone Mapping Bug (#15576):** In 10.11.x kann HDR-Content pixelig aussehen. Falls Artifacts auftreten: VPP testen oder auf 10.12.x warten.
+- **Seeking bei 4K:** Nach einem Sprung startet ein neuer Transcode -- das kann 2-3 Sekunden dauern bis der Buffer gefüllt ist.
 
 Transcode-Dateien und Caches werden auf dem lokalen `/tmp/jellyfin/`-Verzeichnis der VM abgelegt (nicht auf NFS), um die Schreiblast vom NAS fernzuhalten. Ein Prestart-Task im Nomad Job räumt bei jedem Start alte Caches auf.
 
