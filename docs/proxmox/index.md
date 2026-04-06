@@ -59,8 +59,8 @@ Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zuga
 | VM | IP | VM-ID | Host | Specs |
 |----|-----|-------|------|-------|
 | **vm-nomad-client-04** | 10.0.2.124 | 3104 | pve00 | 4 CPU, 12 GB RAM |
-| **vm-nomad-client-05** | 10.0.2.125 | 3105 | pve01 | 16 CPU, 48 GB RAM |
-| **vm-nomad-client-06** | 10.0.2.126 | 3106 | pve02 | 16 CPU, 48 GB RAM |
+| **vm-nomad-client-05** | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM, iGPU Passthrough |
+| **vm-nomad-client-06** | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM, iGPU Passthrough |
 
 ### IoT VMs
 
@@ -68,6 +68,31 @@ Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zuga
 |----|-----|-------|------|-------|
 | **homeassistant** | 10.0.0.100 | 1000 | pve02 | Home Assistant OS |
 | **zigbee-node** | 10.0.0.110 | 1100 | pve02 | Zigbee2MQTT, Mosquitto |
+
+## iGPU Passthrough
+
+Die Intel Iris Xe iGPU (Alder Lake, 96 EU) auf pve01 und pve02 wird per **Full Passthrough** an die Nomad-Client VMs durchgereicht. Hauptanwendung: [Jellyfin](../jellyfin/index.md) Hardware-Transcoding (QSV).
+
+| Host | iGPU | PCI-Adresse | Ziel-VM | Machine Type |
+|------|------|-------------|---------|--------------|
+| pve01 | Intel Iris Xe (i9-12900H) | `0000:00:02.0` | vm-nomad-client-05 (3105) | q35 |
+| pve02 | Intel Iris Xe (i9-12900H) | `0000:00:02.0` | vm-nomad-client-06 (3106) | q35 |
+
+### Konfiguration auf den Hosts
+
+Die iGPU-Treiber (`i915`, `xe`) sind auf den Hosts blacklisted, damit VFIO-PCI die Geräte übernimmt. IOMMU ist via GRUB aktiviert (`intel_iommu=on iommu=pt`). Die Konfiguration liegt in:
+
+- `/etc/default/grub` -- IOMMU-Parameter
+- `/etc/modules` -- VFIO-Module (`vfio`, `vfio_iommu_type1`, `vfio_pci`)
+- `/etc/modprobe.d/blacklist-igpu.conf` -- i915/xe Blacklist
+
+::: warning Kein SR-IOV
+Full Passthrough bindet die gesamte iGPU exklusiv an eine VM. Sollte ein zweiter GPU-Consumer nötig werden (z.B. Frigate), muss auf SR-IOV (`i915-sriov-dkms`) umgestellt werden.
+:::
+
+### In der VM
+
+Die VMs benötigen `intel-media-va-driver-non-free` für VAAPI/QSV. Der Render-Node (`/dev/dri/renderD128`) wird im Docker-Container via Nomad `devices`-Block gemountet.
 
 ## Thunderbolt Netzwerk
 
