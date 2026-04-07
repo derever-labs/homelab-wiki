@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { generateSidebar } from 'vitepress-sidebar'
+import d2 from 'vitepress-plugin-d2'
+import { Theme, Layout, FileType } from 'vitepress-plugin-d2/dist/config'
 
 export default withMermaid(
   defineConfig({
@@ -44,6 +46,17 @@ export default withMermaid(
         collapseDepth: 1,
         sortMenusByName: true,
       }).map(item => item.items ? item : { ...item, items: [] })
+    },
+
+    markdown: {
+      config: (md) => {
+        md.use(d2, {
+          theme: Theme.NEUTRAL_GREY,
+          layout: Layout.ELK,
+          fileType: FileType.SVG,
+          padding: 40,
+        })
+      },
     },
 
     mermaid: {

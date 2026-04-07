@@ -7,9 +7,12 @@
     "preview": "vitepress preview docs"
   },
   "devDependencies": {
+    "mermaid": "^11.6.0",
     "vitepress": "^1.6.3",
     "vitepress-plugin-mermaid": "^2.0.17",
-    "mermaid": "^11.6.0",
     "vitepress-sidebar": "^1.33.1"
+  },
+  "dependencies": {
+    "vitepress-plugin-d2": "^1.1.0"
   }
 }
