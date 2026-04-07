@@ -15,117 +15,118 @@ Dieses Diagramm zeigt, welche Services von welchen Infrastruktur-Komponenten und
 
 ## Abhängigkeits-Diagramm
 
-```mermaid
-flowchart TB
-    subgraph Core["Core Infrastructure"]
-        TRAEFIK:::entry["Traefik"]
-        DNS:::entry["Pi-hole + Unbound"]
-        CONSUL:::accent["Consul"]
-        VAULT:::accent["Vault"]
-        AUTHENTIK:::entry["Authentik"]
-        LDAP:::svc["OpenLDAP"]
-        PG:::db["PostgreSQL 16"]
-        SMTP:::svc["SMTP Relay"]
-        NFS:::db["Synology NAS"]
-    end
+```d2
+direction: down
 
-    subgraph Media["Media Stack"]
-        JF:::svc["Jellyfin"]
-        JS:::svc["Jellyseerr"]
-        SONARR:::svc["Sonarr"]
-        RADARR:::svc["Radarr"]
-        PROWLARR:::svc["Prowlarr"]
-        SAB:::svc["SABnzbd"]
-        JSTAT:::svc["JellyStat"]
-        MAINT:::svc["Maintainerr"]
-        JANI:::svc["Janitorr"]
-        STASH:::svc["Stash"]
-        ABS:::svc["AudioBookShelf"]
-        YTDL:::svc["YouTube-DL"]
-        SYDL:::svc["Special-YT-DLP"]
-        VG:::svc["Video-Grabber"]
-    end
+Core: Core Infrastructure {
+  style.stroke-dash: 4
+  TRAEFIK: Traefik { style.border-radius: 8 }
+  DNS: Pi-hole + Unbound { style.border-radius: 8 }
+  CONSUL: Consul { style.border-radius: 8 }
+  VAULT: Vault { style.border-radius: 8 }
+  AUTHENTIK: Authentik { style.border-radius: 8 }
+  LDAP: OpenLDAP { style.border-radius: 8 }
+  PG: PostgreSQL 16 { shape: cylinder; style.border-radius: 8 }
+  SMTP: SMTP Relay { style.border-radius: 8 }
+  NFS: Synology NAS { shape: cylinder; style.border-radius: 8 }
+}
 
-    subgraph Mon["Monitoring"]
-        GRAFANA:::svc["Grafana"]
-        LOKI:::svc["Loki"]
-        INFLUX:::db["InfluxDB"]
-        ALLOY:::svc["Alloy"]
-        UK:::svc["Uptime Kuma"]
-        GATUS:::svc["Gatus"]
-    end
+Media: Media Stack {
+  style.stroke-dash: 4
+  JF: Jellyfin { style.border-radius: 8 }
+  JS: Jellyseerr { style.border-radius: 8 }
+  SONARR: Sonarr { style.border-radius: 8 }
+  RADARR: Radarr { style.border-radius: 8 }
+  PROWLARR: Prowlarr { style.border-radius: 8 }
+  SAB: SABnzbd { style.border-radius: 8 }
+  JSTAT: JellyStat { style.border-radius: 8 }
+  MAINT: Maintainerr { style.border-radius: 8 }
+  JANI: Janitorr { style.border-radius: 8 }
+  STASH: Stash { style.border-radius: 8 }
+  ABS: AudioBookShelf { style.border-radius: 8 }
+  YTDL: YouTube-DL { style.border-radius: 8 }
+  SYDL: Special-YT-DLP { style.border-radius: 8 }
+  VG: Video-Grabber { style.border-radius: 8 }
+}
 
-    subgraph Prod["Productivity"]
-        VW:::svc["Vaultwarden"]
-        PL:::svc["Paperless"]
-        TD:::svc["Tandoor"]
-        GUA:::svc["Guacamole"]
-        CD:::svc["ChangeDetection"]
-        OBS:::svc["Obsidian LiveSync"]
-        NOTIF:::svc["Notifiarr"]
-        GITEA:::svc["Gitea"]
-        N8N:::svc["n8n"]
-        META:::svc["Metabase"]
-        SOLID:::svc["solidtime"]
-    end
+Mon: Monitoring {
+  style.stroke-dash: 4
+  GRAFANA: Grafana { style.border-radius: 8 }
+  LOKI: Loki { style.border-radius: 8 }
+  INFLUX: InfluxDB { shape: cylinder; style.border-radius: 8 }
+  ALLOY: Alloy { style.border-radius: 8 }
+  UK: Uptime Kuma { style.border-radius: 8 }
+  GATUS: Gatus { style.border-radius: 8 }
+}
 
-    subgraph AI["AI / LLM"]
-        OLLAMA:::svc["Ollama"]
-        OWUI:::svc["Open-WebUI"]
-        HOLLA:::svc["HolLama"]
-    end
+Prod: Productivity {
+  style.stroke-dash: 4
+  VW: Vaultwarden { style.border-radius: 8 }
+  PL: Paperless { style.border-radius: 8 }
+  TD: Tandoor { style.border-radius: 8 }
+  GUA: Guacamole { style.border-radius: 8 }
+  CD: ChangeDetection { style.border-radius: 8 }
+  OBS: Obsidian LiveSync { style.border-radius: 8 }
+  NOTIF: Notifiarr { style.border-radius: 8 }
+  GITEA: Gitea { style.border-radius: 8 }
+  N8N: n8n { style.border-radius: 8 }
+  META: Metabase { style.border-radius: 8 }
+  SOLID: solidtime { style.border-radius: 8 }
+}
 
-    subgraph IoT["IoT"]
-        Z2M:::svc["Zigbee2MQTT"]
-        MOSQ:::svc["Mosquitto"]
-    end
+AI: AI / LLM {
+  style.stroke-dash: 4
+  OLLAMA: Ollama { style.border-radius: 8 }
+  OWUI: Open-WebUI { style.border-radius: 8 }
+  HOLLA: HolLama { style.border-radius: 8 }
+}
 
-    AUTHENTIK --> LDAP
-    AUTHENTIK --> PG
+IoT: IoT {
+  style.stroke-dash: 4
+  Z2M: Zigbee2MQTT { style.border-radius: 8 }
+  MOSQ: Mosquitto { style.border-radius: 8 }
+}
 
-    SONARR --> PG
-    RADARR --> PG
-    PROWLARR --> PG
-    JS --> PG
-    JSTAT --> PG
-    JS --> JF
-    JSTAT --> JF
-    MAINT --> JF
-    SONARR --> SAB
-    RADARR --> SAB
-    SONARR --> PROWLARR
-    RADARR --> PROWLARR
-    JANI --> SONARR
-    JANI --> RADARR
-    VG --> SYDL
+Core.AUTHENTIK -> Core.LDAP
+Core.AUTHENTIK -> Core.PG
 
-    VW --> PG
-    PL --> PG
-    TD --> PG
-    GITEA --> PG
-    N8N --> PG
-    META --> PG
-    SOLID --> PG
-    VW --> SMTP
-    PL --> OLLAMA
+Media.SONARR -> Core.PG
+Media.RADARR -> Core.PG
+Media.PROWLARR -> Core.PG
+Media.JS -> Core.PG
+Media.JSTAT -> Core.PG
+Media.JS -> Media.JF
+Media.JSTAT -> Media.JF
+Media.MAINT -> Media.JF
+Media.SONARR -> Media.SAB
+Media.RADARR -> Media.SAB
+Media.SONARR -> Media.PROWLARR
+Media.RADARR -> Media.PROWLARR
+Media.JANI -> Media.SONARR
+Media.JANI -> Media.RADARR
+Media.VG -> Media.SYDL
 
-    GRAFANA --> INFLUX
-    GRAFANA --> LOKI
-    GRAFANA --> PG
-    ALLOY --> LOKI
+Prod.VW -> Core.PG
+Prod.PL -> Core.PG
+Prod.TD -> Core.PG
+Prod.GITEA -> Core.PG
+Prod.N8N -> Core.PG
+Prod.META -> Core.PG
+Prod.SOLID -> Core.PG
+Prod.VW -> Core.SMTP
+Prod.PL -> AI.OLLAMA
 
-    OWUI --> OLLAMA
-    HOLLA --> OLLAMA
-    N8N --> SOLID
-    Z2M --> MOSQ
-    NOTIF --> SONARR
-    NOTIF --> RADARR
+Mon.GRAFANA -> Mon.INFLUX
+Mon.GRAFANA -> Mon.LOKI
+Mon.GRAFANA -> Core.PG
+Mon.ALLOY -> Mon.LOKI
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+AI.OWUI -> AI.OLLAMA
+AI.HOLLA -> AI.OLLAMA
+Prod.N8N -> Prod.SOLID
+IoT.Z2M -> IoT.MOSQ
+Prod.NOTIF -> Media.SONARR
+Prod.NOTIF -> Media.RADARR
 ```
 
 ## Abhängigkeits-Gruppen

@@ -27,33 +27,32 @@ ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachri
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    USER:::entry["Browser"]
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: change.*<br>intern-auth"]
-    end
+USER: Browser
 
-    subgraph Nomad["Nomad Job"]
-        CD:::accent["ChangeDetection<br>(Port 5000)"]
-        PW:::svc["Playwright Chrome<br>(Sidecar, Port 3000)"]
-    end
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: 10.0.2.20
+  R1: "Router: change.*\nintern-auth"
+}
 
-    subgraph External["Externe Websites"]
-        WEB:::ext["Überwachte<br>Webseiten"]
-    end
+Nomad: Nomad Job {
+  style.stroke-dash: 4
+  CD: "ChangeDetection\n(Port 5000)"
+  PW: "Playwright Chrome\n(Sidecar, Port 3000)"
+}
 
-    USER -->|HTTPS| R1
-    R1 --> CD
-    CD -->|WebSocket| PW
-    PW -->|HTTP/JS| WEB
+External: Externe Websites {
+  style.stroke-dash: 4
+  WEB: "Überwachte\nWebseiten"
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+USER -> Traefik.R1: HTTPS
+Traefik.R1 -> Nomad.CD
+Nomad.CD -> Nomad.PW: WebSocket
+Nomad.PW -> External.WEB: HTTP/JS
 ```
 
 ## Konfiguration

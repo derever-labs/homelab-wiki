@@ -28,35 +28,34 @@ Vaultwarden ist der zentrale Passwort-Manager im Homelab. Als leichtgewichtige, 
 
 Vaultwarden nutzt SQLite als Datenbank -- kein PostgreSQL-Shared-Cluster. Die Datenbank wird via Litestream kontinuierlich auf das NAS repliziert, was eine Point-in-Time-Recovery ermöglicht.
 
-```mermaid
-flowchart LR
-    subgraph Clients
-        BRW:::entry["Browser Extension"]
-        APP:::entry["Bitwarden App<br>(iOS/Android/Desktop)"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: p.*<br>public-auth"]
-    end
+Clients: Clients {
+  style.stroke-dash: 4
+  BRW: Browser Extension
+  APP: Bitwarden App (iOS/Android/Desktop)
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        VW:::accent["Vaultwarden"]
-    end
+Traefik: Traefik (10.0.2.20) {
+  style.stroke-dash: 4
+  R1: Router: p.* (public-auth)
+}
 
-    subgraph Storage
-        NFS:::db["NFS<br>/nfs/docker/vaultwarden"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  VW: Vaultwarden
+}
 
-    BRW -->|HTTPS| R1
-    APP -->|HTTPS| R1
-    R1 --> VW
-    VW --> NFS
+Storage: Storage {
+  style.stroke-dash: 4
+  NFS: NFS { tooltip: "/nfs/docker/vaultwarden" }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Clients.BRW -> Traefik.R1: HTTPS
+Clients.APP -> Traefik.R1: HTTPS
+Traefik.R1 -> Nomad.VW
+Nomad.VW -> Storage.NFS
 ```
 
 ## Konfiguration

@@ -26,21 +26,24 @@ tags:
 
 Jellyseerr ist die User-facing Oberfläche für Medienwünsche. Familie und Gäste können darüber Filme und Serien anfordern, ohne direkt mit Sonarr oder Radarr arbeiten zu müssen. Jellyseerr leitet Anfragen automatisch an die zuständigen Arr-Services weiter, die den Download und die Organisation übernehmen.
 
-```mermaid
-flowchart LR
-    USER:::entry["User<br>(wish.ackermannprivat.ch)"] --> JS:::accent["Jellyseerr"]
-    JS --> RAD:::svc["Radarr<br>(Filme)"]
-    JS --> SON:::svc["Sonarr<br>(Serien)"]
-    JS --> JF:::svc["Jellyfin<br>(Verfügbarkeit)"]
-    RAD --> SAB:::svc["SABnzbd"]
-    SON --> SAB
-    JS --> PG:::db["PostgreSQL"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+USER: "User (wish.ackermannprivat.ch)" { style.border-radius: 8 }
+JS: Jellyseerr { style.border-radius: 8 }
+RAD: "Radarr (Filme)" { style.border-radius: 8 }
+SON: "Sonarr (Serien)" { style.border-radius: 8 }
+JF: "Jellyfin (Verfügbarkeit)" { style.border-radius: 8 }
+SAB: SABnzbd { style.border-radius: 8 }
+PG: PostgreSQL { shape: cylinder }
+
+USER -> JS
+JS -> RAD
+JS -> SON
+JS -> JF
+RAD -> SAB
+SON -> SAB
+JS -> PG
 ```
 
 ## Konfiguration

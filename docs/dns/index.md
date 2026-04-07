@@ -22,20 +22,23 @@ tags:
 
 Beide LXCs sind identisch konfiguriert:
 
-```mermaid
-flowchart TD
-    Client:::entry["Client (Port 53)"] --> PiHole:::accent["Pi-hole v6<br/>(FTL/dnsmasq)"]
-    PiHole -->|"*.consul"| Consul:::svc["Consul Server (8600)"]
-    PiHole -->|"*.local"| Router:::svc["Router (10.0.0.1)"]
-    PiHole -->|"*.ackermannprivat.ch"| Traefik:::svc["Traefik VIP (10.0.2.20)"]
-    PiHole -->|"*.ackermann.systems"| Traefik
-    PiHole -->|"andere"| Unbound:::svc["Unbound (5335)"]
-    Unbound --> Root:::ext["Root DNS"]
+```d2
+direction: down
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Client: "Client (Port 53)" { style.border-radius: 8 }
+PiHole: "Pi-hole v6 (FTL/dnsmasq)" { style.border-radius: 8 }
+Consul: "Consul Server" { tooltip: "8600"; style.border-radius: 8 }
+Router: Router { tooltip: "10.0.0.1"; style.border-radius: 8 }
+Traefik: "Traefik VIP" { tooltip: "10.0.2.20"; style.border-radius: 8 }
+Unbound: Unbound { tooltip: "5335"; style.border-radius: 8 }
+Root: Root DNS { style.border-radius: 8 }
+
+Client -> PiHole
+PiHole -> Consul: "*.consul"
+PiHole -> Router: "*.local"
+PiHole -> Traefik: "*.ackermannprivat.ch / *.ackermann.systems"
+PiHole -> Unbound: andere
+Unbound -> Root
 ```
 
 ## Komponenten

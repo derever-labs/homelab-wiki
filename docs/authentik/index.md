@@ -24,44 +24,44 @@ Authentik ist der zentrale Identity Provider des Homelabs. Er ersetzt die frühe
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Zugriff["Zugriff von aussen"]
-        User:::entry["Benutzer"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20 VIP)"]
-        TR:::svc["Reverse Proxy"]
-        FWD:::svc["ForwardAuth Middleware\n(intern-auth / public-auth)"]
-    end
+Zugriff: Zugriff von aussen {
+  style.stroke-dash: 4
+  User: Benutzer
+}
 
-    subgraph Authentik["Authentik (Nomad Job)"]
-        AK:::accent["Authentik Server\n(:9000)"]
-        WRK:::accent["Authentik Worker"]
-        PROXY:::accent["Proxy Outpost\n(:9010 statisch)"]
-        LDAP_OUT:::accent["LDAP Outpost\n(:3389 statisch)"]
-    end
+Traefik: Traefik (10.0.2.20 VIP) {
+  style.stroke-dash: 4
+  TR: Reverse Proxy
+  FWD: ForwardAuth Middleware (intern-auth / public-auth)
+}
 
-    subgraph Backend["Backend-Services"]
-        SVC:::svc["Geschützte Services\n(ForwardAuth)"]
-        OIDC:::svc["OIDC-Services\n(Grafana, Gitea)"]
-    end
+Authentik: Authentik (Nomad Job) {
+  style.stroke-dash: 4
+  AK: Authentik Server { tooltip: ":9000" }
+  WRK: Authentik Worker
+  PROXY: Proxy Outpost { tooltip: ":9010 statisch" }
+  LDAP_OUT: LDAP Outpost { tooltip: ":3389 statisch" }
+}
 
-    PG:::db["PostgreSQL\n(postgres.service.consul)"]
+Backend: Backend-Services {
+  style.stroke-dash: 4
+  SVC: Geschützte Services (ForwardAuth)
+  OIDC: OIDC-Services (Grafana, Gitea)
+}
 
-    User --> TR
-    TR --> FWD
-    FWD -.->|"ForwardAuth Check"| PROXY
-    PROXY --> AK
-    AK --> WRK
-    AK --> PG
-    FWD -->|"Zugriff erlaubt"| SVC
-    OIDC -.->|"OIDC Discovery"| AK
+PG: PostgreSQL (postgres.service.consul) { shape: cylinder }
 
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+Zugriff.User -> Traefik.TR
+Traefik.TR -> Traefik.FWD
+Traefik.FWD -> Authentik.PROXY: ForwardAuth Check { style.stroke-dash: 5 }
+Authentik.PROXY -> Authentik.AK
+Authentik.AK -> Authentik.WRK
+Authentik.AK -> PG
+Traefik.FWD -> Backend.SVC: Zugriff erlaubt
+Backend.OIDC -> Authentik.AK: OIDC Discovery { style.stroke-dash: 5 }
 ```
 
 ## Komponenten

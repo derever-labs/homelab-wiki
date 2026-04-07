@@ -35,19 +35,21 @@ tags:
 
 ## Architektur
 
-```mermaid
-flowchart TD
-    S3:::db["MinIO S3 (NAS)<br/>Bucket: zot-registry"]
-    S3 --- Zot1:::svc["Zot 124<br/>localhost:5000<br/>(client-04)"]
-    S3 --- Zot2:::svc["Zot 125<br/>localhost:5000<br/>(client-05)"]
-    S3 --- Zot3:::svc["Zot 126<br/>localhost:5000<br/>(client-06)"]
-    Zot1 --- Cache:::ext["On-Demand Proxy Cache<br/>Docker Hub, ghcr.io,<br/>quay.io, lscr.io"]
-    Zot2 --- Cache
-    Zot3 --- Cache
+```d2
+direction: down
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
+S3: "MinIO S3 (NAS)\nBucket: zot-registry" { shape: cylinder }
+Zot1: "Zot\nlocalhost:5000\n(client-04)" { tooltip: 10.0.2.124 }
+Zot2: "Zot\nlocalhost:5000\n(client-05)" { tooltip: 10.0.2.125 }
+Zot3: "Zot\nlocalhost:5000\n(client-06)" { tooltip: 10.0.2.126 }
+Cache: "On-Demand Proxy Cache\nDocker Hub, ghcr.io,\nquay.io, lscr.io"
+
+S3 -> Zot1
+S3 -> Zot2
+S3 -> Zot3
+Zot1 -> Cache
+Zot2 -> Cache
+Zot3 -> Cache
 ```
 
 **Vorteile:**

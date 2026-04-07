@@ -32,29 +32,31 @@ Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Fa
 
 **Wichtig:** Linstor Controller ist für Active/Passive designed -- nur EIN Controller kann gleichzeitig laufen!
 
-```mermaid
-flowchart TD
-    DB:::db["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
-    DB --- C05 & C06
+```d2
+direction: down
 
-    subgraph C05["client-05 — ACTIVE"]
-        C05a:::svc["COMBINED<br/>drbd-reactor<br/>10.0.2.125 / TB: 10.99.1.105<br/>Storage: 200GB"]
-    end
+DB: "DRBD Resource: linstor_db (Quorum: 2/3) H2 Datenbank" { style.border-radius: 8 }
 
-    subgraph C06["client-06 — STANDBY"]
-        C06a:::svc["COMBINED<br/>drbd-reactor<br/>10.0.2.126 / TB: 10.99.1.106<br/>Storage: 200GB"]
-    end
+C05: "client-05 — ACTIVE" {
+  style.stroke-dash: 4
+  C05a: "COMBINED drbd-reactor Storage: 200GB" { tooltip: "10.0.2.125 / TB: 10.99.1.105"; style.border-radius: 8 }
+}
 
-    C05 <-->|"Thunderbolt 25 Gbit"| C06
-    C05 & C06 -->|"Management 1 Gbit"| C04
+C06: "client-06 — STANDBY" {
+  style.stroke-dash: 4
+  C06a: "COMBINED drbd-reactor Storage: 200GB" { tooltip: "10.0.2.126 / TB: 10.99.1.106"; style.border-radius: 8 }
+}
 
-    subgraph C04["vm-nomad-client-04"]
-        C04a:::entry["10.0.2.124<br/>Satellite (Diskless)<br/>TieBreaker/Quorum"]
-    end
+C04: vm-nomad-client-04 {
+  style.stroke-dash: 4
+  C04a: "Satellite (Diskless) TieBreaker/Quorum" { tooltip: "10.0.2.124"; style.border-radius: 8 }
+}
 
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+DB -- C05
+DB -- C06
+C05 <-> C06: Thunderbolt 25 Gbit
+C05 -> C04: Management 1 Gbit
+C06 -> C04: Management 1 Gbit
 ```
 
 **Architektur-Details:**
@@ -104,29 +106,31 @@ Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Rep
 
 ### Netzwerk-Topologie
 
-```mermaid
-flowchart TD
-    DB2:::db["DRBD Resource: linstor_db (Quorum: 2/3)<br/>H2 Datenbank"]
-    DB2 --- DC02 & DC03
+```d2
+direction: down
 
-    subgraph DC02["client-02 — ACTIVE"]
-        DC02a:::svc["COMBINED / drbd-reactor<br/>10.180.46.82 / DRBD: 172.180.46.82<br/>Storage: NVMe"]
-    end
+DB2: "DRBD Resource: linstor_db (Quorum: 2/3) H2 Datenbank" { style.border-radius: 8 }
 
-    subgraph DC03["client-03 — STANDBY"]
-        DC03a:::svc["COMBINED / drbd-reactor<br/>10.180.46.83 / DRBD: 172.180.46.83<br/>Storage: NVMe"]
-    end
+DC02: "client-02 — ACTIVE" {
+  style.stroke-dash: 4
+  DC02a: "COMBINED / drbd-reactor Storage: NVMe" { tooltip: "10.180.46.82 / DRBD: 172.180.46.82"; style.border-radius: 8 }
+}
 
-    DC02 <-->|"10GbE (172.180.46.x)"| DC03
-    DC02 & DC03 -->|"Management 1 Gbit"| DC01
+DC03: "client-03 — STANDBY" {
+  style.stroke-dash: 4
+  DC03a: "COMBINED / drbd-reactor Storage: NVMe" { tooltip: "10.180.46.83 / DRBD: 172.180.46.83"; style.border-radius: 8 }
+}
 
-    subgraph DC01["vm-nomad-client-01"]
-        DC01a:::entry["10.180.46.81<br/>Satellite (Diskless)<br/>TieBreaker/Quorum<br/>KEIN 10GbE Zugang"]
-    end
+DC01: vm-nomad-client-01 {
+  style.stroke-dash: 4
+  DC01a: "Satellite (Diskless) TieBreaker/Quorum" { tooltip: "10.180.46.81 / KEIN 10GbE Zugang"; style.border-radius: 8 }
+}
 
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+DB2 -- DC02
+DB2 -- DC03
+DC02 <-> DC03: "10GbE (172.180.46.x)"
+DC02 -> DC01: Management 1 Gbit
+DC03 -> DC01: Management 1 Gbit
 ```
 
 ### Netzwerk-Übersicht

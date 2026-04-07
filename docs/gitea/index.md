@@ -28,37 +28,37 @@ Gitea ist der zentrale Git-Server f√ºr private und interne Repositories. Er erg√
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Clients
-        GIT:::entry["Git CLI<br>(SSH Port 2222)"]
-        WEB:::entry["Browser"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: gitea.*<br>intern-auth"]
-    end
+Clients: {
+  style.stroke-dash: 4
+  GIT: "Git CLI\n(SSH Port 2222)"
+  WEB: Browser
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        GT:::accent["Gitea<br>(Port 3003)"]
-        PG:::db["PostgreSQL 16<br>(postgres.service.consul)"]
-    end
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: 10.0.2.20
+  R1: "Router: gitea.*\nintern-auth"
+}
 
-    subgraph Storage
-        CSI:::db["Linstor CSI<br>gitea-data (5 GiB)"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  GT: "Gitea\n(Port 3003)"
+  PG: "PostgreSQL 16\n(postgres.service.consul)" { shape: cylinder }
+}
 
-    WEB -->|HTTPS| R1
-    R1 --> GT
-    GIT -->|SSH| GT
-    GT --> PG
-    GT --> CSI
+Storage: {
+  style.stroke-dash: 4
+  CSI: "Linstor CSI\ngitea-data (5 GiB)" { shape: cylinder }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Clients.WEB -> Traefik.R1: HTTPS
+Traefik.R1 -> Nomad.GT
+Clients.GIT -> Nomad.GT: SSH
+Nomad.GT -> Nomad.PG
+Nomad.GT -> Storage.CSI
 ```
 
 ## Konfiguration

@@ -75,19 +75,25 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die 
 
 ### Authentik ForwardAuth
 
-```mermaid
-flowchart LR
-    User:::entry --> Traefik:::svc
-    Traefik --> chain:::svc["Middleware Chain"]
-    chain --> ipcheck:::svc["ipAllowList<br/>(intern) oder<br/>CrowdSec (public)"]
-    ipcheck --> fwdauth:::svc["authentik-forward-auth"]
-    fwdauth -.-> authentik:::accent["Authentik<br/>(ForwardAuth /outpost.goauthentik.io/...)"]
-    fwdauth --> compress:::svc["compress"]
-    compress --> Backend:::svc
+```d2
+direction: right
 
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+User: User
+Traefik: Traefik
+chain: Middleware Chain
+ipcheck: ipAllowList (intern) oder CrowdSec (public)
+fwdauth: authentik-forward-auth
+authentik: Authentik { tooltip: "ForwardAuth /outpost.goauthentik.io/..." }
+compress: compress
+Backend: Backend
+
+User -> Traefik
+Traefik -> chain
+chain -> ipcheck
+ipcheck -> fwdauth
+fwdauth -> authentik: { style.stroke-dash: 5 }
+fwdauth -> compress
+compress -> Backend
 ```
 
 ### Authentik-Callback

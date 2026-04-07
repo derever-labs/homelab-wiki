@@ -18,81 +18,85 @@ Dieser Ansatz minimiert den Betriebsaufwand: ein einzelner Cluster mit einem Bac
 
 ## Architektur
 
-```mermaid
-flowchart TB
-    subgraph Services["Services (Nomad)"]
-        RADAR:::svc["Radarr"]
-        SONAR:::svc["Sonarr"]
-        PROWL:::svc["Prowlarr"]
-        JSEER:::svc["Jellyseerr"]
-        JSTAT:::svc["JellyStat"]
-        VW:::svc["Vaultwarden"]
-        PL:::svc["Paperless"]
-        GT:::svc["Gitea"]
-        TD:::svc["Tandoor"]
-        ST:::svc["solidtime"]
-        N8N:::svc["n8n"]
-        MB:::svc["Metabase"]
-        GR:::svc["Grafana"]
-    end
+```d2
+direction: down
 
-    subgraph Database["PostgreSQL Shared Cluster"]
-        PG:::db["PostgreSQL 16<br>postgres.service.consul:5432"]
-    end
+Services: Services (Nomad) {
+  style.stroke-dash: 4
+  RADAR: Radarr { style.border-radius: 8 }
+  SONAR: Sonarr { style.border-radius: 8 }
+  PROWL: Prowlarr { style.border-radius: 8 }
+  JSEER: Jellyseerr { style.border-radius: 8 }
+  JSTAT: JellyStat { style.border-radius: 8 }
+  VW: Vaultwarden { style.border-radius: 8 }
+  PL: Paperless { style.border-radius: 8 }
+  GT: Gitea { style.border-radius: 8 }
+  TD: Tandoor { style.border-radius: 8 }
+  ST: solidtime { style.border-radius: 8 }
+  N8N: n8n { style.border-radius: 8 }
+  MB: Metabase { style.border-radius: 8 }
+  GR: Grafana { style.border-radius: 8 }
+}
 
-    subgraph Storage["DRBD Linstor Storage"]
-        DRBD:::accent["Linstor CSI Volume<br>postgres-data"]
-    end
+Database: PostgreSQL Shared Cluster {
+  style.stroke-dash: 4
+  PG: PostgreSQL 16 {
+    shape: cylinder
+    tooltip: postgres.service.consul:5432
+    style.border-radius: 8
+  }
+}
 
-    subgraph Backup["Backup"]
-        DUMP:::entry["pg_dumpall<br>03:00 UTC"]
-        NFS:::db["NFS Backup<br>GFS: 7d/4w/3m"]
-        S3:::db["MinIO linstor-backups<br>Snapshots"]
-    end
+Storage: DRBD Linstor Storage {
+  style.stroke-dash: 4
+  DRBD: Linstor CSI Volume postgres-data { style.border-radius: 8 }
+}
 
-    RADAR --> PG
-    SONAR --> PG
-    PROWL --> PG
-    JSEER --> PG
-    JSTAT --> PG
-    VW --> PG
-    PL --> PG
-    GT --> PG
-    TD --> PG
-    ST --> PG
-    N8N --> PG
-    MB --> PG
-    GR -.->|"read-only Datasource"| PG
+Backup: Backup {
+  style.stroke-dash: 4
+  DUMP: pg_dumpall 03:00 UTC { style.border-radius: 8 }
+  NFS: NFS Backup GFS 7d/4w/3m { shape: cylinder; style.border-radius: 8 }
+  S3: MinIO linstor-backups Snapshots { shape: cylinder; style.border-radius: 8 }
+}
 
-    PG --> DRBD
-    PG --> DUMP
-    DUMP --> NFS
-    DRBD --> S3
+Services.RADAR -> Database.PG
+Services.SONAR -> Database.PG
+Services.PROWL -> Database.PG
+Services.JSEER -> Database.PG
+Services.JSTAT -> Database.PG
+Services.VW -> Database.PG
+Services.PL -> Database.PG
+Services.GT -> Database.PG
+Services.TD -> Database.PG
+Services.ST -> Database.PG
+Services.N8N -> Database.PG
+Services.MB -> Database.PG
+Services.GR -> Database.PG: read-only Datasource { style.stroke-dash: 5 }
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Database.PG -> Storage.DRBD
+Database.PG -> Backup.DUMP
+Backup.DUMP -> Backup.NFS
+Storage.DRBD -> Backup.S3
 ```
 
 ## DRBD-Replikation
 
 Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das ueber DRBD zwischen den Nomad-Clients auf pve01 und pve02 repliziert wird. Die Replikation laeuft ueber das Thunderbolt-Netzwerk (10.99.1.0/24) mit rund 20 Gbps Bandbreite.
 
-```mermaid
-flowchart LR
-    subgraph pve01["pve01 vm-nomad-client-05"]
-        D1:::accent["DRBD postgres-data<br>Primary oder Secondary"]
-    end
+```d2
+direction: right
 
-    subgraph pve02["pve02 vm-nomad-client-06"]
-        D2:::accent["DRBD postgres-data<br>Primary oder Secondary"]
-    end
+pve01: pve01 vm-nomad-client-05 {
+  style.stroke-dash: 4
+  D1: DRBD postgres-data Primary oder Secondary { style.border-radius: 8 }
+}
 
-    D1 <-->|"Thunderbolt 10.99.1.0/24 ~20 Gbps"| D2
+pve02: pve02 vm-nomad-client-06 {
+  style.stroke-dash: 4
+  D2: DRBD postgres-data Primary oder Secondary { style.border-radius: 8 }
+}
 
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+pve01.D1 <-> pve02.D2: Thunderbolt ~20 Gbps { tooltip: 10.99.1.0/24 }
 ```
 
 Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welchem Client der PostgreSQL-Job laeuft.

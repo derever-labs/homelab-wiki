@@ -33,29 +33,29 @@ Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes un
 
 ## Architektur
 
-```mermaid
-flowchart TD
-    subgraph Infra["Infrastruktur-Nodes"]
-        PVE:::svc["PVE / PBS / CheckMK<br>Postfix Satellite"]
-    end
+```d2
+direction: down
 
-    subgraph Services["Nomad Services"]
-        VW:::svc["Vaultwarden"]
-        KC:::svc["Keycloak"]
-        PL:::svc["Paperless"]
-    end
+Infra: Infrastruktur-Nodes {
+  style.stroke-dash: 4
+  PVE: PVE / PBS / CheckMK (Postfix Satellite)
+}
 
-    PVE -->|"smtp.service.consul:25"| SMTP:::accent["smtp-relay<br>(Nomad Job)<br>boky/postfix<br>10.0.0.0/8 ohne Auth"]
-    VW --> SMTP
-    KC --> SMTP
-    PL --> SMTP
-    SMTP -->|"TLS + SASL Auth"| EXT:::ext["mail.netzone.ch<br>Port 587"]
+Services: Nomad Services {
+  style.stroke-dash: 4
+  VW: Vaultwarden
+  KC: Keycloak
+  PL: Paperless
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+SMTP: smtp-relay (Nomad Job) { tooltip: "boky/postfix, 10.0.0.0/8 ohne Auth" }
+EXT: mail.netzone.ch { tooltip: "Port 587" }
+
+Infra.PVE -> SMTP: smtp.service.consul:25
+Services.VW -> SMTP
+Services.KC -> SMTP
+Services.PL -> SMTP
+SMTP -> EXT: TLS + SASL Auth
 ```
 
 ## Konfiguration

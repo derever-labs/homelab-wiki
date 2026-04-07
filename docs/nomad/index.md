@@ -27,22 +27,19 @@ Nomad ist der Workload-Scheduler. Er entscheidet auf welchem Worker-Node ein Con
 
 ## Architektur
 
-```mermaid
-flowchart TD
-    Nomad:::svc["Nomad Server<br/>(Scheduling, Job-Lifecycle)"]
-    Consul:::svc["Consul Server<br/>(Service Discovery, DNS, KV)"]
-    Vault:::accent["Vault<br/>(Secrets Management)"]
-    Worker:::entry["Nomad Client + Docker<br/>(Container-Ausführung)"]
+```d2
+direction: down
 
-    Nomad -->|"Job placement"| Worker
-    Worker -->|"Service Registration"| Consul
-    Worker -->|"JWT Auth → Secrets"| Vault
-    Nomad -->|"Service Health"| Consul
-    Nomad -->|"Workload Identity"| Vault
+Nomad: "Nomad Server (Scheduling, Job-Lifecycle)" { style.border-radius: 8 }
+Consul: "Consul Server (Service Discovery, DNS, KV)" { style.border-radius: 8 }
+Vault: "Vault (Secrets Management)" { style.border-radius: 8 }
+Worker: "Nomad Client + Docker (Container-Ausführung)" { style.border-radius: 8 }
 
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Nomad -> Worker: "Job placement"
+Worker -> Consul: "Service Registration"
+Worker -> Vault: "JWT Auth → Secrets"
+Nomad -> Consul: "Service Health"
+Nomad -> Vault: "Workload Identity"
 ```
 
 ## Cluster-Topologie

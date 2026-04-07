@@ -13,19 +13,23 @@ tags:
 
 Der Zugriff auf interne Services wird zentral über Traefik gesteuert. Authentifizierungsanfragen werden an Authentik delegiert. CrowdSec läuft als natives Traefik-Plugin und blockiert böswillige IPs im Stream-Modus, bevor der Request überhaupt die Middleware-Chain erreicht.
 
-```mermaid
-flowchart LR
-    User:::entry["User Request"] --> CS:::svc["CrowdSec Plugin<br/>(Stream-Modus)"]
-    CS --> Chain:::svc["Middleware Chain<br/>(secure-headers)"]
-    Chain --> FWD:::svc["Authentik ForwardAuth"]
-    FWD -.-> AK:::ext["Authentik<br/>auth.ackermannprivat.ch"]
-    FWD --> Backend:::svc["Backend Service"]
-    CS -.-> Block:::accent["Blockiert<br/>(böswillige IP)"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+User: User Request
+CS: CrowdSec Plugin (Stream-Modus)
+Chain: Middleware Chain (secure-headers)
+FWD: Authentik ForwardAuth
+AK: Authentik { tooltip: "auth.ackermannprivat.ch" }
+Backend: Backend Service
+Block: Blockiert (böswillige IP)
+
+User -> CS
+CS -> Chain
+Chain -> FWD
+FWD -> AK: { style.stroke-dash: 5 }
+FWD -> Backend
+CS -> Block: { style.stroke-dash: 5 }
 ```
 
 ## Komponenten

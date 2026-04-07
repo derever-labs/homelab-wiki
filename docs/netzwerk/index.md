@@ -24,97 +24,101 @@ Folgende Details fehlen noch:
 
 ## Netzwerk-Diagramm
 
-```mermaid
-flowchart TB
-    subgraph WAN["WAN / Internet"]
-        ISP:::ext["ISP Router"]
-    end
+```d2
+direction: down
 
-    subgraph Core["Core Network"]
-        UDMPRO:::accent["UDM Pro (Router)"]
-        USL8A:::accent["USL8A (10G Aggregation)"]
-    end
+WAN: WAN / Internet {
+  style.stroke-dash: 4
+  ISP: ISP Router { style.border-radius: 8 }
+}
 
-    subgraph MGMT["Management (native) 10.0.0.0/22"]
-        PVE00:::svc["pve00 - 10.0.2.40"]
-        PVE01:::svc["pve01 - 10.0.2.41"]
-        PVE02:::svc["pve02 - 10.0.2.42"]
-        DNS01:::entry["lxc-dns-01 - 10.0.2.1"]
-        DNS02:::entry["lxc-dns-02 - 10.0.2.2"]
-        TRF01:::svc["vm-traefik-01 - 10.0.2.21"]
-        TRF02:::svc["vm-traefik-02 - 10.0.2.22"]
-        NS04:::svc["vm-nomad-server-04 - 10.0.2.104"]
-        NS05:::svc["vm-nomad-server-05 - 10.0.2.105"]
-        NS06:::svc["vm-nomad-server-06 - 10.0.2.106"]
-        NC04:::svc["vm-nomad-client-04 - 10.0.2.124"]
-        NC05:::svc["vm-nomad-client-05 - 10.0.2.125"]
-        NC06:::svc["vm-nomad-client-06 - 10.0.2.126"]
-        PBS:::svc["pbs-backup-server - 10.0.2.50"]
-        CMK:::svc["checkmk - 10.0.2.150"]
-        DCM:::svc["datacenter-manager - 10.0.2.60"]
-    end
+Core: Core Network {
+  style.stroke-dash: 4
+  UDMPRO: UDM Pro (Router) { style.border-radius: 8 }
+  USL8A: USL8A (10G Aggregation) { style.border-radius: 8 }
+  UDMPRO -> USL8A
+}
 
-    subgraph DEV["Device Network VLAN 10"]
-        DEVGW:::entry["Gateway - 10.0.10.1"]
-    end
+MGMT: "Management (native) 10.0.0.0/22" {
+  style.stroke-dash: 4
+  PVE00: pve00 { tooltip: "10.0.2.40"; style.border-radius: 8 }
+  PVE01: pve01 { tooltip: "10.0.2.41"; style.border-radius: 8 }
+  PVE02: pve02 { tooltip: "10.0.2.42"; style.border-radius: 8 }
+  DNS01: lxc-dns-01 { tooltip: "10.0.2.1"; style.border-radius: 8 }
+  DNS02: lxc-dns-02 { tooltip: "10.0.2.2"; style.border-radius: 8 }
+  TRF01: vm-traefik-01 { tooltip: "10.0.2.21"; style.border-radius: 8 }
+  TRF02: vm-traefik-02 { tooltip: "10.0.2.22"; style.border-radius: 8 }
+  NS04: vm-nomad-server-04 { tooltip: "10.0.2.104"; style.border-radius: 8 }
+  NS05: vm-nomad-server-05 { tooltip: "10.0.2.105"; style.border-radius: 8 }
+  NS06: vm-nomad-server-06 { tooltip: "10.0.2.106"; style.border-radius: 8 }
+  NC04: vm-nomad-client-04 { tooltip: "10.0.2.124"; style.border-radius: 8 }
+  NC05: vm-nomad-client-05 { tooltip: "10.0.2.125"; style.border-radius: 8 }
+  NC06: vm-nomad-client-06 { tooltip: "10.0.2.126"; style.border-radius: 8 }
+  PBS: pbs-backup-server { tooltip: "10.0.2.50"; style.border-radius: 8 }
+  CMK: checkmk { tooltip: "10.0.2.150"; style.border-radius: 8 }
+  DCM: datacenter-manager { tooltip: "10.0.2.60"; style.border-radius: 8 }
+}
 
-    subgraph GUEST["Guest Network VLAN 30"]
-        GUESTGW:::entry["Gateway - 10.0.30.1"]
-    end
+DEV: Device Network VLAN 10 {
+  style.stroke-dash: 4
+  DEVGW: Gateway { tooltip: "10.0.10.1"; style.border-radius: 8 }
+}
 
-    subgraph RACK["Rack Network VLAN 100"]
-        RACKGW:::entry["Gateway - 10.0.100.1"]
-    end
+GUEST: Guest Network VLAN 30 {
+  style.stroke-dash: 4
+  GUESTGW: Gateway { tooltip: "10.0.30.1"; style.border-radius: 8 }
+}
 
-    subgraph IOT["IoT Network VLAN 200"]
-        NAS:::db["Synology NAS - 10.0.0.200"]
-        HA:::svc["Home Assistant"]
-        ZIG:::svc["Zigbee Node"]
-    end
+RACK: Rack Network VLAN 100 {
+  style.stroke-dash: 4
+  RACKGW: Gateway { tooltip: "10.0.100.1"; style.border-radius: 8 }
+}
 
-    subgraph TB["Thunderbolt P2P 10.99.1.0/24"]
-        TB01:::accent["pve01-tb - 10.99.1.1"]
-        TB02:::accent["pve02-tb - 10.99.1.2"]
-    end
+IOT: IoT Network VLAN 200 {
+  style.stroke-dash: 4
+  NAS: Synology NAS { tooltip: "10.0.0.200"; style.border-radius: 8 }
+  HA: Home Assistant { style.border-radius: 8 }
+  ZIG: Zigbee Node { style.border-radius: 8 }
+}
 
-    subgraph TS["Tailscale Overlay 100.64.0.0/10"]
-        TAIL:::ext["Tailscale CGNAT"]
-    end
+TB: Thunderbolt P2P 10.99.1.0/24 {
+  style.stroke-dash: 4
+  TB01: pve01-tb { tooltip: "10.99.1.1"; style.border-radius: 8 }
+  TB02: pve02-tb { tooltip: "10.99.1.2"; style.border-radius: 8 }
+}
 
-    ISP -->|"SFP+ (eth9)"| UDMPRO
-    UDMPRO --> USL8A
-    USL8A --> MGMT
-    USL8A --> DEV
-    USL8A --> GUEST
-    USL8A --> RACK
-    USL8A --> IOT
-    TB01 <-->|"~20 Gbps DRBD + Migration"| TB02
-    TAIL -.->|"VPN Overlay"| UDMPRO
+TS: Tailscale Overlay 100.64.0.0/10 {
+  style.stroke-dash: 4
+  TAIL: Tailscale CGNAT { style.border-radius: 8 }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+WAN.ISP -> Core.UDMPRO: SFP+ (eth9)
+Core.USL8A -> MGMT
+Core.USL8A -> DEV
+Core.USL8A -> GUEST
+Core.USL8A -> RACK
+Core.USL8A -> IOT
+TB.TB01 <-> TB.TB02: ~20 Gbps DRBD + Migration
+TS.TAIL -> Core.UDMPRO: VPN Overlay { style.stroke-dash: 5 }
 ```
 
 ## VLAN-Diagramm
 
-```mermaid
-flowchart LR
-    UDMPRO["UDM Pro<br>10.0.0.1"]
+```d2
+direction: right
 
-    MGMT["Management (native)<br>10.0.0.0/22"]
-    DEV["Device Network<br>VLAN 10 -- 10.0.10.0/24"]
-    GUEST["Guest Network<br>VLAN 30 -- 10.0.30.0/24"]
-    RACK["Rack Network<br>VLAN 100 -- 10.0.100.0/24"]
-    IOT["IoT Network<br>VLAN 200 -- 10.0.200.0/24"]
+UDMPRO: UDM Pro { tooltip: "10.0.0.1"; style.border-radius: 8 }
+MGMT: "Management (native) 10.0.0.0/22" { style.border-radius: 8 }
+DEV: "Device Network VLAN 10 10.0.10.0/24" { style.border-radius: 8 }
+GUEST: "Guest Network VLAN 30 10.0.30.0/24" { style.border-radius: 8 }
+RACK: "Rack Network VLAN 100 10.0.100.0/24" { style.border-radius: 8 }
+IOT: "IoT Network VLAN 200 10.0.200.0/24" { style.border-radius: 8 }
 
-    UDMPRO --- MGMT
-    UDMPRO --- DEV
-    UDMPRO --- GUEST
-    UDMPRO --- RACK
-    UDMPRO --- IOT
+UDMPRO -- MGMT
+UDMPRO -- DEV
+UDMPRO -- GUEST
+UDMPRO -- RACK
+UDMPRO -- IOT
 ```
 
 ## Netzwerk-Segmente

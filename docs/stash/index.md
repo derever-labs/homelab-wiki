@@ -28,50 +28,51 @@ Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet
 
 ## Architektur
 
-```mermaid
-flowchart TD
-    subgraph Clients["Zugriff"]
-        Browser:::entry["Browser"]
-    end
+```d2
+direction: down
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: s.*<br>intern-auth"]
-        R2:::svc["Router: secure.*<br>intern-auth"]
-    end
+Clients: Zugriff {
+  style.stroke-dash: 4
+  Browser: Browser { style.border-radius: 8 }
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        S1:::accent["stash<br>(Haupt-Instanz)"]
-        S2:::accent["stash-secure<br>(Separate Instanz)"]
-    end
+Traefik: "Traefik (10.0.2.20)" {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  R1: "Router: s.* intern-auth" { style.border-radius: 8 }
+  R2: "Router: secure.* intern-auth" { style.border-radius: 8 }
+}
 
-    subgraph Storage["Storage"]
-        LCSI:::db["Linstor CSI<br>stash-data"]
-        LCSI2:::db["Linstor CSI<br>stash-secure-data"]
-        NFS1:::db["NFS<br>/nfs/logs/.../data"]
-        NFS2:::db["NFS<br>/nfs/logs/.../secure"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  S1: "stash (Haupt-Instanz)" { style.border-radius: 8 }
+  S2: "stash-secure (Separate Instanz)" { style.border-radius: 8 }
+}
 
-    subgraph Batch["Batch Jobs"]
-        PH:::svc["ph-downloader"]
-        RD:::svc["reddit-downloader"]
-    end
+Storage: Storage {
+  style.stroke-dash: 4
+  LCSI: "Linstor CSI stash-data" { shape: cylinder }
+  LCSI2: "Linstor CSI stash-secure-data" { shape: cylinder }
+  NFS1: "NFS /nfs/.../data" { shape: cylinder }
+  NFS2: "NFS /nfs/.../secure" { shape: cylinder }
+}
 
-    Browser -->|HTTPS| R1
-    Browser -->|HTTPS| R2
-    R1 --> S1
-    R2 --> S2
-    S1 --> LCSI
-    S1 --> NFS1
-    S2 --> LCSI2
-    S2 --> NFS2
-    PH -.->|Stash API: Scan + Generate| S1
-    RD -.->|Stash API: Scan + Generate| S1
+Batch: Batch Jobs {
+  style.stroke-dash: 4
+  PH: ph-downloader { style.border-radius: 8 }
+  RD: reddit-downloader { style.border-radius: 8 }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Clients.Browser -> Traefik.R1: HTTPS
+Clients.Browser -> Traefik.R2: HTTPS
+Traefik.R1 -> Nomad.S1
+Traefik.R2 -> Nomad.S2
+Nomad.S1 -> Storage.LCSI
+Nomad.S1 -> Storage.NFS1
+Nomad.S2 -> Storage.LCSI2
+Nomad.S2 -> Storage.NFS2
+Batch.PH -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
+Batch.RD -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
 ```
 
 ## Rolle im Stack

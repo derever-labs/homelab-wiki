@@ -27,35 +27,35 @@ Obsidian LiveSync ersetzt den kostenpflichtigen Obsidian Sync Service durch eine
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Clients
-        MAC:::entry["Obsidian<br>(macOS)"]
-        IOS:::entry["Obsidian<br>(iOS)"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: obsidian-sync.*<br>intern-noauth + CORS"]
-    end
+Clients: {
+  style.stroke-dash: 4
+  MAC: "Obsidian\n(macOS)"
+  IOS: "Obsidian\n(iOS)"
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        CDB:::accent["CouchDB 3.3.3<br>(Port 5984)"]
-    end
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: 10.0.2.20
+  R1: "Router: obsidian-sync.*\nintern-noauth + CORS"
+}
 
-    subgraph Storage
-        LINSTOR:::db["Linstor CSI<br>obsidian-livesync-data"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  CDB: "CouchDB 3.3.3\n(Port 5984)"
+}
 
-    MAC -->|HTTPS + Basic Auth| R1
-    IOS -->|HTTPS + Basic Auth| R1
-    R1 --> CDB
-    CDB --> LINSTOR
+Storage: {
+  style.stroke-dash: 4
+  LINSTOR: "Linstor CSI\nobsidian-livesync-data" { shape: cylinder }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Clients.MAC -> Traefik.R1: HTTPS + Basic Auth
+Clients.IOS -> Traefik.R1: HTTPS + Basic Auth
+Traefik.R1 -> Nomad.CDB
+Nomad.CDB -> Storage.LINSTOR
 ```
 
 ## Konfiguration

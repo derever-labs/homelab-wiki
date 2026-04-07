@@ -27,40 +27,39 @@ Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph User["Benutzer"]
-        Browser:::entry["Browser"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        RC:::svc["Router: chat.*<br>intern-noauth"]
-        RH:::svc["Router: hollama.*<br>intern-noauth"]
-        RO:::svc["Router: ollama.*<br>intern-noauth"]
-    end
+User: Benutzer {
+  style.stroke-dash: 4
+  Browser: Browser { style.border-radius: 8 }
+}
 
-    subgraph Nomad["Nomad Cluster (48 GB Nodes)"]
-        OW:::accent["Open WebUI<br>(chat.*)"]
-        HL:::svc["HolLama<br>(hollama.*)"]
-        OL:::accent["Ollama<br>(ollama.*)"]
-    end
+Traefik: "Traefik (10.0.2.20)" {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  RC: "Router: chat.*\nintern-noauth" { style.border-radius: 8 }
+  RH: "Router: hollama.*\nintern-noauth" { style.border-radius: 8 }
+  RO: "Router: ollama.*\nintern-noauth" { style.border-radius: 8 }
+}
 
-    NFS:::db["NFS<br>/nfs/docker/ollama"]
+Nomad: "Nomad Cluster (48 GB Nodes)" {
+  style.stroke-dash: 4
+  OW: "Open WebUI (chat.*)" { style.border-radius: 8 }
+  HL: "HolLama (hollama.*)" { style.border-radius: 8 }
+  OL: "Ollama (ollama.*)" { style.border-radius: 8 }
+}
 
-    Browser -->|HTTPS| RC
-    Browser -->|HTTPS| RH
-    RC --> OW
-    RH --> HL
-    OW -->|HTTP :11434<br>via Consul DNS| OL
-    HL -->|HTTP :11434<br>via Browser/CORS| OL
-    RO --> OL
-    OL --> NFS
+NFS: "NFS /nfs/docker/ollama" { shape: cylinder }
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+User.Browser -> Traefik.RC: HTTPS
+User.Browser -> Traefik.RH: HTTPS
+Traefik.RC -> Nomad.OW
+Traefik.RH -> Nomad.HL
+Nomad.OW -> Nomad.OL: "HTTP :11434\nvia Consul DNS"
+Nomad.HL -> Nomad.OL: "HTTP :11434\nvia Browser/CORS"
+Traefik.RO -> Nomad.OL
+Nomad.OL -> NFS
 ```
 
 ## Zusammenspiel

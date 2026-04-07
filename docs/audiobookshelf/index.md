@@ -28,40 +28,40 @@ Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediat
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Client["Clients"]
-        APP:::entry["Audiobookshelf App<br>(iOS/Android)"]
-        WEB:::entry["Web-UI"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        INT:::svc["Router: intern<br>intern-api"]
-        EXT:::svc["Router: extern<br>public-auth"]
-    end
+Client: Clients {
+  style.stroke-dash: 4
+  APP: "Audiobookshelf App (iOS/Android)" { style.border-radius: 8 }
+  WEB: Web-UI { style.border-radius: 8 }
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        ABS:::accent["Audiobookshelf"]
-    end
+Traefik: "Traefik (10.0.2.20)" {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  INT: "Router: intern intern-api" { style.border-radius: 8 }
+  EXT: "Router: extern public-auth" { style.border-radius: 8 }
+}
 
-    subgraph NFS["NAS"]
-        CFG:::db["/nfs/docker/audiobookshelf/<br>config + metadata"]
-        BOOKS:::db["/nfs/jellyfin/media/books/"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  ABS: Audiobookshelf { style.border-radius: 8 }
+}
 
-    APP -->|HTTPS intern| INT
-    APP -->|HTTPS extern| EXT
-    WEB -->|HTTPS| EXT
-    INT --> ABS
-    EXT --> ABS
-    ABS --> CFG
-    ABS --> BOOKS
+NFS: NAS {
+  style.stroke-dash: 4
+  CFG: "/nfs/docker/audiobookshelf/ config + metadata" { shape: cylinder }
+  BOOKS: "/nfs/jellyfin/media/books/" { shape: cylinder }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Client.APP -> Traefik.INT: HTTPS intern
+Client.APP -> Traefik.EXT: HTTPS extern
+Client.WEB -> Traefik.EXT: HTTPS
+Traefik.INT -> Nomad.ABS
+Traefik.EXT -> Nomad.ABS
+Nomad.ABS -> NFS.CFG
+Nomad.ABS -> NFS.BOOKS
 ```
 
 ## Konfiguration

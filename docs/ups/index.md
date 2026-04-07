@@ -28,27 +28,28 @@ Die APC USV versorgt das gesamte Homelab (Proxmox-Hosts, Netzwerk, NAS) bei Stro
 
 ## Architektur
 
-```mermaid
-graph LR
-    USV["APC USV"]
-    NMC["Network Management Card"]
-    NUT["NUT Server<br/>(systemd auf PVE Master)"]
-    SLAVE1["PVE Slave 1<br/>(upsmon)"]
-    SLAVE2["PVE Slave 2<br/>(upsmon)"]
-    TEL["Telegraf<br/>(Nomad Job)"]
-    INFLUX["InfluxDB"]
-    GRAF["Grafana"]
-    TG["Telegram"]
+```d2
+direction: right
 
-    USV -->|"Strom"| NMC
-    NMC -->|"SNMP<br/>UDP 161"| NUT
-    NUT -->|"NUT Protocol<br/>TCP 3493"| SLAVE1
-    NUT -->|"NUT Protocol<br/>TCP 3493"| SLAVE2
-    NUT -->|"NUT Protocol<br/>TCP 3493"| TEL
-    NUT -->|"NOTIFYCMD"| TG
-    TEL --> INFLUX
-    INFLUX --> GRAF
-    GRAF -->|"Alert Rules"| TG
+USV: "APC USV" { style.border-radius: 8 }
+NMC: "Network Management Card" { style.border-radius: 8 }
+NUT: "NUT Server (systemd auf PVE Master)" { style.border-radius: 8 }
+SLAVE1: "PVE Slave 1 (upsmon)" { style.border-radius: 8 }
+SLAVE2: "PVE Slave 2 (upsmon)" { style.border-radius: 8 }
+TEL: "Telegraf (Nomad Job)" { style.border-radius: 8 }
+INFLUX: InfluxDB { style.border-radius: 8 }
+GRAF: Grafana { style.border-radius: 8 }
+TG: Telegram { style.border-radius: 8 }
+
+USV -> NMC: Strom
+NMC -> NUT: "SNMP UDP 161"
+NUT -> SLAVE1: "NUT Protocol TCP 3493"
+NUT -> SLAVE2: "NUT Protocol TCP 3493"
+NUT -> TEL: "NUT Protocol TCP 3493"
+NUT -> TG: NOTIFYCMD
+TEL -> INFLUX
+INFLUX -> GRAF
+GRAF -> TG: "Alert Rules"
 ```
 
 ::: warning NUT muss auf dem PVE-Host laufen
@@ -57,28 +58,31 @@ NUT darf nicht als Nomad-Container betrieben werden. Bei einem Shutdown fährt P
 
 ## Shutdown-Ablauf
 
-```mermaid
-sequenceDiagram
-    participant USV as APC USV
-    participant NUT as NUT Master<br/>(PVE-Host)
-    participant S1 as PVE Slave 1
-    participant S2 as PVE Slave 2
-    participant TG as Telegram
+```d2
+shutdown: {
+  shape: sequence_diagram
 
-    USV->>NUT: ONBATT (Stromausfall)
-    NUT->>TG: Benachrichtigung
-    Note over USV: Batterie entlädt sich...
-    USV->>NUT: LOWBATT (kritisch)
-    NUT->>TG: Benachrichtigung
-    NUT->>S1: SHUTDOWN
-    NUT->>S2: SHUTDOWN
-    S1->>S1: VMs/CTs stoppen
-    S2->>S2: VMs/CTs stoppen
-    S1->>S1: Host herunterfahren
-    S2->>S2: Host herunterfahren
-    Note over NUT: FINALDELAY abwarten
-    NUT->>NUT: VMs/CTs stoppen
-    NUT->>NUT: Host herunterfahren
+  USV: "APC USV"
+  NUT: "NUT Master (PVE-Host)"
+  S1: "PVE Slave 1"
+  S2: "PVE Slave 2"
+  TG: Telegram
+
+  USV -> NUT: "ONBATT (Stromausfall)"
+  NUT -> TG: Benachrichtigung
+  USV -> USV: "Batterie entlädt sich..."
+  USV -> NUT: "LOWBATT (kritisch)"
+  NUT -> TG: Benachrichtigung
+  NUT -> S1: SHUTDOWN
+  NUT -> S2: SHUTDOWN
+  S1 -> S1: "VMs/CTs stoppen"
+  S2 -> S2: "VMs/CTs stoppen"
+  S1 -> S1: Host herunterfahren
+  S2 -> S2: Host herunterfahren
+  NUT -> NUT: "FINALDELAY abwarten"
+  NUT -> NUT: "VMs/CTs stoppen"
+  NUT -> NUT: Host herunterfahren
+}
 ```
 
 **Reihenfolge:** Slaves fahren zuerst herunter, der Master wartet (`FINALDELAY`) und fährt als Letzter herunter. Proxmox stoppt bei `shutdown -h` automatisch alle VMs und Container graceful.
