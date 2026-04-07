@@ -30,7 +30,7 @@ gantt
 
     section Neustart
     daily_restart_jellyfin :04:00, 5min
-    watchtower (intern)    :04:15, 30min
+    renovate               :05:00, 15min
 
     section Container
     daily_container_restart:06:00, 5min
@@ -73,10 +73,10 @@ Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../ba
 
 | Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
 |:----|:----|:---------|:------|:----------------|:---------------|
-| `watchtower` | service | Intern 04:15 (WATCHTOWER_SCHEDULE) | Automatische Docker-Image-Updates | Alle Nodes (count=3, distinct_hosts) | Telegram-Benachrichtigung via Shoutrrr, Cleanup, lokale Registry |
+| `renovate` | batch | Täglich 05:00 | Kontrollierte Docker-Image-Updates via GitHub PRs | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, NFS-Cache, Uptime Kuma Push |
 
-::: info Watchtower ist ein Service, kein Batch Job
-Watchtower läuft als Dauerservice (Typ `service`), der intern seinen eigenen Cron-Schedule verwaltet. Er wird hier aufgeführt, weil er funktional ein periodischer Job ist.
+::: info Renovate ersetzt Watchtower
+Watchtower (`watchtower.nomad`, `count = 0`) ist deaktiviert. Renovate erstellt Pull Requests für veraltete Images statt sie direkt zu aktualisieren. Patch-Updates werden automatisch gemerged, Major-Updates und stateful Services (Datenbanken, Authentik) erfordern manuelles Review. Details: [Renovate](./renovate.md)
 :::
 
 ## Reihenfolge und Abhängigkeiten
@@ -87,7 +87,7 @@ Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewus
 2. **03:00** -- `postgres-backup`: Datenbank-Backup
 3. **03:30** -- `influxdb-backup`: Metriken-Backup (nach PostgreSQL)
 4. **04:00** -- `daily_restart_jellyfin`: Jellyfin-Neustart
-4. **04:15** -- `watchtower`: Image-Updates
+4. **05:00** -- `renovate`: Docker-Image-Updates via PRs
 5. **05:00** -- `daily_cleanup`: System-Bereinigung
 6. **06:00** -- `daily_container_restart`: Jellyfin-Neustart (Duplikat, konsolidieren)
 
@@ -101,4 +101,5 @@ Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewus
 - [Backup-Strategie](../backup/index.md) -- PostgreSQL Backup Architektur und Restore-Konzept
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess bei Wartungsarbeiten
 - [Monitoring Stack](../monitoring/index.md) -- Uptime Kuma Push-Monitore für Backup-Status
-- [Zot Container Registry](../docker-registry/index.md) -- Watchtower aktualisiert Images via Zot
+- [Renovate](./renovate.md) -- Kontrollierte Docker-Image-Updates via GitHub PRs
+- [Zot Container Registry](../docker-registry/index.md) -- Registry für gespiegelte Docker Images
