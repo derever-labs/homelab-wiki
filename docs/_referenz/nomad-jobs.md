@@ -17,7 +17,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 
 | Verzeichnis | Jobs |
 | :--- | :--- |
-| batch-jobs/ | Watchtower, Docker Prune, PostgreSQL Backup, Daily Cleanup, Daily Reboot, Daily Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader |
+| batch-jobs/ | Renovate, Docker Prune, PostgreSQL Backup, Daily Cleanup, Daily Reboot, Daily Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader |
 | databases/ | OpenLDAP, PostgreSQL (DRBD), DbGate |
 | infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
