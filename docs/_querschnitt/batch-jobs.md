@@ -14,26 +14,46 @@ Konsolidierte Übersicht aller periodischen Nomad Jobs. Die Job-Dateien liegen i
 
 ## Zeitplan
 
-```mermaid
-gantt
-    title Täglicher Ablauf der Batch Jobs
-    dateFormat HH:mm
-    axisFormat %H:%M
+```d2
+direction: right
 
-    section Bereinigung
-    docker_prune           :01:00, 15min
-    daily_cleanup          :05:00, 30min
+t01: 01:00 { style.border-radius: 8 }
+t03: 03:00 { style.border-radius: 8 }
+t0330: 03:30 { style.border-radius: 8 }
+t04: 04:00 { style.border-radius: 8 }
+t05: 05:00 { style.border-radius: 8 }
+t06: 06:00 { style.border-radius: 8 }
 
-    section Backup
-    postgres-backup        :03:00, 15min
-    influxdb-backup        :03:30, 15min
+Bereinigung: Bereinigung {
+  style.stroke-dash: 4
+  dp: docker_prune { style.border-radius: 8; tooltip: "Docker System Prune -a --volumes" }
+  dc: daily_cleanup { style.border-radius: 8; tooltip: "APT, Journal, Caches, /tmp" }
+}
 
-    section Neustart
-    daily_restart_jellyfin :04:00, 5min
-    renovate               :05:00, 15min
+Backup: Backup {
+  style.stroke-dash: 4
+  pb: postgres-backup { style.border-radius: 8; tooltip: "pg_dumpall → NFS GFS 7d/4w/3m" }
+  ib: influxdb-backup { style.border-radius: 8; tooltip: "influx backup → NFS GFS" }
+}
 
-    section Container
-    daily_container_restart:06:00, 5min
+Neustart: Neustart {
+  style.stroke-dash: 4
+  rj: daily_restart_jellyfin { style.border-radius: 8 }
+  rv: renovate { style.border-radius: 8; tooltip: "Docker Image Updates via GitHub PRs" }
+}
+
+Container: Container {
+  style.stroke-dash: 4
+  cr: daily_container_restart { style.border-radius: 8 }
+}
+
+t01 -> Bereinigung.dp
+t03 -> Backup.pb
+t0330 -> Backup.ib
+t04 -> Neustart.rj
+t05 -> Neustart.rv
+t05 -> Bereinigung.dc
+t06 -> Container.cr
 ```
 
 ## Job-Übersicht

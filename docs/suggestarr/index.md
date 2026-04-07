@@ -27,13 +27,21 @@ tags:
 
 SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisierte Film-/Serien-Empfehlungen. Die Empfehlungen werden als **Pending Requests** in Jellyseerr erstellt -- ein Admin muss sie manuell genehmigen, bevor Radarr/Sonarr den Download starten.
 
-```mermaid
-flowchart LR
-    JF[Jellyfin] -->|Watch History| SA[SuggestArr]
-    TMDB[TMDB API] -->|Metadaten| SA
-    OL[Ollama LLM] -->|AI Empfehlungen| SA
-    SA -->|Pending Requests| JS[Jellyseerr]
-    JS -->|Genehmigt| ARR[Radarr/Sonarr]
+```d2
+direction: right
+
+JF: Jellyfin { style.border-radius: 8 }
+TMDB: TMDB API { style.border-radius: 8 }
+OL: Ollama LLM { style.border-radius: 8 }
+SA: SuggestArr { style.border-radius: 8 }
+JS: Jellyseerr { style.border-radius: 8 }
+ARR: Radarr/Sonarr { style.border-radius: 8 }
+
+JF -> SA: Watch History
+TMDB -> SA: Metadaten
+OL -> SA: AI Empfehlungen
+SA -> JS: Pending Requests
+JS -> ARR: Genehmigt
 ```
 
 ## Konfiguration

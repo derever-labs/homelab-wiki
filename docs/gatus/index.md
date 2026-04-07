@@ -25,39 +25,39 @@ tags:
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Internet
-        User:::entry["Besucher"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        Router:::svc["Router: status.*<br>public-auth"]
-    end
+Internet: {
+  style.stroke-dash: 4
+  User: Besucher
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        Gatus:::accent["Gatus<br>(Port 8080)"]
-        Config:::db["config.yaml<br>(Nomad Template)"]
-    end
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: 10.0.2.20
+  Router: "Router: status.*\npublic-auth"
+}
 
-    subgraph Services["Überwachte Services"]
-        S1:::svc["Service A"]
-        S2:::svc["Service B"]
-        S3:::svc["Service N"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  Gatus: "Gatus\n(Port 8080)"
+  Config: "config.yaml\n(Nomad Template)"
+}
 
-    User -->|HTTPS| Router
-    Router --> Gatus
-    Config -.->|template| Gatus
-    Gatus -->|HTTP/TCP Checks| S1
-    Gatus -->|HTTP/TCP Checks| S2
-    Gatus -->|HTTP/TCP Checks| S3
+Services: Überwachte Services {
+  style.stroke-dash: 4
+  S1: Service A
+  S2: Service B
+  S3: Service N
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Internet.User -> Traefik.Router: HTTPS
+Traefik.Router -> Nomad.Gatus
+Nomad.Config -> Nomad.Gatus: template { style.stroke-dash: 5 }
+Nomad.Gatus -> Services.S1: HTTP/TCP Checks
+Nomad.Gatus -> Services.S2: HTTP/TCP Checks
+Nomad.Gatus -> Services.S3: HTTP/TCP Checks
 ```
 
 ## Zweck

@@ -30,22 +30,27 @@ Filebrowser läuft als **System Job** -- das heisst eine Instanz pro Nomad Clien
 | vm-nomad-client-05 | `https://files-vm-nomad-client-05.ackermannprivat.ch` |
 | vm-nomad-client-06 | `https://files-vm-nomad-client-06.ackermannprivat.ch` |
 
-```mermaid
-flowchart LR
-    User:::entry["Admin User"]
-    User -->|HTTPS| Traefik:::svc["Traefik<br/>intern-auth"]
+```d2
+direction: right
 
-    Traefik --> FB04:::svc["Filebrowser<br/>client-04"]
-    Traefik --> FB05:::svc["Filebrowser<br/>client-05"]
-    Traefik --> FB06:::svc["Filebrowser<br/>client-06"]
+User: Admin User
+Traefik: "Traefik\nintern-auth"
 
-    FB04 --> FS04:::db["Filesystem<br/>client-04 (ro)"]
-    FB05 --> FS05:::db["Filesystem<br/>client-05 (ro)"]
-    FB06 --> FS06:::db["Filesystem<br/>client-06 (ro)"]
+FB04: "Filebrowser\nclient-04"
+FB05: "Filebrowser\nclient-05"
+FB06: "Filebrowser\nclient-06"
 
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+FS04: "Filesystem\nclient-04 (ro)" { shape: cylinder }
+FS05: "Filesystem\nclient-05 (ro)" { shape: cylinder }
+FS06: "Filesystem\nclient-06 (ro)" { shape: cylinder }
+
+User -> Traefik: HTTPS
+Traefik -> FB04
+Traefik -> FB05
+Traefik -> FB06
+FB04 -> FS04
+FB05 -> FS05
+FB06 -> FS06
 ```
 
 ## Einsatzzweck

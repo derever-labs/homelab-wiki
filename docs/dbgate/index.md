@@ -25,17 +25,19 @@ tags:
 
 DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bietet SQL-Editor, Schema-Browser und Datenexport für den zentralen PostgreSQL Cluster.
 
-```mermaid
-flowchart LR
-    User:::entry["Admin User"]
-    User -->|HTTPS| Traefik:::svc["Traefik<br/>intern-auth"]
-    Traefik --> DbGate:::svc["DbGate<br/>(host network)"]
-    DbGate -->|"localhost:5432"| PG:::db["PostgreSQL<br/>Shared Cluster"]
-    DbGate -->|"Verbindungsdaten"| NFS:::db["NFS<br/>/nfs/docker/dbgate/data"]
+```d2
+direction: right
 
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
+User: Admin User
+Traefik: "Traefik\nintern-auth"
+DbGate: "DbGate\n(host network)"
+PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
+NFS: "NFS\n/nfs/docker/dbgate/data" { shape: cylinder }
+
+User -> Traefik: HTTPS
+Traefik -> DbGate
+DbGate -> PG: localhost:5432
+DbGate -> NFS: Verbindungsdaten
 ```
 
 ## Datenbankzugriff

@@ -31,23 +31,26 @@ tags:
 
 Jellyfin streamt Medien vom NFS-Share und nutzt Linstor CSI für die persistente Konfiguration. Jellyseerr dient als Wunschliste, über die Benutzer neue Medien anfordern können -- diese werden via Arr-Stack heruntergeladen und landen automatisch in der Jellyfin-Bibliothek.
 
-```mermaid
-flowchart LR
-    User:::entry["User<br>(watch.ackermannprivat.ch)"]
-    User -->|HTTPS| Traefik:::svc["Traefik"]
-    Traefik --> JF:::accent["Jellyfin"]
-    JF -->|LDAP Bind| LDAP:::svc["Authentik<br>LDAP Outpost"]
-    JF -->|Medien lesen| NFS:::db["NFS<br>/nfs/jellyfin"]
-    JF -->|Config| CSI:::db["Linstor CSI<br>jellyfin-config"]
-    JS:::svc["Jellyseerr"] -->|Verfügbarkeit prüfen| JF
-    JS -->|Requests| ARR:::svc["Arr Stack<br>(Radarr, Sonarr)"]
-    ARR -->|Downloads| NFS
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+User: "User (watch.ackermannprivat.ch)" { style.border-radius: 8 }
+Traefik: Traefik { style.border-radius: 8 }
+JF: Jellyfin { style.border-radius: 8 }
+LDAP: "Authentik LDAP Outpost" { style.border-radius: 8 }
+NFS: "NFS /nfs/jellyfin" { shape: cylinder }
+CSI: "Linstor CSI jellyfin-config" { shape: cylinder }
+JS: Jellyseerr { style.border-radius: 8 }
+ARR: "Arr Stack (Radarr, Sonarr)" { style.border-radius: 8 }
+
+User -> Traefik: HTTPS
+Traefik -> JF
+JF -> LDAP: LDAP Bind
+JF -> NFS: Medien lesen
+JF -> CSI: Config
+JS -> JF: Verfügbarkeit prüfen
+JS -> ARR: Requests
+ARR -> NFS: Downloads
 ```
 
 ## Hardware-Transcoding

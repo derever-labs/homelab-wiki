@@ -34,54 +34,53 @@ Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Zwei parallele Zugang
 
 ## Architektur (v4)
 
-```mermaid
-flowchart TB
-    subgraph manuell ["Manueller Scan (Claude Code)"]
-        SK:::entry["/homegate-scan Skill"]
-        MCP:::svc["MCP Playwright<br/>(lokaler Chrome)"]
-    end
+```d2
+direction: down
 
-    subgraph auto ["Automatisiert (geplant)"]
-        NJ:::entry["immoscraper Container<br/>(Nomad Periodic Batch)"]
-        SF:::accent["Scrapfly API<br/>(Anti-Bot Proxy)"]
-    end
+manuell: "Manueller Scan (Claude Code)" {
+  style.stroke-dash: 4
+  SK: "/homegate-scan Skill" { style.border-radius: 8 }
+  MCP: "MCP Playwright (lokaler Chrome)" { style.border-radius: 8 }
+}
 
-    subgraph portale ["Immobilienportale"]
-        HG:::ext[Homegate]
-    end
+auto: "Automatisiert (geplant)" {
+  style.stroke-dash: 4
+  NJ: "immoscraper Container (Nomad Periodic Batch)" { style.border-radius: 8 }
+  SF: "Scrapfly API (Anti-Bot Proxy)" { style.border-radius: 8 }
+}
 
-    subgraph pg ["PostgreSQL (Nomad)"]
-        LS:::db[(listing)]
-        LP:::db[(listing_photo)]
-        AM:::db[(amenity +<br/>listing_amenity)]
-        PH:::db[(listing_price_history)]
-        SR:::db[(scraper_runs)]
-        VW:::db[v_listing_active<br/>View]
-    end
+portale: Immobilienportale {
+  style.stroke-dash: 4
+  HG: Homegate { style.border-radius: 8 }
+}
 
-    MB:::accent[Metabase Dashboard]
+pg: "PostgreSQL (Nomad)" {
+  style.stroke-dash: 4
+  LS: listing { shape: cylinder }
+  LP: listing_photo { shape: cylinder }
+  AM: "amenity + listing_amenity" { shape: cylinder }
+  PH: listing_price_history { shape: cylinder }
+  SR: scraper_runs { shape: cylinder }
+  VW: "v_listing_active (View)" { shape: cylinder }
+}
 
-    SK --> MCP
-    MCP -->|"Browser besucht"| HG
-    MCP -->|"__INITIAL_STATE__<br/>__PINIA_INITIAL_STATE__"| SK
-    SK -->|"SQL via Node.js pg"| LS
-    SK -->|"SQL via Node.js pg"| LP
-    SK -->|"SQL via Node.js pg"| AM
+MB: "Metabase Dashboard" { style.border-radius: 8 }
 
-    NJ -->|"via Scrapfly"| SF
-    SF -->|"DataDome Bypass"| HG
-    NJ -->|"UPSERT"| LS
+manuell.SK -> manuell.MCP
+manuell.MCP -> portale.HG: Browser besucht
+manuell.MCP -> manuell.SK: "__INITIAL_STATE__\n__PINIA_INITIAL_STATE__"
+manuell.SK -> pg.LS: SQL via Node.js pg
+manuell.SK -> pg.LP: SQL via Node.js pg
+manuell.SK -> pg.AM: SQL via Node.js pg
 
-    LS --> VW
-    VW --> MB
-    LP --> MB
-    SR --> MB
+auto.NJ -> auto.SF: via Scrapfly
+auto.SF -> portale.HG: DataDome Bypass
+auto.NJ -> pg.LS: UPSERT
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+pg.LS -> pg.VW
+pg.VW -> MB
+pg.LP -> MB
+pg.SR -> MB
 ```
 
 ## Anti-Bot: DataDome + Cloudflare

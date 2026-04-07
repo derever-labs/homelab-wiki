@@ -27,40 +27,41 @@ Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel i
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph iPhone["iPhone"]
-        PWA:::entry["solidtime PWA"]
-        SC1:::entry["iOS Shortcut<br>Ankunft Horw"]
-        SC2:::entry["iOS Shortcut<br>Verlassen Horw"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: time.*<br>intern-auth"]
-        R2:::svc["Router: time.*/api<br>kein OAuth"]
-        R3:::svc["Router: n8n.*/webhook<br>kein OAuth"]
-    end
+iPhone: iPhone {
+  style.stroke-dash: 4
+  PWA: solidtime PWA { style.border-radius: 8 }
+  SC1: "iOS Shortcut: Ankunft Horw" { style.border-radius: 8 }
+  SC2: "iOS Shortcut: Verlassen Horw" { style.border-radius: 8 }
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        ST:::svc["solidtime<br>(app, scheduler,<br>worker, gotenberg)"]
-        KI:::svc["Kimai<br>(kimai + mariadb)"]
-        N8N:::svc["n8n"]
-        PG:::db["PostgreSQL 16"]
-    end
+Traefik: "Traefik" {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  R1: "Router: time.* (intern-auth)" { style.border-radius: 8 }
+  R2: "Router: time.*/api (kein OAuth)" { style.border-radius: 8 }
+  R3: "Router: n8n.*/webhook (kein OAuth)" { style.border-radius: 8 }
+}
 
-    PWA -->|HTTPS| R1
-    SC1 -->|GET /webhook/arbeit-start| R3
-    SC2 -->|GET /webhook/arbeit-stop| R3
-    R1 -->|Authentik ForwardAuth| ST
-    R2 --> ST
-    R3 --> N8N
-    N8N -->|API: Timer Start/Stop| R2
-    ST --> PG
-    KI -.->|MariaDB Sidecar| KI
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  ST: "solidtime (app, scheduler, worker, gotenberg)" { style.border-radius: 8 }
+  KI: "Kimai (kimai + mariadb)" { style.border-radius: 8 }
+  N8N: n8n { style.border-radius: 8 }
+  PG: PostgreSQL 16 { shape: cylinder; style.border-radius: 8 }
+}
 
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
+iPhone.PWA -> Traefik.R1: HTTPS
+iPhone.SC1 -> Traefik.R3: GET /webhook/arbeit-start
+iPhone.SC2 -> Traefik.R3: GET /webhook/arbeit-stop
+Traefik.R1 -> Nomad.ST: Authentik ForwardAuth
+Traefik.R2 -> Nomad.ST
+Traefik.R3 -> Nomad.N8N
+Nomad.N8N -> Traefik.R2: API: Timer Start/Stop
+Nomad.ST -> Nomad.PG
+Nomad.KI -> Nomad.KI: MariaDB Sidecar { style.stroke-dash: 5 }
 ```
 
 ## Geofence-Automation
@@ -69,25 +70,24 @@ Automatisches Starten und Stoppen des solidtime-Timers basierend auf dem Standor
 
 ### Ablauf
 
-```mermaid
-sequenceDiagram
-    participant iPhone
-    participant n8n
-    participant solidtime
+```d2
+shape: sequence_diagram
 
-    Note over iPhone: Ankunft am Arbeitsplatz (Horw)
-    iPhone->>n8n: GET /webhook/arbeit-start
-    n8n->>solidtime: POST /api/v1/.../time-entries<br>(start=now, end=null)
-    solidtime-->>n8n: Timer-ID
-    n8n-->>iPhone: {status: started}
+iPhone
+n8n
+solidtime
 
-    Note over iPhone: Verlassen des Arbeitsplatzes
-    iPhone->>n8n: GET /webhook/arbeit-stop
-    n8n->>solidtime: GET /api/v1/.../time-entries?active=true
-    solidtime-->>n8n: Laufender Timer
-    n8n->>solidtime: PUT /api/v1/.../time-entries/{id}<br>(end=now)
-    solidtime-->>n8n: Gestoppter Timer
-    n8n-->>iPhone: {status: stopped, duration: ...}
+iPhone -> n8n: "GET /webhook/arbeit-start (Ankunft Horw)"
+n8n -> solidtime: "POST /api/v1/.../time-entries (start=now, end=null)"
+solidtime -> n8n: Timer-ID
+n8n -> iPhone: "{status: started}"
+
+iPhone -> n8n: "GET /webhook/arbeit-stop (Verlassen Horw)"
+n8n -> solidtime: "GET /api/v1/.../time-entries?active=true"
+solidtime -> n8n: Laufender Timer
+n8n -> solidtime: "PUT /api/v1/.../time-entries/{id} (end=now)"
+solidtime -> n8n: Gestoppter Timer
+n8n -> iPhone: "{status: stopped, duration: ...}"
 ```
 
 ### Einrichtung iOS
@@ -126,26 +126,28 @@ Automatische Zeiterfassung fuer private Repos basierend auf Git-Commits. Jeder C
 
 ### Ablauf
 
-```mermaid
-sequenceDiagram
-    participant Git as Git (lokal)
-    participant n8n
-    participant solidtime
+```d2
+shape: sequence_diagram
 
-    Note over Git: git commit
-    Git->>n8n: GET /webhook/git-commit<br>?project_id=...&repo=Finanzen
-    n8n->>solidtime: GET /time-entries (letzte 5)
-    solidtime-->>n8n: Bestehende Eintraege
+"Git (lokal)"
+n8n
+solidtime
 
-    alt Eintrag mit gleichem Projekt, Ende >= jetzt-30min
-        n8n->>solidtime: PUT /time-entries/{id}<br>(end = jetzt+30min)
-        Note over solidtime: Block verlaengert
-    else Kein ueberlappender Eintrag
-        n8n->>solidtime: POST /time-entries<br>(start=jetzt-30min, end=jetzt+30min)
-        Note over solidtime: Neuer 1h-Block
-    end
+"Git (lokal)" -> n8n: "GET /webhook/git-commit?project_id=...&repo=Finanzen (git commit)"
+n8n -> solidtime: GET /time-entries (letzte 5)
+solidtime -> n8n: Bestehende Eintraege
 
-    n8n-->>Git: OK
+group Eintrag mit gleichem Projekt, Ende >= jetzt-30min {
+  n8n -> solidtime: "PUT /time-entries/{id} (end=jetzt+30min)"
+  solidtime -> solidtime: Block verlaengert
+}
+
+group Kein ueberlappender Eintrag {
+  n8n -> solidtime: "POST /time-entries (start=jetzt-30min, end=jetzt+30min)"
+  solidtime -> solidtime: Neuer 1h-Block
+}
+
+n8n -> "Git (lokal)": OK
 ```
 
 ### Technische Details

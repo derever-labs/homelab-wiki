@@ -27,55 +27,57 @@ Drei Komponenten bilden die automatisierte Content-Akquisition-Pipeline: zwei pe
 
 ## Workflow
 
-```mermaid
-flowchart TD
-    subgraph Trigger["Trigger"]
-        CRON1:::entry["Cron: 02:00 UTC"]
-        CRON2:::entry["Cron: 02:30 UTC"]
-        TG:::entry["Telegram Chat"]
-    end
+```d2
+direction: down
 
-    subgraph Bot["Telegram Bot (Service)"]
-        TGBOT:::svc["phdler-telegram-bot<br>list, add, start, status"]
-    end
+Trigger: Trigger {
+  style.stroke-dash: 4
+  CRON1: "Cron: 02:00 UTC" { style.border-radius: 8 }
+  CRON2: "Cron: 02:30 UTC" { style.border-radius: 8 }
+  TG: Telegram Chat { style.border-radius: 8 }
+}
 
-    subgraph Batch["Batch Jobs"]
-        RD:::accent["reddit-downloader<br>(BDFR)"]
-        PH:::accent["ph-downloader<br>(phdler.py + yt-dlp)"]
-    end
+Bot: Telegram Bot (Service) {
+  style.stroke-dash: 4
+  TGBOT: "phdler-telegram-bot list, add, start, status" { style.border-radius: 8 }
+}
 
-    subgraph Stash["Stash (Media Organizer)"]
-        API:::svc["GraphQL API<br>/graphql"]
-        SCAN:::svc["metadataScan"]
-        GEN:::svc["metadataGenerate"]
-    end
+Batch: Batch Jobs {
+  style.stroke-dash: 4
+  RD: "reddit-downloader (BDFR)" { style.border-radius: 8 }
+  PH: "ph-downloader (phdler.py + yt-dlp)" { style.border-radius: 8 }
+}
 
-    subgraph Storage["Storage"]
-        NFS:::db["NFS<br>nfs-logs Volume"]
-    end
+Stash: Stash (Media Organizer) {
+  style.stroke-dash: 4
+  API: "GraphQL API /graphql" { style.border-radius: 8 }
+  SCAN: metadataScan { style.border-radius: 8 }
+  GEN: metadataGenerate { style.border-radius: 8 }
+}
 
-    subgraph Notify["Benachrichtigung"]
-        TGAPI:::ext["Telegram API"]
-    end
+Storage: Storage {
+  style.stroke-dash: 4
+  NFS: "NFS nfs-logs Volume" { shape: cylinder }
+}
 
-    CRON1 --> RD
-    CRON2 --> PH
-    TG --> TGBOT
-    TGBOT -->|Nomad API: force periodic| PH
-    TGBOT -->|phdler.py: add/list| NFS
-    RD --> NFS
-    PH --> NFS
-    RD -->|bei neuen Downloads| API
-    PH --> API
-    API --> SCAN --> GEN
-    RD --> TGAPI
-    PH --> TGAPI
+Notify: Benachrichtigung {
+  style.stroke-dash: 4
+  TGAPI: Telegram API { style.border-radius: 8 }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Trigger.CRON1 -> Batch.RD
+Trigger.CRON2 -> Batch.PH
+Trigger.TG -> Bot.TGBOT
+Bot.TGBOT -> Batch.PH: Nomad API: force periodic
+Bot.TGBOT -> Storage.NFS: phdler.py: add/list
+Batch.RD -> Storage.NFS
+Batch.PH -> Storage.NFS
+Batch.RD -> Stash.API: bei neuen Downloads
+Batch.PH -> Stash.API
+Stash.API -> Stash.SCAN
+Stash.SCAN -> Stash.GEN
+Batch.RD -> Notify.TGAPI
+Batch.PH -> Notify.TGAPI
 ```
 
 ## Komponenten

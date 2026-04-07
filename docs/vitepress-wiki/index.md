@@ -23,20 +23,24 @@ tags:
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    Push:::entry["git push main"] --> GHA:::ext["GitHub Actions<br/>(Self-Hosted Runner)"]
-    GHA -->|"Build-Validierung"| GHA
-    GHA -->|"curl webhook"| WH:::svc["Webhook<br/>(Port 9001)"]
-    WH -->|"git pull + rebuild"| Sync:::svc["git-sync Sidecar"]
-    Sync -->|"atomarer Swap"| Dist:::svc["dist/"]
-    Dist --> Serve:::svc["serve<br/>(Port 4173)"]
-    Serve --> Traefik:::accent["Traefik<br/>(wiki.ackermannprivat.ch)"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Push: git push main
+GHA: "GitHub Actions\n(Self-Hosted Runner)"
+WH: "Webhook\n(Port 9001)"
+Sync: git-sync Sidecar
+Dist: dist/
+Serve: "serve\n(Port 4173)"
+Traefik: "Traefik\n(wiki.ackermannprivat.ch)"
+
+Push -> GHA
+GHA -> GHA: Build-Validierung
+GHA -> WH: curl webhook
+WH -> Sync: git pull + rebuild
+Sync -> Dist: atomarer Swap
+Dist -> Serve
+Serve -> Traefik
 ```
 
 ## Nomad Job (3-Task-Architektur)

@@ -29,20 +29,21 @@ tags:
 
 Zigbee2MQTT verbindet Zigbee-Geraete ueber einen USB-Koordinator mit dem MQTT-Protokoll. Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und wird per Device-Passthrough in den Container durchgereicht. Mosquitto laeuft als separater Nomad Job (siehe [IoT Referenz](./referenz.md)).
 
-```mermaid
-flowchart LR
-    ZD:::entry["Zigbee-Geraete<br>(Sensoren, Schalter)"]
-    ZD -->|"Zigbee (CH 25)"| USB:::svc["USB Dongle<br>Sonoff 3.0"]
-    USB --> Z2M:::accent["Zigbee2MQTT<br>(client-06)"]
-    Z2M -->|MQTT Publish| MQ:::svc["Mosquitto<br>(Nomad Job)"]
-    MQ -->|MQTT Subscribe| HA:::svc["Home Assistant<br>(zukuenftig)"]
-    Admin:::entry["Admin"] -->|HTTPS| Z2M
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+ZD: "Zigbee-Geraete (Sensoren, Schalter)" { style.border-radius: 8 }
+USB: "USB Dongle Sonoff 3.0" { style.border-radius: 8 }
+Z2M: "Zigbee2MQTT (client-06)" { style.border-radius: 8 }
+MQ: "Mosquitto (Nomad Job)" { style.border-radius: 8 }
+HA: "Home Assistant (zukuenftig)" { style.border-radius: 8 }
+Admin: Admin { style.border-radius: 8 }
+
+ZD -> USB: "Zigbee (CH 25)"
+USB -> Z2M
+Z2M -> MQ: MQTT Publish
+MQ -> HA: MQTT Subscribe
+Admin -> Z2M: HTTPS
 ```
 
 ## USB Device Passthrough

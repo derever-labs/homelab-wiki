@@ -26,21 +26,22 @@ Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. Deshalb wird e
 
 ## Architektur
 
-```mermaid
-graph LR
-    NAS["Synology NAS"]
-    TEL_REMOTE["Telegraf<br/>(Nomad Job)"]
-    TEL_LOCAL["Telegraf lokal<br/>(Docker auf NAS)"]
-    INFLUX["InfluxDB"]
-    GRAF["Grafana"]
-    TG["Telegram"]
+```d2
+direction: right
 
-    NAS -->|"SNMPv3<br/>UDP 161"| TEL_REMOTE
-    TEL_REMOTE --> INFLUX
-    TEL_LOCAL -->|"Exec Scripts<br/>(diskio, services, jobs)"| TEL_LOCAL
-    TEL_LOCAL -->|"Consul DNS"| INFLUX
-    INFLUX --> GRAF
-    GRAF -->|"Alert Rules"| TG
+NAS: Synology NAS
+TEL_REMOTE: "Telegraf\n(Nomad Job)"
+TEL_LOCAL: "Telegraf lokal\n(Docker auf NAS)"
+INFLUX: InfluxDB { shape: cylinder }
+GRAF: Grafana
+TG: Telegram
+
+NAS -> TEL_REMOTE: "SNMPv3\nUDP 161"
+TEL_REMOTE -> INFLUX
+TEL_LOCAL -> TEL_LOCAL: "Exec Scripts\n(diskio, services, jobs)"
+TEL_LOCAL -> INFLUX: Consul DNS
+INFLUX -> GRAF
+GRAF -> TG: Alert Rules
 ```
 
 ## Datenquellen

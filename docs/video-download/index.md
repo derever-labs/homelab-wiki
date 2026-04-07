@@ -60,46 +60,49 @@ Ein schlankes URL-basiertes Frontend, das Downloads an die special-yt-dlp API we
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    subgraph Clients["Zugriff"]
-        Browser:::entry["Browser"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        T1:::svc["download.*"]
-        T2:::svc["s-download.*"]
-        T3:::svc["s2-download.*"]
-        T4:::svc["grab.*"]
-    end
+Clients: Zugriff {
+  style.stroke-dash: 4
+  Browser: Browser { style.border-radius: 8 }
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        YDL:::svc["youtube-dl<br>(youtubedl-material)"]
-        SYDL:::svc["special-youtube-dl<br>(youtubedl-material)"]
-        SYTDLP:::accent["special-yt-dlp<br>(yt-dlp-webui)"]
-        VG:::svc["video-grabber"]
-    end
+Traefik: "Traefik (10.0.2.20)" {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  T1: "download.*" { style.border-radius: 8 }
+  T2: "s-download.*" { style.border-radius: 8 }
+  T3: "s2-download.*" { style.border-radius: 8 }
+  T4: "grab.*" { style.border-radius: 8 }
+}
 
-    subgraph Storage["Ziel-Storage"]
-        JF:::db["NFS<br>/nfs/jellyfin/media/web"]
-        ST:::db["NFS<br>Stash-Datenverzeichnis"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  YDL: "youtube-dl (youtubedl-material)" { style.border-radius: 8 }
+  SYDL: "special-youtube-dl (youtubedl-material)" { style.border-radius: 8 }
+  SYTDLP: "special-yt-dlp (yt-dlp-webui)" { style.border-radius: 8 }
+  VG: video-grabber { style.border-radius: 8 }
+}
 
-    Browser --> T1 & T2 & T3 & T4
-    T1 --> YDL
-    T2 --> SYDL
-    T3 --> SYTDLP
-    T4 --> VG
-    VG -->|API :3033| SYTDLP
-    YDL --> JF
-    SYDL --> ST
-    SYTDLP --> ST
+Storage: Ziel-Storage {
+  style.stroke-dash: 4
+  JF: "NFS /nfs/jellyfin/media/web" { shape: cylinder }
+  ST: "NFS Stash-Datenverzeichnis" { shape: cylinder }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Clients.Browser -> Traefik.T1
+Clients.Browser -> Traefik.T2
+Clients.Browser -> Traefik.T3
+Clients.Browser -> Traefik.T4
+Traefik.T1 -> Nomad.YDL
+Traefik.T2 -> Nomad.SYDL
+Traefik.T3 -> Nomad.SYTDLP
+Traefik.T4 -> Nomad.VG
+Nomad.VG -> Nomad.SYTDLP: "API :3033"
+Nomad.YDL -> Storage.JF
+Nomad.SYDL -> Storage.ST
+Nomad.SYTDLP -> Storage.ST
 ```
 
 ## Konfiguration

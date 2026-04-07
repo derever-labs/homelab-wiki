@@ -21,7 +21,7 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - Architektur-Entscheidungen und deren Begründung
 - Konzeptionelle Erklärungen (wie Komponenten zusammenspielen)
 - Tabellen mit Übersichtsdaten (Hosts, IPs, Services, URLs)
-- Mermaid-Diagramme für Architektur und Datenflüsse
+- D2-Diagramme für Architektur und Datenflüsse
 - Runbooks mit knappen Schritt-Beschreibungen
 
 ### Was NICHT ins Wiki gehört
@@ -140,7 +140,7 @@ Nicht alle Felder sind für jedes System relevant. Nur zutreffende Attribute auf
 2. **H1 Titel** (identisch mit Frontmatter title)
 3. **Übersicht-Tabelle** (Status, URL, Deployment, Storage, Auth)
 4. **Rolle im Stack** -- 1-3 Sätze, wie der Service ins Gesamtbild passt
-5. **Architektur** -- Mermaid-Diagramm (wenn sinnvoll)
+5. **Architektur** -- D2-Diagramm (wenn sinnvoll)
 6. **Service-spezifische Sektionen** -- keine SSOT-Duplikate
 7. **Verwandte Seiten** (Pflicht) -- Aufzählungsliste mit Links am Ende
 
@@ -218,12 +218,13 @@ Die Admonition-Syntax von MkDocs (`!!! note`) wird **nicht** verwendet. Stattdes
 
 ### Diagramme
 
-Mermaid-Diagramme sind unterstützt für Workflows und Architektur:
+D2-Diagramme sind unterstützt für Workflows und Architektur:
 
 ````markdown
-```mermaid
-graph LR
-    A --> B --> C
+```d2
+direction: right
+
+A -> B -> C
 ```
 ````
 

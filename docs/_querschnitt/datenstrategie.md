@@ -36,28 +36,27 @@ Für die aktuelle Strategie siehe [Datenbank-Architektur](./datenbank-architektu
 
 Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanzen zu replizieren. Zwei MinIO-Peers auf Node-05/06 (verbunden über Thunderbolt) hätten als schnelle Replicas gedient, mit dem NAS-MinIO als Langzeit-Backup.
 
-```mermaid
-flowchart TB
-    subgraph Peers["Peer Replicas (Thunderbolt)"]
-        N05:::svc["Node-05 MinIO"]
-        N06:::svc["Node-06 MinIO"]
-    end
+```d2
+direction: down
 
-    subgraph Backup["Langzeit-Backup"]
-        NAS:::db["NAS MinIO<br/>Retention: 7 Tage"]
-    end
+SVC: Service mit SQLite { style.border-radius: 8 }
 
-    SVC:::entry["Service mit SQLite"] -->|"Litestream sync: 5s"| N05
-    SVC -->|"Litestream sync: 5s"| N06
-    N05 <-->|"Thunderbolt ~11 Gbps"| N06
-    N05 -->|"sync: 60s"| NAS
-    N06 -->|"sync: 60s"| NAS
+Peers: Peer Replicas (Thunderbolt) {
+  style.stroke-dash: 4
+  N05: Node-05 MinIO { style.border-radius: 8 }
+  N06: Node-06 MinIO { style.border-radius: 8 }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Backup: Langzeit-Backup {
+  style.stroke-dash: 4
+  NAS: "NAS MinIO (Retention: 7 Tage)" { shape: cylinder; style.border-radius: 8 }
+}
+
+SVC -> Peers.N05: Litestream sync: 5s
+SVC -> Peers.N06: Litestream sync: 5s
+Peers.N05 <-> Peers.N06: Thunderbolt ~11 Gbps { tooltip: "10.99.1.0/24" }
+Peers.N05 -> Backup.NAS: sync: 60s
+Peers.N06 -> Backup.NAS: sync: 60s
 ```
 
 ## Verwandte Seiten

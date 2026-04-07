@@ -29,36 +29,36 @@ Paperless-ngx ist das zentrale Dokumenten-Management-System (DMS) im Homelab. Es
 
 Paperless-ngx besteht aus mehreren Komponenten: dem Webserver (Django), einem Consumer-Prozess der neue Dokumente im Consume-Verzeichnis erkennt und verarbeitet, und einem Scheduler für periodische Aufgaben. In der vereinfachten Deployment-Variante (`paperless-simple`) laufen alle Komponenten in einem Container.
 
-```mermaid
-flowchart LR
-    subgraph Input["Dokumenteneingang"]
-        SCAN:::entry["Scanner / E-Mail"]
-    end
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: paperless.*<br>intern-auth"]
-    end
+Input: Dokumenteneingang {
+  style.stroke-dash: 4
+  SCAN: "Scanner / E-Mail"
+}
 
-    subgraph Nomad["Nomad Cluster"]
-        PL:::accent["Paperless-ngx<br>(Web + Consumer + Scheduler)"]
-        PG:::db["PostgreSQL 16<br>(postgres.service.consul)"]
-    end
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: 10.0.2.20
+  R1: "Router: paperless.*\nintern-auth"
+}
 
-    subgraph Storage
-        NFS:::db["NFS<br>/nfs/docker/paperless"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  PL: "Paperless-ngx\n(Web + Consumer + Scheduler)"
+  PG: "PostgreSQL 16\n(postgres.service.consul)" { shape: cylinder }
+}
 
-    SCAN -->|Datei in /consume| NFS
-    PL -->|Consumer liest| NFS
-    R1 --> PL
-    PL --> PG
-    PL --> NFS
+Storage: {
+  style.stroke-dash: 4
+  NFS: "NFS\n/nfs/docker/paperless" { shape: cylinder }
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Input.SCAN -> Storage.NFS: Datei in /consume
+Traefik.R1 -> Nomad.PL
+Nomad.PL -> Storage.NFS: Consumer liest
+Nomad.PL -> Nomad.PG
+Nomad.PL -> Storage.NFS
 ```
 
 ## Konfiguration

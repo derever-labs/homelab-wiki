@@ -30,17 +30,17 @@ tags:
 
 Mosquitto ist der zentrale MQTT Message Broker fuer alle IoT-Komponenten. Zigbee2MQTT publiziert Geraetedaten ueber Mosquitto, und zukuenftige Subscriber (z.B. Home Assistant) konsumieren diese Nachrichten.
 
-```mermaid
-flowchart LR
-    Z2M:::svc["Zigbee2MQTT"] -->|Publish| MQ:::accent["Mosquitto<br>Port 1883"]
-    MQ -->|Subscribe| HA:::svc["Home Assistant<br>(zukuenftig)"]
-    MQ -->|WebSocket 9001| WS:::entry["Web-Clients"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Z2M: Zigbee2MQTT { style.border-radius: 8 }
+MQ: "Mosquitto Port 1883" { style.border-radius: 8; tooltip: "Port 1883 (MQTT), Port 9001 (WebSocket)" }
+HA: "Home Assistant (zukuenftig)" { style.border-radius: 8 }
+WS: Web-Clients { style.border-radius: 8 }
+
+Z2M -> MQ: Publish
+MQ -> HA: Subscribe
+MQ -> WS: WebSocket 9001
 ```
 
 ## Storage

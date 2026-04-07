@@ -27,14 +27,17 @@ tags:
 
 OpenLDAP ist das zentrale Benutzerverzeichnis. Alle User-Accounts (Name, E-Mail, Gruppenzugehörigkeit) werden hier verwaltet. Authentik ist per LDAP angebunden und nutzt OpenLDAP als Identity Store.
 
-```mermaid
-flowchart TD
-    AK:::svc["Authentik LDAP-Source"] --> LDAP:::accent["OpenLDAP<br/>(Nomad Job)"]
-    LDAP --> Bind:::svc["Direkter Bind<br/>(Jellyfin, etc.)"]
-    AK --> OAuth:::svc["ForwardAuth<br/>(Traefik Services)"]
+```d2
+direction: down
 
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+AK: Authentik LDAP-Source
+LDAP: OpenLDAP (Nomad Job)
+Bind: Direkter Bind (Jellyfin, etc.)
+OAuth: ForwardAuth (Traefik Services)
+
+AK -> LDAP
+LDAP -> Bind
+AK -> OAuth
 ```
 
 ## Authentik LDAP-Anbindung

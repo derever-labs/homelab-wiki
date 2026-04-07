@@ -13,36 +13,42 @@ Zwei macOS-Accounts (`samuel_ackermann` und `hslu_samuel_ackermann`) teilen sich
 
 ## Architektur
 
-```mermaid
-graph TB
-    subgraph "Shared Storage (/Users/Shared/git/)"
-        subgraph "gitea/"
-            CS["claude-skills/<br/>4 Skills"]
-            DF["dotfiles/<br/>SSH config + CLAUDE.md"]
-        end
-        subgraph "github/"
-            CMD["HSLU_DC/agents/commands/<br/>Slash-Commands"]
-        end
-    end
+```d2
+direction: down
 
-    subgraph "~hslu/.claude/"
-        HS["skills ->"]
-        HC["commands ->"]
-        HM["CLAUDE.md ->"]
-    end
+SharedStorage: "Shared Storage (/Users/Shared/git/)" {
+  style.stroke-dash: 4
+  gitea: "gitea/" {
+    style.stroke-dash: 4
+    CS: "claude-skills/ (4 Skills)" { style.border-radius: 8 }
+    DF: "dotfiles/ (SSH config + CLAUDE.md)" { style.border-radius: 8 }
+  }
+  github: "github/" {
+    style.stroke-dash: 4
+    CMD: "HSLU_DC/agents/commands/ (Slash-Commands)" { style.border-radius: 8 }
+  }
+}
 
-    subgraph "~samuel/.claude/"
-        SS["skills ->"]
-        SC["commands ->"]
-        SM["CLAUDE.md ->"]
-    end
+hslu: "~hslu/.claude/" {
+  style.stroke-dash: 4
+  HS: "skills ->" { style.border-radius: 8 }
+  HC: "commands ->" { style.border-radius: 8 }
+  HM: "CLAUDE.md ->" { style.border-radius: 8 }
+}
 
-    HS --> CS
-    SS --> CS
-    HC --> CMD
-    SC --> CMD
-    HM --> DF
-    SM --> DF
+samuel: "~samuel/.claude/" {
+  style.stroke-dash: 4
+  SS: "skills ->" { style.border-radius: 8 }
+  SC: "commands ->" { style.border-radius: 8 }
+  SM: "CLAUDE.md ->" { style.border-radius: 8 }
+}
+
+hslu.HS -> SharedStorage.gitea.CS
+samuel.SS -> SharedStorage.gitea.CS
+hslu.HC -> SharedStorage.github.CMD
+samuel.SC -> SharedStorage.github.CMD
+hslu.HM -> SharedStorage.gitea.DF
+samuel.SM -> SharedStorage.gitea.DF
 ```
 
 ## Was geteilt wird vs. pro User

@@ -22,23 +22,26 @@ tags:
 
 ## Architektur
 
-```mermaid
-flowchart TB
-    Internet:::ext --> CF["Cloudflare DNS"]:::ext
-    CF --> Router["Router<br/>Port-Forward 80/443"]:::svc
-    Router --> VIP["VIP 10.0.2.20<br/>(Keepalived)"]:::accent
+```d2
+direction: down
 
-    VIP --> T1["vm-traefik-01<br/>10.0.2.21 (MASTER)"]:::svc
-    VIP --> T2["vm-traefik-02<br/>10.0.2.22 (BACKUP)"]:::svc
+Internet: Internet
+CF: Cloudflare DNS
+Router: Router (Port-Forward 80/443)
+VIP: VIP (Keepalived) { tooltip: "10.0.2.20" }
+T1: vm-traefik-01 (MASTER) { tooltip: "10.0.2.21" }
+T2: vm-traefik-02 (BACKUP) { tooltip: "10.0.2.22" }
+Consul: Consul Catalog + File Provider
+Backend: Nomad Services + Standalone Services
 
-    T1 --> Consul["Consul Catalog<br/>+ File Provider"]:::db
-    T2 --> Consul
-    Consul --> Backend["Nomad Services<br/>+ Standalone Services"]:::svc
-
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Internet -> CF
+CF -> Router
+Router -> VIP
+VIP -> T1
+VIP -> T2
+T1 -> Consul
+T2 -> Consul
+Consul -> Backend
 ```
 
 Traefik läuft im HA-Setup auf zwei VMs mit Keepalived VIP. Bei Ausfall eines Nodes übernimmt der andere automatisch. Beide Nodes sind identisch konfiguriert und werden per Ansible rolling deployed.

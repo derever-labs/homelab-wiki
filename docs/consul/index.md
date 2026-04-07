@@ -30,24 +30,32 @@ Bei Consul-Ausfall verlieren alle Dienste ihre Service Discovery und DNS-Auflös
 
 ## Architektur
 
-```mermaid
-graph LR
-    subgraph srv["Server (104/105/106)"]
-        direction TB
-        CS1["104"] <--> CS2["105"]
-        CS2 <--> CS3["106"]
-    end
+```d2
+direction: right
 
-    subgraph cli["Clients (124/125/126)"]
-        CC1["124"]
-        CC2["125"]
-        CC3["126"]
-    end
+srv: "Server (104/105/106)" {
+  style.stroke-dash: 4
+  CS1: "104" { style.border-radius: 8 }
+  CS2: "105" { style.border-radius: 8 }
+  CS3: "106" { style.border-radius: 8 }
+  CS1 <-> CS2
+  CS2 <-> CS3
+}
 
-    cli -->|Service Registration| srv
-    srv -->|Health Checks| cli
-    TRF[Traefik] -->|Consul Catalog| srv
-    DNS["Pi-hole (lxc-dns-01/02)"] -->|".consul :8600"| srv
+cli: "Clients (124/125/126)" {
+  style.stroke-dash: 4
+  CC1: "124" { style.border-radius: 8 }
+  CC2: "125" { style.border-radius: 8 }
+  CC3: "126" { style.border-radius: 8 }
+}
+
+TRF: Traefik { style.border-radius: 8 }
+DNS: "Pi-hole (lxc-dns-01/02)" { style.border-radius: 8 }
+
+cli -> srv: "Service Registration"
+srv -> cli: "Health Checks"
+TRF -> srv: "Consul Catalog"
+DNS -> srv: ".consul :8600"
 ```
 
 Consul läuft auf denselben VMs wie Nomad und Vault:

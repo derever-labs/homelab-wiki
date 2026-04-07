@@ -20,18 +20,21 @@ tags:
 
 ## Architektur
 
-```mermaid
-flowchart LR
-    Internet:::ext --> Traefik:::svc
-    Traefik --> Plugin:::accent["CrowdSec Bouncer<br/>(Traefik Plugin)"]
-    Plugin --> Backend:::svc["Backend Service"]
-    Plugin -.-> Engine:::accent["CrowdSec Engine<br/>(LAPI)"]
-    Engine -.-> Logs:::db["Traefik Logs<br/>(/var/log/docker/traefik/)"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+Internet: Internet
+Traefik: Traefik
+Plugin: CrowdSec Bouncer (Traefik Plugin)
+Backend: Backend Service
+Engine: CrowdSec Engine (LAPI)
+Logs: Traefik Logs { tooltip: "/var/log/docker/traefik/" }
+
+Internet -> Traefik
+Traefik -> Plugin
+Plugin -> Backend
+Plugin -> Engine: { style.stroke-dash: 5 }
+Engine -> Logs: { style.stroke-dash: 5 }
 ```
 
 Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream-Modus werden Entscheidungen periodisch von der Engine abgeholt und gecacht — kein API-Call pro Request.

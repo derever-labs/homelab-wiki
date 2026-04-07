@@ -26,18 +26,21 @@ tags:
 
 Der Runner ist ein self-hosted GitHub Actions Runner, der als Nomad Service Job auf dem Cluster läuft. Er übernimmt die CI/CD Pipeline für das [Wiki](../vitepress-wiki/index.md) -- bei jedem Push auf `main` wird das VitePress Wiki gebaut und deployed.
 
-```mermaid
-flowchart LR
-    GH:::ext["GitHub<br/>derever/homelab-wiki"]
-    GH -->|"Webhook: push on main"| Runner:::svc["GitHub Runner<br/>(Nomad Job)"]
-    Runner -->|"docker build"| ZOT:::svc["ZOT Registry<br/>(localhost:5000)"]
-    Runner -->|"nomad job run"| Nomad:::svc["Nomad API"]
-    Nomad -->|"Pull Image"| Wiki:::svc["Wiki Container"]
-    Runner -->|"PAT Auth"| Vault:::accent["Vault<br/>kv/github-runner"]
+```d2
+direction: right
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+GH: "GitHub\nderever/homelab-wiki"
+Runner: "GitHub Runner\n(Nomad Job)"
+ZOT: "ZOT Registry\n(localhost:5000)"
+Nomad: Nomad API
+Wiki: Wiki Container
+Vault: "Vault\nkv/github-runner"
+
+GH -> Runner: Webhook: push on main
+Runner -> ZOT: docker build
+Runner -> Nomad: nomad job run
+Nomad -> Wiki: Pull Image
+Runner -> Vault: PAT Auth
 ```
 
 ## Docker-in-Docker

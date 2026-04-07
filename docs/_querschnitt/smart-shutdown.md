@@ -18,18 +18,22 @@ Beim Standard-Shutdown beendet systemd Dienste oft parallel. Wenn der Nomad-Agen
 
 ## Ablauf
 
-```mermaid
-flowchart TD
-    A["Shutdown/Reboot angefordert"] --> B["nomad-shutdown-drain.service"]
-    B --> C["Nomad Node Drain aktivieren<br>(Allocations migrieren)"]
-    C --> D["Warten bis Drain abgeschlossen"]
-    D --> E["Linstor-Volumes werden ausgehängt"]
-    E --> F["systemd fährt restliche Dienste herunter"]
-    F --> G["Node offline"]
-    G --> H["Node startet neu"]
-    H --> I["nomad-boot-enable.service"]
-    I --> J["Nomad Node Drain deaktivieren"]
-    J --> K["Node nimmt wieder Allocations an"]
+```d2
+direction: down
+
+A: Shutdown/Reboot angefordert { style.border-radius: 8 }
+B: nomad-shutdown-drain.service { style.border-radius: 8 }
+C: Nomad Node Drain aktivieren (Allocations migrieren) { style.border-radius: 8 }
+D: Warten bis Drain abgeschlossen { style.border-radius: 8 }
+E: Linstor-Volumes werden ausgehängt { style.border-radius: 8 }
+F: systemd fährt restliche Dienste herunter { style.border-radius: 8 }
+G: Node offline { style.border-radius: 8 }
+H: Node startet neu { style.border-radius: 8 }
+I: nomad-boot-enable.service { style.border-radius: 8 }
+J: Nomad Node Drain deaktivieren { style.border-radius: 8 }
+K: Node nimmt wieder Allocations an { style.border-radius: 8 }
+
+A -> B -> C -> D -> E -> F -> G -> H -> I -> J -> K
 ```
 
 ## Lösung (Version v9.0)

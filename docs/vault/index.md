@@ -30,20 +30,23 @@ Bei Vault-Ausfall können laufende Dienste keine Secrets mehr erneuern und neue 
 
 ## Architektur
 
-```mermaid
-graph LR
-    subgraph raft["Vault Raft Cluster"]
-        direction TB
-        V1["104 Standby"]
-        V2["105 Leader"]
-        V3["106 Standby"]
-        V1 <--> V2
-        V2 <--> V3
-        V3 <--> V1
-    end
+```d2
+direction: right
 
-    NJ[Nomad Task] -->|JWT| raft
-    raft -->|Secret| NJ
+raft: "Vault Raft Cluster" {
+  style.stroke-dash: 4
+  V1: "104 Standby" { style.border-radius: 8 }
+  V2: "105 Leader" { style.border-radius: 8 }
+  V3: "106 Standby" { style.border-radius: 8 }
+  V1 <-> V2
+  V2 <-> V3
+  V3 <-> V1
+}
+
+NJ: "Nomad Task" { style.border-radius: 8 }
+
+NJ -> raft: JWT
+raft -> NJ: Secret
 ```
 
 Vault läuft als 3-Node Raft Cluster. Jeder Server führt einen eigenen Vault-Prozess aus. Die Leader-Election erfolgt über das Raft-Konsensprotokoll: es gibt immer genau einen Leader, die anderen beiden sind Standby-Nodes.
@@ -63,14 +66,21 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 
 Nomad-Jobs authentifizieren sich bei Vault über JWT-basierte Workload Identity. Dadurch brauchen Jobs keine statischen Tokens -- die Identität ergibt sich aus dem Job selbst.
 
-```mermaid
-sequenceDiagram
-    Nomad->>Task: JWT ausstellen
-    Task->>Vault: JWT vorzeigen
-    Vault->>Vault: Signatur prüfen (JWKS)
-    Vault-->>Task: Token (Policy: nomad-workloads)
-    Task->>Vault: kv/data/job_id lesen
-    Vault-->>Task: Secret
+```d2
+workload_identity: {
+  shape: sequence_diagram
+
+  Nomad: Nomad
+  Task: Task
+  Vault: Vault
+
+  Nomad -> Task: "JWT ausstellen"
+  Task -> Vault: "JWT vorzeigen"
+  Vault -> Vault: "Signatur prüfen (JWKS)"
+  Vault -> Task: "Token (Policy: nomad-workloads)" { style.stroke-dash: 5 }
+  Task -> Vault: "kv/data/job_id lesen"
+  Vault -> Task: Secret { style.stroke-dash: 5 }
+}
 ```
 
 Jeder Task, der Vault-Secrets benötigt, braucht eine `vault {}` Stanza und einen `identity` Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](referenz.md)

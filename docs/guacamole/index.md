@@ -29,35 +29,33 @@ Guacamole ist ein clientloser Remote-Desktop-Gateway. Über den Browser können 
 
 Das verwendete Image (`oznu/guacamole`) ist ein All-in-One-Container, der sowohl den Guacamole-Webserver als auch den guacd-Proxy-Daemon enthält.
 
-```mermaid
-flowchart LR
-    USER:::entry["Browser"]
+```d2
+direction: right
 
-    subgraph Traefik["Traefik (10.0.2.20)"]
-        R1:::svc["Router: remote.*<br>intern-auth"]
-    end
+USER: Browser
 
-    subgraph Nomad["Nomad Cluster"]
-        GUAC:::accent["Guacamole<br>(Web + guacd)"]
-    end
+Traefik: Traefik (10.0.2.20) {
+  style.stroke-dash: 4
+  R1: Router: remote.* (intern-auth)
+}
 
-    subgraph Targets["Interne Ziele"]
-        RDP:::ext["Windows VMs<br>(RDP)"]
-        VNC:::ext["Linux VMs<br>(VNC)"]
-        SSH:::ext["Server<br>(SSH)"]
-    end
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  GUAC: Guacamole (Web + guacd)
+}
 
-    USER -->|HTTPS| R1
-    R1 --> GUAC
-    GUAC -->|RDP| RDP
-    GUAC -->|VNC| VNC
-    GUAC -->|SSH| SSH
+Targets: Interne Ziele {
+  style.stroke-dash: 4
+  RDP: Windows VMs (RDP)
+  VNC: Linux VMs (VNC)
+  SSH: Server (SSH)
+}
 
-    classDef ext fill:#fef2f2,stroke:#e11d48,stroke-width:1.5px,color:#1e293b
-    classDef db fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e293b
-    classDef svc fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#1e293b
-    classDef entry fill:#fefce8,stroke:#eab308,stroke-width:1.5px,color:#1e293b
-    classDef accent fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e293b
+USER -> Traefik.R1: HTTPS
+Traefik.R1 -> Nomad.GUAC
+Nomad.GUAC -> Targets.RDP: RDP
+Nomad.GUAC -> Targets.VNC: VNC
+Nomad.GUAC -> Targets.SSH: SSH
 ```
 
 ## Konfiguration
