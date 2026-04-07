@@ -67,7 +67,7 @@ Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren,
 | mosquitto-data | 1 GiB | MQTT Persistence |
 | obsidian-livesync-data | 1 GiB | CouchDB |
 | paperless-data | 20 GiB | Paperless-ngx Dokumente |
-| postgres-data | 10 GiB | PostgreSQL Datenbank (zentral) |
+| postgres-data | 20 GiB | PostgreSQL Datenbank (zentral) |
 | sabnzbd-config | 1 GiB | SABnzbd Download Client |
 | stash-data | 10 GiB | Stash Media Organizer |
 | stash-secure-data | 2 GiB | Stash-Secure Config/Cache/Metadata |
