@@ -3,6 +3,74 @@
   padding-bottom: 10px !important;
 }
 
+/* D2 Diagramme: Zoom-Button */
+.d2-zoom-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: var(--vp-c-text-3);
+  opacity: 0;
+  transition: opacity 0.2s;
+  line-height: 0;
+}
+
+.d2-diagram:hover .d2-zoom-btn {
+  opacity: 1;
+}
+
+.d2-zoom-btn:hover {
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg-mute);
+}
+
+/* D2 Diagramme: Zoom-Overlay */
+.d2-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--vp-c-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+  animation: d2-fade-in 0.2s ease;
+}
+
+.d2-zoom-overlay svg {
+  max-width: 95vw;
+  max-height: 95vh;
+  width: auto;
+  height: auto;
+}
+
+@keyframes d2-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* D2 Diagramme: JS-Tooltip */
+.d2-tooltip {
+  display: none;
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--vp-font-family-base);
+  white-space: nowrap;
+  z-index: 10000;
+  pointer-events: none;
+}
+
 /* Build-Zeitstempel in der Nav-Bar */
 .build-timestamp {
   font-size: 12px;
