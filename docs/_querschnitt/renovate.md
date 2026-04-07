@@ -10,7 +10,7 @@ tags:
 
 # Renovate
 
-Renovate Self-Hosted scannt das Repository `derever/infra` täglich nach veralteten Docker-Images in Nomad-Job-Dateien und erstellt Pull Requests für verfügbare Updates.
+Renovate Self-Hosted scannt täglich alle Repositories im `derever`-Account nach veralteten Dependencies und erstellt Pull Requests für verfügbare Updates. Neben Docker-Images in Nomad-Dateien erkennt Renovate auch npm, Dockerfile, pip, GitHub Actions und weitere Dependency-Typen automatisch.
 
 ## Warum
 
@@ -47,11 +47,11 @@ Folgende Packages werden nie automatisch gemerged, unabhängig vom Update-Typ: `
 
 ## Dependency Dashboard
 
-Renovate erstellt ein GitHub Issue als Dependency Dashboard im Repository `derever/infra`. Dieses Issue zeigt eine Übersicht aller erkannten Dependencies, offenen PRs und blockierten Updates.
+Renovate erstellt in jedem gescannten Repository ein GitHub Issue als Dependency Dashboard. Dieses Issue zeigt eine Übersicht aller erkannten Dependencies, offenen PRs und blockierten Updates.
 
 ## Voraussetzungen
 
-- **Vault Secret** `kv/renovate`: GitHub PAT mit Scope Contents, Issues, Pull Requests (R/W) auf `derever/infra`
+- **Vault Secret** `kv/renovate`: GitHub Fine-grained PAT mit Scope Contents, Issues, Pull Requests (R/W) auf alle Repositories im `derever`-Account
 - **Vault Secret** `kv/uptime-kuma`: Push-URL für Erfolgs-Monitoring (`renovate_push`)
 - **NFS-Volume:** `/nfs/renovate-cache` für den Renovate-Cache (beschleunigt wiederholte Scans)
 - **Node Constraint:** `vm-nomad-client-0[456]` (NFS-Zugang erforderlich)
