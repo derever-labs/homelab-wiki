@@ -38,7 +38,7 @@ jobs:
       - name: GitHub Issue bei Dead Links
         if: steps.build.outcome == 'failure'
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -80,7 +80,7 @@ jobs:
       - name: Dead-Links Issue schliessen
         if: steps.build.outcome == 'success'
         continue-on-error: true
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const {data: issues} = await github.rest.issues.listForRepo({
