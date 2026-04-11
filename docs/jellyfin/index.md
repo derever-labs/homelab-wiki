@@ -107,6 +107,20 @@ Der LDAP Provider nutzt **Cached Bind + Cached Search Mode**: Der erste Login pr
 Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.
 :::
 
+## Metadata-Provider (TMDb)
+
+Jellyfin bezieht Filmmetadaten und Poster von [TheMovieDb](https://themoviedb.org). Die Library-Konfiguration nutzt die ImageFetcher-Reihenfolge `TheMovieDb → Embedded Image Extractor → Screen Grabber` -- die beiden Fallbacks extrahieren Standbilder aus der Video-Datei, wenn TMDb kein Poster liefert (Querformat statt Hochformat).
+
+### IPv6-Disable für TMDb-Requests
+
+`api.themoviedb.org` antwortet dual-stack mit AAAA- und A-Records. Die Homelab-VMs haben aber keine IPv6-Route nach aussen, weshalb der .NET-HttpClient von Jellyfin sporadisch in IPv6-Timeouts lief (Happy-Eyeballs) -- sichtbar im Log als `System.Net.Http.HttpRequestException: Resource temporarily unavailable (api.themoviedb.org:443)`. Im Schnitt traten so ~10 Netzwerkfehler pro Tag auf. Wenn der Fehler beim initialen Scan eines neuen Films fiel, blieb dieser ohne Poster in der Datenbank und wurde nie automatisch retried -- der Fallback-Provider extrahierte stattdessen ein Standbild aus dem Video.
+
+Die Environment-Variable `DOTNET_SYSTEM_NET_DISABLEIPV6=1` im Job zwingt die .NET-Runtime, ausschliesslich IPv4 zu verwenden. Das eliminiert die Timeouts dauerhaft, bleibt update-sicher (keine Datei-Patches im Container) und respektiert die Eigenheit, dass der Embedded Image Extractor **immer** als letzter Fallback greift.
+
+::: tip Locked Movies
+Jellyfins `LockData=true` verhindert, dass ein Refresh (auch mit `replaceAllImages=true`) Metadata oder Images überschreibt. Wer einzelne Felder (z.B. `OfficialRating`) vor Überschreibung schützen möchte, sollte stattdessen granulare `LockedFields` setzen, sonst bleiben auch falsche Poster dauerhaft stehen.
+:::
+
 ## Täglicher Restart
 
 Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet Jellyfin täglich um 04:00 Uhr neu. Das behebt Memory-Leaks und räumt temporäre Daten auf. Siehe [Batch Jobs](../_querschnitt/batch-jobs.md).
