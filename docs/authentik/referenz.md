@@ -109,16 +109,17 @@ Wichtige konfigurierte Stages (für API-Referenz):
 
 ## OIDC Providers
 
-Services mit nativer OIDC-Unterstützung werden direkt als Provider-Client in Authentik konfiguriert. Die App übernimmt den Login-Dialog selbst und tauscht Token mit Authentik aus. Die Traefik-Chain ist in diesen Fällen `intern-noauth@file`.
+Services mit nativer OIDC-Unterstützung werden direkt als Provider-Client in Authentik konfiguriert. Die App übernimmt den Login-Dialog selbst und tauscht Token mit Authentik aus. Services mit nativem OIDC verwenden zusätzlich `intern-auth@file` als Defense-in-Depth-Schicht (ForwardAuth + IP-Allowlist).
 
 | Service | Methode | Traefik Chain | Besonderheiten |
 | :--- | :--- | :--- | :--- |
-| Grafana | Natives OIDC | `intern-noauth@file` | `GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP=true` für Account-Linking |
+| Grafana | Natives OIDC | `intern-auth@file` | `GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP=true` für Account-Linking |
 | Gitea | Natives OIDC | `intern-noauth@file` | Auth-Source via `gitea admin auth update-oauth` konfiguriert |
 | Open-WebUI | Natives OIDC | `intern-noauth@file` | `OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true` für Account-Linking |
-| Paperless | Natives OIDC | `intern-noauth@file` | OIDC via `allauth.socialaccount.providers.openid_connect` |
+| Paperless | Natives OIDC | `intern-auth@file` | OIDC via `allauth.socialaccount.providers.openid_connect` |
+| n8n | Natives OIDC | `intern-auth@file` | Workflow-Automation |
 | Proxmox VE | Natives OIDC | — (direkt :8006) | OpenID Realm `authentik`, ACME-Certs via Cloudflare DNS |
-| Authentik selbst | — | `login-ratelimit@file,crowdsec@file,secure-headers@file` | |
+| Authentik selbst | — | `login-ratelimit@file,crowdsec@file,secure-headers@file` | Admin-UI zusätzlich hinter IP-Allowlist |
 | Alle anderen | ForwardAuth via Proxy Outpost | `intern-auth@file` oder `public-auth@file` | |
 
 ### OIDC Provider-Konfiguration
@@ -160,7 +161,20 @@ Das Default-Brand hat den Titel `ackermannprivat.ch` und verwendet das Custom-CS
 
 Das CSS wird nicht aus dem Repo gerendert -- es muss nach jeder Änderung über die Authentik-API auf den Brand gepushed werden (Feld `branding_custom_css`).
 
-Favicon und Logo verweisen auf `https://ackermannprivat.ch/favicon.ico` bzw. das Default-Authentik-Logo.
+Favicon und Logo verweisen auf `https://wiki.ackermannprivat.ch/brand-favicon.svg` bzw. `https://wiki.ackermannprivat.ch/brand-logo.svg`. Die SVGs liegen im Wiki-Repository unter `docs/public/` und werden bei jedem Wiki-Deploy automatisch aktualisiert.
+
+## Traefik-Integration
+
+Authentik hat drei dedizierte Traefik-Router mit unterschiedlichen Middleware-Chains:
+
+- **`authentik`** (Haupt-Router) -- `login-ratelimit@file`, `crowdsec@file`, `secure-headers@file`
+- **`authentik-admin`** (Priority 2000) -- `PathPrefix(/if/admin/)` mit `intern-noauth@file` (IP-Allowlist), `crowdsec@file`, `secure-headers@file`. Die Admin-UI ist nur aus dem internen Netz erreichbar
+- **`authentik-api`** (Priority 1500) -- `PathPrefix(/api/)` mit `api-ratelimit@file` (100 req/min), `crowdsec@file`, `secure-headers@file`
+- **`authentik-callback`** (Priority 1000) -- `PathPrefix(/outpost.goauthentik.io/)` mit `crowdsec@file`, `secure-headers@file`. Kritisch für alle ForwardAuth- und OIDC-Flows
+
+Die `secure-headers@file` Middleware setzt neben HSTS und X-Frame-Options auch eine Content-Security-Policy (`frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'`).
+
+Access-Logs in Traefik sind so konfiguriert, dass sicherheitsrelevante Header (`Cookie`, `Authorization`, `X-Authentik-Jwt`, etc.) redacted werden, bevor sie via Alloy nach Loki fliessen.
 
 ## Benutzerverwaltung
 
