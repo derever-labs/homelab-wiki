@@ -109,6 +109,7 @@ Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der ers
 | Flow | Zweck |
 | :--- | :--- |
 | Default Authentication | Login mit E-Mail/Passwort (Single-Page, inkl. MFA) |
+| Default Recovery | Passwort-Zurücksetzung per E-Mail-Link |
 | `ldap-authentication-flow` | Minimaler Flow nur für LDAP-Binds (Password + Login, kein MFA) |
 | Default Invalidation | Logout (Session-Invalidierung) |
 
@@ -120,7 +121,8 @@ Der Default Authentication Flow wurde für Passwortmanager-Kompatibilität optim
 
 - **Single-Page Login:** Die Password Stage ist direkt in der Identification Stage eingebunden (`password_stage` Feld), sodass E-Mail und Passwort auf einer Seite erscheinen
 - **Nur E-Mail:** `user_fields` ist auf `["email"]` gesetzt (kein Username-Login)
-- **Custom CSS:** Über die Brand-Einstellungen (`branding_custom_css`) wird das Login-Formular minimalistisch gestaltet -- Labels, Sprachauswahl, Footer und Pflichtfeld-Sternchen sind ausgeblendet, Placeholder-Texte per CSS-Trick auf "E-Mail" und "Passwort" vereinfacht
+- **Recovery-Link:** Die Identification Stage ist über `recovery_flow` mit dem Default Recovery Flow verknüpft -- unter dem Anmelden-Button erscheint ein dezenter Link "Benutzername oder Passwort vergessen?". Die Recovery-Mail wird über die globalen SMTP-Settings (`AUTHENTIK_EMAIL__*` aus dem Nomad-Job) verschickt, die Email-Stage hat `use_global_settings=true`
+- **Custom CSS:** Über die Brand-Einstellungen (`branding_custom_css`) wird das Login-Formular minimalistisch gestaltet -- Labels, Sprachauswahl, Footer und Pflichtfeld-Sternchen sind ausgeblendet, Placeholder-Texte per CSS-Trick auf "E-Mail" und "Passwort" vereinfacht, der Recovery-Link sitzt dezent und zentriert innerhalb des Login-Cards
 - **CSS-Backup:** `PRIVAT/infra/authentik-custom-css.txt`
 
 ## Integration mit Traefik
