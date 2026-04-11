@@ -117,6 +117,31 @@ Die konkreten Zahlen (CPU, RAM, Worker-Counts) stehen im Nomad-Job -- nicht im W
 Authentik hat Redis in Version 2025.10 vollständig entfernt. Cache, Sessions, WebSockets und Task-Queue laufen über PostgreSQL. Das spart einen Service, erhöht aber die Last auf der Datenbank -- Autovacuum-Tuning ist deshalb wichtig.
 :::
 
+## Outpost-Token-Rotation
+
+Die Proxy- und LDAP-Outposts authentifizieren sich mit langlebigen Tokens aus Vault (`kv/data/authentik-outpost`). Diese Tokens haben kein eingebautes Ablaufdatum, müssen aber regelmässig rotiert werden, um das Risiko eines kompromittierten Tokens zu begrenzen.
+
+**Rotationskonzept:**
+
+- **Zielintervall:** 90 Tage
+- **Tracking:** Vault-Metadata-Feld `rotated_at` auf dem Secret-Path. Wird bei jeder Rotation auf das aktuelle Datum gesetzt
+- **Warnung:** Ein periodischer Nomad-Batch-Job prüft das `rotated_at`-Feld. Ist der Wert älter als 80 Tage, geht eine Warnung via Telegram-Relay raus
+- **Rotation selbst:** Manueller Prozess -- neues Token in der Authentik-UI generieren, in Vault schreiben, Nomad-Job redeployen. Automatische Rotation wäre möglich, erhöht aber die Komplexität ohne grossen Nutzen im Homelab
+
+::: warning Rotation nicht vergessen
+Ein kompromittiertes Outpost-Token gibt vollen Zugriff auf den Authentik-Server. Im Gegensatz zu den kurzlebigen OIDC-Tokens verfallen Outpost-Tokens nie von allein.
+:::
+
+## Schutzmechanismen gegen Brute-Force
+
+Authentik ist mit mehreren Schichten gegen Brute-Force-Angriffe geschützt. Die Schichten arbeiten unabhängig voneinander:
+
+- **Traefik Rate-Limit** (`login-ratelimit`) -- greift auf HTTP-Ebene bevor Authentik den Request überhaupt sieht. Schützt gegen automatisierte Massenlogins von einer einzelnen IP
+- **Authentik Reputation Policy** -- greift auf Flow-Ebene nach der Passwort-Validierung. Sperrt IP+Username-Kombinationen nach wiederholten Fehlversuchen. Decay-basiert, entsperrt sich nach wenigen Minuten automatisch
+- **CrowdSec** (`crowdsec@file`) -- greift auf IP-Ebene am Traefik-Entrypoint. Blockt bekannte bösartige IPs aus Community-Blocklisten
+
+CrowdSec und die Reputation Policy ergänzen sich: CrowdSec reagiert auf bekannte Angreifer-IPs (proaktiv), die Reputation Policy auf tatsächliche Fehlversuche (reaktiv). Eine tiefere Integration (z.B. CrowdSec-Parser für Authentik-Events) ist im Homelab nicht nötig -- die Reputation Policy deckt den reaktiven Fall ab, CrowdSec den proaktiven.
+
 ## Bootstrap (Ersteinrichtung)
 
 ::: info Reihenfolge bei Erstdeploy
