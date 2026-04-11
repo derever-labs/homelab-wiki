@@ -20,7 +20,7 @@ Stash ist ein selbstgehosteter Media Organizer fuer Videos und Bilder. Er bietet
 | **URL** | [s.ackermannprivat.ch](https://s.ackermannprivat.ch) | [secure.ackermannprivat.ch](https://secure.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/stash.nomad`) | Nomad Job (`media/stash-secure.nomad`) |
 | **Image** | `stashapp/stash:latest` | `stashapp/stash:latest` |
-| **Prioritaet** | 95 (kritisch) | 95 (kritisch) |
+| **Prioritaet** | 80 (unter Jellyfin) | 95 (kritisch) |
 | **Config-Storage** | Linstor CSI Volume (`stash-data`) | Linstor CSI Volume (`stash-secure-data`) |
 | **Media-Storage** | NFS (shared mit Downloadern) | NFS (separates Verzeichnis) |
 | **Auth** | Authentik ForwardAuth (`intern-auth`) | Authentik ForwardAuth (`intern-auth`) |
@@ -91,6 +91,18 @@ Die Haupt-Instanz hat deutlich hoehere Ressourcen, da sie fuer Metadaten-Generie
 
 - **stash:** 2000 MHz CPU, 4 GB RAM (Burst bis 8 GB), SQLite Cache 16 MiB
 - **stash-secure:** 1024 MHz CPU, 128 MB RAM (Burst bis 256 MB)
+
+### Prioritaet und Preemption
+
+Die Haupt-Instanz laeuft mit Nomad-Prioritaet **80**, bewusst unter Jellyfin (95) und stash-secure (95). Grund: alle drei Services teilen sich den Constraint auf die Linstor-Storage-Nodes (`vm-nomad-client-05` oder `06`). Faellt eine der beiden Nodes aus, muessen alle drei auf der verbleibenden Node laufen. Durch die niedrigere Prioritaet wird `stash` bei Ressourcen-Knappheit von Nomad zuerst preempted -- Jellyfin als User-facing Streaming-Service und `stash-secure` mit persoenlichem Material behalten Vorrang.
+
+### Hardware-Beschleunigung
+
+Die Haupt-Instanz bindet die Intel Iris Xe iGPU (`/dev/dri/renderD128`, `/dev/dri/card1`) ein und teilt sie mit Jellyfin -- Linux DRM erlaubt concurrent access. In der Stash-Konfiguration ist `transcodeHardwareAcceleration` aktiv.
+
+::: warning Gueltigkeitsbereich
+Die HW-Beschleunigung wirkt in Stash ausschliesslich bei **Live-Transcoding**, also wenn die UI im Browser ein Video abspielen will, dessen Format nicht nativ vom Browser unterstuetzt wird (z.B. H.265 zu H.264). **Metadata-Generierung** (Preview-Clips, Sprites, Thumbnails, perceptual Hashes) laeuft architekturbedingt immer auf der CPU und profitiert nicht von der iGPU. Entsprechend ist das CPU-Budget der Haupt-Instanz (2000 MHz, Burst 4 GB RAM) weiterhin der limitierende Faktor fuer die Preview-Generation nach Batch-Downloads.
+:::
 
 ### Linstor CSI Volumes
 
