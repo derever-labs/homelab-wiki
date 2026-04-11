@@ -115,6 +115,26 @@ Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für
 
 Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet Jellyfin täglich um 04:00 Uhr neu. Das behebt Memory-Leaks und räumt temporäre Daten auf. Siehe [Batch Jobs](../_querschnitt/batch-jobs.md).
 
+## Private Kurator-Playlists
+
+Für persönliche Film-Kuratierung nutzt der Admin-Account zwei Playlists, die ausschliesslich in seinem Jellyfin-Profil sichtbar sind. Die Taxonomie lebt serverseitig in Radarr-Tags (`jf-cinema-a`, `jf-cinema-b`) -- die Mitgliedschaft wird von einem periodischen Nomad-Batchjob (`batch-jobs/jellyfin_adult_sync.nomad`) abgeglichen, der täglich um 04:15 Uhr nach dem Restart läuft.
+
+Der Job macht drei Dinge:
+
+1. Liest die beiden Radarr-Tags und matcht die TMDb-IDs gegen die Jellyfin-Movies-Library.
+2. Setzt für passende Items in der Jellyfin-SQLite-DB `OfficialRating='XXX'` plus granulares `LockedFields=[OfficialRating]` (damit Metadaten-Refreshes andere Felder frei aktualisieren können, das Rating aber nie überschrieben wird). Triggert danach einen Nomad-Alloc-Restart, damit Jellyfin den In-Memory-Cache neu lädt.
+3. Fügt fehlende Items in die beiden privaten Playlists ein.
+
+::: info Warum Radarr-Tags als Taxonomie-Quelle
+Die Kategorisierung lebt ausschliesslich serverseitig in Radarr-Tags und benötigt keine lokale Mapping-Datei. Zum Verschieben eines Films zwischen den beiden Playlists reicht es, in Radarr das Tag umzustellen -- der nächste Sync-Lauf zieht die Änderung automatisch nach.
+:::
+
+::: warning In-Memory-Cache-Quirk
+Direkte SQLite-Writes an der Jellyfin-DB werden vom laufenden Prozess **nicht** erkannt, bis ein Restart den In-Memory-Cache neu lädt. Deshalb triggert der Sync-Job nach jedem DB-Update explizit einen Nomad-Alloc-Restart und wartet, bis Playlists-API wieder antwortet, bevor er die Playlist-Items nachfährt. Für Änderungen ohne DB-Fix (nur Playlist-Pflege) ist kein Restart nötig.
+:::
+
+Secrets werden aus `kv/data/jellyfin-adult-sync` in Vault gelesen (Radarr-Key, Jellyfin-Key, Playlist-IDs, Nomad-Token).
+
 ## Beziehung zu Jellyseerr
 
 [Jellyseerr](../jellyseerr/index.md) ist das Wunschsystem für neue Medien. Benutzer (Familie, Gäste) können über `wish.ackermannprivat.ch` Filme und Serien anfordern. Jellyseerr prüft bei Jellyfin die Verfügbarkeit und leitet fehlende Medien an den Arr-Stack weiter.
