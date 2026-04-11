@@ -16,7 +16,7 @@ tags:
 | Primärer DNS | 10.0.2.1 (lxc-dns-01) |
 | Sekundärer DNS | 10.0.2.2 (lxc-dns-02) |
 | Deployment | Bare-metal in LXC (Terraform + Ansible) |
-| Sync | Nebula-Sync (Nomad-Job, Full Teleporter, alle 30 Min) |
+| Sync | Nebula-Sync (Nomad-Job, Full Teleporter, täglich 04:00) |
 
 ## DNS-Kette
 
@@ -84,7 +84,7 @@ Rekursiver Resolver mit DNSSEC-Validierung. Löst Anfragen direkt gegen die Root
 | Eigenschaft | Wert |
 |-------------|------|
 | Port | 5335 (localhost) |
-| DNSSEC | Aktiv |
+| DNSSEC | Aktiv (Unbound validiert, Pi-hole selbst NICHT -- doppelte Validierung ist unnötig und erzeugt Warnings) |
 | Modus | Rekursiv (kein Forwarding) |
 | Config | `/etc/unbound/unbound.conf.d/pi-hole.conf` |
 
@@ -105,12 +105,16 @@ Ein Nomad-Job synchronisiert die Pi-hole-Konfiguration von lxc-dns-01 (Primary) 
 | Eigenschaft | Wert |
 |-------------|------|
 | Modus | Full Sync (Teleporter) |
-| Intervall | Alle 30 Minuten |
+| Intervall | Täglich 04:00 Uhr |
 | Nomad-Job | `nebula-sync` |
 | Image | `lovelaze/nebula-sync` |
 | Credentials | Nomad Variable `nomad/jobs/nebula-sync` |
 
 Synchronisiert werden: Blocklists, Custom DNS Records, Gruppen, Clients, Einstellungen. **Nicht** synchronisiert: `/etc/dnsmasq.d/`-Dateien (werden über Ansible identisch deployed).
+
+::: info Warum nur täglich?
+Jeder Teleporter-Import triggert einen `pihole-FTL`-Restart. Während des Restarts (~1-2 s) liefert PiHole-2 keine DNS-Antworten, was Uptime-Kuma-Monitore flappen liess. Pi-hole-Konfigurationen ändern sich selten -- ein täglicher Sync reicht vollkommen.
+:::
 
 ## Docker Daemon DNS
 
