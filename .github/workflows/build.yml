@@ -21,19 +21,56 @@ jobs:
 
       - run: npm ci
 
+      # D2 muss auf dem Runner installiert sein -- pruefen und Warnung falls fehlend
+      - name: D2 verfuegbarkeit pruefen
+        id: d2check
+        run: |
+          if command -v d2 &>/dev/null; then
+            echo "D2 gefunden: $(d2 --version)"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::d2 Binary nicht gefunden -- D2-Diagramme werden nicht gerendert"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build VitePress
         id: build
         run: npx vitepress build docs 2>&1 | tee /tmp/vitepress-build.log
         continue-on-error: true
 
       - name: Fallback-Build (Dead Links ignoriert)
+        id: fallback
         if: steps.build.outcome == 'failure'
         run: |
-          echo "::warning::VitePress Build fehlgeschlagen (vermutlich Dead Links). Fallback-Build ohne Link-Pruefung."
+          echo "::warning::VitePress Build fehlgeschlagen. Fallback-Build ohne Link-Pruefung."
+
+          # Dead-Link-Fehler separat loggen
           grep -i "dead link" /tmp/vitepress-build.log | while read -r line; do
             echo "::warning::$line"
           done
-          VITEPRESS_IGNORE_DEAD_LINKS=true npx vitepress build docs
+
+          # D2-Fehler separat loggen
+          grep -iE "(d2|diagram)" /tmp/vitepress-build.log | grep -iv "dead link" | while read -r line; do
+            echo "::warning::D2: $line"
+          done
+
+          VITEPRESS_IGNORE_DEAD_LINKS=true npx vitepress build docs 2>&1 | tee /tmp/vitepress-fallback.log
+        continue-on-error: true
+
+      - name: Build-Ergebnis auswerten
+        id: result
+        if: always()
+        run: |
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+            echo "Build erfolgreich (erster Versuch)"
+          elif [ "${{ steps.fallback.outcome }}" = "success" ]; then
+            echo "status=degraded" >> "$GITHUB_OUTPUT"
+            echo "::warning::Build nur mit Fallback erfolgreich"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            echo "::error::Build komplett fehlgeschlagen -- auch Fallback hat nicht funktioniert"
+          fi
 
       - name: GitHub Issue bei Dead Links
         if: steps.build.outcome == 'failure'
@@ -100,7 +137,42 @@ jobs:
             }
 
       - name: Trigger wiki rebuild
+        if: steps.result.outputs.status != 'failed'
         continue-on-error: true
         run: |
           curl -s --max-time 120 \
             "https://wiki.ackermannprivat.ch/_webhook/cgi-bin/pull?token=${{ secrets.WIKI_WEBHOOK_TOKEN }}"
+
+      - name: Telegram bei Build-Fehler
+        if: failure() || steps.result.outputs.status == 'failed'
+        run: |
+          # Fehler-Zusammenfassung erstellen
+          ERRORS=""
+          if [ -f /tmp/vitepress-build.log ]; then
+            ERRORS=$(grep -iE "(error|dead link|failed|ENOENT)" /tmp/vitepress-build.log | head -10 | sed 's/"/\\"/g')
+          fi
+          if [ -f /tmp/vitepress-fallback.log ]; then
+            FALLBACK_ERRORS=$(grep -iE "(error|failed|ENOENT)" /tmp/vitepress-fallback.log | head -5 | sed 's/"/\\"/g')
+            if [ -n "$FALLBACK_ERRORS" ]; then
+              ERRORS="${ERRORS}
+          Fallback: ${FALLBACK_ERRORS}"
+            fi
+          fi
+
+          # Nachricht kuerzen falls zu lang (Telegram max 4096 Zeichen)
+          ERRORS=$(echo "$ERRORS" | head -c 2000)
+
+          MSG="Build fehlgeschlagen: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          Autor: ${{ github.actor }}
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ${ERRORS}"
+
+          curl --silent --show-error --fail --no-progress-meter \
+            -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            -d text="<b>Wiki Build fehlgeschlagen</b>
+          <pre>$(echo "$MSG" | head -c 3500)</pre>" || echo "::warning::Telegram-Benachrichtigung fehlgeschlagen"
