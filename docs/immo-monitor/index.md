@@ -16,10 +16,11 @@ Immo Monitor ist eine SvelteKit-App, die Mietinserate aus dem Homegate-Scraper v
 
 | Attribut | Wert |
 |----------|------|
-| URL | [immo-monitor.ackermannprivat.ch](https://immo-monitor.ackermannprivat.ch) |
+| URL | [immo.ackermannprivat.ch](https://immo.ackermannprivat.ch) |
 | Deployment | Nomad Job `services/immo-monitor.nomad` |
-| Datenbank | PostgreSQL `n8n` (Shared mit n8n und immoscraper) |
-| Auth | `intern-api@file` (intern/VPN) + `public-auth@file` (extern via Authentik) |
+| Datenbank | PostgreSQL `immo` (User `immo`) |
+| Auth | `intern-auth@file` (intern, Authentik + IP-Allowlist) + `public-auth@file` (extern, Authentik + CrowdSec) |
+| Zugriff | Gruppen `admin` und `family` |
 
 ## Rolle im Stack
 
@@ -35,7 +36,7 @@ Browser: Browser { style.border-radius: 8 }
 Traefik: Traefik {
   style.stroke-dash: 4
   tooltip: "10.0.2.20"
-  RI: "intern-api@file (LAN/VPN)" { style.border-radius: 8 }
+  RI: "intern-auth@file (LAN/VPN)" { style.border-radius: 8 }
   RE: "public-auth@file (extern)" { style.border-radius: 8 }
 }
 
@@ -70,23 +71,22 @@ Scraper -> PG: Schreibt Inseratedaten
 
 ## Datenbank
 
-Die App nutzt die bestehende n8n-PostgreSQL-Datenbank (`postgres.service.consul:5432/n8n`).
+Die App nutzt eine eigene PostgreSQL-Datenbank (`postgres.service.consul:5432/immo`, User `immo`).
 
-::: warning Kein eigener DB-User
-Aktuell nutzt die App den `n8n`-User mit vollen Rechten. Für Produktion sollte ein dedizierter `immo_monitor`-User mit eingeschränkten Rechten erstellt werden (SELECT auf alle Tabellen, INSERT/UPDATE nur auf `listing_note`).
+::: warning Eingeschränkte Rechte ausstehend
+Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank. Idealerweise sollten die Rechte eingeschränkt werden (SELECT auf alle Tabellen, INSERT/UPDATE nur auf `listing_note`).
 :::
 
 ## Vault Secrets
 
 | Pfad | Keys |
 | :--- | :--- |
-| `kv/data/n8n` | `db_password` (gleicher User wie n8n und immoscraper) |
+| `kv/data/immo-monitor` | `db_password` |
 
 ## Offene Punkte
 
 - Detail-Scraper: Fotos in `listing_photo` speichern (aktuell 0 Einträge)
-- Dedizierter DB-User `immo_monitor` mit eingeschränkten Rechten
-- GitHub Actions CI/CD Pipeline
+- DB-User `immo` mit eingeschränkten Rechten (SELECT + INSERT/UPDATE nur auf `listing_note`)
 - Filter-State in URL-Params persistieren
 
 ## Verwandte Seiten
