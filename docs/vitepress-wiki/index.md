@@ -88,7 +88,7 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 | **Image** | Siehe Nomad-Job |
 | **Name** | `homelab-runner-0` |
 | **Labels** | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
-| **Scope** | Repo (`derever/homelab-wiki`) |
+| **Scope** | Repo (`derever-labs/homelab-wiki`) |
 | **Auth** | Access Token aus Vault (`kv/github-runner`) |
 | **Netzwerk** | Host-Modus (für ZOT Registry localhost:5000) |
 

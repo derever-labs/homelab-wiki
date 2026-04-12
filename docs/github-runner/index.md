@@ -17,7 +17,7 @@ Der GitHub Actions Runner übernimmt die CI/CD Pipeline für das Wiki -- bei jed
 | Attribut | Wert |
 |----------|------|
 | Deployment | Nomad Job `infrastructure/github-runner.nomad` |
-| Scope | Einzelnes Repo: `derever/homelab-wiki` |
+| Scope | Einzelnes Repo: `derever-labs/homelab-wiki` |
 | Labels | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
 | Auth | Fine-grained PAT aus Vault (`kv/data/github-runner`) |
 
@@ -28,7 +28,7 @@ Der Runner ist ein self-hosted GitHub Actions Runner, der als Nomad Service Job 
 ```d2
 direction: right
 
-GH: "GitHub\nderever/homelab-wiki"
+GH: "GitHub\nderever-labs/homelab-wiki"
 Runner: "GitHub Runner\n(Nomad Job)"
 ZOT: "ZOT Registry\n(localhost:5000)"
 Nomad: Nomad API
