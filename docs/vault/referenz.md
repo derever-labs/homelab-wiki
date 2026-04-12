@@ -14,7 +14,7 @@ tags:
 | Eigenschaft | Wert |
 |-------------|------|
 | Auth Method | `jwt-nomad` |
-| JWKS URL | `http://10.0.2.104:4646/.well-known/jwks.json` |
+| JWKS URL | `https://nomad.service.consul:4646/.well-known/jwks.json` |
 | Default Role | `nomad-workloads` |
 
 Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JWT-Signatur gegen diesen Endpunkt und stellt bei erfolgreicher Prüfung ein Vault-Token mit der Policy `nomad-workloads` aus.
