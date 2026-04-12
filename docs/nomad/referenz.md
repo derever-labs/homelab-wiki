@@ -100,11 +100,29 @@ Betroffen: postgres-drbd, loki, influxdb, gitea, n8n, paperless, kimai, mosquitt
 
 `auto_revert` funktioniert bei System-Jobs (`type = "system"`) erst ab Nomad 1.11. Vor 1.11 wird die update-Stanza bei System-Jobs nur teilweise respektiert (kein Deployment-Tracking, keine Stability-Markierung).
 
+## TLS
+
+Nomad verwendet TLS für die gesamte Kommunikation zwischen Servern und Clients. Die Zertifikate sind selbst-signiert (CA: CN=Nomad CA, O=Homelab, C=CH) und liegen auf den Nodes unter `/etc/nomad.d/tls/`.
+
+- **Server-Nodes** -- `server.pem` / `server-key.pem` (CN=server.global.nomad, gültig bis April 2036)
+- **Client-Nodes** -- `client.pem` / `client-key.pem` (CN=client.global.nomad, gültig bis April 2036)
+- **CA** -- `nomad-ca.pem` auf allen Nodes (gültig bis April 2036)
+
+`verify_server_hostname` ist aktiv -- Clients verifizieren, dass Server-Zertifikate `server.global.nomad` im SAN haben. `verify_https_client` ist deaktiviert -- die HTTP-API ist ohne Client-Zertifikat erreichbar (CLI-Zugang via `NOMAD_SKIP_VERIFY`).
+
+::: info Cert-Generierung
+Das Script `scripts/generate-nomad-tls.sh` generiert CA und Leaf-Zertifikate per OpenSSL. Die Certs werden nicht ins Repository committed (`.gitignore`). Für Neuinstallationen: Script ausführen, dann Ansible mit `nomad_deploy_certs: true`.
+:::
+
+## Gossip Encryption
+
+Der Serf-Gossip-Layer zwischen den Nomad-Servern ist verschlüsselt (aktiviert am 12.04.2026). Der Gossip Key liegt in `group_vars/all.yml` als `nomad_gossip_key`. Clients sind nicht betroffen -- sie kommunizieren per RPC (TLS-gesichert), nicht per Gossip.
+
+::: danger Gossip Key ändern
+Nomad hat keinen Keyring-Mechanismus wie Consul. Bei einem Key-Wechsel müssen alle 3 Server gleichzeitig gestoppt, die Config geändert und gleichzeitig gestartet werden. Ein Rolling Restart führt zu einem Cluster-Split.
+:::
+
 ## Bewusste Entscheidungen
-
-### Kein TLS
-
-Nomad, Consul und Vault laufen ohne TLS. Das ist eine bewusste Entscheidung für das Homelab: Das Netzwerk (10.0.2.0/24) ist isoliert hinter einer OPNsense-Firewall, es gibt keine untrusted Clients. Consul hat Gossip-Encryption aktiv, was den wichtigsten Vektor (Cluster-Membership-Hijacking) abdeckt. Nomad selbst hat keine Gossip-Verschlüsselung konfiguriert. Die Zertifikats-Komplexität (CA-Management, Rotation, Debugging) übersteigt den Sicherheitsgewinn im privaten Netz.
 
 ### Privileged und raw_exec aktiv
 
