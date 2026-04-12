@@ -493,9 +493,23 @@ Homegate liefert Amenities als Boolean-Felder: `hasBalcony`, `hasElevator`, `has
 | Claude Haiku Enrichment | ~CHF 2 |
 | **Total** | **~CHF 32** |
 
+## Zurueckgestellte Plattformen
+
+### newhome.ch (zurueckgestellt)
+
+newhome.ch gehoert den Kantonalbanken/AXA und hat einen eigenstaendigen Datenbestand (nicht SMG). Ein Test-Scrape (2026-04-12) zeigte jedoch ein unguenstiges Kosten-Nutzen-Verhaeltnis:
+
+- Nur **3 Listings fuer Dottikon** (vs. 289 auf Homegate)
+- **Angular SPA** ohne strukturierte JSON-Daten -- braucht fragiles DOM-Parsing
+- **Cloudflare Managed Challenge** -- erzwingt `render_js=true` (30 Credits/Request statt 25)
+- Kein `__INITIAL_STATE__` oder oeffentliche API -- Wartungsaufwand bei Redesign hoch
+
+::: info Entscheidung
+Zurueckgestellt wegen minimalem Mehrwert (3 Listings) bei ueberproportionalem Implementierungs- und Wartungsaufwand. Kann spaeter nachgeholt werden falls sich die Datenlage aendert oder Kantonalbank-Inserate explizit benoetigt werden.
+:::
+
 ## Geplante Erweiterungen
 
-- **newhome.ch** -- Eigenstaendiger Datenbestand (Kantonalbanken, regionale Verwaltungen), nicht im SMG-Pool
 - **erstbezug.ch** -- Neubauprojekte exklusiv, Migration aus n8n-Workflow
 - **Neubau-Research Pipeline** -- Claude Sonnet analysiert Developer-Websites, Baudatenbank AG, Amtsblatt
 - **Pipeline-Discovery** -- Automatische Entdeckung neuer Neubauprojekte via Developer-Websites
