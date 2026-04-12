@@ -16,7 +16,6 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **Version** | Zot v2.1.14 (ghcr.io/project-zot/zot-linux-amd64:latest) |
 | **Primary URL** | localhost:5000 (jeder Node) |
 | **External URL** | [registry.ackermannprivat.ch](https://registry.ackermannprivat.ch) |
 | **Deployment** | Nomad System Job (`infrastructure/zot-registry.nomad`) |
@@ -89,7 +88,7 @@ Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen 
 
 | Parameter | Wert |
 | :--- | :--- |
-| Endpoint | http://10.0.0.200:9000 |
+| Endpoint | MinIO auf NAS (Port 9000) -- siehe [NAS-Speicher](../nas-storage/index.md) |
 | Bucket | zot-registry |
 | Root Directory | /zot |
 | Credentials | Vault `kv/data/zot-s3` (Workload Identity) |
@@ -111,16 +110,16 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 Zot läuft mit `network_mode = "host"` im Nomad Job. Das bedeutet:
 
 - `dns_servers` in der Nomad Docker-Config wird **ignoriert** — Zot nutzt die DNS-Konfiguration des Hosts (systemd-resolved).
-- Wenn die DNS-Server (lxc-dns-01 10.0.2.1 / lxc-dns-02 10.0.2.2) nicht erreichbar sind, können keine Upstream-Registries aufgelöst werden.
+- Wenn die DNS-Server (lxc-dns-01 / lxc-dns-02, Details: [DNS](../dns/index.md)) nicht erreichbar sind, können keine Upstream-Registries aufgelöst werden.
 - systemd-resolved hat eingebaute Fallback-DNS (1.1.1.1, 8.8.8.8) die bei DNS-Ausfall greifen, aber mit Verzögerung.
 
 ## Troubleshooting
 
 ### Langsame Image Pulls (>15s)
 
-1. **DNS prüfen:** `dig @10.0.2.1 registry-1.docker.io +short +timeout=3` (lxc-dns-01) — muss sofort antworten
-2. **Rate Limit prüfen:** `docker logs <zot-container> 2>&1 | grep TOOMANYREQUESTS` — wenn Docker Hub 429 zurückgibt, warten bis Rate Limit abläuft
-3. **Zot Health prüfen:** `curl -s http://localhost:5000/v2/` — muss 200 zurückgeben
+1. **DNS prüfen:** DNS-Auflösung von `registry-1.docker.io` via lxc-dns-01 testen -- muss sofort antworten
+2. **Rate Limit prüfen:** Zot-Container-Logs auf `TOOMANYREQUESTS` prüfen -- wenn Docker Hub 429 zurückgibt, warten bis Rate Limit abläuft
+3. **Zot Health prüfen:** Zot-Endpunkt `http://localhost:5000/v2/` -- muss 200 zurückgeben
 
 ### Nach Cluster-Restart
 

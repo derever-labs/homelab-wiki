@@ -47,7 +47,7 @@ Authentik: Authentik (Nomad Job) {
   AK: Authentik Server { tooltip: "Web UI, API, Flows" }
   WRK: Authentik Worker { tooltip: "Events, Mail, Tasks" }
   PROXY: Proxy Outpost { tooltip: "ForwardAuth Backend" }
-  LDAP_OUT: LDAP Outpost { tooltip: "LDAPS fuer Jellyfin" }
+  LDAP_OUT: LDAP Outpost { tooltip: "LDAPS für Jellyfin" }
 }
 
 Backend: Backend-Services {

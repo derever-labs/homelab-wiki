@@ -18,7 +18,7 @@ tags:
 | **Deployment** | Eigenständige VM (ID: 2000) auf pve01 |
 | **Auth** | CheckMK-eigene Benutzerverwaltung |
 | **Storage** | Lokaler ZFS auf Proxmox Node |
-| **Host-Abdeckung** | ~100 Hosts (inkl. Nomad-Container via Docker Piggyback) |
+| **Host-Abdeckung** | Alle Infrastruktur-Nodes + Nomad-Container via Docker Piggyback |
 
 ## Rolle im Stack
 

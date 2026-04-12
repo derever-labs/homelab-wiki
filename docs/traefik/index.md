@@ -14,7 +14,6 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion (HA) |
-| **Version** | traefik:v3.4 (gepinnt) |
 | **Deployment** | Docker Compose auf vm-traefik-01 + vm-traefik-02 (Ansible rolling deployed) |
 | **VIP** | 10.0.2.20 (Keepalived) |
 | **Dashboard** | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) |
@@ -50,10 +49,10 @@ Traefik läuft im HA-Setup auf zwei VMs mit Keepalived VIP. Bei Ausfall eines No
 
 | Eigenschaft | Wert |
 |-------------|------|
-| VIP | 10.0.2.20 |
-| MASTER | vm-traefik-01 (10.0.2.21, pve01, Priorität 150) |
-| BACKUP | vm-traefik-02 (10.0.2.22, pve02, Priorität 100) |
-| Health-Check | `curl -sf http://localhost:8080/ping` |
+| VIP | 10.0.2.20 (Keepalived) |
+| MASTER | vm-traefik-01 (pve01, Priorität 150) |
+| BACKUP | vm-traefik-02 (pve02, Priorität 100) |
+| Health-Check | Keepalived VRRP-Script prüft Traefik `/ping` |
 
 Keepalived prüft per VRRP-Script ob Traefik antwortet. Bei Ausfall wechselt die VIP automatisch zum BACKUP-Node.
 
@@ -97,11 +96,7 @@ CrowdSec läuft als natives Traefik-Plugin (`crowdsec-bouncer-traefik-plugin`, S
 
 ## Deployment
 
-Traefik wird per Ansible-Rolle `traefik-ha` deployed (rolling, serial: 1):
-
-```
-ansible-playbook standalone-stacks/traefik-ha/deploy.yml --ask-vault-pass
-```
+Traefik wird per Ansible-Rolle `traefik-ha` deployed (rolling, serial: 1) via `standalone-stacks/traefik-ha/deploy.yml`.
 
 Das Playbook:
 1. Synchronisiert Templates (docker-compose, traefik.yml, keepalived.conf)
@@ -113,7 +108,7 @@ Das Playbook:
 ### Härtungen (aktiv auf vm-traefik-01 + vm-traefik-02)
 
 - Docker Provider eliminiert (kein `docker.sock`-Mount)
-- Images gepinnt: `traefik:v3.4`, `nginx:1.28`, `crowdsec:v1.7.7`, `certs-dumper:v2.10`
+- Images gepinnt (Versionen im Docker Compose Stack)
 - VRRP-Authentifizierung aktiv (keepalived `auth_pass`)
 - Dashboard-Port 8080 nur auf localhost gebunden
 - CrowdSec als natives Traefik-Plugin (kein separater ForwardAuth-Bouncer)
@@ -150,13 +145,13 @@ Traefik nutzt ausschliesslich lokalen Storage. NFS für den Reverse Proxy ist ei
 `acme.json` wird bei Verlust automatisch neu generiert (Let's Encrypt stellt innerhalb von Minuten neu aus).
 
 ::: warning Traefik startet nicht nach Reboot
-Falls Traefik nach einem Reboot nicht läuft: `docker compose up -d`. Danach Authentik-Outpost prüfen — er braucht Traefik für OIDC Discovery.
+Falls Traefik nach einem Reboot nicht läuft: Docker Compose Stack manuell starten. Danach Authentik-Outpost prüfen -- er braucht Traefik für OIDC Discovery.
 :::
 
 ## Verwandte Seiten
 
-- [Traefik Middleware Chains](./referenz.md) — Vollständige Middleware-Dokumentation
-- [CrowdSec](../crowdsec/index.md) — IP-Blocking und Threat Intelligence
-- [DNS-Architektur](../dns/index.md) — DNS-Auflösung für *.ackermannprivat.ch
-- [Authentik](../authentik/index.md) — Identity Provider für ForwardAuth
-- [Netzwerk-Topologie](../netzwerk/index.md) — Netzwerkarchitektur und Routing
+- [Traefik Middleware Chains](./referenz.md) -- Vollständige Middleware-Dokumentation
+- [CrowdSec](../crowdsec/index.md) -- IP-Blocking und Threat Intelligence
+- [DNS-Architektur](../dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
+- [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
+- [Netzwerk-Topologie](../netzwerk/index.md) -- Netzwerkarchitektur und Routing

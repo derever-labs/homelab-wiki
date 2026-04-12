@@ -1,6 +1,6 @@
 ---
 title: Jellyfin
-description: Medienserver fuer Filme und Serien mit Intel QSV Hardware-Transcoding und LDAP-Authentifizierung
+description: Medienserver für Filme und Serien mit Intel QSV Hardware-Transcoding und LDAP-Authentifizierung
 tags:
   - service
   - nomad
@@ -16,7 +16,6 @@ tags:
 | :--- | :--- |
 | **Status** | Produktion |
 | **URL** | [watch.ackermannprivat.ch](https://watch.ackermannprivat.ch) |
-| **Image** | `linuxserver/jellyfin:latest` (via lokale Registry) |
 | **Deployment** | Nomad Job (`media/jellyfin.nomad`) |
 | **Nodes** | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
 | **Config Storage** | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
@@ -24,7 +23,7 @@ tags:
 | **Auth** | Kein OAuth -- LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) direkt in Jellyfin |
 | **GPU** | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
 | **Transcoding** | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
-| **Ressourcen** | 2048 MHz CPU, 2 GB RAM (max 16 GB) |
+| **Ressourcen** | Siehe Nomad-Job `media/jellyfin.nomad` |
 | **Priority** | 95 (kritischer Service) |
 
 ## Architektur

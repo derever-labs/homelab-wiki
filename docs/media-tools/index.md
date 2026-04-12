@@ -18,7 +18,6 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | **Status** | Produktion |
 | **URL** | [jellystat.ackermannprivat.ch](https://jellystat.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/jellystat.nomad`) |
-| **Image** | `cyfershepard/jellystat:1.1.7` |
 | **Datenbank** | PostgreSQL (Shared Cluster) |
 | **Storage** | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
 | **Auth** | `intern-auth@file` |
@@ -43,7 +42,6 @@ Statistik- und Analyse-Dashboard für Jellyfin. Zeigt Wiedergabe-Historie, belie
 | **Status** | Produktion |
 | **URL** | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
 | **Deployment** | Nomad Job (`media/janitorr.nomad`) |
-| **Image** | `ghcr.io/schaka/janitorr:stable` |
 | **Storage** | Kein NFS (Config via Nomad Template, kein Log-Mount) |
 | **Traefik** | Deaktiviert (`traefik.enable=false`) |
 
@@ -66,7 +64,6 @@ Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder 
 | **Status** | Produktion |
 | **URL** | [handbrake.ackermannprivat.ch](https://handbrake.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/handbrake.nomad`) |
-| **Image** | `jlesage/handbrake:latest` |
 | **Storage** | NFS `/nfs/docker/handbrake/config/` |
 | **Auth** | `intern-auth@file` |
 
@@ -84,8 +81,7 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 
 ### Besonderheiten
 
-- Hoher Ressourcenbedarf: 1024 MHz CPU, bis zu 10 GB RAM
-- Affinität für `vm-nomad-client-05/06` (mehr CPU/RAM)
+- Hoher Ressourcenbedarf -- Affinität für `vm-nomad-client-05/06` (Details: `media/handbrake.nomad`)
 
 ---
 
@@ -96,7 +92,6 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 | **Status** | Produktion |
 | **URL** | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/lazylibrarian.nomad`) |
-| **Image** | `linuxserver/lazylibrarian:latest` |
 | **Storage** | NFS `/nfs/docker/lazylibrarian/config/` |
 | **Mediathek** | NFS `/nfs/jellyfin/` |
 | **Auth** | `intern-auth@file` |
@@ -113,7 +108,7 @@ Automatisierte Suche und Verwaltung von E-Books und Hörbüchern. Vergleichbar m
 
 ## Verwandte Seiten
 
-- [Media Services](./index.md)
 - [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr
-- [Jellyfin](../jellyfin/index.md)
-- [Audiobookshelf](../audiobookshelf/index.md)
+- [Jellyfin](../jellyfin/index.md) -- Media Player, dessen Mediathek Janitorr und Handbrake nutzen
+- [Audiobookshelf](../audiobookshelf/index.md) -- Hörbuch-Server, ergänzt durch LazyLibrarian
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für alle Media-Tools

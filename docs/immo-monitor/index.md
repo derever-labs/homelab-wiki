@@ -1,74 +1,96 @@
+---
+title: Immo Monitor
+description: Custom Web-App für das Monitoring von Mietinseraten rund um Dottikon AG
+tags:
+  - service
+  - immobilien
+  - nomad
+  - sveltekit
+---
+
 # Immo Monitor
 
-Custom-Web-App fuer das Monitoring von Mietinseraten rund um Dottikon AG (7km Radius).
+## Übersicht
 
-## Zweck
+| Attribut | Wert |
+| :--- | :--- |
+| **Status** | Produktion |
+| **URL** | [immo-monitor.ackermannprivat.ch](https://immo-monitor.ackermannprivat.ch) |
+| **Deployment** | Nomad Job (`services/immo-monitor.nomad`) |
+| **Datenbank** | PostgreSQL `n8n` (Shared mit n8n und immoscraper) |
+| **Auth** | `intern-api@file` (intern/VPN) + `public-auth@file` (extern via Authentik) |
 
-Ersetzt die Kombination aus Metabase + Leaflet + NocoDB durch eine fokussierte Single-Page-App mit:
-- Farbkodierten Karten-Pins (CHF/m²)
-- Foto-Galerie pro Inserat
-- Favoriten/Notizen (Schreibzugriff)
-- Interaktive Filter ueber alle Seiten
-- Marktanalyse-Charts
+## Rolle im Stack
 
-## Tech Stack
-
-- **Frontend:** SvelteKit (Svelte 5, Runes) + adapter-node
-- **UI:** shadcn-svelte + Tailwind CSS v4 (Zinc + Amber)
-- **DB:** Drizzle ORM → PostgreSQL (n8n-DB, gleicher User)
-- **Karten:** Leaflet + CartoDB Positron + leaflet.heat
-- **Charts:** Chart.js
-- **Auth:** Traefik intern-api (IP-Whitelist) + public-auth (Authentik ForwardAuth extern)
+Immo Monitor ersetzt die bisherige Kombination aus Metabase + Leaflet + NocoDB durch eine fokussierte Single-Page-App. Die App liest aus denselben Tabellen, die der Homegate-Scraper befüllt, und bietet Schreibzugriff ausschliesslich auf `listing_note` (Favoriten, Notizen, Ablehnungen).
 
 ## Architektur
 
-```
-Browser → Traefik → immo-monitor:3000 → PostgreSQL (n8n DB)
-                                         ↑
-                                  immoscraper (schreibt Daten)
+```d2
+direction: right
+
+Browser: Browser { style.border-radius: 8 }
+
+Traefik: Traefik {
+  style.stroke-dash: 4
+  tooltip: "10.0.2.20"
+  RI: "intern-api@file (LAN/VPN)" { style.border-radius: 8 }
+  RE: "public-auth@file (extern)" { style.border-radius: 8 }
+}
+
+App: "Immo Monitor (SvelteKit)" { style.border-radius: 8 }
+PG: "PostgreSQL (n8n DB)" { shape: cylinder }
+Scraper: "immoscraper" { style.border-radius: 8 }
+
+Browser -> Traefik.RI: HTTPS intern
+Browser -> Traefik.RE: HTTPS extern
+Traefik.RI -> App
+Traefik.RE -> App
+App -> PG: "Lesen (listing, listing_photo, ...)\nSchreiben (listing_note)"
+Scraper -> PG: Schreibt Inseratedaten
 ```
 
-Die App liest aus den gleichen Tabellen die der Homegate-Scraper befuellt:
-`listing`, `listing_photo`, `amenity`, `listing_amenity`, `listing_price_history`
+## Tech Stack
 
-Schreibzugriff nur auf `listing_note` (Favoriten, Notizen, Ablehnungen).
+- **Frontend:** SvelteKit (Svelte 5, Runes) mit adapter-node
+- **UI:** shadcn-svelte + Tailwind CSS v4 (Zinc + Amber)
+- **ORM:** Drizzle ORM auf PostgreSQL
+- **Karten:** Leaflet + CartoDB Positron + leaflet.heat
+- **Charts:** Chart.js
 
 ## Seiten
 
 - **Home** (`/`): KPIs + neue Inserate seit letztem Besuch (localStorage)
 - **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich
 - **Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld, Preishistorie
-- **Karte** (`/karte`): CartoDB Positron, farbkodierte CircleMarker, Heatmap-Toggle, Filter
-- **Ueberblick** (`/ueberblick`): 4 Charts (Preisverteilung, CHF/m² nach Ort, Zimmer, Amenities)
-- **Vergleich** (`/vergleich`): Side-by-Side Tabelle fuer max 3 Inserate
-
-## Deployment
-
-- **Nomad Job:** `nomad-jobs/services/immo-monitor.nomad`
-- **Image:** `localhost:5000/library/immo-monitor:latest`
-- **Port:** 3000
-- **Health:** `/health` (HTTP, 30s Intervall)
-- **Secrets:** Vault `kv/data/n8n` → `db_password` (gleicher User wie n8n/immoscraper)
-- **Resources:** 300 mCPU, 256 MB RAM, max 512 MB
-
-## URL
-
-`https://immo-monitor.ackermannprivat.ch`
-
-- Intern (LAN/VPN): Direkt via intern-api (IP-Whitelist)
-- Extern: Via public-auth (Authentik ForwardAuth)
+- **Karte** (`/karte`): CartoDB Positron, farbkodierte CircleMarker (CHF/m²), Heatmap-Toggle
+- **Überblick** (`/ueberblick`): 4 Charts (Preisverteilung, CHF/m² nach Ort, Zimmer, Amenities)
+- **Vergleich** (`/vergleich`): Side-by-Side Tabelle für max. 3 Inserate
 
 ## Datenbank
 
-Nutzt die bestehende n8n-PostgreSQL-Datenbank (`postgres.service.consul:5432/n8n`) mit dem `n8n`-User.
+Die App nutzt die bestehende n8n-PostgreSQL-Datenbank (`postgres.service.consul:5432/n8n`).
 
 ::: warning Kein eigener DB-User
-Aktuell nutzt die App den `n8n`-User mit vollen Rechten. Fuer Production sollte ein dedizierter `immo_monitor`-User mit eingeschraenkten Rechten erstellt werden (SELECT auf alle Tabellen, INSERT/UPDATE nur auf `listing_note`).
+Aktuell nutzt die App den `n8n`-User mit vollen Rechten. Für Produktion sollte ein dedizierter `immo_monitor`-User mit eingeschränkten Rechten erstellt werden (SELECT auf alle Tabellen, INSERT/UPDATE nur auf `listing_note`).
 :::
+
+## Vault Secrets
+
+| Pfad | Keys |
+| :--- | :--- |
+| `kv/data/n8n` | `db_password` (gleicher User wie n8n und immoscraper) |
 
 ## Offene Punkte
 
-- Detail-Scraper: Fotos in `listing_photo` speichern (aktuell 0 Eintraege)
-- Dedizierter DB-User `immo_monitor` mit eingeschraenkten Rechten
+- Detail-Scraper: Fotos in `listing_photo` speichern (aktuell 0 Einträge)
+- Dedizierter DB-User `immo_monitor` mit eingeschränkten Rechten
 - GitHub Actions CI/CD Pipeline
 - Filter-State in URL-Params persistieren
+
+## Verwandte Seiten
+
+- [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Scraper und Datenbank-Schema
+- [n8n](../n8n/index.md) -- Shared PostgreSQL-Datenbank
+- [Metabase](../metabase/index.md) -- Alternatives BI-Dashboard
+- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung

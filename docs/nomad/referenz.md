@@ -73,43 +73,22 @@ Alle stateless Service-Jobs sollten eine `update`-Stanza mit `auto_revert = true
 
 ### Standard (die meisten Jobs)
 
-```hcl
-update {
-  max_parallel      = 1
-  auto_revert       = true
-  min_healthy_time  = "30s"
-  healthy_deadline  = "5m"
-  progress_deadline = "10m"
-}
-```
+- `max_parallel = 1`, `auto_revert = true`
+- `min_healthy_time = 30s`, `healthy_deadline = 5m`, `progress_deadline = 10m`
 
 ### Java/Langsame Apps (Metabase, Guacamole)
 
 Längere `min_healthy_time` weil Java-Apps mehr Startzeit brauchen:
 
-```hcl
-update {
-  max_parallel      = 1
-  auto_revert       = true
-  min_healthy_time  = "60s"
-  healthy_deadline  = "7m"
-  progress_deadline = "10m"
-}
-```
+- `min_healthy_time = 60s`, `healthy_deadline = 7m`, `progress_deadline = 10m`
 
-### CSI-Volume-Jobs (MeshCentral etc.)
+### CSI-Volume-Jobs
 
 Längere Deadlines wegen Volume-Attach-Zeit:
 
-```hcl
-update {
-  max_parallel      = 1
-  auto_revert       = true
-  min_healthy_time  = "30s"
-  healthy_deadline  = "7m"
-  progress_deadline = "12m"
-}
-```
+- `min_healthy_time = 30s`, `healthy_deadline = 7m`, `progress_deadline = 12m`
+
+Beispiel-Konfigurationen: siehe `nomad-jobs/services/metabase.nomad` (Java) oder `nomad-jobs/services/meshcmd.nomad` (CSI)
 
 ### Kein auto_revert für stateful Jobs
 
@@ -125,11 +104,11 @@ Betroffen: postgres-drbd, loki, influxdb, gitea, n8n, paperless, kimai, mosquitt
 
 ### Kein TLS
 
-Nomad, Consul und Vault laufen ohne TLS. Das ist eine bewusste Entscheidung für das Homelab: Das Netzwerk (10.0.2.0/24) ist isoliert hinter einer OPNsense-Firewall, es gibt keine untrusted Clients. Consul hat Gossip-Encryption aktiv, was den wichtigsten Vektor (Cluster-Membership-Hijacking) abdeckt. Die Zertifikats-Komplexität (CA-Management, Rotation, Debugging) übersteigt den Sicherheitsgewinn im privaten Netz.
+Nomad, Consul und Vault laufen ohne TLS. Das ist eine bewusste Entscheidung für das Homelab: Das Netzwerk (10.0.2.0/24) ist isoliert hinter einer OPNsense-Firewall, es gibt keine untrusted Clients. Consul hat Gossip-Encryption aktiv, was den wichtigsten Vektor (Cluster-Membership-Hijacking) abdeckt. Nomad selbst hat keine Gossip-Verschlüsselung konfiguriert. Die Zertifikats-Komplexität (CA-Management, Rotation, Debugging) übersteigt den Sicherheitsgewinn im privaten Netz.
 
 ### Privileged und raw_exec aktiv
 
-Docker `allow_privileged = true` und `raw_exec` sind auf allen Clients aktiviert. Das ist notwendig für:
+Docker `allow_privileged = true` und `raw_exec` sind auf den Storage-Nodes (client-05/06) aktiviert. client-04 läuft ohne privileged. Das ist notwendig für:
 
 - **LINSTOR CSI**: Braucht privileged für bidirektionales Mount Propagation
 - **Maintenance-Jobs**: docker_prune, daily_cleanup brauchen raw_exec für Host-Zugriff

@@ -1,6 +1,6 @@
 ---
 title: InfluxDB & Telegraf
-description: InfluxDB 2.x als Metriken-Backend mit Telegraf als zentralem Collector
+description: InfluxDB als Metriken-Backend mit Telegraf als zentralem Collector
 tags:
   - monitoring
   - influxdb
@@ -14,22 +14,41 @@ tags:
 
 | Attribut | Wert |
 | :--- | :--- |
-| **InfluxDB** | v2.x (Nomad Job `monitoring/influx.nomad`) |
-| **Telegraf** | Im selben Nomad-Job als zweite Task-Group |
+| **Status** | Produktion |
 | **URL** | [influx.ackermannprivat.ch](https://influx.ackermannprivat.ch) |
-| **Storage** | Linstor CSI Volume `influxdb-data` (30 GiB, repliziert) |
+| **Deployment** | Nomad Job `monitoring/influx.nomad` (InfluxDB + Telegraf als zweite Task-Group) |
+| **Storage** | Linstor CSI Volume `influxdb-data` (repliziert) |
 | **Secrets** | Vault `kv/data/shared/influxdb` (username, password, url, token) |
 | **Organisation** | `ackermann` |
 
 ## Architektur
 
-```
-Synology NAS ─── SNMP ───────┐
-Nomad (6 Nodes) ─ Prometheus ─┤
-Linstor ────────── Prometheus ─┼──→ Telegraf ──→ InfluxDB ──→ Grafana
-DRBD Reactor ──── Prometheus ─┤
-LVM Thin Pools ── File-Input ─┤
-Proxmox (3 Hosts) ──────────────────── direkt ──→ InfluxDB
+```d2
+direction: right
+
+Sources: Quellen {
+  style.stroke-dash: 4
+  NAS: "Synology NAS\n(SNMP)"
+  Nomad: "Nomad (6 Nodes)\n(Prometheus)"
+  Linstor: "Linstor\n(Prometheus)"
+  DRBD: "DRBD Reactor\n(Prometheus)"
+  LVM: "LVM Thin Pools\n(File-Input)"
+  Proxmox: "Proxmox (3 Hosts)"
+}
+
+TEL: "Telegraf\n(Nomad Job)" { style.border-radius: 8 }
+INFLUX: "InfluxDB" { shape: cylinder }
+GRAF: Grafana { style.border-radius: 8 }
+
+Sources.NAS -> TEL
+Sources.Nomad -> TEL
+Sources.Linstor -> TEL
+Sources.DRBD -> TEL
+Sources.LVM -> TEL
+Sources.Proxmox -> INFLUX: direkt (nativ)
+
+TEL -> INFLUX
+INFLUX -> GRAF
 ```
 
 ## Buckets
@@ -44,14 +63,14 @@ Proxmox (3 Hosts) ──────────────────── d
 | `proxmox_5y` | InfluxDB Task | 5 Jahre | 1h Durchschnitte (Downsampling) |
 
 ::: warning Retention Policies
-Retention Policies muessen manuell via InfluxDB CLI oder UI gesetzt werden. Ohne explizite Policy behält InfluxDB Daten unbegrenzt.
+Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizite Policy behält InfluxDB Daten unbegrenzt.
 :::
 
 ## Telegraf Inputs
 
 | Plugin | Quelle | Interval | Measurement |
 | :--- | :--- | :--- | :--- |
-| `inputs.snmp` | Synology NAS (10.0.0.200, SNMPv3) | 30s | `snmp.Synology.*` |
+| `inputs.snmp` | Synology NAS (SNMPv3) | 30s | `snmp.Synology.*` |
 | `inputs.prometheus` | Nomad Clients + Servers (6x) | 30s | `prometheus` |
 | `inputs.prometheus` | Linstor (`linstor.ackermannprivat.ch/metrics`) | 60s | `linstor_*` |
 | `inputs.prometheus` | DRBD Reactor (client-05/06, Port 9942) | 60s | `drbd_*` |
@@ -70,7 +89,7 @@ Alle Secrets werden via Vault injiziert:
 Die Telegraf-Config (`telegraf.conf`) verwendet Umgebungsvariablen (`${INFLUXDB_TOKEN}`, `${SNMP_SEC_NAME}` etc.), die via Nomad-Template aus Vault geladen werden.
 
 ::: info Config-Deployment
-Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitoring/telegraf/telegraf.conf`). Änderungen muessen nach NFS kopiert werden (`/nfs/docker/telegraf/config/`).
+Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitoring/telegraf/telegraf.conf`). Änderungen müssen nach NFS kopiert werden (`/nfs/docker/telegraf/config/`).
 :::
 
 ## Grafana Datasources
@@ -85,16 +104,7 @@ Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitori
 
 ## Performance Tuning
 
-InfluxDB Nomad Job (`monitoring/influx.nomad`) enthält folgende Optimierungen:
-
-**Resources:**
-- Memory: 2048 MB guaranteed, 6144 MB burst (InfluxDB empfiehlt min. 2 GB)
-
-**Env-Variablen:**
-- `INFLUXD_QUERY_CONCURRENCY=5` -- Max 5 parallele Queries (Default 10)
-- `INFLUXD_QUERY_QUEUE_SIZE=20` -- Queue für wartende Queries
-- `INFLUXD_STORAGE_CACHE_MAX_MEMORY_SIZE=512000000` -- 512 MB Storage Cache
-- `INFLUXD_STORAGE_COMPACT_THROUGHPUT_BURST=104857600` -- 100 MB/s Compaction
+Der Nomad Job `monitoring/influx.nomad` enthält Optimierungen für Memory-Limits (guaranteed/burst) sowie InfluxDB-Env-Variablen für Query-Concurrency, Queue-Grösse, Storage-Cache und Compaction-Durchsatz. Die konkreten Werte sind im Job selbst dokumentiert.
 
 ::: tip DBRP Mappings
 Für InfluxQL-Zugriff existieren DBRP-Mappings (Database Retention Policy) für alle Buckets. Diese werden automatisch von InfluxDB 2.x erstellt. Der v1-Kompatibilitäts-Endpoint `/query` ist standardmässig aktiv.
@@ -104,5 +114,5 @@ Für InfluxQL-Zugriff existieren DBRP-Mappings (Database Retention Policy) für 
 
 - [Monitoring Stack](./index.md) -- Grafana, Alerting, Loki
 - [Synology NAS Monitoring](../synology-monitoring/index.md) -- SNMP-Details und Dashboard
-- [USV (APC)](../ups/index.md) -- Geplant: `inputs.upsd` via NUT (noch nicht eingerichtet)
-- [Linstor/DRBD](../linstor-storage/index.md) -- Prometheus-Exporter fuer Linstor-Metriken
+- [USV (APC)](../ups/index.md) -- USV-Metriken via `inputs.upsd` und NUT
+- [Linstor/DRBD](../linstor-storage/index.md) -- Prometheus-Exporter für Linstor-Metriken

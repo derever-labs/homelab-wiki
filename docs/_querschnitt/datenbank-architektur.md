@@ -1,6 +1,6 @@
 ---
 title: Datenbank-Architektur
-description: PostgreSQL Shared Cluster Konzept mit DRBD-Replikation ueber Thunderbolt
+description: PostgreSQL Shared Cluster Konzept mit DRBD-Replikation über Thunderbolt
 tags:
   - architektur
   - postgresql
@@ -10,9 +10,9 @@ tags:
 
 # Datenbank-Architektur
 
-## Uebersicht
+## Übersicht
 
-Das Homelab verwendet einen zentralen PostgreSQL 16 Cluster auf einem DRBD-replizierten Volume. Alle Services verbinden sich ueber Consul DNS (`postgres.service.consul:5432`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken.
+Das Homelab verwendet einen zentralen PostgreSQL 16 Cluster auf einem DRBD-replizierten Volume. Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken.
 
 Dieser Ansatz minimiert den Betriebsaufwand: ein einzelner Cluster mit einem Backup-Job, einer Monitoring-Konfiguration und einem Restore-Prozess -- statt dutzender individueller Datenbank-Instanzen.
 
@@ -81,7 +81,7 @@ Storage.DRBD -> Backup.S3
 
 ## DRBD-Replikation
 
-Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das ueber DRBD zwischen den Nomad-Clients auf pve01 und pve02 repliziert wird. Die Replikation laeuft ueber das Thunderbolt-Netzwerk (10.99.1.0/24) mit rund 20 Gbps Bandbreite.
+Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das über DRBD zwischen den Nomad-Clients auf pve01 und pve02 repliziert wird. Die Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit rund 20 Gbps Bandbreite.
 
 ```d2
 direction: right
@@ -99,17 +99,17 @@ pve02: pve02 vm-nomad-client-06 {
 pve01.D1 <-> pve02.D2: Thunderbolt ~20 Gbps { tooltip: 10.99.1.0/24 }
 ```
 
-Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welchem Client der PostgreSQL-Job laeuft.
+Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welchem Client der PostgreSQL-Job läuft.
 
 ## Backup
 
-Die vollstaendige Backup-Dokumentation befindet sich unter [Backup](../backup/).
+Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
 
 | Methode | Zeitplan | Retention | Ziel |
 | :--- | :--- | :--- | :--- |
-| pg_dumpall | Taeglich 03:00 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/postgres/` |
-| Linstor Snapshots | Taeglich 02:00 Uhr | 7 Snapshots | Lokal auf DRBD |
-| Linstor S3 Shipping | Taeglich | GFS: 7d/4w/3m | MinIO `linstor-backups` |
+| pg_dumpall | Täglich 03:00 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/postgres/` |
+| Linstor Snapshots | Täglich 02:00 Uhr | 7 Snapshots | Lokal auf DRBD |
+| Linstor S3 Shipping | Täglich | GFS: 7d/4w/3m | MinIO `linstor-backups` |
 
 ## Verwandte Seiten
 

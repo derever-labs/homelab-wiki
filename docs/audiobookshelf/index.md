@@ -16,7 +16,6 @@ tags:
 | **Status** | Produktion |
 | **URL** | [audio.ackermannprivat.ch](https://audio.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/audiobookshelf.nomad`) |
-| **Image** | `ghcr.io/advplyr/audiobookshelf:latest` |
 | **Storage** | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
 | **Mediathek** | NFS `/nfs/jellyfin/media/books/` |
 | **Auth** | Intern: `intern-api@file` / Extern: `public-auth@file` |
@@ -78,20 +77,12 @@ Nomad.ABS -> NFS.BOOKS
 
 Audiobookshelf nutzt ein Dual-Router-Setup: Intern ohne Auth (nur IP-Whitelist), extern mit Authentik ForwardAuth. Das ist wichtig, damit die mobilen Apps im Heimnetz ohne Auth-Redirect funktionieren.
 
-### Ressourcen
-
-| Ressource | Wert |
-| :--- | :--- |
-| CPU | 128 MHz |
-| Memory | 256 MB (max 2048 MB) |
-| Affinität | `vm-nomad-client-05/06` |
-
-## Abhängigkeiten
-
-- [Jellyfin](../jellyfin/index.md) -- Teilt die Bücher-Mediathek über `/nfs/jellyfin/media/books/`
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth Chains
+::: info Ressourcen
+Siehe Nomad Job `media/audiobookshelf.nomad`.
+:::
 
 ## Verwandte Seiten
 
-- [Media Services](./index.md)
-- [NAS-Speicher](../nas-storage/index.md)
+- [Jellyfin](../jellyfin/index.md) -- Media Player, teilt die Bücher-Mediathek
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Mediathek und Config
+- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung

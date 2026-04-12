@@ -34,7 +34,7 @@ Der System-Job `system/alloy.nomad` läuft auf jedem Nomad Client-Node und samme
 - Syslog-Receiver auf Port 1514 (TCP + UDP) für NAS und Router
 - Health-Check via `/-/ready` (Port 12345)
 
-**Ressourcen:** 100 MHz CPU, 256 MiB RAM (max. 768 MiB)
+**Ressourcen:** Siehe Nomad Job `nomad-jobs/system/alloy.nomad`
 
 **Job-Datei:** `nomad-jobs/system/alloy.nomad`
 
@@ -131,7 +131,7 @@ Sicherheits-relevante Abfragen (Grafana Alerting):
 
 **1. Alloy läuft überhaupt?**
 
-Beim System-Job: `NOMAD_ADDR=http://10.0.2.104:4646 nomad job status alloy` -- alle Allocs sollten `running` sein.
+Beim System-Job: Nomad Job-Status für `alloy` prüfen (Nomad-Server-Adresse aus [Hosts und IPs](../_referenz/hosts-und-ips.md)) -- alle Allocs sollten `running` sein.
 
 Beim systemd-Service: `systemctl status alloy` auf dem betroffenen Host.
 
@@ -147,13 +147,13 @@ Via SSH-Tunnel auf Port 12345 des Nomad-Clients. Das Alloy-UI zeigt den Komponen
 
 **4. Loki erreichbar?**
 
-`loki.service.consul:3100` muss auflösbar sein. Alloy nutzt DNS `10.0.2.1` / `10.0.2.2`.
+`loki.service.consul:3100` muss auflösbar sein. Alloy nutzt die Pi-hole-Resolver als DNS (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md)).
 
-Bei systemd-basierten Hosts: `curl http://loki.service.consul:3100/ready` auf dem Host ausführen.
+Bei systemd-basierten Hosts: `loki.service.consul:3100/ready` via HTTP prüfen.
 
 **5. Docker-Socket erreichbar? (System-Job)**
 
-Der Docker-Socket `/var/run/docker.sock` wird als read-only Volume gemountet. Wenn der Nomad-Client neu gestartet wurde, manchmal Alloy-Alloc neu deployen: `nomad alloc restart <alloc-id>`.
+Der Docker-Socket `/var/run/docker.sock` wird als read-only Volume gemountet. Wenn der Nomad-Client neu gestartet wurde, den Alloy-Alloc via Nomad UI neu deployen.
 
 **6. Labels korrekt?**
 
@@ -163,7 +163,7 @@ Beim System-Job: Container-Name muss dem Muster `/taskname-{uuid}` entsprechen. 
 
 **7. Syslog-Gerät sendet nicht an?**
 
-Port 1514 auf dem Node prüfen: `ss -ulnp | grep 1514` und `ss -tlnp | grep 1514`.
+Port 1514 auf dem Node via `ss` prüfen (TCP und UDP).
 
 Beim System-Job läuft der Receiver im Nomad-Netzwerk (`bridge`-Mode), der statische Port 1514 wird auf den Host gemappt. Sicherstellen, dass das sendende Gerät die richtige IP des Nomad-Clients (oder der Traefik-VIP) als Syslog-Ziel konfiguriert hat.
 

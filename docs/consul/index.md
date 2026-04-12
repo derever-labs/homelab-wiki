@@ -1,6 +1,6 @@
 ---
 title: Consul
-description: Service Discovery, DNS und KV Store fuer den Nomad-Cluster
+description: Service Discovery, DNS und KV Store für den Nomad-Cluster
 tags:
   - platform
   - hashicorp
@@ -14,10 +14,11 @@ tags:
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Version | v1.21.1 |
+| Status | Produktion |
 | Server | 3 (vm-nomad-server-04/05/06) |
 | Clients | 3 (vm-nomad-client-04/05/06) |
-| UI | `http://10.0.2.104:8500` |
+| URL | `http://10.0.2.104:8500` |
+| Deployment | Ansible + Systemd |
 | IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
 
 ## Rolle im Stack
@@ -79,7 +80,7 @@ Der typische Fluss:
 
 ## DNS-Integration
 
-Consul stellt einen DNS-Server auf Port 8600 bereit. Über diesen können Services nach dem Schema `<service>.service.consul` aufgelöst werden. Pi-hole (lxc-dns-01 10.0.2.1, lxc-dns-02 10.0.2.2) leitet alle DNS-Anfragen für die Domain `.consul` an die drei Consul Server weiter, sodass alle Geräte im Netzwerk Consul-Dienste über DNS erreichen können.
+Consul stellt einen DNS-Server auf Port 8600 bereit. Über diesen können Services nach dem Schema `<service>.service.consul` aufgelöst werden. Pi-hole (lxc-dns-01, lxc-dns-02) leitet alle DNS-Anfragen für die Domain `.consul` an die drei Consul Server weiter (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md)), sodass alle Geräte im Netzwerk Consul-Dienste über DNS erreichen können.
 
 Vollständige DNS-Dokumentation: [DNS-Architektur](../dns/)
 
@@ -96,14 +97,17 @@ Der Consul KV Store ist kein Secrets-Store. Sensible Daten gehören in [Vault](.
 | Massnahme | Status |
 |-----------|--------|
 | Gossip Encryption | Aktiv |
-| ACLs | Aktiviert (`default_policy = "allow"`) |
+| ACLs | Deaktiviert |
 | TLS | Deaktiviert (Homelab-Entscheidung) |
+| Connect (Service Mesh) | Deaktiviert |
 
 **Gossip Encryption:** Gesamter Gossip-Traffic zwischen Consul Nodes ist verschlüsselt (symmetrischer Key, auf allen Nodes identisch).
 
-**ACLs:** Aktiviert mit `default_policy = "allow"` -- Services funktionieren ohne Token. Management Token in `infra/.consul-token`.
+**ACLs:** Deaktiviert -- alle Consul-Operationen funktionieren ohne Token. Bei Bedarf kann ACL mit `default_policy = "allow"` aktiviert werden.
 
 **TLS deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schützt den Cluster-Traffic trotzdem.
+
+**Connect deaktiviert:** Consul Connect (Service Mesh mit mTLS zwischen Services) ist nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery ohne Sidecar-Proxies.
 
 ## Verwandte Seiten
 

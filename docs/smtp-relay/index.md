@@ -1,6 +1,6 @@
 ---
 title: SMTP Relay
-description: Zentraler Mail-Relay fuer Homelab Infrastruktur und Services
+description: Zentraler Mail-Relay für Homelab-Infrastruktur und Services
 tags:
   - smtp
   - mail
@@ -15,13 +15,10 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
-| **Image** | `boky/postfix:latest` |
 | **Deployment** | Nomad Job (`infrastructure/smtp-relay.nomad`) |
 | **Consul DNS** | `smtp.service.consul:25` |
 | **Upstream** | `mail.netzone.ch:587` (TLS + SASL) |
 | **Absender** | `services@ackermann.systems` |
-| **Ressourcen** | 100 MHz CPU, 128 MB RAM (max 256 MB) |
-| **Priority** | 90 |
 
 ## Beschreibung
 
@@ -64,7 +61,6 @@ SMTP -> EXT: TLS + SASL Auth
 
 Datei: `infrastructure/smtp-relay.nomad`
 
-* **Image:** `localhost:5000/boky/postfix:latest`
 * **Netzwerk:** Host Mode, Port 25 (static)
 * **Vault:** `kv/data/smtp` (Relay-Credentials)
 * **Nodes:** `vm-nomad-client-04/05/06`
@@ -102,17 +98,9 @@ Pfad: `kv/data/smtp`
 
 ## Infrastruktur-Nodes (Ansible)
 
-Die Ansible-Role `postfix-relay` konfiguriert Postfix auf Infrastruktur-Nodes als Satellite. Die Postfix-Konfiguration (`main.cf`) wird durch die Role verwaltet.
+Die Ansible-Role `postfix-relay` konfiguriert Postfix auf Infrastruktur-Nodes als Satellite. Die Postfix-Konfiguration (`main.cf`) wird durch die Role verwaltet. Konfiguriert auf: pve00, pve01, pve02, pbs-backup-server, checkmk (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md)).
 
-| Host | IP | Status |
-| :--- | :--- | :--- |
-| pve00 | 10.0.2.40 | Konfiguriert |
-| pve01 | 10.0.2.41 | Konfiguriert |
-| pve02 | 10.0.2.42 | Konfiguriert |
-| pbs-backup-server | 10.0.2.50 | Konfiguriert |
-| checkmk | 10.0.2.150 | Konfiguriert |
-
-**Wichtig:** Alle Infra-Nodes müssen `10.0.2.1` (lxc-dns-01) als DNS-Server verwenden, damit `smtp.service.consul` aufgelöst werden kann.
+**Wichtig:** Alle Infra-Nodes müssen lxc-dns-01 als DNS-Server verwenden, damit `smtp.service.consul` aufgelöst werden kann.
 
 ## Nomad Services
 
@@ -122,8 +110,8 @@ Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth
 
 - [x] Vault (kv/data/smtp Credentials)
 - [x] Consul DNS (smtp.service.consul Auflösung)
-- [x] Lokale Registry (boky/postfix Image)
-- [x] DNS 10.0.2.1/10.0.2.2 (lxc-dns-01/02, für .consul-Auflösung auf Infra-Nodes)
+- [x] Lokale Container Registry
+- [x] lxc-dns-01/02 (für .consul-Auflösung auf Infra-Nodes)
 - [ ] Upstream SMTP (mail.netzone.ch erreichbar)
 
 ## Troubleshooting
@@ -132,7 +120,7 @@ Services können den Relay direkt nutzen via `smtp.service.consul:25` (ohne Auth
 | :--- | :--- | :--- |
 | SASL auth failed | Passwort abgelaufen | Vault Secret updaten, Job restarten |
 | Sender rejected | Absender nicht `services@` | Generic-Maps prüfen |
-| Host not found (.consul) | DNS nicht auf 10.0.2.1/10.0.2.2 | `/etc/resolv.conf` und `/etc/network/interfaces` prüfen |
+| Host not found (.consul) | DNS-Server nicht lxc-dns-01/02 | `resolv.conf` auf Node prüfen |
 | IPv6 unreachable | Kein IPv6-Routing | `inet_protocols = ipv4` in Postfix-Config |
 
 ## Verwandte Seiten

@@ -16,7 +16,6 @@ tags:
 | **Status** | Produktion |
 | **URL** | [wish.ackermannprivat.ch](https://wish.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/jellyseerr.nomad`) |
-| **Image** | `fallenbagel/jellyseerr:latest` |
 | **Datenbank** | PostgreSQL `jellyseerr` (Shared Cluster) |
 | **Storage** | NFS `/nfs/docker/jellyseerr/config/` |
 | **Auth** | `public-auth@file` |
@@ -66,13 +65,6 @@ Jellyseerr läuft im Host-Netzwerkmodus mit statischem Port `5055`. Das ist notw
 
 Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinität für `client-05` (Nähe zum PostgreSQL).
 
-### Ressourcen
-
-| Ressource | Wert |
-| :--- | :--- |
-| CPU | 256 MHz |
-| Memory | 768 MB (max 1024 MB) |
-
 ::: warning Öffentliche Auth-Chain
 Jellyseerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
@@ -86,10 +78,9 @@ Der Sidecar-Task `request-sync` prüft alle 6 Stunden die Jellyseerr-Datenbank a
 | Attribut | Wert |
 | :--- | :--- |
 | **Task** | `request-sync` (Sidecar im Jellyseerr Job) |
-| **Image** | `python:3.10-slim` |
 | **Intervall** | 6 Stunden (konfigurierbar via `SYNC_INTERVAL_HOURS`) |
 | **Script** | `nomad-jobs/media/scripts/jellyseerr-request-sync.py` |
-| **Ressourcen** | 100 MHz CPU, 128 MB RAM |
+| **Ressourcen** | Siehe Nomad-Job `media/jellyseerr.nomad` |
 
 Der Sidecar kommuniziert ausschliesslich mit der Jellyseerr API (`/api/v1/request/{id}/retry`). Jellyseerr entscheidet selbst ob ein Film/Serie in Sonarr/Radarr hinzugefügt oder nur der Status aktualisiert werden muss.
 
@@ -116,5 +107,8 @@ Jellyseerr darf nicht über externe URLs (`*.ackermannprivat.ch`) mit Sonarr/Rad
 
 ## Verwandte Seiten
 
-- [Media Services](./index.md)
-- [Traefik Middlewares](../traefik/referenz.md)
+- [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
+- [Jellyfin](../jellyfin/index.md) -- Medienserver, dessen Verfügbarkeit Jellyseerr abfragt
+- [SuggestArr](../suggestarr/index.md) -- Erstellt automatisch Pending Requests in Jellyseerr
+- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
+- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

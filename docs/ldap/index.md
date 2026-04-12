@@ -45,7 +45,7 @@ AK -> OAuth
 Authentik liest User-Daten aus OpenLDAP über eine LDAP-Source. Die Verbindung erfolgt über Consul DNS.
 
 | Parameter | Wert |
-|-----------|------|
+| :--- | :--- |
 | **Connection** | `ldap://ldap.service.consul` |
 | **Bind DN** | `cn=admin,dc=ackermannprivat,dc=ch` |
 | **Base DN** | `dc=ackermannprivat,dc=ch` |
@@ -75,8 +75,8 @@ Die Gruppenverwaltung erfolgt in Authentik, nicht direkt in LDAP. Siehe [Zugriff
 ### Nomad Job
 
 | Parameter | Wert |
-|-----------|------|
-| **Image** | `osixia/openldap:1.5.0` |
+| :--- | :--- |
+| **Image** | `osixia/openldap` (gepinnt, siehe Nomad-Job) |
 | **Job** | `databases/open-ldap.nomad` |
 | **Port** | 389 (statisch) |
 | **Constraint** | vm-nomad-client-05 |
@@ -89,7 +89,7 @@ Die Daten liegen auf NFS:
 
 ### TLS
 
-TLS ist deaktiviert (`LDAP_TLS=false`). Der Zugriff erfolgt ausschliesslich intern über das Management-Netzwerk. Die Env-Variable wirkt nur beim ersten Bootstrap — bei bestehender Konfiguration zählt der Inhalt von `slapd.d/cn=config.ldif`.
+TLS ist deaktiviert (`LDAP_TLS=false`). Der Zugriff erfolgt ausschliesslich intern über das Management-Netzwerk. Die Env-Variable wirkt nur beim ersten Bootstrap -- bei bestehender Konfiguration zählt der Inhalt von `slapd.d/cn=config.ldif`.
 
 ### slapd.d Backend
 
@@ -101,4 +101,8 @@ OpenLDAP speichert seine Konfiguration im LDIF-Format unter `slapd.d/`. Jede LDI
 
 Verwaltet als Nomad Job. Siehe `nomad-jobs/databases/open-ldap.nomad` im Repository. Admin-Passwort wird aus Vault (`kv/data/openldap`) bezogen.
 
----
+## Verwandte Seiten
+
+- [Authentik](../authentik/index.md) -- Identity Provider, der OpenLDAP als Source nutzt
+- [Sicherheit](../security/index.md) -- Zugriffsgruppen und Authentifizierungskonzept
+- [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht

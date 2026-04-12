@@ -1,6 +1,6 @@
 ---
 title: Filebrowser
-description: Web-basierter Dateimanager als System Job auf allen Nomad Nodes
+description: Web-basierter Dateimanager als System-Job auf allen Nomad-Nodes
 tags:
   - infrastructure
   - nomad
@@ -18,7 +18,6 @@ tags:
 | **Deployment** | Nomad System Job (`infrastructure/filebrowser.nomad`) |
 | **Auth** | Authentik ForwardAuth (`intern-auth`) |
 | **Zugriff** | Read-only auf gesamtes lokales Dateisystem |
-| **Image** | `filebrowser/filebrowser:latest` (via lokale Registry) |
 
 ## Architektur
 
@@ -78,14 +77,6 @@ Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Contai
 - **Read-only:** Der Container kann keine Dateien verändern (`/:/srv:ro`)
 - **Keine eigene Auth:** Filebrowser läuft mit `--noauth`, die gesamte Authentifizierung erfolgt über Traefik (`intern-auth`)
 - **Nur Admins:** Durch die Auth-Chain ist der Zugriff auf Benutzer mit Admin-Gruppenzugehörigkeit in Authentik beschränkt
-
-## Ressourcen
-
-| Ressource | Wert |
-| :--- | :--- |
-| CPU | 100 MHz |
-| Memory | 128 MB |
-| Priorität | 90 (hoch -- soll auch bei Ressourcenknappheit laufen) |
 
 ## Verwandte Seiten
 

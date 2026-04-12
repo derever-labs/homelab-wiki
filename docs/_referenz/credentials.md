@@ -32,7 +32,7 @@ Alle Service-Secrets liegen in Vault unter dem KV v2 Mount. Nomad Jobs authentif
 | n8n | `kv/data/n8n` | DB-Credentials, Encryption Key |
 | Metabase | `kv/data/metabase` | DB-Credentials |
 
-Vollständige Service-Datenbank-Zuordnung: [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md)
+Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 
 ## Token-Dateien
 
@@ -58,4 +58,4 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbank-Architektur](../_querschni
 ## Verwandte Seiten
 
 - [Vault](../vault/) -- Vault-Architektur und Konfiguration
-- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- Vollständige DB-Service-Zuordnung mit Vault-Pfaden
+- [Datenbanken](./datenbanken.md) -- Vollständige DB-Service-Zuordnung mit Vault-Pfaden

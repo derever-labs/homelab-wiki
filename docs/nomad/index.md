@@ -1,6 +1,6 @@
 ---
 title: Nomad
-description: Workload Scheduler fuer Container im Homelab-Cluster
+description: Workload Scheduler für Container im Homelab-Cluster
 tags:
   - platform
   - hashicorp
@@ -14,10 +14,11 @@ tags:
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Version | v1.10.1 |
+| Status | Produktion |
 | Server | 3 (vm-nomad-server-04/05/06) |
 | Clients | 3 (vm-nomad-client-04/05/06) |
-| UI | `http://10.0.2.104:4646` |
+| URL | `http://10.0.2.104:4646` |
+| Deployment | Ansible + Systemd |
 | ACLs | Aktiv |
 | IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
 
@@ -48,6 +49,8 @@ Der Stack läuft auf 3 Server-Nodes und 3 Worker-Nodes, jeweils 1 pro Proxmox-Ho
 
 - **Server-Nodes**: Nomad Server, Consul Server, Vault
 - **Worker-Nodes**: Nomad Client, Consul Client, Docker
+  - client-04: Klasse `worker` (kein DRBD)
+  - client-05/06: Klasse `storage` (DRBD/Linstor, privileged containers)
 
 Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms)
 
@@ -90,13 +93,6 @@ PostgreSQL-abhängige Jobs haben einen `wait-for-postgres` Init-Task, der wartet
 | Vault | Secret Injection via `template` Stanzas -- siehe [Vault](../vault/) |
 | PostgreSQL | Viele Services nutzen den Shared Cluster -- siehe [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) |
 | Linstor | CSI-Volumes für replizierten Speicher -- siehe [Linstor](../linstor-storage/) |
-
-## Service URLs
-
-| Service | URL |
-|---------|-----|
-| Nomad UI | `http://10.0.2.104:4646` |
-| Consul UI | `http://10.0.2.104:8500` |
 
 ## Wichtige Pfade
 

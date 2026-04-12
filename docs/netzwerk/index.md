@@ -11,6 +11,11 @@ tags:
 
 # Netzwerk
 
+| Attribut | Wert |
+|----------|------|
+| Status | Produktion |
+| Deployment | UDM Pro (integriert) + UniFi Switches + APs |
+
 ## Übersicht
 
 Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch.
@@ -170,7 +175,7 @@ Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CG
 
 ## Externe Erreichbarkeit
 
-Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik (VIP 10.0.2.20, Keepalived HA) terminiert TLS mit Cloudflare-Zertifikaten.
+Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik (Keepalived HA, VIP: [Hosts und IPs](../_referenz/hosts-und-ips.md)) terminiert TLS mit Cloudflare-Zertifikaten.
 
 Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 
@@ -181,10 +186,9 @@ Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 | Eigenschaft | Wert |
 |-------------|------|
 | Modell | UniFi Dream Machine Pro (UDMPRO) |
-| Firmware | 5.0.16 |
 | WAN | SFP+ (eth9) via ISP-Router, öffentliche IP dynamisch |
 | LAN-Ports | 8x RJ45 1G, 1x RJ45 WAN (nicht verbunden), 1x SFP+ WAN (aktiv), 1x SFP+ LAN |
-| Controller | Integriert (UniFi Network 5.0.16) |
+| Controller | Integriert (UniFi Network) |
 | URL | `https://10.0.0.1` |
 
 ### Switches
