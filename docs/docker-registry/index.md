@@ -12,15 +12,17 @@ tags:
 
 # Zot Container Registry
 
+Zot ist eine OCI-native Container Registry mit S3-Backend und Pull-Through Cache für Docker Hub, ghcr.io, quay.io und lscr.io. Als Nomad System Job läuft eine Instanz auf jedem Client-Node und teilt sich den S3-Bucket auf dem NAS.
+
 ## Übersicht
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Primary URL** | localhost:5000 (jeder Node) |
-| **External URL** | [registry.ackermannprivat.ch](https://registry.ackermannprivat.ch) |
-| **Deployment** | Nomad System Job (`infrastructure/zot-registry.nomad`) |
-| **Storage Backend** | MinIO S3 auf [NAS](../nas-storage/index.md) |
-| **UI** | Eingebaut (Zot UI Extension) |
+|----------|------|
+| URL (intern) | `localhost:5000` (jeder Node, via System Job) |
+| URL (extern) | [registry.ackermannprivat.ch](https://registry.ackermannprivat.ch) |
+| Deployment | Nomad Job `infrastructure/zot-registry.nomad` (System Job) |
+| Storage Backend | MinIO S3 auf [NAS](../nas-storage/index.md) |
+| UI | Eingebaut (Zot UI Extension) |
 
 ## Warum Zot statt Docker Registry v2?
 

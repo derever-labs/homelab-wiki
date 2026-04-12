@@ -10,18 +10,19 @@ tags:
 
 # IoT Stack
 
-## Uebersicht
+Zigbee2MQTT verbindet Zigbee-Geräte über einen USB-Koordinator mit dem MQTT-Protokoll. Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und per Device-Passthrough in den Container durchgereicht.
+
+## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [zigbee.ackermannprivat.ch](https://zigbee.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/zigbee2mqtt.nomad`) |
-| **Node** | `vm-nomad-client-06` (Constraint -- USB Dongle angeschlossen) |
-| **USB Dongle** | Sonoff Zigbee 3.0 USB Dongle Plus |
-| **MQTT Broker** | Mosquitto (separater Nomad Job) |
-| **Storage** | NFS `/nfs/docker/zigbee2mqtt/data` |
-| **Auth** | `intern-auth@file` (Authentik ForwardAuth Admin) |
+|----------|------|
+| URL | [zigbee.ackermannprivat.ch](https://zigbee.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/zigbee2mqtt.nomad` |
+| Node | `vm-nomad-client-06` (Constraint -- USB Dongle angeschlossen) |
+| USB Dongle | Sonoff Zigbee 3.0 USB Dongle Plus |
+| MQTT Broker | Mosquitto (separater Nomad Job) |
+| Storage | NFS `/nfs/docker/zigbee2mqtt/data` |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) |
 
 ## Architektur
 

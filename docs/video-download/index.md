@@ -14,13 +14,33 @@ tags:
 
 Vier Web-UIs für den manuellen Download von Videos. Jedes Tool hat einen spezifischen Zweck und Ziel-Storage. Alle sind über Traefik mit Authentik ForwardAuth (`intern-auth`) erreichbar.
 
-| Attribut | youtube-dl | special-youtube-dl | special-yt-dlp | video-grabber |
-| :--- | :--- | :--- | :--- | :--- |
-| **Status** | Produktion | Produktion | Produktion | Produktion |
-| **URL** | [download.*](https://download.ackermannprivat.ch) | [s-download.*](https://s-download.ackermannprivat.ch) | [s2-download.*](https://s2-download.ackermannprivat.ch) | [grab.*](https://grab.ackermannprivat.ch) |
-| **Deployment** | `media/youtube-dl.nomad` | `media/special-youtube-dl.nomad` | `media/special-yt-dlp.nomad` | `media/video-grabber.nomad` |
-| **Port** | 17442 | 17442 | 3033 (statisch) | 5000 |
-| **Ziel-Storage** | Jellyfin Media | Stash Media | Stash Media | via special-yt-dlp |
+**youtube-dl** (Allgemein, Ziel: Jellyfin Media):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [download.ackermannprivat.ch](https://download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/youtube-dl.nomad` |
+
+**special-youtube-dl** (Spezial-Inhalte, Ziel: Stash Media):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [s-download.ackermannprivat.ch](https://s-download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/special-youtube-dl.nomad` |
+
+**special-yt-dlp** (yt-dlp Web UI, Ziel: Stash Media):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [s2-download.ackermannprivat.ch](https://s2-download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/special-yt-dlp.nomad` |
+
+**video-grabber** (Frontend für special-yt-dlp):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [grab.ackermannprivat.ch](https://grab.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/video-grabber.nomad` |
 
 ## Zweck der einzelnen Tools
 

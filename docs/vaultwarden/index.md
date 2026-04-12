@@ -11,14 +11,15 @@ tags:
 
 ## Übersicht
 
+Vaultwarden ist der zentrale Passwort-Manager -- eine leichtgewichtige Reimplementierung der Bitwarden-Server-API.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [p.ackermannprivat.ch](https://p.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/vaultwarden.nomad`) |
-| **Storage** | NFS `/nfs/docker/vaultwarden` |
-| **Datenbank** | SQLite (`db.sqlite3`), repliziert via Litestream |
-| **Auth** | `public-auth@file` |
+|----------|------|
+| URL | [p.ackermannprivat.ch](https://p.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/vaultwarden.nomad` |
+| Storage | NFS `/nfs/docker/vaultwarden` |
+| Datenbank | SQLite (`db.sqlite3`), repliziert via Litestream |
+| Auth | `public-auth@file` |
 
 ## Rolle im Stack
 

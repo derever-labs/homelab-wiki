@@ -14,16 +14,25 @@ tags:
 
 Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet automatisches Tagging, Metadaten-Management, Szenen-Erkennung und eine durchsuchbare Mediathek. Es laufen zwei getrennte Instanzen mit identischer Storage-Strategie (Linstor CSI für Config/Cache/Metadaten, NFS für Medien-Daten).
 
-| Attribut | stash | stash-secure |
-| :--- | :--- | :--- |
-| **Status** | Produktion | Produktion |
-| **URL** | [s.ackermannprivat.ch](https://s.ackermannprivat.ch) | [secure.ackermannprivat.ch](https://secure.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/stash.nomad`) | Nomad Job (`media/stash-secure.nomad`) |
-| **Priorität** | 80 (unter Jellyfin) | 95 (kritisch) |
-| **Config-Storage** | Linstor CSI Volume (`stash-data`) | Linstor CSI Volume (`stash-secure-data`) |
-| **Media-Storage** | NFS (shared mit Downloadern) | NFS (separates Verzeichnis) |
-| **Auth** | Authentik ForwardAuth (`intern-auth`) | Authentik ForwardAuth (`intern-auth`) |
-| **Node-Constraint** | `vm-nomad-client-05/06` (Linstor) | `vm-nomad-client-05/06` (Linstor) |
+**stash** (Haupt-Instanz, Priorität 80):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [s.ackermannprivat.ch](https://s.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/stash.nomad` |
+| Config-Storage | Linstor CSI Volume (`stash-data`) |
+| Media-Storage | NFS (shared mit Downloadern) |
+| Auth | Authentik ForwardAuth (`intern-auth`) |
+
+**stash-secure** (Separate Instanz, Priorität 95):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [secure.ackermannprivat.ch](https://secure.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/stash-secure.nomad` |
+| Config-Storage | Linstor CSI Volume (`stash-secure-data`) |
+| Media-Storage | NFS (separates Verzeichnis) |
+| Auth | Authentik ForwardAuth (`intern-auth`) |
 
 ## Architektur
 

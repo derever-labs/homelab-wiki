@@ -13,9 +13,9 @@ tags:
 
 | Attribut | Wert |
 |----------|------|
-| Status | Produktion |
-| URL | `https://10.0.0.1` (Controller Web-UI) |
+| URL | `https://10.0.0.1` (Controller Web-UI, intern) |
 | Deployment | UDM Pro integriert |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 

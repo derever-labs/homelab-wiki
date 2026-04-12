@@ -11,13 +11,14 @@ tags:
 
 ## Übersicht
 
+Traefik läuft als HA-Reverse-Proxy auf zwei VMs mit Keepalived VIP. Alle Homelab-Services werden über Traefik geroutet.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion (HA) |
-| **Deployment** | Docker Compose auf vm-traefik-01 + vm-traefik-02 (Ansible rolling deployed) |
-| **VIP** | 10.0.2.20 (Keepalived) |
-| **Dashboard** | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) |
-| **Auth** | `intern-auth@file` (Authentik) |
+|----------|------|
+| Dashboard | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Docker Compose auf vm-traefik-01 + vm-traefik-02 (Ansible rolling deployed) |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
+| Auth | `intern-auth@file` (Authentik) |
 
 ## Architektur
 

@@ -10,19 +10,38 @@ tags:
 
 # Dashboards
 
+Zwei Dashboard-Instanzen für unterschiedliche Zielgruppen: Flame als öffentlich zugängliche Startseite und Homepage als internes Administrations-Dashboard.
+
 ## Übersicht
 
-Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlich zugängliche Startseite und Homepage als internes Administrations-Dashboard.
+**Flame (Public)**
 
-| Attribut | Flame (Public) | Flame (Intra) | Homepage |
-| :--- | :--- | :--- | :--- |
-| **Zweck** | Öffentliche Startseite | Internes Admin-Dashboard | Internes Dashboard (Ersatz-Kandidat) |
-| **Status** | Produktion | Produktion | Produktion |
-| **URL** | [welcome.ackermannprivat.ch](https://welcome.ackermannprivat.ch) | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/flame.nomad`) | Nomad Job (`services/flame-intra.nomad`) | Nomad Job (`services/homepage-intra.nomad`) |
-| **Storage** | Linstor CSI (`flame-data`) | Linstor CSI (`flame-intra-data`) | Nomad Templates (embedded YAML) |
-| **Auth** | `public-auth@file` (Authentik Guest) | `intern-auth@file` (Authentik Admin) | `intern-auth@file` (Authentik Admin) |
-| **Vault Secrets** | `kv/data/flame` | `kv/data/flame` | Keine |
+| Attribut | Wert |
+|----------|------|
+| URL | [welcome.ackermannprivat.ch](https://welcome.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/flame.nomad` |
+| Storage | Linstor CSI (`flame-data`) |
+| Auth | `public-auth@file` (Authentik Guest) |
+| Secrets | Vault `kv/data/flame` |
+
+**Flame (Intra)**
+
+| Attribut | Wert |
+|----------|------|
+| URL | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/flame-intra.nomad` |
+| Storage | Linstor CSI (`flame-intra-data`) |
+| Auth | `intern-auth@file` (Authentik Admin) |
+| Secrets | Vault `kv/data/flame` |
+
+**Homepage**
+
+| Attribut | Wert |
+|----------|------|
+| URL | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) (gleiche Domain wie Flame Intra) |
+| Deployment | Nomad Job `services/homepage-intra.nomad` |
+| Storage | Nomad Templates (embedded YAML, kein Volume) |
+| Auth | `intern-auth@file` (Authentik Admin) |
 
 ## Zweck und Unterschied
 

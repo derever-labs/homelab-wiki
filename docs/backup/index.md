@@ -11,17 +11,17 @@ tags:
 
 # Backup
 
+Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen unterschiedliche Ausfallszenarien.
+
 ## Übersicht
 
-| Layer | Technologie | Ziel | RPO | Retention |
-| :--- | :--- | :--- | :--- | :--- |
-| PostgreSQL Dump | pg_dumpall | NFS (`/nfs/backup/postgres/`) | 24h | GFS: 7d/4w/3m |
-| DRBD Snapshots | Linstor native | Lokal auf DRBD | 24h | 7 Snapshots |
-| DRBD S3 Shipping | Linstor nach MinIO | NAS (`linstor-backups` Bucket) | 24h | GFS: 7d/4w/3m |
-| SQLite Replication | Litestream | MinIO (NAS + Peer) | 5s | 7 Tage |
-| VM Backups | Proxmox PBS | PBS Server | 24h | 6 Monate |
-
-Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen unterschiedliche Ausfallszenarien -- von einzelnen Datenbankfehlern (PostgreSQL Dump) über Storage-Ausfälle (DRBD Snapshots + S3) bis hin zu kompletten VM-Verlusten (PBS).
+| Attribut | Wert |
+|----------|------|
+| PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
+| DRBD Snapshots | Linstor native → lokal auf DRBD -- RPO 24h, 7 Snapshots |
+| DRBD S3 Shipping | Linstor nach MinIO → NAS (`linstor-backups` Bucket) -- RPO 24h, GFS: 7d/4w/3m |
+| SQLite Replication | Litestream → MinIO (NAS + Peer) -- RPO 5s, 7 Tage |
+| VM Backups | Proxmox PBS → PBS Server -- RPO 24h, 6 Monate |
 
 ## PostgreSQL Backup
 

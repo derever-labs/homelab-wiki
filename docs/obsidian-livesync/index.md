@@ -12,14 +12,14 @@ tags:
 
 ## Übersicht
 
+Obsidian LiveSync ersetzt den kostenpflichtigen Obsidian Sync Service durch eine selbstgehostete CouchDB-basierte Alternative.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [obsidian-sync.ackermannprivat.ch](https://obsidian-sync.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/obsidian-livesync.nomad`) |
-| **Storage** | Linstor CSI (`obsidian-livesync-data`) |
-| **Datenbank** | CouchDB (integriert) |
-| **Auth** | `intern-noauth@file` + CouchDB Basic Auth |
+|----------|------|
+| URL | [obsidian-sync.ackermannprivat.ch](https://obsidian-sync.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/obsidian-livesync.nomad` |
+| Storage | Linstor CSI (`obsidian-livesync-data`) |
+| Auth | `intern-noauth@file` + CouchDB Basic Auth |
 
 ## Rolle im Stack
 

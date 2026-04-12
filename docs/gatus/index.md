@@ -10,18 +10,17 @@ tags:
 
 # Gatus
 
+Gatus ist die öffentliche Status-Seite des Homelabs. Es prüft periodisch die Erreichbarkeit aller konfigurierten Services und stellt die Ergebnisse als Dashboard dar. Die gesamte Konfiguration ist als Nomad Template eingebettet -- Gatus ist vollständig stateless.
+
 ## Übersicht
 
 | Attribut | Wert |
-|:---------|:-----|
-| **Status** | Produktion |
-| **URL** | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`monitoring/gatus.nomad`) |
-| **Storage** | In-Memory (stateless) |
-| **Konfiguration** | Nomad Template (eingebettet im Job) |
-| **Auth** | Öffentlich via `public-auth` (CrowdSec + Authentik ForwardAuth) |
-| **Port** | 8080 (static) |
-| **Priorität** | 100 (kritische Infrastruktur) |
+|----------|------|
+| URL | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
+| Deployment | Nomad Job `monitoring/gatus.nomad` |
+| Storage | In-Memory (stateless) |
+| Konfiguration | Nomad Template (eingebettet im Job) |
+| Auth | `public-auth@file` (CrowdSec + Authentik ForwardAuth) |
 
 ## Architektur
 

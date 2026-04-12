@@ -11,17 +11,18 @@ tags:
 
 # OpenLDAP & Benutzerverwaltung
 
+OpenLDAP ist das zentrale Benutzerverzeichnis. Alle User-Accounts werden hier verwaltet, Authentik ist per LDAP-Source angebunden und nutzt OpenLDAP als Identity Store.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Nomad Job (`databases/open-ldap.nomad`) |
-| **Consul Service** | `ldap.service.consul` |
-| **Base DN** | `dc=ackermannprivat,dc=ch` |
-| **Users DN** | `ou=users,dc=ackermannprivat,dc=ch` |
-| **Admin Bind DN** | `cn=admin,dc=ackermannprivat,dc=ch` |
-| **Secrets** | Vault (`kv/data/openldap`) |
+|----------|------|
+| Deployment | Nomad Job `databases/open-ldap.nomad` |
+| Consul Service | `ldap.service.consul` |
+| Base DN | `dc=ackermannprivat,dc=ch` |
+| Users DN | `ou=users,dc=ackermannprivat,dc=ch` |
+| Admin Bind DN | `cn=admin,dc=ackermannprivat,dc=ch` |
+| Secrets | Vault `kv/data/openldap` |
 
 ## Rolle im Stack
 

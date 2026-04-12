@@ -12,13 +12,14 @@ tags:
 
 # Linstor & DRBD
 
-| Attribut | Wert |
-|----------|------|
-| Status | Produktion |
-| Deployment | Ansible Role `drbd-reactor` + Nomad CSI (`system/linstor-csi.nomad`) |
-| Auth | LINBIT GUI: `intern-auth` (Authentik ForwardAuth) |
+Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgänge synchron auf Block-Level zwischen Nodes und stellt damit hochverfügbaren Block-Storage für den Nomad-Cluster bereit.
 
 ## Übersicht
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Ansible Role `drbd-reactor` + Nomad CSI (`system/linstor-csi.nomad`) |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) für LINBIT GUI |
 
 Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgänge synchron auf Block-Level zwischen Nodes.
 

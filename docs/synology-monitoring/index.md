@@ -13,12 +13,13 @@ tags:
 
 ## Übersicht
 
+Dreistufiges Monitoring des Synology NAS: SNMP-Metriken via Telegraf, lokaler Container für Systemmetriken und Grafana-Alerting.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Dashboard** | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `synology-nas-health`) |
-| **Deployment** | Telegraf SNMP (Nomad) + Telegraf lokal (Docker auf NAS) |
-| **Alerting** | Grafana Unified Alerting via Telegram |
+|----------|------|
+| Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `synology-nas-health`) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job Telegraf SNMP (`monitoring/telegraf.nomad`) |
+| Alerting | Grafana Unified Alerting via Telegram |
 
 ## Rolle im Stack
 

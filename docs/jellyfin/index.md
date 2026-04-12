@@ -10,21 +10,20 @@ tags:
 
 # Jellyfin
 
+Jellyfin ist der zentrale Medienserver für Filme und Serien. Er nutzt Intel QSV Hardware-Transcoding für 4K HDR-Streams und authentifiziert Benutzer direkt via LDAP gegen den Authentik LDAP Outpost.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [watch.ackermannprivat.ch](https://watch.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/jellyfin.nomad`) |
-| **Nodes** | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
-| **Config Storage** | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
-| **Media Storage** | NFS `/nfs/jellyfin` ([NAS](../nas-storage/index.md)) |
-| **Auth** | Kein OAuth -- LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) direkt in Jellyfin |
-| **GPU** | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
-| **Transcoding** | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
-| **Ressourcen** | Siehe Nomad-Job `media/jellyfin.nomad` |
-| **Priority** | 95 (kritischer Service) |
+|----------|------|
+| URL | [watch.ackermannprivat.ch](https://watch.ackermannprivat.ch) |
+| Deployment | Nomad Job `media/jellyfin.nomad` |
+| Nodes | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
+| Config Storage | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
+| Media Storage | NFS `/nfs/jellyfin` ([NAS](../nas-storage/index.md)) |
+| Auth | LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) (kein OAuth/ForwardAuth) |
+| GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
+| Transcoding | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
 
 ## Architektur
 

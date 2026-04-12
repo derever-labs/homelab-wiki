@@ -12,14 +12,14 @@ tags:
 
 ## Übersicht
 
+Das Homelab-Wiki wird mit VitePress gebaut und via Nomad als statische Seite serviert, mit automatischem Deployment über GitHub Webhooks.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [wiki.ackermannprivat.ch](https://wiki.ackermannprivat.ch) |
-| **Source** | GitHub: `derever/homelab-wiki` (Branch: main) |
-| **Deployment** | Nomad Job (`services/vitepress-wiki.nomad`) |
-| **Auth** | Authentik ForwardAuth (`intern-auth@file`) |
-| **Auto-Update** | GitHub Webhook (sofort) + git pull alle 5 Min (Fallback) |
+|----------|------|
+| URL | [wiki.ackermannprivat.ch](https://wiki.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/vitepress-wiki.nomad` |
+| Auth | Authentik ForwardAuth (`intern-auth@file`) |
+| Auto-Update | GitHub Webhook (sofort) + git pull alle 5 Min (Fallback) |
 
 ## Architektur
 
@@ -98,7 +98,7 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 |---------|---------|
 | **Sidebar** | Auto-generiert via `vitepress-sidebar` (Frontmatter `order` für Sortierung) |
 | **Suche** | Lokale Suche (eingebaut) |
-| **Diagramme** | Mermaid via `vitepress-plugin-mermaid` |
+| **Diagramme** | D2 via `vitepress-plugin-d2` |
 | **Edit-Links** | Jede Seite hat "Seite bearbeiten" Link zu GitHub |
 | **Last Updated** | Automatisch aus Git-History |
 

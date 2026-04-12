@@ -11,19 +11,20 @@ tags:
 
 # Immobilien-Monitoring
 
+Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Manuell via Claude Code Skill `/homegate-scan` (MCP Playwright), automatisiert via Nomad Periodic Batch sobald Scrapfly-Zugang besteht.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Zweck** | Mietmarkt-Monitoring für MFH-Neubau Dottikon AG |
-| **Manueller Scan** | Claude Code Skill `/homegate-scan` (MCP Playwright, lokaler Chrome) |
-| **Automatisiert** | Geplant: Scrapfly ($30/Monat, warten auf Zugang) |
-| **Nomad Job** | `services/immoscraper.nomad` (Periodic Batch, pausiert bis Scrapfly) |
-| **n8n** | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
-| **Metabase** | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
-| **Datenbank** | PostgreSQL `n8n` -- 7 Tabellen + 1 View |
-| **Repo** | `nomad-jobs/services/n8n-workflows/scraper/` |
+|----------|------|
+| Zweck | Mietmarkt-Monitoring für MFH-Neubau Dottikon AG |
+| Manueller Scan | Claude Code Skill `/homegate-scan` (MCP Playwright, lokaler Chrome) |
+| Automatisiert | Geplant: Scrapfly ($30/Monat, warten auf Zugang) |
+| Deployment | Nomad Job `services/immoscraper.nomad` (Periodic Batch, pausiert bis Scrapfly) |
+| n8n | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
+| Metabase | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
+| Datenbank | PostgreSQL `n8n` -- 7 Tabellen + 1 View |
+| Repo | `nomad-jobs/services/n8n-workflows/scraper/` |
 
 ## Beschreibung
 

@@ -10,15 +10,16 @@ tags:
 
 # DbGate
 
+DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bietet SQL-Editor, Schema-Browser und Datenexport für den zentralen PostgreSQL Cluster.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [dbgate.ackermannprivat.ch](https://dbgate.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`databases/dbgate.nomad`) |
-| **Auth** | Authentik ForwardAuth (`intern-auth`) |
-| **Storage** | NFS `/nfs/docker/dbgate/data` |
+|----------|------|
+| URL | [dbgate.ackermannprivat.ch](https://dbgate.ackermannprivat.ch) |
+| Deployment | Nomad Job `databases/dbgate.nomad` |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) |
+| Storage | NFS `/nfs/docker/dbgate/data` |
 
 ## Architektur
 

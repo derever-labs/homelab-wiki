@@ -12,15 +12,14 @@ tags:
 
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
-| Cluster-Name | lenzburg |
-| Knoten | 3 (pve00, pve01, pve02) |
-| PVE | Proxmox VE (Version: Proxmox Web-UI) |
-| PBS | Proxmox Backup Server (Version: PBS Web-UI) |
+Drei-Knoten-Proxmox-Cluster (lenzburg) als Virtualisierungsplattform für alle Homelab-VMs und LXCs.
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Bare-metal (3 Knoten: pve00, pve01, pve02) |
 | HA-Modus | Migrate bei Shutdown |
 | Migration-Netzwerk | 10.99.1.0/24 (Thunderbolt) |
-| Web-UI | `https://<node-ip>:8006` |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Cluster-Knoten
 

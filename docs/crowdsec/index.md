@@ -9,14 +9,15 @@ tags:
 
 # CrowdSec
 
+CrowdSec ist ein kollaboratives Intrusion-Detection-System, das Traefik Access Logs analysiert und bösartige IPs via Bouncer-Plugin in Traefik blockiert.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Aktiv |
-| **Deployment** | Docker Compose auf vm-traefik-01/vm-traefik-02 (mit Traefik zusammen) |
-| **Dashboard** | [app.crowdsec.net](https://app.crowdsec.net) (CrowdSec Console) |
-| **Datenquelle** | Traefik Access Logs |
+|----------|------|
+| Deployment | Docker Compose auf vm-traefik-01/vm-traefik-02 (zusammen mit Traefik) |
+| Dashboard | [app.crowdsec.net](https://app.crowdsec.net) (CrowdSec Console) |
+| Datenquelle | Traefik Access Logs |
 
 ## Architektur
 

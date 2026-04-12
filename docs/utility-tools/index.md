@@ -14,15 +14,12 @@ Diese Seite dokumentiert kleinere Utility-Services, die keinen eigenen umfangrei
 
 ## Czkawka
 
-### Übersicht
-
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [double.ackermannprivat.ch](https://double.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/czkawka.nomad`) |
-| **Storage** | NFS `/nfs/docker/czkawka/config` |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [double.ackermannprivat.ch](https://double.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/czkawka.nomad` |
+| Storage | NFS `/nfs/docker/czkawka/config` |
+| Auth | `intern-auth@file` |
 
 ### Rolle im Stack
 
@@ -44,15 +41,12 @@ Czkawka benötigt erhebliche Ressourcen beim Scannen grosser Verzeichnisse (Limi
 
 ## MeshCommander
 
-### Übersicht
-
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [mesh.ackermannprivat.ch](https://mesh.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/meshcmd.nomad`) |
-| **Storage** | Keine (stateless) |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [mesh.ackermannprivat.ch](https://mesh.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/meshcmd.nomad` |
+| Storage | Keine (stateless) |
+| Auth | `intern-auth@file` |
 
 ### Rolle im Stack
 

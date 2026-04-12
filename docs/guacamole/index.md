@@ -10,16 +10,16 @@ tags:
 
 # Guacamole
 
+Guacamole ist ein clientloser Remote-Desktop-Gateway. Über den Browser können RDP-, VNC- und SSH-Verbindungen zu internen Maschinen aufgebaut werden, ohne einen lokalen Client zu installieren.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [remote.ackermannprivat.ch](https://remote.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/guacamole.nomad`) |
-| **Storage** | NFS `/nfs/docker/guacamole/config` |
-| **Datenbank** | Keine (Embedded) |
-| **Auth** | Authentik ForwardAuth + `intern-auth@file` |
+|----------|------|
+| URL | [remote.ackermannprivat.ch](https://remote.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/guacamole.nomad` |
+| Storage | NFS `/nfs/docker/guacamole/config` |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) |
 
 ## Rolle im Stack
 

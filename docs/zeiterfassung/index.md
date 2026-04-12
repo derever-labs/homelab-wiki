@@ -14,16 +14,27 @@ tags:
 
 Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel im Einsatz, solidtime als Haupttool.
 
-| Attribut | solidtime | Kimai |
-| :--- | :--- | :--- |
-| **Status** | Produktion (Haupttool) | Produktion (Backup) |
-| **URL** | [time.ackermannprivat.ch](https://time.ackermannprivat.ch) | [kimai.ackermannprivat.ch](https://kimai.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/solidtime.nomad`) | Nomad Job (`services/kimai.nomad`) |
-| **Datenbank** | PostgreSQL `solidtime` (Shared Cluster) | MariaDB 11 (Sidecar-Container) |
-| **Storage** | Redis Sidecar (ephemeral, Cache + Sessions) | Linstor CSI (`kimai-data`) für MariaDB, NFS für data/plugins |
-| **Mobile** | PWA (Homescreen) | Native App (iOS/Android, kostenpflichtig) |
-| **Auth** | Authentik ForwardAuth (`intern-auth`) | Authentik ForwardAuth (`intern-auth`) |
-| **API** | Bearer Token (Passport JWT) | API-Key (`X-AUTH-TOKEN`) |
+**solidtime** (Haupttool):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [time.ackermannprivat.ch](https://time.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/solidtime.nomad` |
+| Datenbank | PostgreSQL `solidtime` (Shared Cluster) |
+| Storage | Redis Sidecar (ephemeral, Cache + Sessions) |
+| Auth | Authentik ForwardAuth (`intern-auth`) |
+| API | Bearer Token (Passport JWT) |
+
+**Kimai** (Backup):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [kimai.ackermannprivat.ch](https://kimai.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/kimai.nomad` |
+| Datenbank | MariaDB 11 (Sidecar-Container) |
+| Storage | Linstor CSI (`kimai-data`) für MariaDB, NFS für data/plugins |
+| Auth | Authentik ForwardAuth (`intern-auth`) |
+| API | API-Key (`X-AUTH-TOKEN`) |
 
 ## Architektur
 

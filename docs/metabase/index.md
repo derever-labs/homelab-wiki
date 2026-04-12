@@ -11,16 +11,16 @@ tags:
 
 ## Übersicht
 
+Metabase ist die Business-Intelligence-Plattform für Datenvisualisierung. Primärer Einsatz: Dashboards für das Immobilien-Monitoring.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/metabase.nomad`) |
-| **Datenbank** | PostgreSQL `metabase` (eigene DB für Metabase-Metadaten) |
-| **Datenquelle** | PostgreSQL `n8n` (User: `metabase_reader`, read-only) |
-| **Storage** | NFS `/nfs/docker/metabase/plugins` |
-| **Netzwerk** | Intern: IP-Whitelist, Extern: OAuth2 Family |
-| **Site Name** | Immobilien-Monitor |
+|----------|------|
+| URL | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/metabase.nomad` |
+| Datenbank | PostgreSQL `metabase` (eigene DB für Metabase-Metadaten) |
+| Datenquelle | PostgreSQL `n8n` (User: `metabase_reader`, read-only) |
+| Storage | NFS `/nfs/docker/metabase/plugins` |
+| Netzwerk | Intern: IP-Whitelist, Extern: OAuth2 Family |
 
 ## Rolle im Stack
 

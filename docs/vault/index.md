@@ -12,13 +12,12 @@ tags:
 
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
-| Status | Produktion |
-| Cluster | 3-Node Raft (vm-nomad-server-04/05/06) |
-| Storage | Integrated Storage (Raft) |
-| Audit Log | `/opt/vault/audit/vault-audit.log` |
-| IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
+Vault ist das zentrale Secrets Management. Alle Passwörter, Tokens und API-Keys werden hier gespeichert und versioniert.
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Ansible + Systemd (3-Node Raft Cluster) |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 

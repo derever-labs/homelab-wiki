@@ -12,14 +12,14 @@ tags:
 
 ## Übersicht
 
+Notifiarr aggregiert Benachrichtigungen aus dem Media Stack und leitet sie an Discord, Telegram und andere Kanäle weiter.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [notifiarr.ackermannprivat.ch](https://notifiarr.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/notifiarr.nomad`) |
-| **Storage** | NFS `/nfs/docker/notifiarr/config` |
-| **Datenbank** | Keine (BoltDB/Konfigurationsdateien) |
-| **Auth** | `intern-auth@file` (UI), `intern-api@file` (API) |
+|----------|------|
+| URL | [notifiarr.ackermannprivat.ch](https://notifiarr.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/notifiarr.nomad` |
+| Storage | NFS `/nfs/docker/notifiarr/config` |
+| Auth | `intern-auth@file` (UI), `intern-api@file` (API) |
 
 ## Rolle im Stack
 
