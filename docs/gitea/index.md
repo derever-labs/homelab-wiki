@@ -10,17 +10,18 @@ tags:
 
 # Gitea
 
+Gitea ist der zentrale Git-Server für private und interne Repositories. Er ergänzt GitHub für Repos, die ausschliesslich intern bleiben sollen, und bietet über den integrierten SSH-Server direkten Git-Zugriff ohne Webinterface.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [gitea.ackermannprivat.ch](https://gitea.ackermannprivat.ch) |
-| **SSH** | `ssh://git@gitea:2222` |
-| **Deployment** | Nomad Job (`services/gitea.nomad`) |
-| **Storage** | Linstor CSI (`gitea-data`, 5 GiB replicated) |
-| **Datenbank** | PostgreSQL `gitea` (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | Authentik OIDC (konfiguriert via Gitea UI) + `intern-auth@file` |
+|----------|------|
+| URL | [gitea.ackermannprivat.ch](https://gitea.ackermannprivat.ch) |
+| SSH | `ssh://git@gitea:2222` (Port 2222) |
+| Deployment | Nomad Job `services/gitea.nomad` |
+| Storage | Linstor CSI (`gitea-data`, 5 GiB replicated) |
+| Datenbank | PostgreSQL `gitea` (Shared Cluster via `postgres.service.consul`) |
+| Auth | Authentik OIDC + `intern-auth@file` |
 
 ## Rolle im Stack
 

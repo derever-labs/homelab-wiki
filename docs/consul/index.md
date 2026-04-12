@@ -10,16 +10,17 @@ tags:
 
 # Consul
 
+Consul stellt Service Discovery und DNS für alle Nomad-Services bereit. Jeder Container registriert sich automatisch als Consul Service und ist danach über `<service>.service.consul` erreichbar.
+
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
-| Status | Produktion |
+| Attribut | Wert |
+|----------|------|
 | Server | 3 (vm-nomad-server-04/05/06) |
 | Clients | 3 (vm-nomad-client-04/05/06) |
 | URL | `http://10.0.2.104:8500` |
 | Deployment | Ansible + Systemd |
-| IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
+| IPs | Siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 

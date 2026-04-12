@@ -14,16 +14,32 @@ tags:
 
 Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sprachmodelle, Open WebUI und HolLama bieten jeweils ein Web-Interface für die Interaktion.
 
-| Attribut | Ollama | Open WebUI | HolLama |
-| :--- | :--- | :--- | :--- |
-| **Rolle** | LLM-Backend (Inferenz) | Chat-Interface (Haupttool) | Chat-Interface (leichtgewichtig) |
-| **Status** | Produktion | Produktion | Produktion |
-| **URL** | [ollama.ackermannprivat.ch](https://ollama.ackermannprivat.ch) | [chat.ackermannprivat.ch](https://chat.ackermannprivat.ch) | [hollama.ackermannprivat.ch](https://hollama.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/ollama.nomad`) | Nomad Job (`services/open-webui.nomad`) | Nomad Job (`services/hollama.nomad`) |
-| **Port** | 11434 (static) | 8080 (dynamic) | 4173 (static) |
-| **Storage** | NFS `/nfs/docker/ollama` | NFS `/nfs/docker/open-webui` | Kein persistenter Speicher |
-| **Auth** | `intern-noauth@file` (IP-Allowlist) | Natives OIDC via Authentik + `intern-noauth@file` | `intern-noauth@file` (IP-Allowlist) |
-| **Ressourcen** | Siehe Nomad-Job | Siehe Nomad-Job | Siehe Nomad-Job |
+**Ollama** (LLM-Backend, Inferenz):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [ollama.ackermannprivat.ch](https://ollama.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/ollama.nomad` |
+| Storage | NFS `/nfs/docker/ollama` |
+| Auth | `intern-noauth@file` (IP-Allowlist) |
+
+**Open WebUI** (Chat-Interface, Haupttool):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [chat.ackermannprivat.ch](https://chat.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/open-webui.nomad` |
+| Storage | NFS `/nfs/docker/open-webui` |
+| Auth | Natives OIDC via Authentik + `intern-noauth@file` |
+
+**HolLama** (Chat-Interface, leichtgewichtig):
+
+| Attribut | Wert |
+|----------|------|
+| URL | [hollama.ackermannprivat.ch](https://hollama.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/hollama.nomad` |
+| Storage | Kein persistenter Speicher |
+| Auth | `intern-noauth@file` (IP-Allowlist) |
 
 ## Architektur
 

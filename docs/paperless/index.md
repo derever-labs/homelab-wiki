@@ -12,14 +12,15 @@ tags:
 
 ## Übersicht
 
+Paperless-ngx ist das zentrale Dokumenten-Management-System mit OCR, automatischer Klassifizierung und Volltextsuche.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [paperless.ackermannprivat.ch](https://paperless.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/paperless-simple.nomad`) |
-| **Storage** | NFS `/nfs/docker/paperless/{media,consume,data,export}` |
-| **Datenbank** | PostgreSQL (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [paperless.ackermannprivat.ch](https://paperless.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/paperless-simple.nomad` |
+| Storage | NFS `/nfs/docker/paperless/{media,consume,data,export}` |
+| Datenbank | PostgreSQL (Shared Cluster via `postgres.service.consul`) |
+| Auth | `intern-auth@file` |
 
 ## Rolle im Stack
 

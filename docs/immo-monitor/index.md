@@ -10,15 +10,16 @@ tags:
 
 # Immo Monitor
 
+Immo Monitor ist eine SvelteKit-App, die Mietinserate aus dem Homegate-Scraper visualisiert. Sie bietet Karten-, Listen- und Chart-Ansichten sowie Schreibzugriff auf Favoriten und Notizen.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [immo-monitor.ackermannprivat.ch](https://immo-monitor.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/immo-monitor.nomad`) |
-| **Datenbank** | PostgreSQL `n8n` (Shared mit n8n und immoscraper) |
-| **Auth** | `intern-api@file` (intern/VPN) + `public-auth@file` (extern via Authentik) |
+|----------|------|
+| URL | [immo-monitor.ackermannprivat.ch](https://immo-monitor.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/immo-monitor.nomad` |
+| Datenbank | PostgreSQL `n8n` (Shared mit n8n und immoscraper) |
+| Auth | `intern-api@file` (intern/VPN) + `public-auth@file` (extern via Authentik) |
 
 ## Rolle im Stack
 

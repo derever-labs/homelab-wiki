@@ -9,17 +9,18 @@ tags:
 
 # Audiobookshelf
 
+Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediathek liegt auf dem gleichen NFS-Share wie die Jellyfin-Bibliothek, wird aber eigenständig verwaltet. Im Gegensatz zu Jellyfin bietet Audiobookshelf spezialisierte Features wie Kapitel-Navigation, Lesezeichen und Fortschrittsverfolgung über mehrere Geräte.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [audio.ackermannprivat.ch](https://audio.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/audiobookshelf.nomad`) |
-| **Storage** | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
-| **Mediathek** | NFS `/nfs/jellyfin/media/books/` |
-| **Auth** | Intern: `intern-api@file` / Extern: `public-auth@file` |
-| **Consul Service** | `audiobookshelf` |
+|----------|------|
+| URL | [audio.ackermannprivat.ch](https://audio.ackermannprivat.ch) |
+| Deployment | Nomad Job `media/audiobookshelf.nomad` |
+| Storage | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
+| Mediathek | NFS `/nfs/jellyfin/media/books/` |
+| Auth | Intern: `intern-api@file` / Extern: `public-auth@file` |
+| Consul Service | `audiobookshelf` |
 
 ## Rolle im Stack
 

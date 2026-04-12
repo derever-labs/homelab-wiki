@@ -14,13 +14,13 @@ tags:
 
 ## Übersicht
 
+Die APC USV versorgt das gesamte Homelab bei Stromausfall und koordiniert via NUT den geordneten Shutdown aller Hosts.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | In Aufbau |
-| **Dashboard** | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `ups-apc-dashboard`) |
-| **Deployment** | NUT Server (systemd auf PVE-Host), Telegraf `inputs.upsd` (Nomad) |
-| **Alerting** | Grafana Unified Alerting + direkte Telegram-Benachrichtigung via NUT |
-| **Protokoll** | SNMP (NMC-Karte) |
+|----------|------|
+| Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `ups-apc-dashboard`) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | NUT Server (systemd auf PVE-Host) + Telegraf `inputs.upsd` (Nomad) |
+| Alerting | Grafana Unified Alerting + direkte Telegram-Benachrichtigung via NUT |
 
 ## Rolle im Stack
 

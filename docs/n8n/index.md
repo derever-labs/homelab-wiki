@@ -11,15 +11,16 @@ tags:
 
 ## Übersicht
 
+n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/n8n.nomad`) |
-| **Datenbank** | PostgreSQL `n8n` (User: `n8n`) |
-| **Storage** | Ephemeral (Binary Data in PostgreSQL) |
-| **Auth** | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität) |
-| **Netzwerk** | Intern (`intern-noauth@file`) |
+|----------|------|
+| URL | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/n8n.nomad` |
+| Datenbank | PostgreSQL `n8n` (User: `n8n`) |
+| Storage | Ephemeral (Binary Data in PostgreSQL) |
+| Auth | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität) |
+| Netzwerk | Intern (`intern-noauth@file`) |
 
 ## Rolle im Stack
 

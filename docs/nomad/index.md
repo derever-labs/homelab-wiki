@@ -12,15 +12,13 @@ tags:
 
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
-| Status | Produktion |
-| Server | 3 (vm-nomad-server-04/05/06) |
-| Clients | 3 (vm-nomad-client-04/05/06) |
-| URL | `http://10.0.2.104:4646` |
+Nomad ist der Workload-Scheduler des Homelabs. Zusammen mit Consul und Vault bildet er die Container-Plattform.
+
+| Attribut | Wert |
+|----------|------|
+| URL | `http://10.0.2.104:4646` (UI intern) |
 | Deployment | Ansible + Systemd |
-| ACLs | Aktiv |
-| IPs | Siehe [Proxmox Cluster](../proxmox/index.md#hashicorp-stack-vms) |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 

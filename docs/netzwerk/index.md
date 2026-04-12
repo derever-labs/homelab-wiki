@@ -13,8 +13,8 @@ tags:
 
 | Attribut | Wert |
 |----------|------|
-| Status | Produktion |
 | Deployment | UDM Pro (integriert) + UniFi Switches + APs |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Übersicht
 

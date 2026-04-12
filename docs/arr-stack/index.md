@@ -9,15 +9,16 @@ tags:
 
 # Media Management Stack
 
-## Übersicht
 Der Media Stack automatisiert die Suche, den Download und die Organisation von Medieninhalten. Alle Services laufen als Nomad Jobs und nutzen den [PostgreSQL Shared Cluster](../_querschnitt/datenbank-architektur.md) als Datenbank.
 
-| Service | Zweck | URL |
-| :--- | :--- | :--- |
-| **Prowlarr** | Indexer Management | [prowlarr.ackermannprivat.ch](https://prowlarr.ackermannprivat.ch) |
-| **Sonarr** | Serien Management | [sonarr.ackermannprivat.ch](https://sonarr.ackermannprivat.ch) |
-| **Radarr** | Film Management | [radarr.ackermannprivat.ch](https://radarr.ackermannprivat.ch) |
-| **Sabnzbd** | Usenet Downloader | [sabnzbd.ackermannprivat.ch](https://sabnzbd.ackermannprivat.ch) |
+## Übersicht
+
+| Attribut | Wert |
+|----------|------|
+| Prowlarr | Indexer Management -- [prowlarr.ackermannprivat.ch](https://prowlarr.ackermannprivat.ch) |
+| Sonarr | Serien Management -- [sonarr.ackermannprivat.ch](https://sonarr.ackermannprivat.ch) |
+| Radarr | Film Management -- [radarr.ackermannprivat.ch](https://radarr.ackermannprivat.ch) |
+| Sabnzbd | Usenet Downloader -- [sabnzbd.ackermannprivat.ch](https://sabnzbd.ackermannprivat.ch) |
 
 ## Konfiguration
 ### Speicherpfade (NFS)

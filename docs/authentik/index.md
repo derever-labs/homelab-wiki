@@ -9,14 +9,17 @@ tags:
 
 # Authentik
 
+Authentik ist der zentrale Identity Provider des Homelabs. Alle Services, die eine Authentifizierung benötigen, delegieren diese entweder via ForwardAuth (Traefik-Integration) oder über OIDC (native App-Integration) an Authentik.
+
+## Übersicht
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Aktiv |
-| **URL** | [auth.ackermannprivat.ch](https://auth.ackermannprivat.ch) |
-| **Deployment** | Nomad Job ([`identity/authentik.nomad`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/nomad-jobs/identity/authentik.nomad)) |
-| **Auth** | Eigenständig (kein ForwardAuth auf der Login-Seite selbst) |
-| **Storage** | PostgreSQL (`postgres.service.consul`, Datenbank `authentik`) |
-| **Secrets** | Vault (`kv/data/authentik`, `kv/data/authentik-outpost`) |
+|----------|------|
+| URL | [auth.ackermannprivat.ch](https://auth.ackermannprivat.ch) |
+| Deployment | Nomad Job [`identity/authentik.nomad`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/nomad-jobs/identity/authentik.nomad) |
+| Auth | Eigenständig (kein ForwardAuth auf der Login-Seite selbst) |
+| Storage | PostgreSQL (`postgres.service.consul`, Datenbank `authentik`) |
+| Secrets | Vault (`kv/data/authentik`, `kv/data/authentik-outpost`) |
 
 Diese Seite deckt Rolle, Architektur und Komponenten ab. Details zu Flows, Policies, OIDC-Providern und UI-Anpassungen stehen in [Referenz](./referenz.md). Betriebs-Konzepte wie Recovery-Layer, Breakglass-Account und Alerting in [Betrieb](./betrieb.md).
 

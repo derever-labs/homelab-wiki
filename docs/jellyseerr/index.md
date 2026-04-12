@@ -9,17 +9,18 @@ tags:
 
 # Jellyseerr
 
+Jellyseerr ist die User-facing Oberfläche für Medienwünsche. Familie und Gäste können darüber Filme und Serien anfordern, ohne direkt mit Sonarr oder Radarr zu arbeiten.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [wish.ackermannprivat.ch](https://wish.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/jellyseerr.nomad`) |
-| **Datenbank** | PostgreSQL `jellyseerr` (Shared Cluster) |
-| **Storage** | NFS `/nfs/docker/jellyseerr/config/` |
-| **Auth** | `public-auth@file` |
-| **Consul Service** | `jellyseerr` |
+|----------|------|
+| URL | [wish.ackermannprivat.ch](https://wish.ackermannprivat.ch) |
+| Deployment | Nomad Job `media/jellyseerr.nomad` |
+| Datenbank | PostgreSQL `jellyseerr` (Shared Cluster) |
+| Storage | NFS `/nfs/docker/jellyseerr/config/` |
+| Auth | `public-auth@file` |
+| Consul Service | `jellyseerr` |
 
 ## Rolle im Stack
 

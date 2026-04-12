@@ -11,12 +11,11 @@ tags:
 
 ## Übersicht
 
-| Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Mehrere Nomad Jobs (`monitoring/`, `system/alloy.nomad`) + Ansible (Alloy systemd) |
-
 Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung der Service-Verfügbarkeit.
+
+- **Nomad Jobs** -- `monitoring/`, `system/alloy.nomad`
+- **Deployment** -- Mehrere Nomad Jobs + Ansible (Alloy systemd)
+- **IPs** -- [Hosts und IPs](../_referenz/hosts-und-ips.md)
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |

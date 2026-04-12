@@ -13,15 +13,13 @@ tags:
 
 ## Übersicht
 
-| Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Bare-metal (Synology DSM) |
-| **Typ** | Synology NAS |
-| **Netzwerk** | IoT VLAN (10.0.0.200) |
-| **Funktion** | NFS-Exports, MinIO S3, Backup-Ziel |
+Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, MinIO S3 und Backup-Ziele.
 
-Hardware-Details (Modell, Festplatten, RAID): [Server-Hardware](../_referenz/hardware-inventar.md#nas)
+| Attribut | Wert |
+|----------|------|
+| Deployment | Bare-metal (Synology DSM) |
+| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
+| Hardware | [Server-Hardware](../_referenz/hardware-inventar.md#nas) |
 
 ## Rolle im Stack
 

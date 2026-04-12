@@ -11,14 +11,15 @@ tags:
 
 ## Übersicht
 
+Tandoor ist die selbstgehostete Rezeptverwaltung zum Sammeln, Organisieren und Planen von Rezepten.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [tandoor.ackermannprivat.ch](https://tandoor.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/tandoor.nomad`) |
-| **Storage** | NFS `/nfs/docker/tandoor/{staticfiles,mediafiles}` |
-| **Datenbank** | PostgreSQL `djangodb` (Shared Cluster via `postgres.service.consul`) |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [tandoor.ackermannprivat.ch](https://tandoor.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `services/tandoor.nomad` |
+| Storage | NFS `/nfs/docker/tandoor/{staticfiles,mediafiles}` |
+| Datenbank | PostgreSQL `djangodb` (Shared Cluster via `postgres.service.consul`) |
+| Auth | `intern-auth@file` |
 
 ## Rolle im Stack
 

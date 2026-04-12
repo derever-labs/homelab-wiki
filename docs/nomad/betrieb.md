@@ -1,6 +1,6 @@
 ---
 title: Nomad Betrieb
-description: Job Deployment, Node Drain und Troubleshooting
+description: Betrieb und Abhängigkeiten des Nomad Clusters
 tags:
   - nomad
   - betrieb
@@ -9,114 +9,45 @@ tags:
 
 # Nomad Betrieb
 
-## Job Deployment
+## Übersicht
 
-Nomad Jobs werden gegen den Cluster deployed. Da ACLs aktiv sind, wird für jede Interaktion mit der Nomad API ein Token benötigt.
+Der Nomad-Cluster betreibt alle Docker-basierten Workloads im Homelab. Er besteht aus 3 Server-Nodes (Raft-Konsens) und 3 Client-Nodes (Worker). Die Server verwalten den Cluster-Zustand und planen Workloads; die Clients führen Container aus.
 
-| Eigenschaft | Wert |
-|-------------|------|
-| API-Endpunkt | `http://10.0.2.104:4646` (jeder Server nutzbar) |
-| ACL | Aktiv -- Token erforderlich |
-| Job-Verzeichnis | `/nfs/nomad/jobs/` |
-| Token-Speicherort | [Credentials](../_referenz/credentials.md) |
+Alle drei Server sind gleichwertig als API-Endpunkt nutzbar. ACLs sind aktiv -- jede Interaktion mit der Nomad API erfordert ein Token.
 
-Deployment erfolgt mit `nomad job run <jobfile>.nomad` unter Angabe von `NOMAD_ADDR` und `NOMAD_TOKEN`. Alle drei Server sind gleichwertig (Raft-Cluster) und als API-Endpunkt nutzbar.
+## Abhängigkeiten
 
-::: info Nomad Policies
-Die Policy `operator` erlaubt Jobs deployen, Logs lesen und Allocs verwalten. Für den regulären Betrieb reicht dieser Token.
-:::
+- **Consul** -- Service Discovery und Health Checks für alle Jobs; Nomad registriert laufende Allocations automatisch
+- **Vault** -- Secret-Injection über den Vault-Agent (Templates in Job-Definitionen); Vault muss erreichbar und unsealed sein
+- **NFS (Synology)** -- Persistenter Shared Storage für Jobs die auf `/nfs/` mounten; bei NFS-Ausfall starten betroffene Jobs nicht
+- **Docker** -- Container-Runtime auf allen Client-Nodes; Nomad setzt `docker.enable = true` in der Client-Konfiguration voraus
+- **Linstor CSI** -- Block-Storage für Datenbanken (PostgreSQL, Redis); das CSI-Plugin muss auf den Clients healthy sein bevor CSI-Volumes gemountet werden können
 
-## Node Drain
+## Automatisierung
 
-Vor Wartungsarbeiten an einem Worker-Node (z.B. Proxmox-Host-Update) muss der Node drainiert werden. Dabei migriert Nomad alle laufenden Allocations auf andere Nodes.
+**Preemption** ist seit 01.04.2026 für Service- und Batch-Jobs aktiv. Nomad kann niedrigprioritäre Allocations verdrängen, um höherprioritären Jobs Platz zu schaffen. Das Mindest-Prioritätsdelta beträgt 10 Punkte (Priorität 100 kann Priorität 90 oder tiefer verdrängen). Verdrängte Jobs werden automatisch rescheduled, sofern eine `reschedule`-Stanza konfiguriert ist.
 
-::: info Automatischer Drain beim Stoppen
-Nomad drainiert automatisch beim Stoppen des Systemd-Service (5-Minuten-Deadline, System-Jobs ausgenommen). Ein manueller Drain ist nur für geplante, längere Wartungsarbeiten nötig.
-:::
+**Drain on Shutdown** ist auf allen Client-Nodes aktiv. Beim Stoppen des Nomad-Systemd-Services drainiert der Node automatisch seine Allocations mit einer Deadline von 5 Minuten. System-Jobs sind vom automatischen Drain ausgenommen.
 
-Ablauf:
+**Restart/Reschedule Policies** sind auf allen CSI-Jobs konfiguriert:
+- `restart` -- lokaler Neustart des Tasks bei Crashes (3 Versuche in 5 Minuten)
+- `reschedule` -- Platzierung auf einem anderen Node wenn lokale Restarts erschöpft sind
+- `max_client_disconnect` -- wartet 5 Minuten bei kurzen Netzwerkausfällen bevor rescheduled wird
 
-1. Node in Drain-Modus setzen mit `nomad node drain -enable <node-id>`
-2. Warten bis alle Allocations migriert sind (Nomad UI oder `nomad node status`)
-3. Wartung durchführen
-4. Drain-Modus deaktivieren mit `nomad node drain -disable <node-id>`
-5. Nomad plant neue Allocations automatisch auf den verfügbaren Node
+**CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../linstor-storage/betrieb.md#csi-boot-race-condition)
 
-::: warning Kapazität
-Bei 3 Worker-Nodes und aktivem Drain eines Nodes laufen alle Container auf 2 Nodes. Prüfe vorab, ob die verbleibende Kapazität (CPU, RAM) ausreicht.
-:::
+## Bekannte Einschränkungen
 
-## Garbage Collection
+**Kapazität bei Node-Drain:** Bei 3 Client-Nodes und aktivem Drain eines Nodes laufen alle Container auf 2 Nodes. Die verbleibende Kapazität (CPU, RAM) muss ausreichen -- es gibt keine automatische Prüfung vorab.
 
-Nomad hält abgeschlossene Allocations und Evaluations für eine konfigurierbare Zeit vor. Bei vielen Batch-Jobs kann das zu Speicherverbrauch führen. Eine manuelle Garbage Collection kann über die API oder `nomad system gc` ausgelöst werden.
+**CSI Boot Race Condition:** Nach einem Node-Reboot können CSI-abhängige Jobs in "pending" bleiben, weil das CSI-Plugin zum Evaluation-Zeitpunkt noch nicht healthy ist. Nomad erstellt eine "blocked eval", die normalerweise nach 30--60 Sekunden aufgelöst wird. Der Boot-Reeval-Timer auf clients 05/06 behandelt diesen Fall automatisch.
 
-## Preemption
+**auto_revert bei System-Jobs:** Die `auto_revert`-Funktion in Update-Stanzas greift bei System-Jobs erst ab Nomad 1.11. Für ältere Versionen muss bei einem fehlgeschlagenen Rollout manuell revertiert werden.
 
-Service- und Batch-Preemption ist seit 01.04.2026 aktiviert. Nomad kann niedrigprioritäre Jobs verdrängen, um Platz für höherprioritäre zu schaffen.
+**Postgres-Sonderbehandlung bei Reschedule:** PostgreSQL hat eine bewusst begrenzte `reschedule`-Policy (`max 3 Versuche, mode = "fail"`). Endloses automatisches Failover zwischen Nodes wäre gefährlich, da DRBD (`single-node-writer`) die eigentliche Fencing-Schicht ist -- nicht Nomad. Bei wiederholtem Failure ist manuelles Eingreifen nötig.
 
-**Anlass:** Am 20.03.2026 fiel ein Node aus und wurde 10 Tage nicht bemerkt. Postgres (Priorität 100) konnte nicht platziert werden, während niedrigprioritäre Jobs wie Handbrake (Priorität 60) die CPU-Kapazität belegten.
+## Credentials
 
-**Verhalten:**
-- Mindest-Delta: 10 Prioritätspunkte (Prio 100 kann Prio 90 oder tiefer verdrängen)
-- Verdrängte Jobs werden automatisch auf anderen Nodes neu platziert (sofern `reschedule` konfiguriert)
-- Verdrängte Allocations haben `DesiredStatus = evict`
-- Prüfen: `nomad operator scheduler get-config`
+Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
 
-## Restart/Reschedule Policies
-
-Alle CSI-Jobs haben `restart` und `reschedule` Stanzas für automatische Recovery:
-
-- **restart**: Lokaler Neustart des Tasks bei Crashes (3 Versuche in 5 Minuten)
-- **reschedule**: Platzierung auf einem anderen Node wenn lokale Restarts erschöpft sind
-- **max_client_disconnect**: Wartet 5 Minuten bei kurzen Netzwerk-Ausfällen bevor rescheduled wird
-
-::: warning Postgres-Sonderbehandlung
-PostgreSQL hat eine begrenzte `reschedule`-Policy (max 3 Versuche in 30 Minuten, `mode = "fail"`). Bei wiederholtem Failure muss manuell eingegriffen werden -- endloses Failover zwischen Nodes mit DRBD `single-node-writer` kann zu Datenkorruption führen. DRBD ist die eigentliche Fencing-Schicht, nicht Nomad.
-:::
-
-## Troubleshooting
-
-### Job startet nicht
-
-1. `nomad job status <job>` prüfen -- zeigt den aktuellen Zustand und letzte Events
-2. Evaluation prüfen: Gibt es Placement-Fehler (z.B. "insufficient resources")?
-3. Allocation prüfen: `nomad alloc status <alloc-id>` zeigt Task-Events und Exit-Codes
-4. Logs lesen: `nomad alloc logs <alloc-id> <task>` für stdout/stderr
-
-### Container startet, ist aber nicht erreichbar
-
-1. Consul prüfen: Ist der Service registriert? Health Check Status?
-2. Port Mapping prüfen: Stimmt der dynamische Port mit dem Consul-Eintrag überein?
-3. Traefik prüfen: Hat Traefik den Service aus dem Consul Catalog geladen?
-4. DNS prüfen: Löst `<service>.service.consul` korrekt auf?
-
-### Allocation bleibt in "pending"
-
-1. `nomad job status <job>` -- Evaluation-Fehler prüfen
-2. Häufigste Ursache: Nicht genügend Ressourcen auf den Worker-Nodes
-3. `nomad node status` auf allen Clients prüfen -- verfügbare Kapazität anzeigen
-4. Bei Volume-Constraints: Ist der NFS-Mount vorhanden? Ist das Linstor-Volume verfügbar?
-
-**CSI Boot Race Condition:** Nach einem Node-Reboot können CSI-abhängige Jobs pending bleiben, weil das CSI Plugin beim Evaluation-Zeitpunkt noch nicht healthy ist. Nomad erstellt eine "blocked eval", die normalerweise nach 30-60s aufgelöst wird wenn das Plugin healthy wird. Falls das nicht passiert:
-
-1. CSI Plugin Status prüfen: `nomad plugin status linstor.csi.linbit.com`
-2. Blocked Evals prüfen: `nomad eval list -status=blocked`
-3. Manuell re-evaluieren: `nomad job eval <job-name>`
-4. Timer-Log prüfen: `journalctl -u nomad-csi-reeval` (läuft auf client-05/06)
-
-Auf client-05/06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Jobs re-evaluiert. Details: [Linstor Betrieb](../linstor-storage/betrieb.md#csi-boot-race-condition)
-
-### Node nicht erreichbar
-
-1. SSH auf den betroffenen Node -- läuft der Nomad-Agent?
-2. `systemctl status nomad` prüfen
-3. Netzwerk prüfen: Ist der Node für die Server erreichbar?
-4. Bei persistentem Problem: Node in der Nomad UI als "ineligible" markieren und Wartung planen
-
-## Verwandte Seiten
-
-- [Nomad Übersicht](index.md) -- Cluster-Architektur und Rolle im Stack
-- [Nomad Referenz](referenz.md) -- Verzeichnisstruktur und Job-Konfigurationsmuster
-- [Vault Betrieb](../vault/betrieb.md) -- Falls Secrets-Probleme die Ursache sind
-- [Consul](../consul/) -- Service Discovery und Health Check Probleme
-- [Proxmox Cluster](../proxmox/index.md) -- Host- und VM-Übersicht
+Für den regulären Betrieb wird ein ACL-Token mit der Policy `operator` benötigt (erlaubt Jobs deployen, Logs lesen, Allocs verwalten).

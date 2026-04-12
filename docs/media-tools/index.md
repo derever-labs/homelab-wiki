@@ -14,14 +14,13 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 ## Jellystat
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [jellystat.ackermannprivat.ch](https://jellystat.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/jellystat.nomad`) |
-| **Datenbank** | PostgreSQL (Shared Cluster) |
-| **Storage** | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
-| **Auth** | `intern-auth@file` |
-| **Vault Secrets** | `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
+|----------|------|
+| URL | [jellystat.ackermannprivat.ch](https://jellystat.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/jellystat.nomad` |
+| Datenbank | PostgreSQL (Shared Cluster) |
+| Storage | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
+| Auth | `intern-auth@file` |
+| Vault Secrets | `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
 
 ### Rolle
 
@@ -38,12 +37,11 @@ Statistik- und Analyse-Dashboard für Jellyfin. Zeigt Wiedergabe-Historie, belie
 ## Janitorr
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
-| **Deployment** | Nomad Job (`media/janitorr.nomad`) |
-| **Storage** | Kein NFS (Config via Nomad Template, kein Log-Mount) |
-| **Traefik** | Deaktiviert (`traefik.enable=false`) |
+|----------|------|
+| URL | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
+| Deployment | Nomad Job `media/janitorr.nomad` |
+| Storage | Kein NFS (Config via Nomad Template, kein Log-Mount) |
+| Traefik | Deaktiviert (`traefik.enable=false`) |
 
 ### Rolle
 
@@ -60,12 +58,11 @@ Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder 
 ## Handbrake
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [handbrake.ackermannprivat.ch](https://handbrake.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/handbrake.nomad`) |
-| **Storage** | NFS `/nfs/docker/handbrake/config/` |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [handbrake.ackermannprivat.ch](https://handbrake.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/handbrake.nomad` |
+| Storage | NFS `/nfs/docker/handbrake/config/` |
+| Auth | `intern-auth@file` |
 
 ### Rolle
 
@@ -88,13 +85,12 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 ## LazyLibrarian
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/lazylibrarian.nomad`) |
-| **Storage** | NFS `/nfs/docker/lazylibrarian/config/` |
-| **Mediathek** | NFS `/nfs/jellyfin/` |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/lazylibrarian.nomad` |
+| Storage | NFS `/nfs/docker/lazylibrarian/config/` |
+| Mediathek | NFS `/nfs/jellyfin/` |
+| Auth | `intern-auth@file` |
 
 ### Rolle
 

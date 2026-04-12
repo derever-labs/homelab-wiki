@@ -10,14 +10,16 @@ tags:
 
 # Filebrowser
 
+Filebrowser läuft als Nomad System Job -- eine Instanz pro Node -- und dient als Debugging- und Inspektions-Tool für die Nomad Nodes. Der Zugriff auf das Dateisystem ist read-only.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Nomad System Job (`infrastructure/filebrowser.nomad`) |
-| **Auth** | Authentik ForwardAuth (`intern-auth`) |
-| **Zugriff** | Read-only auf gesamtes lokales Dateisystem |
+|----------|------|
+| Deployment | Nomad Job `infrastructure/filebrowser.nomad` (System Job) |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) |
+| Zugriff | Read-only auf gesamtes lokales Dateisystem |
+| URLs | Siehe [Web-Interfaces](../_referenz/web-interfaces.md) (pro Node) |
 
 ## Architektur
 

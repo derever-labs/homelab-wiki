@@ -122,24 +122,27 @@ tags:
 
 ### Übersicht-Tabelle
 
-Jede System-Seite (`index.md`) beginnt nach dem H1-Titel mit einer Übersicht-Tabelle:
+Jede System-Seite (`index.md`) beginnt nach dem H1-Titel mit einem Einleitungssatz (1-3 Sätze) und einer Übersicht-Tabelle im `## Übersicht`-Abschnitt:
 
 | Attribut | Wert |
 |----------|------|
-| Status | Produktion / Planung / Veraltet |
 | URL | service.ackermannprivat.ch |
-| Deployment | Nomad Job / Systemd / VM |
+| Deployment | Nomad Job `services/name.nomad` / Ansible + Systemd |
 | Storage | NFS / Linstor CSI / Lokal |
 | Auth | Middleware Chain Name |
+| Secrets | Vault `kv/name` |
 
-Nicht alle Felder sind für jedes System relevant. Nur zutreffende Attribute aufführen.
+Spaltenbezeichnung einheitlich: `Attribut` (nicht `Eigenschaft`). Nur zutreffende Attribute aufführen.
+
+Verboten in der Übersicht-Tabelle: Version, Image-Tag, Status, CPU/RAM -- diese Werte veralten sofort und gehören in Nomad-Jobs oder UI.
 
 ### Aufbau einer Inhaltsseite
 
 1. **Frontmatter** (title, description, tags)
 2. **H1 Titel** (identisch mit Frontmatter title)
-3. **Übersicht-Tabelle** (Status, URL, Deployment, Storage, Auth)
-4. **Rolle im Stack** -- 1-3 Sätze, wie der Service ins Gesamtbild passt
+3. **Einleitungssatz** -- 1-3 Sätze, was das System ist
+4. **Übersicht-Tabelle** (URL, Deployment, Storage, Auth, Secrets)
+5. **Rolle im Stack** -- wie der Service ins Gesamtbild passt
 5. **Architektur** -- D2-Diagramm (wenn sinnvoll)
 6. **Service-spezifische Sektionen** -- keine SSOT-Duplikate
 7. **Verwandte Seiten** (Pflicht) -- Aufzählungsliste mit Links am Ende

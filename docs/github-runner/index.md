@@ -10,16 +10,16 @@ tags:
 
 # GitHub Actions Runner
 
+Der GitHub Actions Runner übernimmt die CI/CD Pipeline für das Wiki -- bei jedem Push auf `main` wird das VitePress Wiki gebaut und deployed.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | -- (kein Web-UI) |
-| **Deployment** | Nomad Job (`infrastructure/github-runner.nomad`) |
-| **Scope** | Einzelnes Repo: `derever/homelab-wiki` |
-| **Labels** | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
-| **Auth** | Fine-grained PAT aus Vault |
+|----------|------|
+| Deployment | Nomad Job `infrastructure/github-runner.nomad` |
+| Scope | Einzelnes Repo: `derever/homelab-wiki` |
+| Labels | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
+| Auth | Fine-grained PAT aus Vault (`kv/data/github-runner`) |
 
 ## Architektur
 

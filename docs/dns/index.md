@@ -9,14 +9,17 @@ tags:
 
 # DNS-Architektur
 
+Zwei redundante Pi-hole v6 LXC-Container (lxc-dns-01/02) bilden die DNS-Infrastruktur. Pi-hole übernimmt Ad-Blocking, Wildcard-DNS für alle internen Domains und leitet `.consul`-Anfragen an den Consul-Cluster weiter.
+
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
+| Attribut | Wert |
+|----------|------|
 | Primärer DNS | 10.0.2.1 (lxc-dns-01) |
 | Sekundärer DNS | 10.0.2.2 (lxc-dns-02) |
 | Deployment | Bare-metal in LXC (Terraform + Ansible) |
 | Sync | Nebula-Sync (Nomad-Job, Full Teleporter, täglich 04:00) |
+| IPs | Siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## DNS-Kette
 

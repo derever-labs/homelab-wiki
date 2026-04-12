@@ -12,13 +12,13 @@ tags:
 # SMTP Relay
 
 ## Übersicht
+
+Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes ohne Authentifizierung entgegen und leitet sie via TLS an `mail.netzone.ch` weiter.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Nomad Job (`infrastructure/smtp-relay.nomad`) |
-| **Consul DNS** | `smtp.service.consul:25` |
-| **Upstream** | `mail.netzone.ch:587` (TLS + SASL) |
-| **Absender** | `services@ackermann.systems` |
+|----------|------|
+| Deployment | Nomad Job `infrastructure/smtp-relay.nomad` |
+| Consul DNS | `smtp.service.consul:25` |
 
 ## Beschreibung
 

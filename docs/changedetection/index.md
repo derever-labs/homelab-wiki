@@ -10,16 +10,17 @@ tags:
 
 # ChangeDetection.io
 
+ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachrichtigt bei Veränderungen. Ein Playwright-Chrome-Sidecar übernimmt das JavaScript-Rendering, damit auch dynamisch geladene Inhalte korrekt erfasst werden.
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [change.ackermannprivat.ch](https://change.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`services/changedetection.nomad`) |
-| **Storage** | NFS `/nfs/docker/changedetection/datastore` |
-| **Datenbank** | Keine (Dateibasiert) |
-| **Auth** | `intern-auth@file` |
+|----------|------|
+| URL | [change.ackermannprivat.ch](https://change.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/changedetection.nomad` |
+| Storage | NFS `/nfs/docker/changedetection/datastore` |
+| Datenbank | Keine (dateibasiert) |
+| Auth | `intern-auth@file` |
 
 ## Rolle im Stack
 

@@ -12,15 +12,14 @@ tags:
 
 ## Übersicht
 
+SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisierte Film-/Serien-Empfehlungen über Jellyseerr.
+
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) |
-| **Deployment** | Nomad Job (`media/suggestarr.nomad`) |
-| **Storage** | NFS `/nfs/docker/suggestarr/config/` |
-| **Auth** | `intern-noauth@file` |
-| **Consul Service** | `suggestarr` |
-| **1Password** | "SuggestArr" + "TMDB (The Movie Database)" in PRIVAT Agent |
+|----------|------|
+| URL | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Deployment | Nomad Job `media/suggestarr.nomad` |
+| Storage | NFS `/nfs/docker/suggestarr/config/` |
+| Auth | `intern-noauth@file` |
 
 ## Rolle im Stack
 

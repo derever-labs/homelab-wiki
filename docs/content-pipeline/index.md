@@ -11,23 +11,42 @@ tags:
 
 # Content Pipeline
 
-## Übersicht
-
 Fünf Komponenten bilden die automatisierte Content-Akquisition-Pipeline: vier periodische Batch Jobs laden Inhalte herunter und ein Telegram Bot ermöglicht die Steuerung per Chat.
 
-| Attribut | reddit-downloader | ph-downloader | phdler-telegram-bot |
-| :--- | :--- | :--- | :--- |
-| **Status** | Produktion | Produktion | Produktion |
-| **Typ** | Nomad Batch (periodic) | Nomad Batch (periodic) | Nomad Service (headless) |
-| **Deployment** | `batch-jobs/reddit_downloader.nomad` | `batch-jobs/ph_downloader.nomad` | `services/phdler-telegram-bot.nomad` |
-| **Schedule** | Täglich 02:00 UTC (03:00 CH) | Täglich 02:30 UTC (03:30 CH) | Dauerhaft laufend |
-| **Stash-Integration** | Ja (Scan + Generate) | Ja (Scan + Generate) | Nein (steuert ph-downloader) |
-| **Telegram-Benachrichtigung** | Ja (Ergebnis-Report) | Ja (auto-delete nach 30 min) | Ja (interaktiver Bot) |
+## Übersicht
+
+**reddit-downloader**
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Nomad Job `batch-jobs/reddit_downloader.nomad` (Periodic Batch) |
+| Schedule | Täglich 02:00 UTC (03:00 CH) |
+| Stash-Integration | Ja (Scan + Generate) |
+| Benachrichtigung | Telegram Ergebnis-Report |
+
+**ph-downloader**
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Nomad Job `batch-jobs/ph_downloader.nomad` (Periodic Batch) |
+| Schedule | Täglich 02:30 UTC (03:30 CH) |
+| Stash-Integration | Ja (Scan + Generate) |
+| Benachrichtigung | Telegram (auto-delete nach 30 min) |
+
+**phdler-telegram-bot**
+
+| Attribut | Wert |
+|----------|------|
+| Deployment | Nomad Job `services/phdler-telegram-bot.nomad` (Service, headless) |
+| Schedule | Dauerhaft laufend |
+| Funktion | Steuert ph-downloader via Telegram-Befehle |
 
 Zusätzlich laufen zwei gallery-dl-basierte Batch Jobs:
 
-- **reddit_gallery_dl** (`batch-jobs/reddit_gallery_dl.nomad`) -- Täglich, lädt Reddit-Galerien via gallery-dl
-- **reddit_gallery_dl_backfill** (`batch-jobs/reddit_gallery_dl_backfill.nomad`) -- Backfill-Variante für historische Inhalte
+| Attribut | Wert |
+|----------|------|
+| reddit_gallery_dl | `batch-jobs/reddit_gallery_dl.nomad` -- Täglich, lädt Reddit-Galerien via gallery-dl |
+| reddit_gallery_dl_backfill | `batch-jobs/reddit_gallery_dl_backfill.nomad` -- Backfill-Variante für historische Inhalte |
 
 ## Workflow
 

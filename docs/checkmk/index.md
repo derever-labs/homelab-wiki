@@ -9,16 +9,17 @@ tags:
 
 # CheckMK Monitoring
 
+CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es überwacht Hardwaremetriken und Systemdienste auf allen Infrastruktur-Nodes und ergänzt damit Grafana/Loki (Metriken/Logs) und Gatus (Endpoint-Verfügbarkeit).
+
 ## Übersicht
 
 | Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **URL** | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
-| **Deployment** | Eigenständige VM (ID: 2000) auf pve01 |
-| **Auth** | CheckMK-eigene Benutzerverwaltung |
-| **Storage** | Lokaler ZFS auf Proxmox Node |
-| **Host-Abdeckung** | Alle Infrastruktur-Nodes + Nomad-Container via Docker Piggyback |
+|----------|------|
+| URL | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
+| Deployment | Eigenständige VM (ID: 2000) auf pve01 |
+| Auth | CheckMK-eigene Benutzerverwaltung |
+| Storage | Lokaler ZFS auf Proxmox Node |
+| Host-Abdeckung | Alle Infrastruktur-Nodes + Nomad-Container via Docker Piggyback |
 
 ## Rolle im Stack
 
