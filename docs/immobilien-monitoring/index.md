@@ -17,7 +17,7 @@ Vollautomatisches Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Scr
 
 | Attribut | Wert |
 |----------|------|
-| Portal | Homegate (weitere geplant: newhome.ch, erstbezug.ch) |
+| Portale | Homegate (primaer), ImmoScout24 (woechentlicher Nebenscan) |
 | Scan-Intervall | Alle 3 Tage (PLZ 5605), woechentlich (PLZ 5610) |
 | Anti-Bot | Scrapfly REST-API (ASP, Discovery Plan) |
 | KI-Enrichment | Claude Haiku 4.5 (Stockwerk, Balkon, Parking, Minergie etc.) |
@@ -87,6 +87,10 @@ portale: Immobilienportale {
     class: node
     tooltip: "SMG | 70-75% Marktanteil | DataDome + Cloudflare"
   }
+  IS24: ImmoScout24 {
+    class: node
+    tooltip: "SMG | Woechentlicher Nebenscan | 96% Ueberlappung mit HG"
+  }
 }
 
 daten: Datenhaltung {
@@ -135,6 +139,10 @@ scraper.Job -> scraper.SF: HTTP GET mit ASP {
 }
 scraper.SF -> portale.HG: DataDome Bypass {
   style.stroke: "#2563eb"
+}
+scraper.SF -> portale.IS24: DataDome Bypass (weekly) {
+  style.stroke: "#2563eb"
+  style.stroke-dash: 3
 }
 scraper.Job -> scraper.AI: Listing-Texte {
   style.stroke: "#16a34a"
@@ -281,6 +289,21 @@ Getestet und gescheitert (vor Scrapfly):
 
 Scrapfly erreicht 96-98% Erfolgsrate bei 25 Credits pro ASP-Request.
 
+## Plattform-Strategie (SMG-Vergleichsscan)
+
+Ein einmaliger Vergleichsscan (2026-04-12) hat die Ueberlappung zwischen den Schweizer Immobilienportalen gemessen:
+
+| Plattform | Verhaeltnis zu Homegate | Entscheidung |
+|-----------|------------------------|-------------|
+| ImmoScout24 | **96% Ueberlappung**, 4% exklusiv (6 von 136 Listings) | Woechentlicher Nebenscan |
+| Flatfox | SMG-Tochter seit 2023, zunehmend integriert | Nicht separat scrapen |
+| anibis.ch | Via `anibisfill` auf Homegate syndiziert, gleiche IDs | Nicht separat scrapen |
+| tutti.ch | Via `tuttifill` auf Homegate syndiziert, gleiche IDs | Nicht separat scrapen |
+
+::: info SMG-Pool
+Alle fuenf Plattformen (Homegate, ImmoScout24, Flatfox, anibis, tutti) gehoeren zur Swiss Marketplace Group und teilen denselben Listing-Pool mit plattformuebergreifend identischen IDs (z.B. `4003046935`). Homegate allein deckt den Pool nahezu vollstaendig ab. ImmoScout24 ergaenzt woechentlich die wenigen exklusiven Listings (~4%).
+:::
+
 ## Smart Skipping
 
 Statt jedes Listing bei jedem Lauf komplett zu scrapen, entscheidet die DB-Abgleich-Logik pro Listing:
@@ -309,12 +332,15 @@ Beide Datenquellen liefern strukturiertes JSON direkt aus dem Server-Side-Render
 
 ### Scan-Tiers (PLZ-Strategie)
 
-| Tier | PLZ | Ort | Job | Intervall |
-|------|-----|-----|-----|-----------|
-| 1 | 5605 | Dottikon | `immoscraper` | Alle 3 Tage |
-| 3 | 5610 | Wohlen AG | `immoscraper-weekly` | Woechentlich (Sonntag) |
+| Tier | Portal | Gebiet | Job | Intervall |
+|------|--------|--------|-----|-----------|
+| 1 | Homegate | PLZ 5605 (Dottikon) | `immoscraper` | Alle 3 Tage |
+| 3 | Homegate | PLZ 5610 (Wohlen AG) | `immoscraper-weekly` | Woechentlich |
+| N | ImmoScout24 | 11 Orte in der Region | `immoscraper-weekly` | Woechentlich |
 
 Homegate zeigt bei einer PLZ-Suche auch Ergebnisse aus umliegenden Gemeinden an. PLZ 5605 deckt damit den Grossteil des 7km-Radius ab (Dottikon, Hendschiken, Othmarsingen, Haegglingen, Villmergen). PLZ 5610 ergaenzt das Randgebiet Wohlen AG.
+
+ImmoScout24 wird ueber 11 Ort-basierte Suchen abgefragt (Dottikon, Wohlen AG, Hendschiken, Othmarsingen, Villmergen, Haegglingen, Niederrohrdorf, Mellingen, Lenzburg, Bremgarten AG, Stetten AG). Nur Overview-Daten, kein Detail-Scraping (exklusive Listings sind selten und die Basisdaten reichen fuer die Erkennung).
 
 Referenzpunkt fuer Distanzberechnung: Dottikon 47.3775 / 8.2394
 
@@ -410,7 +436,8 @@ Der Workflow triggert bei Aenderungen in `services/n8n-workflows/scraper/` oder 
 | Overview PLZ 5605 (~15 Seiten) | ~375 | Alle 3 Tage | ~3.750 |
 | Detail-Scrapes (~30 neue) | ~750 | Alle 3 Tage | ~7.500 |
 | Overview PLZ 5610 (~15 Seiten) | ~375 | Woechentlich | ~1.500 |
-| **Total geschaetzt** | | | **~12.750** |
+| IS24 Nebenscan (~13 Seiten) | ~325 | Woechentlich | ~1.300 |
+| **Total geschaetzt** | | | **~14.050** |
 
 Der Discovery Plan bietet 200.000 Credits/Monat fuer $30 -- die geschaetzte Auslastung liegt bei ~6%.
 
@@ -468,9 +495,8 @@ Homegate liefert Amenities als Boolean-Felder: `hasBalcony`, `hasElevator`, `has
 
 ## Geplante Erweiterungen
 
-- **newhome.ch** -- Zweite Datenquelle mit eigenstaendigem Bestand (Kantonalbanken, regionale Verwaltungen)
+- **newhome.ch** -- Eigenstaendiger Datenbestand (Kantonalbanken, regionale Verwaltungen), nicht im SMG-Pool
 - **erstbezug.ch** -- Neubauprojekte exklusiv, Migration aus n8n-Workflow
-- **SMG-Vergleichsscan** -- Einmaliger Scan von ImmoScout24, Flatfox, anibis, tutti gegen Homegate-DB um Datenbank-Ueberschneidung zu messen
 - **Neubau-Research Pipeline** -- Claude Sonnet analysiert Developer-Websites, Baudatenbank AG, Amtsblatt
 - **Pipeline-Discovery** -- Automatische Entdeckung neuer Neubauprojekte via Developer-Websites
 
