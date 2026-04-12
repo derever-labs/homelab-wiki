@@ -1,6 +1,6 @@
 ---
 title: GitHub Actions Runner
-description: Self-hosted GitHub Actions Runner mit Docker-in-Docker für Wiki CI/CD
+description: Self-hosted GitHub Actions Runner für CI/CD aller Repos in derever-labs
 tags:
   - infrastructure
   - ci-cd
@@ -10,36 +10,87 @@ tags:
 
 # GitHub Actions Runner
 
-Der GitHub Actions Runner übernimmt die CI/CD Pipeline für das Wiki -- bei jedem Push auf `main` wird das VitePress Wiki gebaut und deployed.
+Self-hosted GitHub Actions Runner für alle Repos der Organisation [derever-labs](https://github.com/derever-labs). Ein einzelner Runner deckt alle CI/CD Pipelines ab -- Wiki-Builds, Container-Builds und Deployments.
 
 ## Übersicht
 
 | Attribut | Wert |
 |----------|------|
 | Deployment | Nomad Job `infrastructure/github-runner.nomad` |
-| Scope | Einzelnes Repo: `derever-labs/homelab-wiki` |
+| Scope | Organisation: `derever-labs` (alle Repos) |
 | Labels | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
-| Auth | Fine-grained PAT aus Vault (`kv/data/github-runner`) |
+| Auth | Classic PAT (permanent) aus Vault (`kv/data/github-runner`) |
 
 ## Architektur
 
-Der Runner ist ein self-hosted GitHub Actions Runner, der als Nomad Service Job auf dem Cluster läuft. Er übernimmt die CI/CD Pipeline für das [Wiki](../vitepress-wiki/index.md) -- bei jedem Push auf `main` wird das VitePress Wiki gebaut und deployed.
+Der Runner ist ein self-hosted GitHub Actions Runner, der als Nomad Service Job auf dem Cluster läuft. Mit `RUNNER_SCOPE=org` steht er allen Repos der Organisation zur Verfügung.
 
 ```d2
 direction: right
 
-GH: "GitHub\nderever-labs/homelab-wiki"
-Runner: "GitHub Runner\n(Nomad Job)"
-ZOT: "ZOT Registry\n(localhost:5000)"
-Nomad: Nomad API
-Wiki: Wiki Container
-Vault: "Vault\nkv/github-runner"
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-GH -> Runner: Webhook: push on main
-Runner -> ZOT: docker build
-Runner -> Nomad: nomad job run
-Nomad -> Wiki: Pull Image
-Runner -> Vault: PAT Auth
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
+
+github: GitHub (derever-labs) {
+  class: container
+
+  wiki: homelab-wiki {
+    class: node
+    tooltip: "VitePress Build + Webhook"
+  }
+  nomad-jobs: homelab-nomad-jobs {
+    class: node
+    tooltip: "Container Build + Deploy"
+  }
+  immo: immo-monitor {
+    class: node
+    tooltip: "Container Build + Deploy"
+  }
+}
+
+nomad: Nomad Cluster {
+  class: container
+
+  runner: Self-hosted Runner {
+    class: node
+    tooltip: "RUNNER_SCOPE=org\nPrivileged, Host-Networking\nclient-05 oder client-06"
+  }
+  zot: ZOT Registry\nlocalhost:5000 {
+    class: node
+  }
+}
+
+vault: Vault\nkv/github-runner {
+  class: node
+  tooltip: "Classic PAT (permanent)\nScopes: repo, workflow, admin:org"
+}
+
+github.wiki -> nomad.runner: push on main
+github.nomad-jobs -> nomad.runner: push on main
+github.immo -> nomad.runner: push on main
+
+nomad.runner -> nomad.zot: docker build + push
+vault -> nomad.runner: PAT via Workload Identity {
+  style.stroke-dash: 3
+}
 ```
 
 ## Docker-in-Docker
@@ -47,7 +98,7 @@ Runner -> Vault: PAT Auth
 Der Runner braucht Docker-Zugriff, um innerhalb von GitHub Actions Container zu bauen. Dafür wird der Docker-Socket des Hosts in den Container gemountet (`/var/run/docker.sock`). Der Container läuft im privileged Mode.
 
 ::: warning Sicherheitshinweis
-Privileged Mode und gemounteter Docker-Socket geben dem Container Root-Zugriff auf den Host. Dies ist akzeptabel, weil der Runner nur für ein eigenes privates Repo eingesetzt wird und keine externen Workflows ausführt.
+Privileged Mode und gemounteter Docker-Socket geben dem Container Root-Zugriff auf den Host. Dies ist akzeptabel, weil der Runner nur für eigene Repos innerhalb der Organisation eingesetzt wird und keine externen Workflows ausführt.
 :::
 
 ## Placement
@@ -60,13 +111,21 @@ Der Container nutzt `network_mode = "host"`, damit `localhost:5000` direkt aufl�
 
 | Pfad | Key | Beschreibung |
 | :--- | :--- | :--- |
-| `kv/data/github-runner` | `access_token` | Fine-grained PAT für GitHub API |
+| `kv/data/github-runner` | `access_token` | Classic PAT (permanent, Scopes: repo, workflow, admin:org) |
 
-Das PAT wird über Vault-Integration als Umgebungsvariable `ACCESS_TOKEN` injiziert. Der Runner nutzt es zur Registrierung bei GitHub.
+Das PAT wird über Vault-Integration als Umgebungsvariable `ACCESS_TOKEN` injiziert. Der Runner nutzt es zur Registrierung bei der Organisation `derever-labs`.
 
-## Beziehung zum Wiki
+::: info Runner Group
+Die Default Runner Group der Organisation hat `allows_public_repositories=true`, damit auch das öffentliche Repo `homelab-wiki` den Runner nutzen kann. Ohne diese Einstellung bleiben Jobs von public Repos in der Queue hängen.
+:::
 
-Der Runner ist ein zentraler Bestandteil der Wiki CI/CD Pipeline. Der vollständige Ablauf ist in der [Wiki-Dokumentation](../vitepress-wiki/index.md) beschrieben.
+## Aktive Repos
+
+Der Runner bedient alle Repos der Organisation `derever-labs`:
+
+- **homelab-wiki** -- VitePress Build-Validierung + Webhook-Trigger
+- **homelab-nomad-jobs** -- Container-Builds (z.B. Immoscraper) + ZOT Push
+- **immo-monitor** -- SvelteKit Build + Deploy
 
 ## Verwandte Seiten
 
