@@ -23,25 +23,115 @@ Traefik läuft als HA-Reverse-Proxy auf zwei VMs mit Keepalived VIP. Alle Homela
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: down
 
-Internet: Internet
-CF: Cloudflare DNS
-Router: Router (Port-Forward 80/443)
-VIP: VIP (Keepalived) { tooltip: "10.0.2.20" }
-T1: vm-traefik-01 (MASTER) { tooltip: "10.0.2.21" }
-T2: vm-traefik-02 (BACKUP) { tooltip: "10.0.2.22" }
-Consul: Consul Catalog + File Provider
-Backend: Nomad Services + Standalone Services
+external: Externer Zugang {
+  class: container
 
-Internet -> CF
-CF -> Router
-Router -> VIP
-VIP -> T1
-VIP -> T2
-T1 -> Consul
-T2 -> Consul
-Consul -> Backend
+  Internet: Internet {
+    class: node
+  }
+  CF: Cloudflare DNS {
+    class: node
+    tooltip: "DNS fuer *.ackermannprivat.ch und *.ackermann.systems"
+  }
+  Router: UDM Pro {
+    class: node
+    tooltip: "10.0.0.1 | Port-Forward 80/443 auf VIP"
+  }
+}
+
+ha: Traefik HA Cluster {
+  class: container
+
+  VIP: Keepalived VIP {
+    class: node
+    tooltip: "10.0.2.20 | VRRP Virtual IP, Gateway-Track und nopreempt"
+  }
+  T1: vm-traefik-01 (MASTER) {
+    class: node
+    tooltip: "10.0.2.21 | Prioritaet 150, Docker Compose, CrowdSec"
+  }
+  T2: vm-traefik-02 (BACKUP) {
+    class: node
+    tooltip: "10.0.2.22 | Prioritaet 100, Docker Compose, CrowdSec"
+  }
+}
+
+providers: Routing-Provider {
+  class: container
+
+  Consul: Consul Catalog {
+    class: node
+    tooltip: "Port 8500 | Automatische Service Discovery fuer Nomad-Jobs"
+  }
+  File: File Provider {
+    class: node
+    tooltip: "services-external.yml | Standalone-Services (Checkmk, DNS, Linstor etc.)"
+  }
+}
+
+backend: Backend-Services {
+  class: container
+
+  Nomad: Nomad Services {
+    class: node
+    tooltip: "Container-Services registriert via Consul Tags"
+  }
+  Standalone: Standalone Services {
+    class: node
+    tooltip: "Proxmox, PBS, Checkmk, Pi-hole etc."
+  }
+}
+
+external.Internet -> external.CF: DNS Lookup {
+  style.stroke: "#2563eb"
+}
+external.CF -> external.Router: HTTPS {
+  style.stroke: "#2563eb"
+}
+external.Router -> ha.VIP: Port 80/443 {
+  style.stroke: "#2563eb"
+}
+ha.VIP -> ha.T1: Aktiver Node {
+  style.stroke: "#6b7280"
+}
+ha.VIP -> ha.T2: Failover {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+ha.T1 -> providers.Consul: Catalog API {
+  style.stroke: "#7c3aed"
+}
+ha.T1 -> providers.File: Watch Config {
+  style.stroke: "#7c3aed"
+}
+ha.T2 -> providers.Consul: Catalog API {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+}
+ha.T2 -> providers.File: Watch Config {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+}
+providers.Consul -> backend.Nomad: Service Backends {
+  style.stroke: "#16a34a"
+}
+providers.File -> backend.Standalone: File Routes {
+  style.stroke: "#16a34a"
+}
 ```
 
 Traefik läuft im HA-Setup auf zwei VMs mit Keepalived VIP. Bei Ausfall eines Nodes übernimmt der andere automatisch. Beide Nodes sind identisch konfiguriert und werden per Ansible rolling deployed.

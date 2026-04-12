@@ -30,22 +30,82 @@ Bei Vault-Ausfall können laufende Dienste keine Secrets mehr erneuern und neue 
 ## Architektur
 
 ```d2
-direction: right
-
-raft: "Vault Raft Cluster" {
-  style.stroke-dash: 4
-  V1: "104 Standby" { style.border-radius: 8 }
-  V2: "105 Leader" { style.border-radius: 8 }
-  V3: "106 Standby" { style.border-radius: 8 }
-  V1 <-> V2
-  V2 <-> V3
-  V3 <-> V1
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
 
-NJ: "Nomad Task" { style.border-radius: 8 }
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
 
-NJ -> raft: JWT
-raft -> NJ: Secret
+direction: right
+
+raft: Vault Raft Cluster {
+  class: container
+
+  V1: vm-nomad-server-04 {
+    class: node
+    tooltip: "10.0.2.104 | Port 8200 (API) / 8201 (Cluster)"
+  }
+  V2: vm-nomad-server-05 {
+    class: node
+    tooltip: "10.0.2.105 | Port 8200 (API) / 8201 (Cluster)"
+  }
+  V3: vm-nomad-server-06 {
+    class: node
+    tooltip: "10.0.2.106 | Port 8200 (API) / 8201 (Cluster)"
+  }
+
+  V1 <-> V2: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8201 | Datenreplikation und Leader Election"
+  }
+  V2 <-> V3: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8201 | Datenreplikation und Leader Election"
+  }
+  V3 <-> V1: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8201 | Datenreplikation und Leader Election"
+  }
+}
+
+Nomad: Nomad Server {
+  class: node
+  tooltip: "Stellt JWT fuer Workload Identity aus"
+}
+
+NJ: Nomad Task {
+  class: node
+  tooltip: "Container mit vault-Stanza und identity-Block"
+}
+
+Consul: Consul {
+  class: node
+  tooltip: "Service Discovery fuer active.vault"
+}
+
+Nomad -> NJ: JWT ausstellen {
+  style.stroke: "#6b7280"
+}
+NJ -> raft: JWT vorzeigen (HTTP :8200) {
+  style.stroke: "#7c3aed"
+  tooltip: "Task authentifiziert sich mit dem JWT"
+}
+raft -> NJ: Secret (KV v2) {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 3
+  tooltip: "Vault liefert Secrets aus dem Job-spezifischen KV-Pfad"
+}
+raft -> Consul: Service registrieren {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+  tooltip: "Vault registriert sich als active/standby in Consul"
+}
 ```
 
 Vault läuft als 3-Node Raft Cluster. Jeder Server führt einen eigenen Vault-Prozess aus. Die Leader-Election erfolgt über das Raft-Konsensprotokoll: es gibt immer genau einen Leader, die anderen beiden sind Standby-Nodes.
@@ -66,19 +126,67 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 Nomad-Jobs authentifizieren sich bei Vault über JWT-basierte Workload Identity. Dadurch brauchen Jobs keine statischen Tokens -- die Identität ergibt sich aus dem Job selbst.
 
 ```d2
-workload_identity: {
-  shape: sequence_diagram
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-  Nomad: Nomad
-  Task: Task
-  Vault: Vault
+classes: {
+  node: { style: { border-radius: 8 } }
+}
 
-  Nomad -> Task: "JWT ausstellen"
-  Task -> Vault: "JWT vorzeigen"
-  Vault -> Vault: "Signatur prüfen (JWKS)"
-  Vault -> Task: "Token (Policy: nomad-workloads)" { style.stroke-dash: 5 }
-  Task -> Vault: "kv/data/job_id lesen"
-  Vault -> Task: Secret { style.stroke-dash: 5 }
+direction: right
+
+Nomad: Nomad Server {
+  class: node
+  tooltip: "Stellt beim Task-Start automatisch ein signiertes JWT aus (Workload Identity)"
+}
+
+Task: Nomad Task {
+  class: node
+  tooltip: "Container mit vault-Stanza und identity-Block (env = true, file = true)"
+}
+
+Vault: Vault {
+  class: node
+  tooltip: "JWT Auth Method validiert die Signatur gegen Nomads JWKS-Endpoint"
+}
+
+KV: KV v2 Secret Engine {
+  class: node
+  tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschraenkt Zugriff auf eigenen Pfad"
+}
+
+# 1. JWT ausstellen
+Nomad -> Task: 1. JWT ausstellen (Workload Identity) {
+  style.stroke: "#6b7280"
+}
+
+# 2. JWT an Vault vorzeigen
+Task -> Vault: 2. JWT vorzeigen (HTTP :8200) {
+  style.stroke: "#7c3aed"
+  tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token noetig"
+}
+
+# 3. Vault validiert und gibt Token
+Vault -> Task: 3. Vault Token (Policy: nomad-workloads) {
+  style.stroke-dash: 3
+  style.stroke: "#7c3aed"
+  tooltip: "Vault prueft JWT-Signatur via Nomad JWKS, dann Token mit eingeschraenkter Policy"
+}
+
+# 4. Secrets lesen
+Task -> KV: 4. kv/data/JOB_ID lesen {
+  style.stroke: "#2563eb"
+  tooltip: "Task liest nur Secrets unter seinem eigenen Job-Pfad"
+}
+
+# 5. Secret-Werte zurueck
+KV -> Task: 5. Secret-Werte {
+  style.stroke-dash: 3
+  style.stroke: "#16a34a"
 }
 ```
 

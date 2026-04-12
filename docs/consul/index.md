@@ -33,31 +33,94 @@ Bei Consul-Ausfall verlieren alle Dienste ihre Service Discovery und DNS-Auflös
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: right
 
-srv: "Server (104/105/106)" {
-  style.stroke-dash: 4
-  CS1: "104" { style.border-radius: 8 }
-  CS2: "105" { style.border-radius: 8 }
-  CS3: "106" { style.border-radius: 8 }
-  CS1 <-> CS2
-  CS2 <-> CS3
+srv: Consul Server {
+  class: container
+
+  CS1: vm-nomad-server-04 {
+    class: node
+    tooltip: "10.0.2.104 | Port 8500 (API) / 8600 (DNS) / 8301 (Gossip)"
+  }
+  CS2: vm-nomad-server-05 {
+    class: node
+    tooltip: "10.0.2.105 | Port 8500 (API) / 8600 (DNS) / 8301 (Gossip)"
+  }
+  CS3: vm-nomad-server-06 {
+    class: node
+    tooltip: "10.0.2.106 | Port 8500 (API) / 8600 (DNS) / 8301 (Gossip)"
+  }
+
+  CS1 <-> CS2: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8300 | Leader Election und Log-Replikation"
+  }
+  CS2 <-> CS3: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8300 | Leader Election und Log-Replikation"
+  }
+  CS3 <-> CS1: Raft {
+    style.stroke: "#6b7280"
+    tooltip: "Port 8300 | Leader Election und Log-Replikation"
+  }
 }
 
-cli: "Clients (124/125/126)" {
-  style.stroke-dash: 4
-  CC1: "124" { style.border-radius: 8 }
-  CC2: "125" { style.border-radius: 8 }
-  CC3: "126" { style.border-radius: 8 }
+cli: Consul Clients {
+  class: container
+
+  CC1: vm-nomad-client-04 {
+    class: node
+    tooltip: "10.0.2.124 | Consul Agent, meldet lokale Services"
+  }
+  CC2: vm-nomad-client-05 {
+    class: node
+    tooltip: "10.0.2.125 | Consul Agent, meldet lokale Services"
+  }
+  CC3: vm-nomad-client-06 {
+    class: node
+    tooltip: "10.0.2.126 | Consul Agent, meldet lokale Services"
+  }
 }
 
-TRF: Traefik { style.border-radius: 8 }
-DNS: "Pi-hole (lxc-dns-01/02)" { style.border-radius: 8 }
+TRF: Traefik {
+  class: node
+  tooltip: "VIP 10.0.2.20 | Consul Catalog Provider fuer automatisches Routing"
+}
 
-cli -> srv: "Service Registration"
-srv -> cli: "Health Checks"
-TRF -> srv: "Consul Catalog"
-DNS -> srv: ".consul :8600"
+DNS: Pi-hole {
+  class: node
+  tooltip: "10.0.2.1 / 10.0.2.2 | Leitet .consul-Anfragen an Consul DNS weiter"
+}
+
+cli -> srv: Service Registration {
+  style.stroke: "#2563eb"
+  tooltip: "Consul Clients registrieren Container-Services im Cluster"
+}
+srv -> cli: Health Checks {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 3
+  tooltip: "Server verteilen Health-Check-Ergebnisse an alle Agents"
+}
+TRF -> srv: Consul Catalog API {
+  style.stroke: "#7c3aed"
+  tooltip: "HTTP :8500 | Traefik liest Service-Katalog fuer Backend-Discovery"
+}
+DNS -> srv: DNS Query (.consul) {
+  style.stroke: "#6b7280"
+  tooltip: "Port 8600 | Pi-hole leitet .consul-Anfragen an alle drei Server"
+}
 ```
 
 Consul läuft auf denselben VMs wie Nomad und Vault:

@@ -40,30 +40,82 @@ Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Fa
 **Wichtig:** Linstor Controller ist für Active/Passive designed -- nur EIN Controller kann gleichzeitig laufen!
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: down
 
-DB: "DRBD Resource: linstor_db (Quorum: 2/3) H2 Datenbank" { style.border-radius: 8 }
-
-C05: "client-05 — ACTIVE" {
-  style.stroke-dash: 4
-  C05a: "COMBINED drbd-reactor Storage: 200GB" { tooltip: "10.0.2.125 / TB: 10.99.1.105"; style.border-radius: 8 }
+DB: DRBD Resource linstor_db {
+  class: node
+  tooltip: "Quorum 2/3 | H2 Datenbank fuer Linstor Controller State"
 }
 
-C06: "client-06 — STANDBY" {
-  style.stroke-dash: 4
-  C06a: "COMBINED drbd-reactor Storage: 200GB" { tooltip: "10.0.2.126 / TB: 10.99.1.106"; style.border-radius: 8 }
+C05: vm-nomad-client-05 -- ACTIVE {
+  class: container
+
+  C05a: Linstor Controller + Satellite {
+    class: node
+    tooltip: "10.0.2.125 | TB: 10.99.1.105 | 200 GB ZFS, drbd-reactor managed"
+  }
 }
 
-C04: vm-nomad-client-04 {
-  style.stroke-dash: 4
-  C04a: "Satellite (Diskless) TieBreaker/Quorum" { tooltip: "10.0.2.124"; style.border-radius: 8 }
+C06: vm-nomad-client-06 -- STANDBY {
+  class: container
+
+  C06a: Linstor Satellite (Standby Controller) {
+    class: node
+    tooltip: "10.0.2.126 | TB: 10.99.1.106 | 200 GB ZFS, drbd-reactor uebernimmt bei Failover"
+  }
 }
 
-DB -- C05
-DB -- C06
-C05 <-> C06: Thunderbolt 25 Gbit
-C05 -> C04: Management 1 Gbit
-C06 -> C04: Management 1 Gbit
+C04: vm-nomad-client-04 -- TieBreaker {
+  class: container
+
+  C04a: Satellite (Diskless) {
+    class: node
+    tooltip: "10.0.2.124 | Kein Storage, nur Quorum-Witness"
+  }
+}
+
+CSI: Nomad CSI Plugin {
+  class: node
+  tooltip: "linstor.csi.linbit.com | Endpoint: linstor-controller.service.consul:3370"
+}
+
+DB -- C05: DRBD Primary {
+  style.stroke: "#854d0e"
+  tooltip: "Aktive H2 DB auf dem Controller-Node"
+}
+DB -- C06: DRBD Secondary {
+  style.stroke: "#854d0e"
+  style.stroke-dash: 3
+  tooltip: "Synchrone Replikation der H2 DB"
+}
+C05 <-> C06: Thunderbolt 25 Gbit/s {
+  style.stroke: "#2563eb"
+  tooltip: "10.99.1.0/24 | DRBD-Replikation aller Volumes"
+}
+C05 -> C04: Management 1 Gbit {
+  style.stroke: "#6b7280"
+  tooltip: "10.0.2.0/24 | Control Plane, Quorum"
+}
+C06 -> C04: Management 1 Gbit {
+  style.stroke: "#6b7280"
+  tooltip: "10.0.2.0/24 | Control Plane, Quorum"
+}
+CSI -> C05: Linstor API {
+  style.stroke: "#7c3aed"
+  tooltip: "HTTP :3370 via Consul Service Discovery"
+}
 ```
 
 **Architektur-Details:**
@@ -114,30 +166,71 @@ Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Rep
 ### Netzwerk-Topologie
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: down
 
-DB2: "DRBD Resource: linstor_db (Quorum: 2/3) H2 Datenbank" { style.border-radius: 8 }
-
-DC02: "client-02 — ACTIVE" {
-  style.stroke-dash: 4
-  DC02a: "COMBINED / drbd-reactor Storage: NVMe" { tooltip: "10.180.46.82 / DRBD: 172.180.46.82"; style.border-radius: 8 }
+DB2: DRBD Resource linstor_db {
+  class: node
+  tooltip: "Quorum 2/3 | H2 Datenbank fuer Linstor Controller State"
 }
 
-DC03: "client-03 — STANDBY" {
-  style.stroke-dash: 4
-  DC03a: "COMBINED / drbd-reactor Storage: NVMe" { tooltip: "10.180.46.83 / DRBD: 172.180.46.83"; style.border-radius: 8 }
+DC02: vm-nomad-client-02 -- ACTIVE {
+  class: container
+
+  DC02a: Linstor Controller + Satellite {
+    class: node
+    tooltip: "10.180.46.82 | DRBD: 172.180.46.82 | NVMe Storage, drbd-reactor managed"
+  }
 }
 
-DC01: vm-nomad-client-01 {
-  style.stroke-dash: 4
-  DC01a: "Satellite (Diskless) TieBreaker/Quorum" { tooltip: "10.180.46.81 / KEIN 10GbE Zugang"; style.border-radius: 8 }
+DC03: vm-nomad-client-03 -- STANDBY {
+  class: container
+
+  DC03a: Linstor Satellite (Standby Controller) {
+    class: node
+    tooltip: "10.180.46.83 | DRBD: 172.180.46.83 | NVMe Storage, Failover via drbd-reactor"
+  }
 }
 
-DB2 -- DC02
-DB2 -- DC03
-DC02 <-> DC03: "10GbE (172.180.46.x)"
-DC02 -> DC01: Management 1 Gbit
-DC03 -> DC01: Management 1 Gbit
+DC01: vm-nomad-client-01 -- TieBreaker {
+  class: container
+
+  DC01a: Satellite (Diskless) {
+    class: node
+    tooltip: "10.180.46.81 | Kein 10GbE-Zugang, nur Quorum-Witness"
+  }
+}
+
+DB2 -- DC02: DRBD Primary {
+  style.stroke: "#854d0e"
+}
+DB2 -- DC03: DRBD Secondary {
+  style.stroke: "#854d0e"
+  style.stroke-dash: 3
+}
+DC02 <-> DC03: 10GbE DRBD-Sync (172.180.46.x) {
+  style.stroke: "#2563eb"
+  tooltip: "Dediziertes 10GbE Netzwerk fuer Replikation"
+}
+DC02 -> DC01: Management 1 Gbit {
+  style.stroke: "#6b7280"
+  tooltip: "10.180.46.x | Control Plane, Quorum"
+}
+DC03 -> DC01: Management 1 Gbit {
+  style.stroke: "#6b7280"
+  tooltip: "10.180.46.x | Control Plane, Quorum"
+}
 ```
 
 ### Netzwerk-Übersicht

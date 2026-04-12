@@ -32,53 +32,141 @@ Neben dem reinen Login übernimmt Authentik im Homelab auch Passwort-Recovery pe
 ## Architektur
 
 ```d2
-direction: right
-
-Zugriff: Zugriff von aussen {
-  style.stroke-dash: 4
-  User: Benutzer
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
 
-Traefik: Traefik (VIP) {
-  style.stroke-dash: 4
-  TR: Reverse Proxy
-  FWD: ForwardAuth Middleware (intern-auth / public-auth)
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: right
+
+Zugriff: Zugriff {
+  class: container
+
+  User: Benutzer {
+    class: node
+    tooltip: "Interner oder externer Zugriff auf geschuetzte Services"
+  }
+}
+
+Traefik: Traefik HA {
+  class: container
+
+  TR: Reverse Proxy {
+    class: node
+    tooltip: "VIP 10.0.2.20 | Empfaengt alle eingehenden Requests"
+  }
+  FWD: ForwardAuth Middleware {
+    class: node
+    tooltip: "intern-auth / public-auth | Prueft ob Session gueltig ist"
+  }
 }
 
 Authentik: Authentik (Nomad Job) {
-  style.stroke-dash: 4
-  AK: Authentik Server { tooltip: "Web UI, API, Flows" }
-  WRK: Authentik Worker { tooltip: "Events, Mail, Tasks" }
-  PROXY: Proxy Outpost { tooltip: "ForwardAuth Backend" }
-  LDAP_OUT: LDAP Outpost { tooltip: "LDAPS für Jellyfin" }
+  class: container
+
+  AK: Authentik Server {
+    class: node
+    tooltip: "Web UI, API, Login-Flows, Event-Pipeline"
+  }
+  WRK: Authentik Worker {
+    class: node
+    tooltip: "Background-Tasks: Zertifikate, E-Mail, Events"
+  }
+  PROXY: Proxy Outpost {
+    class: node
+    tooltip: "ForwardAuth Backend fuer Traefik-Integration"
+  }
+  LDAP_OUT: LDAP Outpost {
+    class: node
+    tooltip: "LDAPS Port 636 fuer Jellyfin-Authentifizierung"
+  }
 }
 
 Backend: Backend-Services {
-  style.stroke-dash: 4
-  SVC: Geschuetzte Services (ForwardAuth)
-  OIDC: OIDC-Services (Grafana, Gitea, Proxmox, ...)
-  JELLY: Jellyfin
+  class: container
+
+  SVC: ForwardAuth-Services {
+    class: node
+    tooltip: "Grafana, Nomad UI, Consul UI etc. -- geschuetzt via Middleware-Chain"
+  }
+  OIDC: OIDC-Services {
+    class: node
+    tooltip: "Grafana, Gitea, Proxmox -- native OIDC-Integration"
+  }
+  JELLY: Jellyfin {
+    class: node
+    tooltip: "Medienserver -- LDAP-Authentifizierung"
+  }
+}
+
+PG: PostgreSQL {
+  class: node
+  shape: cylinder
+  tooltip: "postgres.service.consul | Datenbank authentik"
+}
+
+SMTP: SMTP Relay {
+  class: node
+  shape: cylinder
+  tooltip: "smtp.service.consul | Recovery-Mails und Benachrichtigungen"
 }
 
 TG: Telegram Relay {
-  style.stroke-dash: 4
-  REL: telegram-relay.service.consul
+  class: node
+  tooltip: "telegram-relay.service.consul | Security Alerts"
 }
 
-PG: PostgreSQL (postgres.service.consul) { shape: cylinder }
-SMTP: SMTP Relay (smtp.service.consul) { shape: cylinder }
-
-Zugriff.User -> Traefik.TR
-Traefik.TR -> Traefik.FWD
-Traefik.FWD -> Authentik.PROXY: ForwardAuth Check { style.stroke-dash: 5 }
-Authentik.PROXY -> Authentik.AK
-Authentik.AK -> Authentik.WRK
-Authentik.AK -> PG
-Traefik.FWD -> Backend.SVC: Zugriff erlaubt
-Backend.OIDC -> Authentik.AK: OIDC Discovery { style.stroke-dash: 5 }
-Backend.JELLY -> Authentik.LDAP_OUT: LDAP Bind { style.stroke-dash: 5 }
-Authentik.WRK -> SMTP: Recovery Mail { style.stroke-dash: 5 }
-Authentik.WRK -> TG.REL: Security Alerts { style.stroke-dash: 5 }
+Zugriff.User -> Traefik.TR: HTTPS Request {
+  style.stroke: "#2563eb"
+}
+Traefik.TR -> Traefik.FWD: Middleware-Chain {
+  style.stroke: "#6b7280"
+}
+Traefik.FWD -> Authentik.PROXY: ForwardAuth Check {
+  style.stroke: "#7c3aed"
+  tooltip: "Traefik fragt Proxy Outpost ob Session gueltig ist"
+}
+Authentik.PROXY -> Authentik.AK: Session validieren {
+  style.stroke: "#7c3aed"
+}
+Authentik.AK -> Authentik.WRK: Background Tasks {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+Authentik.AK -> PG: Datenbank {
+  style.stroke: "#854d0e"
+  tooltip: "User-Daten, Flows, Policies, Sessions"
+}
+Traefik.FWD -> Backend.SVC: Zugriff erlaubt {
+  style.stroke: "#16a34a"
+  tooltip: "ForwardAuth erfolgreich, Request wird an Backend weitergeleitet"
+}
+Backend.OIDC -> Authentik.AK: OIDC Discovery {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+  tooltip: "Services holen Token via OpenID Connect"
+}
+Backend.JELLY -> Authentik.LDAP_OUT: LDAP Bind {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+  tooltip: "Jellyfin authentifiziert User via LDAP"
+}
+Authentik.WRK -> SMTP: Recovery Mail {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+Authentik.WRK -> TG: Security Alerts {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+  tooltip: "login_failed, policy_exception, suspicious_request etc."
+}
 ```
 
 ## Komponenten
