@@ -51,7 +51,7 @@ ci: CI/CD Pipeline {
 
   GH: GitHub Repo {
     class: node
-    tooltip: "derever/homelab-nomad-jobs | Push auf main triggert Build"
+    tooltip: "derever-labs/homelab-nomad-jobs | Push auf main triggert Build"
   }
   Runner: GitHub Actions Runner {
     class: node
