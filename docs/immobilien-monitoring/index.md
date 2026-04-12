@@ -1,267 +1,486 @@
 ---
 title: Immobilien-Monitoring
-description: Erfassung und Analyse von Mietangeboten in der Region Dottikon AG (7km Radius)
+description: Automatisiertes Mietmarkt-Monitoring via Scrapfly, mit KI-Enrichment und Telegram-Alerts
 tags:
   - service
-  - n8n
-  - metabase
-  - nomad
   - scraping
+  - nomad
+  - metabase
+  - ci-cd
 ---
 
 # Immobilien-Monitoring
 
-Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Manuell via Claude Code Skill `/homegate-scan` (MCP Playwright), automatisiert via Nomad Periodic Batch sobald Scrapfly-Zugang besteht.
+Vollautomatisches Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Scrapfly umgeht Anti-Bot-Schutzmassnahmen serverseitig, ein Nomad Batch-Job orchestriert den gesamten Scan-Prozess, Claude Haiku reichert Listings mit strukturierten Daten an, und Telegram liefert Zusammenfassungen nach jedem Lauf.
 
-## Übersicht
+## Uebersicht
 
 | Attribut | Wert |
 |----------|------|
-| Zweck | Mietmarkt-Monitoring für MFH-Neubau Dottikon AG |
-| Manueller Scan | Claude Code Skill `/homegate-scan` (MCP Playwright, lokaler Chrome) |
-| Automatisiert | Geplant: Scrapfly ($30/Monat, warten auf Zugang) |
-| Deployment | Nomad Job `services/immoscraper.nomad` (Periodic Batch, pausiert bis Scrapfly) |
-| n8n | [n8n.ackermannprivat.ch](https://n8n.ackermannprivat.ch) |
-| Metabase | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
-| Datenbank | PostgreSQL `n8n` -- 7 Tabellen + 1 View |
+| Portal | Homegate (weitere geplant: newhome.ch, erstbezug.ch) |
+| Scan-Intervall | Alle 3 Tage (PLZ 5605), woechentlich (PLZ 5610) |
+| Anti-Bot | Scrapfly REST-API (ASP, Discovery Plan) |
+| KI-Enrichment | Claude Haiku 4.5 (Stockwerk, Balkon, Parking, Minergie etc.) |
+| Notifications | Telegram Bot (gleicher Bot wie andere Batch-Jobs) |
+| CI/CD | GitHub Actions auf Self-Hosted Runner, Docker Push nach ZOT |
+| Deployment | Nomad Periodic Batch (`immoscraper`, `immoscraper-weekly`) |
+| Dashboard | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
+| Datenbank | PostgreSQL `immo` auf dem Shared Cluster |
 | Repo | `nomad-jobs/services/n8n-workflows/scraper/` |
+| Secrets | Vault `kv/data/immoscraper` + `kv/data/shared/telegram` |
 
-## Beschreibung
-
-Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Zwei parallele Zugangswege:
-
-- **Manuell (aktuell):** Claude Code Skill `/homegate-scan` nutzt MCP Playwright (lokalen Chrome) um Homegate zu scannen. DataDome erkennt den echten Browser nicht.
-- **Automatisiert (geplant):** Scrapfly als Anti-Bot-Proxy für den bestehenden Node.js-Scraper auf Nomad.
-
-## Architektur
+## Gesamtarchitektur
 
 ```d2
-direction: down
-
-manuell: "Manueller Scan (Claude Code)" {
-  style.stroke-dash: 4
-  SK: "/homegate-scan Skill" { style.border-radius: 8 }
-  MCP: "MCP Playwright (lokaler Chrome)" { style.border-radius: 8 }
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
 
-auto: "Automatisiert (geplant)" {
-  style.stroke-dash: 4
-  NJ: "immoscraper Container (Nomad Periodic Batch)" { style.border-radius: 8 }
-  SF: "Scrapfly API (Anti-Bot Proxy)" { style.border-radius: 8 }
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: down
+
+ci: CI/CD Pipeline {
+  class: container
+
+  GH: GitHub Repo {
+    class: node
+    tooltip: "derever/homelab-nomad-jobs | Push auf main triggert Build"
+  }
+  Runner: GitHub Actions Runner {
+    class: node
+    tooltip: "Self-Hosted auf Nomad Client | Docker Build + Push"
+  }
+  ZOT: ZOT Registry {
+    class: node
+    tooltip: "localhost:5000 | OCI Image Cache + Custom Images"
+  }
+}
+
+scraper: Immoscraper (Nomad Batch) {
+  class: container
+
+  Job: Scraper Container {
+    class: node
+    tooltip: "node:22-alpine | MODE=scan oder MODE=weekly"
+  }
+  SF: Scrapfly API {
+    class: node
+    tooltip: "ASP Anti-Bot Bypass | country=ch | Discovery Plan 30 USD/Mo"
+  }
+  AI: Claude Haiku 4.5 {
+    class: node
+    tooltip: "KI-Enrichment | Stockwerk, Balkon, Parking, Minergie"
+  }
 }
 
 portale: Immobilienportale {
-  style.stroke-dash: 4
-  HG: Homegate { style.border-radius: 8 }
+  class: container
+
+  HG: Homegate {
+    class: node
+    tooltip: "SMG | 70-75% Marktanteil | DataDome + Cloudflare"
+  }
 }
 
-pg: "PostgreSQL (Nomad)" {
-  style.stroke-dash: 4
-  LS: listing { shape: cylinder }
-  LP: listing_photo { shape: cylinder }
-  AM: "amenity + listing_amenity" { shape: cylinder }
-  PH: listing_price_history { shape: cylinder }
-  SR: scraper_runs { shape: cylinder }
-  VW: "v_listing_active (View)" { shape: cylinder }
+daten: Datenhaltung {
+  class: container
+
+  PG: PostgreSQL immo {
+    shape: cylinder
+    tooltip: "listing, listing_photo, amenity, scraper_runs, project"
+  }
+  Vault: Vault Secrets {
+    class: node
+    tooltip: "kv/data/immoscraper | DB Password, Scrapfly Key, Claude Key"
+  }
 }
 
-MB: "Metabase Dashboard" { style.border-radius: 8 }
+output: Ausgabe {
+  class: container
 
-manuell.SK -> manuell.MCP
-manuell.MCP -> portale.HG: Browser besucht
-manuell.MCP -> manuell.SK: "__INITIAL_STATE__\n__PINIA_INITIAL_STATE__"
-manuell.SK -> pg.LS: SQL via Node.js pg
-manuell.SK -> pg.LP: SQL via Node.js pg
-manuell.SK -> pg.AM: SQL via Node.js pg
+  MB: Metabase Dashboards {
+    class: node
+    tooltip: "Active Listings, New Today, Market Analytics, Price Drops"
+  }
+  TG: Telegram Bot {
+    class: node
+    tooltip: "Scan-Zusammenfassung nach jedem Lauf"
+  }
+}
 
-auto.NJ -> auto.SF: via Scrapfly
-auto.SF -> portale.HG: DataDome Bypass
-auto.NJ -> pg.LS: UPSERT
+ci.GH -> ci.Runner: Push triggert Workflow {
+  style.stroke: "#2563eb"
+}
+ci.Runner -> ci.ZOT: Docker Image Push {
+  style.stroke: "#2563eb"
+}
+ci.ZOT -> scraper.Job: Image Pull (force_pull) {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
 
-pg.LS -> pg.VW
-pg.VW -> MB
-pg.LP -> MB
-pg.SR -> MB
+daten.Vault -> scraper.Job: Secrets via Nomad Template {
+  style.stroke: "#7c3aed"
+}
+
+scraper.Job -> scraper.SF: HTTP GET mit ASP {
+  style.stroke: "#2563eb"
+}
+scraper.SF -> portale.HG: DataDome Bypass {
+  style.stroke: "#2563eb"
+}
+scraper.Job -> scraper.AI: Listing-Texte {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 3
+}
+scraper.Job -> daten.PG: UPSERT Listings + Fotos {
+  style.stroke: "#854d0e"
+}
+
+daten.PG -> output.MB: v_listing_active View {
+  style.stroke: "#854d0e"
+}
+scraper.Job -> output.TG: Scan-Zusammenfassung {
+  style.stroke: "#16a34a"
+}
 ```
 
-## Anti-Bot: DataDome + Cloudflare
+## Scan-Ablauf (5 Phasen)
+
+Jeder Scan-Lauf durchlaueft fuenf Phasen sequentiell. Der gesamte Prozess ist deterministisch -- kein LLM wird fuer die Datenextraktion benoetigt.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  decision: { style: { border-radius: 8 }; shape: diamond }
+}
+
+direction: right
+
+p1: Phase 1 -- Overview {
+  class: container
+
+  Fetch: Scrapfly Fetch {
+    class: node
+    tooltip: "Alle Seiten paginiert (20/Seite) | 2s Delay zwischen Seiten"
+  }
+  Parse: __INITIAL_STATE__ parsen {
+    class: node
+    tooltip: "Deterministisch | Titel, Preis, Zimmer, Koordinaten, Fotos"
+  }
+  Count: Ergebnis-Zaehler {
+    class: node
+    tooltip: "Abbruch wenn < 20 Listings oder alle Seiten durch"
+  }
+}
+
+p2: Phase 2 -- Smart Skip {
+  class: container
+
+  DB: DB-Abgleich {
+    class: node
+    tooltip: "getExistingListings() | Map<external_id, {rent_gross, detail_scraped_at}>"
+  }
+  Decide: Entscheidung {
+    class: node
+    tooltip: "neu | geaendert | fehlend | skip"
+  }
+}
+
+p3: Phase 3 -- UPSERT {
+  class: container
+
+  Write: Listing UPSERT {
+    class: node
+    tooltip: "ON CONFLICT (portal, external_id) DO UPDATE"
+  }
+  Photo: Foto UPSERT {
+    class: node
+    tooltip: "Nur bei neuen Listings aus Overview-Daten"
+  }
+}
+
+p4: Phase 4 -- Detail-Scrape {
+  class: container
+
+  Fetch2: Scrapfly Fetch {
+    class: node
+    tooltip: "Einzelinserat | 5s Delay | Circuit Breaker nach 5 Fehlern"
+  }
+  Pinia: __PINIA_INITIAL_STATE__ {
+    class: node
+    tooltip: "Beschreibung, Amenities, Fotos, Grundrisse, Verwalter"
+  }
+  Update: Detail-Update + Amenities {
+    class: node
+    tooltip: "updateListingDetail() | upsertPhotos() | Amenity-Junction"
+  }
+}
+
+p5: Phase 5 -- Abschluss {
+  class: container
+
+  Stale: Stale-Deaktivierung {
+    class: node
+    tooltip: "is_active=false wenn > 5 Tage nicht gesehen"
+  }
+  Enrich: KI-Enrichment {
+    class: node
+    tooltip: "Claude Haiku | max 20 Listings pro Lauf"
+  }
+  Notify: Telegram {
+    class: node
+    tooltip: "Zusammenfassung: neu, aktualisiert, Fehler, Credits"
+  }
+}
+
+p1.Fetch -> p1.Parse -> p1.Count
+p1.Count -> p2.DB: "Alle Listings"
+p2.DB -> p2.Decide
+p2.Decide -> p3.Write: "Alle Listings"
+p3.Write -> p3.Photo
+p2.Decide -> p4.Fetch2: "Nur neu/geaendert/fehlend" {
+  style.stroke: "#2563eb"
+}
+p4.Fetch2 -> p4.Pinia -> p4.Update
+p4.Update -> p5.Stale
+p3.Photo -> p5.Stale: "Skipped IDs: last_seen_at" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+p5.Stale -> p5.Enrich -> p5.Notify
+```
+
+## Anti-Bot: Scrapfly statt Browser
 
 ::: warning Zentrale Erkenntnis
-DataDome + Cloudflare auf Homegate blockieren ALLES ausser echten Browsern. Es liegt nicht am Verhalten (Navigation, Delays), sondern an IP-Reputation und TLS-Fingerprinting.
+DataDome + Cloudflare auf Homegate blockieren Container-Traffic unabhaengig vom Browserverhalten. Es liegt an IP-Reputation und TLS-Fingerprinting, nicht an Navigation oder Delays.
 :::
 
-**Getestet und gescheitert:**
-- rebrowser-playwright-core (CDP-Leak gepatcht) -- sofort erkannt
-- Headed Chrome + Xvfb im Docker -- sofort erkannt
-- Evomi Scraping Browser (WebSocket CDP) -- Challenge löst sich nie
-- Evomi Scraper API -- 504 Gateway Timeout
-- Stealth-Scripts (WebGL, AudioContext, Battery API etc.) -- hilft nicht
+Scrapfly loest dieses Problem serverseitig: Die API leitet Requests ueber ein Netzwerk von Residential-IPs mit korrekten TLS-Fingerprints. Der Scraper sendet einen einfachen HTTP GET mit den Parametern `asp=true` (Anti-Scraping Protection) und `country=ch`. Kein Browser, kein JavaScript-Rendering, kein Playwright.
 
-**Funktioniert:**
-- **MCP Playwright** (lokaler Chrome auf dem Mac) -- DataDome sieht normalen Browser, Residential-IP
-- **Scrapfly** (96% DataDome-Erfolgsrate, $30/Monat) -- noch nicht getestet, Zugang läuft
+Getestet und gescheitert (vor Scrapfly):
+- rebrowser-playwright-core, Headed Chrome + Xvfb, Stealth-Scripts
+- Evomi Scraping Browser, Evomi Scraper API
+- Firecrawl (33% Erfolgsrate auf geschuetzten Seiten)
+
+Scrapfly erreicht 96-98% Erfolgsrate bei 25 Credits pro ASP-Request.
+
+## Smart Skipping
+
+Statt jedes Listing bei jedem Lauf komplett zu scrapen, entscheidet die DB-Abgleich-Logik pro Listing:
+
+- **NEU** -- `external_id` nicht in DB -- Overview-Insert + Detail-Scrape
+- **GEAENDERT** -- `external_id` in DB, Preis anders -- Detail-Re-Scrape + Preishistorie
+- **FEHLEND** -- `external_id` in DB, `detail_scraped_at IS NULL` -- Detail-Scrape nachholen
+- **BEKANNT** -- `external_id` in DB, Preis gleich -- nur `last_seen_at` updaten, kein Scrape
+
+::: tip Schutz gegen Massen-Deaktivierung
+Wenn der Overview-Scan 0 Listings findet (vermutlich Anti-Bot-Block oder HTML-Strukturaenderung), wird `deactivateStale` uebersprungen. Damit werden bei einem fehlgeschlagenen Scan nicht alle bestehenden Listings faelschlich deaktiviert.
+:::
 
 ## Datenextraktion
 
-| Seitentyp | Datenquelle | Methode | LLM-Kosten |
-| :--- | :--- | :--- | :--- |
-| **Übersicht** (Trefferliste) | `window.__INITIAL_STATE__` | Deterministisches JSON-Parsing | CHF 0 |
-| **Detail** (Einzelinserat) | `window.__PINIA_INITIAL_STATE__` (Vue 3/Pinia) | Deterministisches JSON-Parsing | CHF 0 |
+Beide Datenquellen liefern strukturiertes JSON direkt aus dem Server-Side-Rendering. Kein LLM noetig fuer die Grundextraktion.
 
-Kein LLM nötig -- beide Datenquellen liefern strukturiertes JSON direkt aus dem Browser-State.
+- **Uebersichtsseiten** -- `window.__INITIAL_STATE__` enthaelt die Suchergebnisse als JSON (Titel, Preis, Zimmer, Koordinaten, Fotos)
+- **Detailseiten** -- `window.__PINIA_INITIAL_STATE__` (Vue 3/Pinia Store) enthaelt Beschreibung, Amenities, alle Fotos, Grundrisse, Verwalter-Kontakt
 
 ### Homegate URL-Struktur
 
-- Alle Mietinserate: `.../plz-{PLZ}/trefferliste?be=7000` (Preis bis CHF 7000)
-- Nur Neubauten: `.../plz-{PLZ}/trefferliste?be=7000&an=G`
-- Pagination: `&ep=1`, `&ep=2` etc. (20 Resultate pro Seite)
-- Detail: `https://www.homegate.ch/mieten/{external_id}`
+- Trefferliste: `.../plz-{PLZ}/trefferliste?be=7000` (Preis bis CHF 7000)
+- Pagination: `&ep=2`, `&ep=3` etc. (20 Resultate pro Seite)
+- Detailseite: `https://www.homegate.ch/mieten/{external_id}`
 
-### Region
+### Scan-Tiers (PLZ-Strategie)
 
-6 PLZ-Codes decken den 7km-Radius gut ab (Homegate zeigt auch umliegende Ergebnisse):
+| Tier | PLZ | Ort | Job | Intervall |
+|------|-----|-----|-----|-----------|
+| 1 | 5605 | Dottikon | `immoscraper` | Alle 3 Tage |
+| 3 | 5610 | Wohlen AG | `immoscraper-weekly` | Woechentlich (Sonntag) |
 
+Homegate zeigt bei einer PLZ-Suche auch Ergebnisse aus umliegenden Gemeinden an. PLZ 5605 deckt damit den Grossteil des 7km-Radius ab (Dottikon, Hendschiken, Othmarsingen, Haegglingen, Villmergen). PLZ 5610 ergaenzt das Randgebiet Wohlen AG.
 
-Dottikon (5605), Hendschiken (5604), Othmarsingen (5504), Hägglingen (5607), Villmergen (5612), Wohlen AG (5610)
+Referenzpunkt fuer Distanzberechnung: Dottikon 47.3775 / 8.2394
 
-Referenzpunkt für Distanzberechnung: Dottikon 47.3775 / 8.2394
+## KI-Enrichment
 
-## Kernkonzept: Smart Skipping
+Nach dem Scraping analysiert Claude Haiku 4.5 die Listing-Beschreibungen und extrahiert strukturierte Daten, die Homegate nicht als eigene Felder liefert:
 
-Statt jedes Listing bei jedem Run komplett zu scrapen:
+| Feld | Beispielwert |
+|------|-------------|
+| Stockwerk | 2 (EG = 0, UG = -1) |
+| Balkon / Terrasse | ja/nein |
+| Parkplatz / Garage | ja/nein |
+| Lift | ja/nein |
+| Minergie-Standard | Minergie, Minergie-P, Minergie-A |
+| Heizungstyp | Fussbodenheizung, Fernwaerme, Waermepumpe |
+| Waschkueche | Eigene Waschmaschine, Gemeinschaftswaschkueche |
+| Baujahr / Renovation | 2024, 2019 |
+| Highlights | Max 5 besondere Merkmale |
 
-1. **Übersichtsseite** liefert: `external_id`, Preis, Zimmer, Titel, Koordinaten
-2. **DB-Abgleich** pro Listing:
-   - `external_id` NICHT in DB -- NEU -- Detail-Scrape + Insert
-   - `external_id` in DB, Preis GLEICH -- BEKANNT -- nur `last_seen_at` updaten
-   - `external_id` in DB, Preis ANDERS -- GEÄNDERT -- Detail-Re-Scrape + Preishistorie
-   - `external_id` in DB, `detail_scraped_at IS NULL` -- FEHLEND -- Detail-Scrape nachholen
+Das Enrichment laeuft nach der Scraping-Phase mit maximal 20 Listings pro Lauf. Ein Circuit Breaker stoppt nach 3 aufeinanderfolgenden Fehlern. Listings ohne Beschreibung werden uebersprungen.
 
-## Claude Code Skill: /homegate-scan
+Die Ergebnisse werden in `enrichment_data` (JSONB) gespeichert und stehen in Metabase als filterbare Felder zur Verfuegung.
 
-Der Skill orchestriert den gesamten Scan-Prozess in 4 Phasen:
+## Notifications (Telegram)
 
-1. **Overview-Scan**: 6 PLZ x 2 Varianten (alle + Neubauten), paginiert via MCP Playwright
-2. **Evaluation**: DB-Abgleich, 7km-Distanzfilter (Haversine), Scoring, User wählt Kandidaten
-3. **Detail-Scan**: `__PINIA_INITIAL_STATE__` extrahieren, Batches von 8, 5-8s Rate-Limit
-4. **DB-Write**: Listings upserten, Amenities in Junction-Tables, Fotos, Preishistorie
+Der Scraper sendet nach jedem Lauf eine Zusammenfassung an den gleichen Telegram Bot der auch von den Media-Batch-Jobs verwendet wird (Vault `kv/data/shared/telegram`).
 
-Skill-Definition: `~/.claude/skills/homegate-scan/SKILL.md`
+Die Nachricht enthaelt pro Portal: Anzahl neue Listings, Detail-Scrapes, Deaktivierungen, Dauer -- sowie den Scrapfly-Credit-Verbrauch und die Anzahl angereicherter Listings. Bei Fehlern erhaelt die Nachricht eine erhoehte Prioritaet.
 
-### Amenity-Mapping
+## CI/CD Pipeline
 
-Homegate liefert Amenities als Boolean-Felder in `characteristics`. Diese werden in die Junction-Tables `amenity` + `listing_amenity` geschrieben (Metabase-kompatibel):
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-`hasBalcony` wird Balkon, `hasElevator` wird Lift, `hasGarage` wird Garage, `hasParking` wird Parkplatz, `hasWashingMachine` wird Waschmaschine, `isWheelchairAccessible` wird Rollstuhlgängig, `isChildFriendly` wird Kinderfreundlich, `isNewBuilding` wird Neubau, `arePetsAllowed` wird Haustiere erlaubt
+classes: {
+  node: { style: { border-radius: 8 } }
+}
+
+direction: right
+
+Push: git push main {
+  class: node
+}
+GHA: GitHub Actions {
+  class: node
+  tooltip: "build-immoscraper.yml | Trigger bei Aenderungen in scraper/"
+}
+Runner: Self-Hosted Runner {
+  class: node
+  tooltip: "Nomad Job github-runner | Docker Socket + ZOT Zugang"
+}
+Build: Docker Multi-Stage Build {
+  class: node
+  tooltip: "node:22-alpine | TypeScript Compile + Production Deps"
+}
+ZOT: ZOT Registry {
+  class: node
+  tooltip: "localhost:5000/library/immoscraper:latest"
+}
+Nomad: Nomad Periodic Job {
+  class: node
+  tooltip: "force_pull=true | Naechster Cron-Trigger holt neues Image"
+}
+
+Push -> GHA: "Aenderungen in scraper/" {
+  style.stroke: "#2563eb"
+}
+GHA -> Runner: "runs-on: self-hosted" {
+  style.stroke: "#2563eb"
+}
+Runner -> Build -> ZOT: "docker build + push" {
+  style.stroke: "#2563eb"
+}
+ZOT -> Nomad: "Naechster Scan-Lauf" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+```
+
+Der GitHub Actions Runner laeuft als Nomad Service-Job mit Docker-Socket-Mount und Host-Netzwerk (ZOT auf `localhost:5000` direkt erreichbar). Das Dockerfile nutzt einen Multi-Stage Build: TypeScript wird in der Build-Stage kompiliert, das Production-Image enthaelt nur Runtime-Dependencies.
+
+Der Workflow triggert bei Aenderungen in `services/n8n-workflows/scraper/` oder bei manuellem Dispatch.
+
+## Scrapfly Credit-Management
+
+| Scan-Typ | Credits pro Lauf | Intervall | Credits/Monat |
+|----------|-----------------|-----------|--------------|
+| Overview PLZ 5605 (~15 Seiten) | ~375 | Alle 3 Tage | ~3.750 |
+| Detail-Scrapes (~30 neue) | ~750 | Alle 3 Tage | ~7.500 |
+| Overview PLZ 5610 (~15 Seiten) | ~375 | Woechentlich | ~1.500 |
+| **Total geschaetzt** | | | **~12.750** |
+
+Der Discovery Plan bietet 200.000 Credits/Monat fuer $30 -- die geschaetzte Auslastung liegt bei ~6%.
+
+::: info Credit-Tracking
+Jeder Scrapfly-Request liefert den Credit-Verbrauch in der API-Response zurueck. Der Scraper summiert diese pro Lauf und schreibt den Gesamtwert in `scraper_runs`. Die Telegram-Notification zeigt den Verbrauch ebenfalls an.
+:::
 
 ## Datenbank-Schema
 
-### listing (Haupttabelle)
+Die Datenbank `immo` auf dem PostgreSQL Shared Cluster enthaelt folgende Tabellen:
 
-Unique Constraint auf `(portal, external_id)` für UPSERT-Logik.
+### Kerntabellen
 
-**Basis-Felder:** `portal`, `external_id`, `url`, `title`, `description`, `listing_type`, `address_raw`, `zip_code`, `city`, `canton`, `latitude` (NUMERIC), `longitude` (NUMERIC), `rooms` (NUMERIC, z.B. 3.5), `area_m2` (NUMERIC), `rent_net`, `rent_gross`, `costs_additional` (alle INTEGER, CHF), `available_from` (DATE), `raw_data` (JSONB), `photo_url` (TEXT, erstes Foto)
+- **listing** -- Haupttabelle mit Unique Constraint `(portal, external_id)`. Basis-Felder (Titel, Preis, Zimmer, Flaeche, Koordinaten), Detail-Felder (Stockwerk, Heizung, Haustiere, Beschreibung), Enrichment-Felder (`enrichment_status`, `enrichment_data`, `enriched_at`), Meta-Felder (`first_seen_at`, `last_seen_at`, `is_active`)
+- **listing_photo** -- Foto-URLs mit `sort_order`, `caption` und `is_floorplan`. Unique auf `(listing_id, sort_order)`
+- **listing_price_history** -- Preisaenderungen mit Zeitstempel. Wird bei Smart-Skip-Entscheidung "geaendert" automatisch befuellt
+- **listing_note** -- User-Bewertungen fuer Metabase (Rating, Favorit, Abgelehnt)
 
-**Detail-Felder:** `floor` (INTEGER, 0=EG), `year_built`, `year_renovated` (INTEGER), `heating_type`, `energy_label` (TEXT, meist NULL -- Homegate liefert diese nicht), `pets_allowed` (BOOLEAN), `laundry` (TEXT), `amenities` (JSONB, Backup -- primär in Junction-Tables), `detail_scraped_at` (TIMESTAMPTZ)
+### Amenities (normalisiert)
 
-**Meta-Felder:** `first_seen_at`, `last_seen_at` (TIMESTAMPTZ, NOT NULL), `is_active` (BOOLEAN), `deactivated_at` (TIMESTAMPTZ), `created_at` (TIMESTAMPTZ)
+- **amenity** -- Lookup-Tabelle mit Unique `name`
+- **listing_amenity** -- Junction-Table (`listing_id`, `amenity_id`)
 
-### listing_photo
+Homegate liefert Amenities als Boolean-Felder: `hasBalcony`, `hasElevator`, `hasGarage`, `hasParking`, `hasWashingMachine`, `isWheelchairAccessible`, `isChildFriendly`, `isNewBuilding`, `arePetsAllowed`. Diese werden in die normalisierten Tabellen gemappt (Metabase kann JSONB-Arrays nicht filtern).
 
-Foto-URLs mit `listing_id` FK, `sort_order`, `caption`, `is_floorplan` (boolean), `storage_path` (für zukünftige lokale Kopien). UNIQUE auf `(listing_id, sort_order)`.
+### Neubau-Projekt-Tabellen (vorbereitet)
 
-### amenity + listing_amenity
+- **project** -- Neubauprojekte mit Developer, Architekt, Energiestandard, Heizung, Baufortschritt
+- **project_listing** -- Junction zu Listings
+- **project_unit** -- Einzelne Wohneinheiten mit generiertem `price_per_m2`
+- **project_source** -- Recherche-Quellen mit Zeitstempel
 
-Normalisierte Amenity-Daten für Metabase (JSONB-Arrays sind in Metabase nicht filterbar):
-- `amenity`: `id`, `name` (UNIQUE)
-- `listing_amenity`: `listing_id`, `amenity_id` (PK)
+### Views und Tracking
 
-### listing_price_history
+- **v_listing_active** -- Primaere Metabase-Datenquelle mit berechneten Spalten (`price_per_m2`, `days_on_market`, User-Bewertungen)
+- **scraper_runs** -- Statistiken pro Lauf (Dauer, Listings, Fehler, Credits, Enrichment-Zaehler)
 
-Preisänderungen tracken: `listing_id`, `rent_net`, `rent_gross`, `costs_additional`, `recorded_at`. Wird bei Preisänderungen automatisch befüllt.
+## Vault Secrets
 
-### listing_note
+| Pfad | Keys | Zweck |
+|------|------|-------|
+| `kv/data/immoscraper` | `db_password` | PostgreSQL Zugang |
+| `kv/data/immoscraper` | `scrapfly_api_key` | Scrapfly REST-API |
+| `kv/data/immoscraper` | `claude_api_key` | Claude Haiku Enrichment |
+| `kv/data/shared/telegram` | `bot_token`, `chat_id` | Telegram Notifications |
+| `kv/data/github-runner` | `access_token` | GitHub Actions Runner PAT |
 
-User-Bewertungen für Metabase: `listing_id` (UNIQUE FK), `rating` (1-5), `note` (TEXT), `is_favorite`, `is_rejected` (BOOLEAN).
-
-### v_listing_active (View)
-
-Primäre Datenquelle für Metabase. Enthält alle `listing`-Felder plus berechnete Spalten:
-- `price_per_m2` -- `rent_gross / area_m2`
-- `days_on_market` -- Tage seit `first_seen_at`
-- `rating`, `is_favorite`, `is_rejected`, `user_note` -- aus `listing_note` (LEFT JOIN)
-
-### scraper_runs
-
-Statistiken pro automatisiertem Lauf: `portal`, `started_at`, `finished_at`, `listings_new`, `listings_updated`, `listings_skipped`, `details_scraped`, `errors`, `error_details` (JSONB), `duration_ms`
-
-
-## Betrieb
-
-### Manueller Scan (aktuell)
-
-Der Claude Code Skill `/homegate-scan` orchestriert den vollständigen Scan und führt durch die 4 Phasen (Overview, Evaluation, Detail, DB-Write). Dauer: ~20-30 Minuten für einen vollständigen Scan. Skill-Definition: `~/.claude/skills/homegate-scan/SKILL.md`
-
-### Automatisierter Betrieb (nach Scrapfly-Zugang)
-
-Nomad Periodic Batch (07:00 + 19:00): Container startet Node.js Scraper mit Scrapfly als Anti-Bot-Proxy, führt Smart Skipping durch und schreibt via UPSERT in die DB. Nach Abschluss sendet der Job einen Webhook an n8n für Post-Processing.
-
-### Monitoring
-
-| Ebene | Was | Wo sichtbar |
-| :--- | :--- | :--- |
-| **DB: scraper_runs** | Statistiken pro automatisiertem Lauf | Metabase Dashboard |
-| **Nomad Logs** | Strukturierte JSON-Logs | Nomad UI |
-| **n8n Executions** | Post-Processing Workflow | n8n UI |
-| **Metabase** | Listings/Tag, Preisänderungen, Neubauten | Metabase UI |
-
-### Metabase-Dashboards
-
-Collection "Immobilien-Monitoring" unter [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch):
-
-- **Active Listings** -- Pin Map (Kartenansicht aller Inserate) + Tabellenübersicht mit Foto, Titel, Zimmer, Fläche, Miete brutto, Preis/m2, Tage am Markt
-- **New Today** -- Heute neu entdeckte Inserate + Übersicht der letzten 7 Tage
-- **Market Analytics** -- Kennzahlen (Total, mit Details, Durchschnittsmiete, Neubauten), Durchschnittspreis/Stadt, Listings/Stadt, Zimmerverteilung, Preis/m2-Verteilung, Amenities Top 10
-- **Price Drops** -- Preisänderungen mit altem/neuem Preis und Differenz (basiert auf `listing_price_history`)
-
-Datenquelle: `v_listing_active` (primär) + Junction-Tables für Amenities. User `metabase_reader` (read-only). Semantic Types: Currency CHF, Latitude/Longitude, ImageURL für Fotos.
-
-### Troubleshooting
-
-**MCP Playwright: DataDome CAPTCHA:**
-- CAPTCHA prüfen -- wenn sichtbar, manuell im Browser lösen
-- Normalerweise tritt dies nicht auf (lokaler Chrome + Residential-IP)
-
-**Kein `__INITIAL_STATE__` auf Übersichtsseite:**
-- Homegate hat möglicherweise die Seitenstruktur geändert
-- Prüfen ob die Seite korrekt lädt
-- Alternative: `__PINIA_INITIAL_STATE__` prüfen (Vue-Migration möglich)
-
-**Detail-Seite: `__PINIA_INITIAL_STATE__` ist null:**
-- Fallback: `__INITIAL_STATE__` oder `__NEXT_DATA__` prüfen
-- Listing überspringen und später nochmal versuchen
-
-### Vault Secrets
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/n8n` | `db_password`, `encryption_key` |
-| `kv/data/immoscraper` | `openai_api_key` (nur für LLM-Fallback) |
-| `kv/data/metabase` | `db_password`, `n8n_reader_password` |
-
-### Kosten
+## Kosten
 
 | Posten | Kosten/Monat |
-| :--- | :--- |
-| Scraping (manuell via MCP) | CHF 0 |
-| Scraping (Scrapfly, geplant) | ~CHF 30 |
-| LLM-Kosten (Detail-Extraktion) | CHF 0 (deterministisches Parsing) |
-| **Total (aktuell)** | **CHF 0** |
-| **Total (mit Scrapfly)** | **~CHF 30** |
+|--------|-------------|
+| Scrapfly Discovery Plan | CHF 30 |
+| Claude Haiku Enrichment | ~CHF 2 |
+| **Total** | **~CHF 32** |
+
+## Geplante Erweiterungen
+
+- **newhome.ch** -- Zweite Datenquelle mit eigenstaendigem Bestand (Kantonalbanken, regionale Verwaltungen)
+- **erstbezug.ch** -- Neubauprojekte exklusiv, Migration aus n8n-Workflow
+- **SMG-Vergleichsscan** -- Einmaliger Scan von ImmoScout24, Flatfox, anibis, tutti gegen Homegate-DB um Datenbank-Ueberschneidung zu messen
+- **Neubau-Research Pipeline** -- Claude Sonnet analysiert Developer-Websites, Baudatenbank AG, Amtsblatt
+- **Pipeline-Discovery** -- Automatische Entdeckung neuer Neubauprojekte via Developer-Websites
 
 ## Verwandte Seiten
 
-- [n8n](../n8n/index.md) -- Workflow-Automation für Post-Processing
-- [Metabase](../metabase/index.md) -- BI-Dashboard für Visualisierung
-- [ChangeDetection](../changedetection/index.md) -- Ergänzende Website-Überwachung
+- [Immo-Monitor Frontend](../immo-monitor/) -- SvelteKit Kartenansicht
+- [Metabase](../metabase/) -- BI-Dashboard fuer Visualisierung
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
+- [Batch-Jobs](../_querschnitt/batch-jobs.md) -- Uebersicht aller Nomad Periodic Jobs
+- [GitHub Runner](../github-runner/) -- Self-Hosted CI/CD Runner
+- [Telegram Bots](../monitoring/telegram-bots.md) -- Benachrichtigungssystem
+- [Docker Registry (ZOT)](../docker-registry/) -- OCI Image Registry
+- [Vault](../vault/) -- Secret Management
