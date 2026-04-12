@@ -27,18 +27,93 @@ Nomad ist der Workload-Scheduler. Er entscheidet auf welchem Worker-Node ein Con
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: down
 
-Nomad: "Nomad Server (Scheduling, Job-Lifecycle)" { style.border-radius: 8 }
-Consul: "Consul Server (Service Discovery, DNS, KV)" { style.border-radius: 8 }
-Vault: "Vault (Secrets Management)" { style.border-radius: 8 }
-Worker: "Nomad Client + Docker (Container-Ausführung)" { style.border-radius: 8 }
+servers: Nomad Server Cluster {
+  class: container
 
-Nomad -> Worker: "Job placement"
-Worker -> Consul: "Service Registration"
-Worker -> Vault: "JWT Auth → Secrets"
-Nomad -> Consul: "Service Health"
-Nomad -> Vault: "Workload Identity"
+  S04: vm-nomad-server-04 {
+    class: node
+    tooltip: "10.0.2.104 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
+  }
+  S05: vm-nomad-server-05 {
+    class: node
+    tooltip: "10.0.2.105 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
+  }
+  S06: vm-nomad-server-06 {
+    class: node
+    tooltip: "10.0.2.106 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
+  }
+
+  S04 <-> S05: Raft {
+    style.stroke: "#6b7280"
+  }
+  S05 <-> S06: Raft {
+    style.stroke: "#6b7280"
+  }
+}
+
+workers: Nomad Clients {
+  class: container
+
+  C04: vm-nomad-client-04 {
+    class: node
+    tooltip: "10.0.2.124 | 4 CPU, 14 GB RAM, Klasse: worker"
+  }
+  C05: vm-nomad-client-05 {
+    class: node
+    tooltip: "10.0.2.125 | 16 CPU, 74 GB RAM, Klasse: storage, iGPU"
+  }
+  C06: vm-nomad-client-06 {
+    class: node
+    tooltip: "10.0.2.126 | 16 CPU, 74 GB RAM, Klasse: storage, iGPU"
+  }
+}
+
+Consul: Consul {
+  class: node
+  tooltip: "Port 8500 | Service Discovery, DNS, KV Store"
+}
+
+Vault: Vault {
+  class: node
+  tooltip: "Port 8200 | Secrets Management, KV v2"
+}
+
+servers -> workers: Job Placement (RPC :4647) {
+  style.stroke: "#2563eb"
+  tooltip: "Server weist Container den passenden Worker-Nodes zu"
+}
+workers -> Consul: Service Registration {
+  style.stroke: "#2563eb"
+  tooltip: "Consul Agent registriert gestartete Container als Services"
+}
+workers -> Vault: JWT Auth, Secrets lesen {
+  style.stroke: "#7c3aed"
+  tooltip: "Workload Identity JWT gegen Vault-Token tauschen, dann Secrets lesen"
+}
+servers -> Consul: Service Health {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 3
+  tooltip: "Nomad nutzt Consul Health Checks fuer Task-Status"
+}
+servers -> Vault: Workload Identity Config {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+  tooltip: "Server stellt JWT fuer Tasks aus, Vault validiert via JWKS"
+}
 ```
 
 ## Cluster-Topologie

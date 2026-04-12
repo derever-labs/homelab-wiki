@@ -26,22 +26,104 @@ Zwei redundante Pi-hole v6 LXC-Container (lxc-dns-01/02) bilden die DNS-Infrastr
 Beide LXCs sind identisch konfiguriert:
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 direction: down
 
-Client: "Client (Port 53)" { style.border-radius: 8 }
-PiHole: "Pi-hole v6 (FTL/dnsmasq)" { style.border-radius: 8 }
-Consul: "Consul Server" { tooltip: "8600"; style.border-radius: 8 }
-Router: Router { tooltip: "10.0.0.1"; style.border-radius: 8 }
-Traefik: "Traefik VIP" { tooltip: "10.0.2.20"; style.border-radius: 8 }
-Unbound: Unbound { tooltip: "5335"; style.border-radius: 8 }
-Root: Root DNS { style.border-radius: 8 }
+Client: Netzwerk-Client {
+  class: node
+  tooltip: "Alle Geraete im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
+}
 
-Client -> PiHole
-PiHole -> Consul: "*.consul"
-PiHole -> Router: "*.local"
-PiHole -> Traefik: "*.ackermannprivat.ch / *.ackermann.systems"
-PiHole -> Unbound: andere
-Unbound -> Root
+pihole: Pi-hole v6 (DNS-Eingang) {
+  class: container
+
+  PH1: lxc-dns-01 (Primary) {
+    class: node
+    tooltip: "10.0.2.1 | LXC 4021 auf pve01, Port 53, FTL/dnsmasq"
+  }
+  PH2: lxc-dns-02 (Secondary) {
+    class: node
+    tooltip: "10.0.2.2 | LXC 4022 auf pve02, Port 53, FTL/dnsmasq"
+  }
+
+  PH1 <-> PH2: Nebula-Sync (taeglich 04:00) {
+    style.stroke: "#6b7280"
+    style.stroke-dash: 3
+    tooltip: "Full Teleporter Sync, Nomad Batch-Job"
+  }
+}
+
+consul: Consul DNS {
+  class: container
+
+  CS1: vm-nomad-server-04 {
+    class: node
+    tooltip: "10.0.2.104 | Port 8600"
+  }
+  CS2: vm-nomad-server-05 {
+    class: node
+    tooltip: "10.0.2.105 | Port 8600"
+  }
+  CS3: vm-nomad-server-06 {
+    class: node
+    tooltip: "10.0.2.106 | Port 8600"
+  }
+}
+
+Router: UDM Pro {
+  class: node
+  tooltip: "10.0.0.1 | Loest *.local auf"
+}
+
+Traefik: Traefik VIP {
+  class: node
+  tooltip: "10.0.2.20 | Wildcard *.ackermannprivat.ch / *.ackermann.systems"
+}
+
+Unbound: Unbound {
+  class: node
+  tooltip: "Port 5335 (localhost) | Rekursiver Resolver mit DNSSEC"
+}
+
+Root: Root DNS Server {
+  class: node
+  tooltip: "13 Root-Server, DNSSEC-validiert durch Unbound"
+}
+
+Client -> pihole: DNS Query (Port 53) {
+  style.stroke: "#2563eb"
+}
+pihole -> consul: *.consul (Conditional Forwarding) {
+  style.stroke: "#7c3aed"
+  tooltip: "Port 8600 | Service Discovery fuer Nomad-Container"
+}
+pihole -> Router: *.local {
+  style.stroke: "#6b7280"
+  tooltip: "UniFi-Geraete und DHCP-Hostnamen"
+}
+pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
+  style.stroke: "#16a34a"
+  tooltip: "Wildcard-DNS zeigt auf Traefik VIP 10.0.2.20"
+}
+pihole -> Unbound: Alle anderen Domains {
+  style.stroke: "#6b7280"
+  tooltip: "Upstream fuer nicht-lokale Anfragen"
+}
+Unbound -> Root: Rekursive Aufloesung {
+  style.stroke: "#6b7280"
+  tooltip: "Direkt gegen Root-Server, kein Forwarding"
+}
 ```
 
 ## Komponenten
