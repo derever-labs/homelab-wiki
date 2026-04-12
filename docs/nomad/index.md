@@ -16,7 +16,7 @@ Nomad ist der Workload-Scheduler des Homelabs. Zusammen mit Consul und Vault bil
 
 | Attribut | Wert |
 |----------|------|
-| URL | `http://10.0.2.104:4646` (UI intern) |
+| URL | `https://10.0.2.104:4646` (UI intern, TLS) |
 | Deployment | Ansible + Systemd |
 | IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
