@@ -64,7 +64,7 @@ Nach erfolgreichem Abschluss sendet der Job einen Push an Uptime Kuma. Der Push-
 
 `nomad-jobs/batch-jobs/renovate.nomad`
 
-## Verwandte Dokumentation
+## Verwandte Seiten
 
 - [Batch Jobs](./batch-jobs.md) -- Gesamtübersicht aller periodischen Jobs
 - [Nomad Jobs](../_referenz/nomad-jobs.md) -- Verzeichnisstruktur und Konventionen

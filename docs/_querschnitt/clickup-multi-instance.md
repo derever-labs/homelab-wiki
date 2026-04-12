@@ -30,11 +30,15 @@ bash /Users/Shared/git/gitea/dotfiles/clickup-multi-instance.sh
 ## Struktur
 
 - `/Applications/ClickUp.app` -- Original (wird via Auto-Update aktualisiert, nicht direkt starten)
-- `/Applications/ClickUp HSLU.app` -- Wrapper fuer HSLU-Account
-- `/Applications/ClickUp PRIVAT.app` -- Wrapper fuer PRIVAT-Account
+- `/Applications/ClickUp HSLU.app` -- Wrapper für HSLU-Account
+- `/Applications/ClickUp PRIVAT.app` -- Wrapper für PRIVAT-Account
 
 ## Bekannte Einschränkungen
 
 - Nach einem ClickUp-Update das Script erneut ausführen (Icons werden neu kopiert)
 - Gatekeeper zeigt beim ersten Start eine Warnung (einmalig bestätigen)
 - Die Original-App (`ClickUp.app`) sollte nicht direkt gestartet werden, da sie das Default-Datenverzeichnis verwendet
+
+## Verwandte Seiten
+
+- [Claude Code Config-Sync](./claude-code-sync.md) -- Geteilte Konfiguration zwischen macOS-Accounts

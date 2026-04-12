@@ -10,6 +10,34 @@ tags:
 
 # Linstor Betrieb
 
+## Übersicht
+
+Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client-06 (STANDBY), mit client-04 als disklosem Quorum-Witness. Der Controller wird durch DRBD Reactor automatisch verwaltet.
+
+## Abhängigkeiten
+
+- **DRBD Reactor** auf client-05 und client-06 -- steuert Controller-Failover
+- **Consul** -- Service Discovery für CSI Plugin (`linstor-controller.service.consul:3370`)
+- **Nomad CSI Plugin** (`system/linstor-csi.nomad`) -- ermöglicht persistente Volumes in Nomad Jobs
+- **Thunderbolt-Netzwerk** (10.99.1.0/24) -- DRBD-Replikationspfad
+
+## Automatisierung
+
+- DRBD Reactor: Startet/stoppt den Linstor Controller automatisch bei Quorum-Änderungen
+- `nomad-csi-reeval.timer` auf client-05/client-06: Löst blockierte CSI-Evaluations nach Boot auf
+- Linstor Consul Registration Script: Registriert den aktiven Controller bei Consul
+
+## Bekannte Einschränkungen
+
+- CSI Boot Race Condition nach Node-Reboot (mitigiert durch `nomad-csi-reeval.timer`, Details: [CSI Boot Race Condition](#csi-boot-race-condition))
+- LVM Thin Pool Monitoring weicht von Linstor-Kapazitätsangaben ab -- beide Quellen prüfen
+- Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery](#split-brain-recovery))
+- Offizielles LINBIT Image (drbd.io) erfordert Registrierung -- `kvaps/linstor-csi` als Alternative
+
+## Credentials
+
+Linstor Controller benötigt keine separate Authentifizierung im internen Netzwerk. LINBIT GUI ist über Authentik ForwardAuth (`intern-auth`) geschützt -- Zugangsdaten: [Zugangsdaten](../_referenz/credentials.md).
+
 ## Controller Failover
 
 ### Automatischer Failover
@@ -127,7 +155,7 @@ Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert u
 |-------------|------|
 | URL | `https://linstor-gui.ackermannprivat.ch` |
 | Deployment | Nomad Service Job (`system/linstor-gui.nomad`) |
-| Image | `linstor-gui:v2.2.0` (self-built, lokal verfügbar) |
+| Image | Self-built (Details im Nomad-Job `system/linstor-gui.nomad`) |
 | Auth | Authentik ForwardAuth (`intern-auth`) |
 | Backend | `linstor-controller.service.consul:3370` (Consul DNS) |
 | Constraint | `vm-nomad-client-05`, `vm-nomad-client-06` |
@@ -152,11 +180,7 @@ Das Script ist idempotent -- bei bereits laufenden Jobs passiert nichts.
 
 ### Troubleshooting
 
-- Timer-Status: `systemctl status nomad-csi-reeval.timer`
-- Letzte Ausführung: `journalctl -u nomad-csi-reeval --no-pager -n 20`
-- Manuell auslösen: `sudo systemctl start nomad-csi-reeval.service`
-- Blocked evals prüfen: `nomad eval list -status=blocked`
-- Manuell re-evaluieren: `nomad job eval <job-name>`
+Bei Problemen den Timer-Status und das Journal des `nomad-csi-reeval`-Services auf den betroffenen Nodes prüfen. Blockierte Evaluations sind über die Nomad-UI unter Evaluations (Filter: Status=blocked) sichtbar.
 
 ### Dateien
 

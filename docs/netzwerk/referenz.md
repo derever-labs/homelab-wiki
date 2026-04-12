@@ -1,6 +1,6 @@
 ---
 title: 10GbE Netzwerk Optimierung
-description: Performance-Tuning fuer VirtIO und Thunderbolt
+description: Performance-Tuning für VirtIO und Thunderbolt
 tags:
   - platform
   - networking
@@ -113,5 +113,3 @@ Seit 22.02.2026 werden beide TB-Interfaces in einem Bond aggregiert. Löst das P
 - [Linstor & DRBD](../linstor-storage/index.md) -- DRBD-Replikation über das Thunderbolt-Netzwerk
 - [HashiCorp Stack](../nomad/index.md) -- Cluster-VMs auf denen das Netzwerk-Tuning greift
 - [Proxmox Cluster](../proxmox/index.md) -- Host-Konfiguration und Netzwerk-Interfaces
-
----

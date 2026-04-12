@@ -1,6 +1,6 @@
 ---
 title: Vault
-description: Zentrales Secrets Management fuer den Nomad-Cluster
+description: Zentrales Secrets Management für den Nomad-Cluster
 tags:
   - platform
   - hashicorp
@@ -14,7 +14,7 @@ tags:
 
 | Eigenschaft | Wert |
 |-------------|------|
-| Version | v1.18.3 |
+| Status | Produktion |
 | Cluster | 3-Node Raft (vm-nomad-server-04/05/06) |
 | Storage | Integrated Storage (Raft) |
 | Audit Log | `/opt/vault/audit/vault-audit.log` |

@@ -1,6 +1,6 @@
 ---
-title: Monitoring-Übersicht
-description: Übersicht der Überwachungswerkzeuge (Grafana, Uptime Kuma)
+title: Monitoring Stack
+description: Übersicht des Monitoring Stacks -- Grafana, InfluxDB, Loki, Alloy, Telegraf, CheckMK, Uptime Kuma und Gatus
 tags:
   - service
   - monitoring
@@ -10,6 +10,12 @@ tags:
 # Monitoring Stack
 
 ## Übersicht
+
+| Attribut | Wert |
+| :--- | :--- |
+| **Status** | Produktion |
+| **Deployment** | Mehrere Nomad Jobs (`monitoring/`, `system/alloy.nomad`) + Ansible (Alloy systemd) |
+
 Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung der Service-Verfügbarkeit.
 
 | Service | Zweck | URL |
@@ -19,7 +25,7 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 | **Telegraf** | Metriken-Collector (SNMP, Prometheus, Exec) | — (Nomad Job) |
 | **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
 | **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
-| **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [checkmk.ackermannprivat.ch](https://checkmk.ackermannprivat.ch) |
+| **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
 | **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 | **Gatus** | Öffentliche Status-Seite | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
 
@@ -84,35 +90,61 @@ Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und
 
 ### Gesamtarchitektur
 
-```
-                            ┌── LOGS ──────────────────────────────────┐
-Nomad Container (3 Nodes) ──┤                                          │
-HashiCorp Server VMs (3x) ──┤  Alloy (System-Job + systemd)           │
-HashiCorp Client VMs (3x) ──┤  ────────────────────────────→ Loki ──→ │
-Traefik VMs (2x)           ──┤                                         │
-Proxmox Hosts (3x)         ──┤                                         │
-Infra VMs (CheckMK, PBS) ──┤                                          │
-Vault Audit-Log            ──┤                                         │
-NAS / Router               ──┤  Syslog → Alloy Receiver               │
-                             │                                    Grafana
-                             ├── METRIKEN ─────────────────────────────┤
-Synology NAS (SNMP)        ──┤                                         │
-Nomad (Prometheus)         ──┤  Telegraf ──→ InfluxDB ───────────────→ │
-Linstor / DRBD             ──┤                                         │
-Proxmox VMs (nativ)        ──┤  ──────────→ InfluxDB ───────────────→ │
-                             │                                         │
-                             ├── HOST-MONITORING ──────────────────────┤
-Alle VMs + Proxmox (18x)  ──┤  CheckMK Agent ──→ CheckMK ──────────→ │
-                             │                                         │
-                             ├── VERFUEGBARKEIT ───────────────────────┤
-HTTP/TCP Endpoints         ──┤  Uptime Kuma                            │
-Öffentliche Endpoints      ──┤  Gatus                                  │
-                             └─────────────────────────────────────────┘
+```d2
+direction: right
+
+Sources: Infrastruktur-Quellen {
+  style.stroke-dash: 4
+  Containers: "Nomad Container\n(3 Client-Nodes)"
+  Servers: "HashiCorp VMs\n(Server + Client)"
+  Traefik: "Traefik VMs (2x)"
+  Proxmox: "Proxmox Hosts (3x)"
+  Infra: "Infra VMs\n(CheckMK, PBS, DNS)"
+  NAS: "NAS / Router\n(Syslog)"
+}
+
+Collectors: Collector-Layer {
+  style.stroke-dash: 4
+  Alloy: "Grafana Alloy\n(System-Job + systemd)"
+  Telegraf: "Telegraf\n(Nomad Job)"
+  CMK: "CheckMK Agent"
+  Kuma: "Uptime Kuma"
+  Gatus: Gatus
+}
+
+Storage: Storage-Layer {
+  style.stroke-dash: 4
+  Loki: "Loki\n(Log-Storage)"
+  Influx: "InfluxDB\n(Metriken)"
+  CheckMK: "CheckMK\n(Host-Status)"
+}
+
+GRAF: Grafana
+
+Sources.Containers -> Collectors.Alloy: Logs (Docker-Socket)
+Sources.Servers -> Collectors.Alloy: Logs (systemd-Journal)
+Sources.Traefik -> Collectors.Alloy: Logs (systemd + Syslog)
+Sources.Proxmox -> Collectors.Alloy: Logs (systemd)
+Sources.Infra -> Collectors.Alloy: Logs (systemd)
+Sources.NAS -> Collectors.Alloy: Syslog UDP 1514
+Sources.NAS -> Collectors.Telegraf: SNMP
+Sources.Servers -> Collectors.Telegraf: Prometheus
+Sources.Proxmox -> Storage.Influx: direkt (nativ)
+
+Collectors.Alloy -> Storage.Loki
+Collectors.Telegraf -> Storage.Influx
+Collectors.CMK -> Storage.CheckMK
+Collectors.Kuma -> GRAF: "HTTP/TCP-Checks"
+Collectors.Gatus -> GRAF: "Public Status"
+
+Storage.Loki -> GRAF
+Storage.Influx -> GRAF
+Storage.CheckMK -> GRAF
 ```
 
 ### Loki (Log-Storage)
 - **Nomad Job:** `monitoring/loki.nomad` (Service-Job, Priority 100)
-- **Storage:** Linstor CSI Volume `loki-data` (20 GiB, repliziert)
+- **Storage:** Linstor CSI Volume `loki-data` (repliziert)
 - **Port:** 3100 (statisch)
 - **Retention:** 30 Tage (720h)
 - **Zugang:** `loki.ackermannprivat.ch` (intern, `intern-auth@file`)
@@ -144,7 +176,7 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 #### Variante 3: Systemd-Service (vm-traefik-01/02)
 - **Config:** Ansible-Rolle `alloy`
 - **Quelle:** systemd-Journal + optionale Datei-Targets (Traefik Access Logs)
-- **DNS:** `10.0.2.1` / `10.0.2.2` für Consul-Auflösung
+- **DNS:** Pi-hole-Resolver für Consul-Auflösung (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md))
 
 ### Übersicht aller Log-Quellen
 
@@ -155,11 +187,11 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | vm-nomad-client-04/05/06 | Ansible (systemd) | `nomad-client` |
 | vm-traefik-01/02 | Ansible (systemd) | `traefik` |
 | pve00, pve01, pve02 | Ansible (systemd) | `proxmox` |
-| CheckMK (10.0.2.150) | Ansible (systemd) | `checkmk` |
-| PBS (10.0.2.50) | Ansible (systemd) | `pbs` |
-| Datacenter Manager (10.0.2.60) | Ansible (systemd) | `datacenter-manager` |
-| lxc-dns-01/02 (10.0.2.1/2) | Ansible (systemd) | `dns` |
-| Zigbee-Node (10.0.0.110) | Ansible (systemd) | `iot` |
+| CheckMK | Ansible (systemd) | `checkmk` |
+| PBS | Ansible (systemd) | `pbs` |
+| Datacenter Manager | Ansible (systemd) | `datacenter-manager` |
+| lxc-dns-01/02 | Ansible (systemd) | `dns` |
+| Zigbee-Node | Ansible (systemd) | `iot` |
 | Vault Audit-Log (Server VMs) | Ansible (systemd) | `vault-audit` |
 | Synology NAS | Syslog → Alloy Receiver | `syslog` |
 | UniFi | Syslog → Alloy Receiver | `syslog` |

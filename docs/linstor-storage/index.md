@@ -12,6 +12,12 @@ tags:
 
 # Linstor & DRBD
 
+| Attribut | Wert |
+|----------|------|
+| Status | Produktion |
+| Deployment | Ansible Role `drbd-reactor` + Nomad CSI (`system/linstor-csi.nomad`) |
+| Auth | LINBIT GUI: `intern-auth` (Authentik ForwardAuth) |
+
 ## Übersicht
 
 Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgänge synchron auf Block-Level zwischen Nodes.
@@ -189,7 +195,7 @@ Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linst
 | Job-Typ | System (läuft auf allen Storage Nodes) |
 | Plugin-ID | `linstor.csi.linbit.com` |
 | Plugin-Typ | Monolith (Controller + Node in einem Container) |
-| Image | `kvaps/linstor-csi:latest` |
+| Image | Siehe Nomad-Job `system/linstor-csi.nomad` |
 | Constraint | `vm-nomad-client-05`, `vm-nomad-client-06` |
 | Endpoint | `http://linstor-controller.service.consul:3370` |
 

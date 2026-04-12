@@ -165,7 +165,7 @@ Prowlarr (Indexer) --> Sonarr/Radarr (Management)
                    Jellyseerr (Requests) <-- Benutzer
 ```
 
-Janitorr und Maintainerr automatisieren die Bereinigung (Janitorr loescht, Maintainerr verwaltet Sammlungen).
+Janitorr und Maintainerr automatisieren die Bereinigung (Janitorr löscht, Maintainerr verwaltet Sammlungen).
 
 ### Monitoring-Pipeline
 

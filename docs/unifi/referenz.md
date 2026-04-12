@@ -1,6 +1,6 @@
 ---
 title: UniFi Referenz
-description: Technische Konfigurationsreferenz fuer das UniFi-Netzwerk -- WLAN, DHCP, Port-Forwards, Firewall und API-Zugang
+description: Technische Konfigurationsreferenz für das UniFi-Netzwerk -- WLAN, DHCP, Port-Forwards, Firewall und API-Zugang
 tags:
   - netzwerk
   - unifi
@@ -109,8 +109,8 @@ Authentifizierung über Cookie-Session (Login via `/api/auth/login`). Zugangsdat
 
 **SSH-Zugang:** `root@10.0.0.1`, Authentifizierung über Keyboard-Interactive.
 
-::: warning Root-Disk fast voll
-Stand Bestandsaufnahme 2026-04-05: Root-Disk zu 99% belegt (2.0 GB). Overlay-Partition hat noch Platz (28%, 9.3 GB). Vor grossen Firmware-Updates prüfen.
+::: info Root-Partition
+Die Root-Partition (`/boot/firmware`) enthält genau 2 Firmware-Images (aktiv + Rollback) und zeigt daher ~99% Auslastung -- das ist normales Verhalten. Die Daten-Partition `/mnt/.rwfs` hat ausreichend Platz.
 :::
 
 ## Verwandte Seiten

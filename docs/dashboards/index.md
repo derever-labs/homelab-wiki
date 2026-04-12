@@ -20,11 +20,9 @@ Zwei Dashboard-Tools für unterschiedliche Zielgruppen: Flame als öffentlich zu
 | **Status** | Produktion | Produktion | Produktion |
 | **URL** | [welcome.ackermannprivat.ch](https://welcome.ackermannprivat.ch) | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) | [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/flame.nomad`) | Nomad Job (`services/flame-intra.nomad`) | Nomad Job (`services/homepage-intra.nomad`) |
-| **Image** | `pawelmalak/flame` | `pawelmalak/flame` | `gethomepage/homepage` |
 | **Storage** | Linstor CSI (`flame-data`) | Linstor CSI (`flame-intra-data`) | Nomad Templates (embedded YAML) |
 | **Auth** | `public-auth@file` (Authentik Guest) | `intern-auth@file` (Authentik Admin) | `intern-auth@file` (Authentik Admin) |
 | **Vault Secrets** | `kv/data/flame` | `kv/data/flame` | Keine |
-| **Ressourcen** | 256 MB (max 1 GB) | 256 MB (max 1 GB) | 256 MB (max 512 MB) |
 
 ## Zweck und Unterschied
 

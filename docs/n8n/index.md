@@ -1,6 +1,6 @@
 ---
 title: n8n
-description: Workflow-Automation-Plattform fuer Datenverarbeitung und Integrationen
+description: Workflow-Automation-Plattform für Datenverarbeitung und Integrationen
 tags:
   - service
   - automation

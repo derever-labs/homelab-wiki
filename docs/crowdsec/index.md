@@ -1,6 +1,6 @@
 ---
 title: CrowdSec
-description: Intrusion Detection und IP-Blocking fuer Traefik
+description: Intrusion Detection und IP-Blocking für Traefik
 tags:
   - platform
   - security
@@ -11,12 +11,12 @@ tags:
 
 ## Übersicht
 
-| Eigenschaft | Wert |
-|-------------|------|
-| Status | Aktiv |
-| Deployment | Docker Compose auf vm-traefik-01/vm-traefik-02 |
-| Dashboard | app.crowdsec.net (CrowdSec Console) |
-| Datenquelle | Traefik Access Logs |
+| Attribut | Wert |
+| :--- | :--- |
+| **Status** | Aktiv |
+| **Deployment** | Docker Compose auf vm-traefik-01/vm-traefik-02 (mit Traefik zusammen) |
+| **Dashboard** | [app.crowdsec.net](https://app.crowdsec.net) (CrowdSec Console) |
+| **Datenquelle** | Traefik Access Logs |
 
 ## Architektur
 
@@ -37,7 +37,7 @@ Plugin -> Engine: { style.stroke-dash: 5 }
 Engine -> Logs: { style.stroke-dash: 5 }
 ```
 
-Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream-Modus werden Entscheidungen periodisch von der Engine abgeholt und gecacht — kein API-Call pro Request.
+Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream-Modus werden Entscheidungen periodisch von der Engine abgeholt und gecacht -- kein API-Call pro Request.
 
 ## Komponenten
 
@@ -46,22 +46,22 @@ Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream
 Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien. Entscheidet über IP-Bans und stellt die lokale API (LAPI) bereit.
 
 | Eigenschaft | Wert |
-|-------------|------|
-| Image | `crowdsecurity/crowdsec` |
-| Log-Pfad | `/var/log/traefik/*` (read-only) |
-| Config | `/nfs/docker/crowdsec/config` |
-| Daten | `/nfs/docker/crowdsec/data` |
+| :--- | :--- |
+| **Image** | `crowdsecurity/crowdsec` (gepinnt, siehe Docker Compose) |
+| **Log-Pfad** | `/var/log/traefik/*` (read-only) |
+| **Config** | `/nfs/docker/crowdsec/config` |
+| **Daten** | `/nfs/docker/crowdsec/data` |
 
 ### CrowdSec Bouncer (Traefik Plugin)
 
 Natives Traefik-Plugin, das als Middleware direkt in Traefik läuft. Kein separater Container nötig.
 
 | Eigenschaft | Wert |
-|-------------|------|
-| Plugin | `maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.7 |
-| Verbindung | `crowdsec:8080` (LAPI) |
-| Modus | Stream (gecachte Entscheidungen, Update alle 15s) |
-| API-Key | `/run/secrets/crowdsec_bouncer_key` (Datei-Mount) |
+| :--- | :--- |
+| **Plugin** | `maxlerebourg/crowdsec-bouncer-traefik-plugin` (gepinnt, siehe `middlewares.yml`) |
+| **Verbindung** | `crowdsec:8080` (LAPI) |
+| **Modus** | Stream (gecachte Entscheidungen, Update alle 15s) |
+| **API-Key** | `/run/secrets/crowdsec_bouncer_key` (Datei-Mount) |
 
 ## Collections
 
@@ -93,7 +93,6 @@ Das zentrale Dashboard unter app.crowdsec.net zeigt Statistiken über erkannte A
 
 ## Verwandte Seiten
 
-- [Sicherheit](../security/index.md) — Gesamte Security-Architektur
-- [Traefik Middlewares](../traefik/referenz.md) — Middleware Chains mit CrowdSec
-
----
+- [Sicherheit](../security/index.md) -- Gesamte Security-Architektur
+- [Traefik Middlewares](../traefik/referenz.md) -- Middleware Chains mit CrowdSec
+- [Authentik](../authentik/index.md) -- Ergänzende Schutzschicht (Reputation Policy)

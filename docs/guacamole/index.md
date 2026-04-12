@@ -1,6 +1,6 @@
 ---
 title: Guacamole
-description: Remote Desktop Gateway fuer RDP, VNC und SSH ueber den Browser
+description: Remote Desktop Gateway für RDP, VNC und SSH über den Browser
 tags:
   - service
   - productivity
@@ -67,10 +67,6 @@ Konfiguration (Verbindungen, Benutzer) liegt auf NFS unter `/nfs/docker/guacamol
 ### Authentifizierung
 
 Die Authentik-Extension ist aktiviert und ermöglicht die Anmeldung via Authentik ForwardAuth. Zusätzlich schützt Traefik den Zugang mit der `intern-auth` Middleware (Authentik ForwardAuth).
-
-### Ressourcen
-
-Der Container erhält 1024 MiB Memory (max 2048 MiB), da Remote-Desktop-Sessions speicherintensiv sein können.
 
 ## Abhängigkeiten
 

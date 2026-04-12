@@ -32,6 +32,9 @@ Bereinigung: Bereinigung {
 
 Backup: Backup {
   style.stroke-dash: 4
+  ns: nomad-snapshot { style.border-radius: 8; tooltip: "Nomad Raft Snapshot → NFS GFS" }
+  cs: consul-snapshot { style.border-radius: 8; tooltip: "Consul Raft Snapshot → NFS GFS" }
+  vb: vault-backup { style.border-radius: 8; tooltip: "Vault Raft Snapshot → NFS GFS" }
   pb: postgres-backup { style.border-radius: 8; tooltip: "pg_dumpall → NFS GFS 7d/4w/3m" }
   ib: influxdb-backup { style.border-radius: 8; tooltip: "influx backup → NFS GFS" }
 }
@@ -47,7 +50,14 @@ Container: Container {
   cr: daily_container_restart { style.border-radius: 8 }
 }
 
+t0130: 01:30 { style.border-radius: 8 }
+t0145: 01:45 { style.border-radius: 8 }
+t02: 02:00 { style.border-radius: 8 }
+
 t01 -> Bereinigung.dp
+t0130 -> Backup.ns
+t0145 -> Backup.cs
+t02 -> Backup.vb
 t03 -> Backup.pb
 t0330 -> Backup.ib
 t04 -> Neustart.rj
@@ -86,6 +96,9 @@ t06 -> Container.cr
 |:----|:----|:---------|:------|:----------------|:---------------|
 | `postgres-backup` | batch | Täglich 03:00 | pg_dumpall mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Uptime Kuma Push, Retry 2x |
 | `influxdb-backup` | batch | Täglich 03:30 | influx backup mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Retry 2x |
+| `consul-snapshot` | batch | Täglich 01:45 | Consul Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Uptime Kuma Push |
+| `nomad-snapshot` | batch | Täglich 01:30 | Nomad Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Uptime Kuma Push |
+| `vault-backup` | batch | Täglich 02:00 | Vault Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Uptime Kuma Push |
 
 Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../backup/index.md)
 
@@ -104,6 +117,9 @@ Watchtower (`watchtower.nomad`, `count = 0`) ist deaktiviert. Renovate erstellt 
 Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewusst gewählt:
 
 1. **01:00** -- `docker_prune`: Bereinigt Docker-Ressourcen
+1. **01:30** -- `nomad-snapshot`: Nomad Raft Snapshot
+1. **01:45** -- `consul-snapshot`: Consul Raft Snapshot
+1. **02:00** -- `vault-backup`: Vault Raft Snapshot
 2. **03:00** -- `postgres-backup`: Datenbank-Backup
 3. **03:30** -- `influxdb-backup`: Metriken-Backup (nach PostgreSQL)
 4. **04:00** -- `daily_restart_jellyfin`: Jellyfin-Neustart

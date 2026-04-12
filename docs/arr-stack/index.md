@@ -33,9 +33,7 @@ SABnzbd nutzt im Gegensatz zu den anderen Arr-Services ein Linstor CSI Volume (`
 ::: warning SABnzbd Memory-Limits und NFS-Cache
 SABnzbd benötigt ausreichend Memory für Unpack-Operationen. Zu niedrige Limits machen den HTTP-Server unresponsive, was dazu führt, dass Consul Health Checks fehlschlagen und SABnzbd aus dem Cluster deregistriert wird.
 
-Aktuell konfiguriert (seit 01.04.2026):
-- `memory`: 1024 MiB (erhöht von 256 MiB)
-- `memory_max`: 8192 MiB
+Die konfigurierten Ressourcen-Limits sind im Nomad-Job `media/sabnzbd.nomad` definiert.
 
 Bei Symptomen wie "SABnzbd nicht erreichbar während Extraktion" zuerst Memory-Auslastung prüfen.
 

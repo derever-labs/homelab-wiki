@@ -201,3 +201,10 @@ Sicherheitsrelevante Events lösen Telegram-Benachrichtigungen über den [Telegr
 - **Transport `telegram-critical`:** Webhook-Modus, Ziel `telegram-relay.service.consul`, Body-Expression baut `{text, severity, source}`. Der Bot-Token lebt im Relay-Container (via Vault), nicht in der Authentik-DB
 
 Zusätzlich wurden die vier Default-Rules (`default-notify-configuration-error/warning/exception/update`) um den Telegram-Transport erweitert, damit auch Core-Events auf dem Handy landen.
+
+## Verwandte Seiten
+
+- [Authentik Übersicht](./index.md) -- Architektur und Stack-Einbindung
+- [Authentik Betrieb](./betrieb.md) -- Recovery, Breakglass, Rollback
+- [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
+- [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay

@@ -1,6 +1,6 @@
 ---
 title: Traefik Middleware Chains
-description: Authentik-basierte Middleware Chains und TLS-Konfiguration fuer Traefik
+description: Authentik-basierte Middleware Chains und TLS-Konfiguration für Traefik
 tags:
   - platform
   - traefik
@@ -120,7 +120,7 @@ Rate-Limiting für Login-Endpunkte (Authentik). Aktuelle Werte: 50 req/min, Burs
 
 ### ipAllowList
 
-Ersetzt das frühere `ipWhiteList` (in Traefik v3 umbenennt). Funktional identisch -- nur der Schlüsselname hat sich geändert.
+Ersetzt das frühere `ipWhiteList` (in Traefik v3 umbenannt). Funktional identisch -- nur der Schlüsselname hat sich geändert.
 
 ## TLS-Options
 

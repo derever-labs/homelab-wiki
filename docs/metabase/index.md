@@ -1,6 +1,6 @@
 ---
 title: Metabase
-description: Business-Intelligence-Plattform fuer Datenvisualisierung und Dashboards
+description: Business-Intelligence-Plattform für Datenvisualisierung und Dashboards
 tags:
   - service
   - analytics
@@ -13,10 +13,10 @@ tags:
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Status** | Aktiv |
+| **Status** | Produktion |
 | **URL** | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/metabase.nomad`) |
-| **Datenbank** | PostgreSQL `metabase` (eigene DB fuer Metabase-Metadaten) |
+| **Datenbank** | PostgreSQL `metabase` (eigene DB für Metabase-Metadaten) |
 | **Datenquelle** | PostgreSQL `n8n` (User: `metabase_reader`, read-only) |
 | **Storage** | NFS `/nfs/docker/metabase/plugins` |
 | **Netzwerk** | Intern: IP-Whitelist, Extern: OAuth2 Family |

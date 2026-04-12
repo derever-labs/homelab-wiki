@@ -17,7 +17,6 @@ tags:
 | **Status** | Produktion |
 | **URL** | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`media/suggestarr.nomad`) |
-| **Image** | `ciuse99/suggestarr:latest` |
 | **Storage** | NFS `/nfs/docker/suggestarr/config/` |
 | **Auth** | `intern-noauth@file` |
 | **Consul Service** | `suggestarr` |
@@ -82,27 +81,17 @@ SuggestArr nutzt einen **dedizierten lokalen User** `suggestarr@local` in Jellys
 
 ## Betrieb
 
-### Health Check
+Der Health-Endpunkt unter `/api/health` gibt den Status aller Abhängigkeiten zurück (`db`, `llm`, `seer`, `tmdb`). Über das Web-UI kann mit dem Button "Force Run" ein manueller Lauf ausgelöst werden. Der Tab "AI Search" ermöglicht natürlichsprachige Suchanfragen (z.B. "ein Dokumentarfilm im Stil von David Attenborough").
 
-```
-curl https://suggest.ackermannprivat.ch/api/health
-```
+Das Anwendungs-Log liegt unter `/nfs/docker/suggestarr/config/app.log`.
 
-Erwartete Antwort: `{"db":"ok","llm":"ok","seer":"ok","status":"ok","tmdb":"ok"}`
-
-### Manueller Lauf
-
-Im Web-UI unten rechts den Button "Force Run" klicken, oder über die Requests-Seite.
-
-### AI Search
-
-Unter dem Tab "AI Search" können natürlichsprachige Suchanfragen an das LLM gestellt werden (z.B. "ein Dokumentarfilm im Stil von David Attenborough").
-
-### Logs
-
-- **Anwendungs-Log:** `/nfs/docker/suggestarr/config/app.log`
-- **Nomad:** `nomad alloc logs <alloc-id>`
-
-### Bekannte Issues
+### Bekannte Einschränkungen
 
 - Watch-History-Abfrage schlägt für Jellyfin-User ohne Playback-Daten fehl (`'NoneType' object has no attribute 'values'`). Nicht kritisch, Empfehlungen funktionieren trotzdem.
+
+## Verwandte Seiten
+
+- [Jellyfin](../jellyfin/index.md) -- Liefert die Watch-History als Eingabe
+- [Jellyseerr](../jellyseerr/index.md) -- Empfängt die Pending Requests von SuggestArr
+- [Arr Stack](../arr-stack/index.md) -- Führt genehmigte Requests aus
+- [LLM-Stack](../llm-stack/index.md) -- Ollama-Provider für AI-Empfehlungen

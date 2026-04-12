@@ -118,7 +118,7 @@ Jeder Teleporter-Import triggert einen `pihole-FTL`-Restart. Während des Restar
 
 ## Docker Daemon DNS
 
-Alle Nomad Clients haben in `/etc/docker/daemon.json` die DNS-Server `10.0.2.1` und `10.0.2.2` konfiguriert. Die Konfiguration wird über die Ansible-Rolle `docker` verwaltet.
+Alle Nomad Clients haben in `/etc/docker/daemon.json` beide DNS-Server (lxc-dns-01 und lxc-dns-02) konfiguriert. IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md). Die Konfiguration wird über die Ansible-Rolle `docker` verwaltet.
 
 ## Standorte und Failover
 
@@ -150,8 +150,13 @@ Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer e
 | 22.02.2026 | 10.0.2.1: dnsmasq entfernt, Pi-hole v6 direkt auf Port 53 |
 | 02.04.2026 | Kompletter Neuaufbau: 2x LXC (bare-metal Pi-hole v6 + Unbound), Nebula-Sync, IaC-verwaltet |
 
+## DNS-Performance-Monitoring
+
+Ein periodischer Batch Job (`batch-jobs/dns-performance.nomad`) misst alle 5 Minuten die DNS-Latenz gegen mehrere DNS-Server und schreibt die Ergebnisse nach InfluxDB. Die Metriken sind im Grafana-Dashboard einsehbar.
+
 ## Verwandte Seiten
 
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Kanonische IP-Adresstabelle
 - [HashiCorp Stack](../nomad/index.md) -- Consul-Cluster Details
 - [Netzwerk](../netzwerk/index.md) -- VLANs, DNS, Routing
+- [Batch Jobs](../_querschnitt/batch-jobs.md) -- Alle periodischen Nomad Jobs

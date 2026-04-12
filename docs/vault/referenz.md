@@ -23,10 +23,10 @@ Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JW
 
 | Policy | Beschreibung |
 |--------|--------------|
-| `nomad-workloads` | Erlaubt Nomad-Tasks Secrets unter `kv/data/<job_id>` zu lesen |
+| `nomad-workload` | Erlaubt Nomad-Tasks Secrets unter `kv/data/<job_id>` zu lesen |
 | `operator` | Jobs deployen, Logs lesen, Allocs verwalten (Nomad-seitig) |
 
-Die `nomad-workloads` Policy stellt sicher, dass jeder Job nur seine eigenen Secrets lesen kann. Der Pfad wird aus der Job-ID abgeleitet: `kv/<job_id>`.
+Die `nomad-workload` Policy (nicht zu verwechseln mit der JWT-Rolle `nomad-workloads`) stellt sicher, dass jeder Job nur seine eigenen Secrets lesen kann. Der Pfad wird aus der Job-ID abgeleitet: `kv/<job_id>`.
 
 ## KV-Pfade
 
@@ -51,20 +51,13 @@ Alle Vault-Zugriffe werden protokolliert.
 
 Das Audit Log erfasst jeden API-Aufruf an Vault, einschliesslich Auth-Versuche, Secret-Reads und -Writes. Sensitive Werte werden im Log automatisch gehasht.
 
-## Service URLs
-
-| Service | URL |
-|---------|-----|
-| Vault API | `http://10.0.2.104:8200` |
-| Nomad JWKS | `http://10.0.2.104:4646/.well-known/jwks.json` |
-
 ## Wichtige Pfade
 
 | Pfad | Verwendung |
 |------|------------|
 | `/opt/vault` | Vault Daten |
 | `/opt/vault/audit/vault-audit.log` | Audit Log |
-| `/etc/vault.d/unseal-keys` | Auto-Unseal Keys (chmod 600) |
+| `/root/vault-keys.json` | Auto-Unseal Keys (chmod 600) |
 
 ## Vault Service Discovery
 

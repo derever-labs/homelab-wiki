@@ -18,7 +18,7 @@ tags:
 | **URL** | [obsidian-sync.ackermannprivat.ch](https://obsidian-sync.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`services/obsidian-livesync.nomad`) |
 | **Storage** | Linstor CSI (`obsidian-livesync-data`) |
-| **Datenbank** | CouchDB 3.3.3 (integriert) |
+| **Datenbank** | CouchDB (integriert) |
 | **Auth** | `intern-noauth@file` + CouchDB Basic Auth |
 
 ## Rolle im Stack
@@ -44,7 +44,7 @@ Traefik: Traefik {
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  CDB: "CouchDB 3.3.3\n(Port 5984)"
+  CDB: "CouchDB\n(Port 5984)"
 }
 
 Storage: {

@@ -18,7 +18,6 @@ tags:
 | **URL** | [dbgate.ackermannprivat.ch](https://dbgate.ackermannprivat.ch) |
 | **Deployment** | Nomad Job (`databases/dbgate.nomad`) |
 | **Auth** | Authentik ForwardAuth (`intern-auth`) |
-| **Image** | `dbgate/dbgate:alpine` (via lokale Registry) |
 | **Storage** | NFS `/nfs/docker/dbgate/data` |
 
 ## Architektur
@@ -51,13 +50,6 @@ Der Host Network Mode vermeidet, dass PostgreSQL über das Netzwerk exponiert we
 ## Persistenz
 
 Verbindungskonfigurationen und gespeicherte Queries werden unter `/root/.dbgate` im Container gespeichert, das auf NFS gemappt ist (`/nfs/docker/dbgate/data`). Dadurch bleiben die Einstellungen bei Container-Neustarts erhalten.
-
-## Ressourcen
-
-| Ressource | Wert |
-| :--- | :--- |
-| CPU | 256 MHz |
-| Memory | 256 MB (max 512 MB) |
 
 ## Verwandte Seiten
 

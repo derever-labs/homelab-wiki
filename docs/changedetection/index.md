@@ -1,6 +1,6 @@
 ---
 title: ChangeDetection.io
-description: Website-Aenderungsueberwachung mit Playwright-Sidecar fuer JavaScript-Rendering
+description: Website-Änderungsüberwachung mit Playwright-Sidecar für JavaScript-Rendering
 tags:
   - service
   - productivity
@@ -63,14 +63,14 @@ Alle Watches, Snapshots und Einstellungen liegen dateibasiert auf NFS unter `/nf
 
 ### Playwright Sidecar
 
-Ein Browserless-Chrome-Container (`browserless/chrome:1.53-chrome-stable`) läuft als Nomad Sidecar-Task und stellt über WebSocket (Port 3000) einen headless Browser bereit. Konfigurierte Optimierungen:
+Ein Browserless-Chrome-Container läuft als Nomad Sidecar-Task und stellt über WebSocket (Port 3000) einen headless Browser bereit. Konfigurierte Optimierungen:
 
 - Stealth Mode und Ad-Blocking aktiviert
 - Max 10 gleichzeitige Sessions
 - Vorgestartete Chrome-Instanz (`PREBOOT_CHROME=true`)
 - Auflösung 1920x1080
 
-Der Sidecar benötigt erhebliche Ressourcen (3 GiB Memory, max 6 GiB).
+Ressourcen: Siehe Nomad-Job `services/changedetection.nomad`.
 
 ## Abhängigkeiten
 

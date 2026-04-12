@@ -1,6 +1,6 @@
 ---
 title: Wiki-Richtlinien
-description: Regeln und Best Practices fuer diese Dokumentation
+description: Regeln und Best Practices für diese Dokumentation
 tags:
   - meta
   - guidelines

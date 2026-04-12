@@ -37,7 +37,7 @@ Der Container hat Lesezugriff auf mehrere NFS-Verzeichnisse:
 - `/nfs/logs/meta_logs/meta/logs/logs/data/` -- Stash-Daten
 
 ::: warning Hoher Ressourcenbedarf
-Czkawka benötigt bis zu 8 GiB Memory und 2000 MHz CPU beim Scannen grosser Verzeichnisse. Scans sollten nicht während anderer ressourcenintensiver Aufgaben laufen.
+Czkawka benötigt erhebliche Ressourcen beim Scannen grosser Verzeichnisse (Limits: Siehe Nomad-Job). Scans sollten nicht während anderer ressourcenintensiver Aufgaben laufen.
 :::
 
 ---

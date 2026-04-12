@@ -70,7 +70,7 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 |-------------|------|
 | **Trigger** | Push auf `main` |
 | **Runner** | Self-hosted (`homelab-runner-0`) |
-| **Node** | 22 |
+| **Node** | Siehe Nomad-Job |
 
 ### Ablauf
 
@@ -85,7 +85,7 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 | Attribut | Wert |
 |----------|------|
 | **Nomad Job** | `infrastructure/github-runner.nomad` |
-| **Image** | `myoung34/github-runner:2.332.0` |
+| **Image** | Siehe Nomad-Job |
 | **Name** | `homelab-runner-0` |
 | **Labels** | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
 | **Scope** | Repo (`derever/homelab-wiki`) |

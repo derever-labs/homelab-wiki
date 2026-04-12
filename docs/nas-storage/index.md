@@ -16,8 +16,9 @@ tags:
 | Attribut | Wert |
 | :--- | :--- |
 | **Status** | Produktion |
+| **Deployment** | Bare-metal (Synology DSM) |
 | **Typ** | Synology NAS |
-| **Netzwerk** | IoT VLAN |
+| **Netzwerk** | IoT VLAN (10.0.0.200) |
 | **Funktion** | NFS-Exports, MinIO S3, Backup-Ziel |
 
 Hardware-Details (Modell, Festplatten, RAID): [Server-Hardware](../_referenz/hardware-inventar.md#nas)
@@ -58,22 +59,22 @@ Credentials werden in 1Password verwaltet.
 
 **Symptom:** Der Linux-Kernel auf den Client-VMs loggt `NFS: server 10.0.0.200 error: fileid changed`. Anwendungen (z.B. SABnzbd) erhalten `FileNotFoundError` oder `ESTALE`.
 
-**Ursache:** Synology DSM laeuft auf Kernel 4.4.x. Btrfs vergibt Inode-Nummern pro Subvolume, nicht dateisystemweit. Der NFS-Server kann die verschiedenen Subvolume-IDs nicht in eindeutige fileids umrechnen -- der dafuer noetige Kernel-Fix (XOR Subvolume-ID + Inode) existiert erst ab Linux 5.17+. Btrfs-Snapshots, Indexierung und Scrubs koennen fileids aendern.
+**Ursache:** Synology DSM läuft auf Kernel 4.4.x. Btrfs vergibt Inode-Nummern pro Subvolume, nicht dateisystemweit. Der NFS-Server kann die verschiedenen Subvolume-IDs nicht in eindeutige fileids umrechnen -- der dafür nötige Kernel-Fix (XOR Subvolume-ID + Inode) existiert erst ab Linux 5.17+. Btrfs-Snapshots, Indexierung und Scrubs können fileids ändern.
 
 **Mitigation (Client-Seite):**
-- Niedrige Attribut-Cache-Zeiten (`acregmin/acregmax`, `acdirmin/acdirmax`) verkuerzen das Zeitfenster, in dem stale fileids gecacht werden
+- Niedrige Attribut-Cache-Zeiten (`acregmin/acregmax`, `acdirmin/acdirmax`) verkürzen das Zeitfenster, in dem stale fileids gecacht werden
 - Mount-Optionen werden zentral in der Ansible-Rolle `roles/nfs/defaults/main.yml` verwaltet
 - `lookupcache=positive` hilft **nicht** -- kontrolliert Dentry-Cache, nicht Attribut-Cache
-- `nconnect` erst hinzufuegen wenn fileid serverseitig geloest ist (erhoeht Revalidierungs-Parallelitaet)
+- `nconnect` erst hinzufügen wenn fileid serverseitig gelöst ist (erhöht Revalidierungs-Parallelität)
 
 **Mitigation (Server-Seite):**
-- Indexierung (Media Indexing) fuer NFS-exportierte Ordner deaktivieren
-- Snapshot-Frequenz reduzieren oder deaktivieren fuer Shares mit aktiver NFS-Nutzung
+- Indexierung (Media Indexing) für NFS-exportierte Ordner deaktivieren
+- Snapshot-Frequenz reduzieren oder deaktivieren für Shares mit aktiver NFS-Nutzung
 - `@eaDir`-Verzeichnisse nach Deaktivierung der Indexierung entfernen
 
 ### Staler NFS-Directory-Cache
 
-Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) fuehren dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die waehrend Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand uebereinstimmt.
+Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) führen dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die während Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand übereinstimmt.
 
 ## Wartung
 

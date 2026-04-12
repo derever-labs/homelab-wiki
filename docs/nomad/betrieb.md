@@ -30,6 +30,10 @@ Die Policy `operator` erlaubt Jobs deployen, Logs lesen und Allocs verwalten. F�
 
 Vor Wartungsarbeiten an einem Worker-Node (z.B. Proxmox-Host-Update) muss der Node drainiert werden. Dabei migriert Nomad alle laufenden Allocations auf andere Nodes.
 
+::: info Automatischer Drain beim Stoppen
+Nomad drainiert automatisch beim Stoppen des Systemd-Service (5-Minuten-Deadline, System-Jobs ausgenommen). Ein manueller Drain ist nur für geplante, längere Wartungsarbeiten nötig.
+:::
+
 Ablauf:
 
 1. Node in Drain-Modus setzen mit `nomad node drain -enable <node-id>`

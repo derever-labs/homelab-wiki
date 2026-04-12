@@ -14,7 +14,7 @@ tags:
 | Attribut | Wert |
 |----------|------|
 | Status | Produktion |
-| URL | 10.0.0.1 (Controller Web-UI) |
+| URL | `https://10.0.0.1` (Controller Web-UI) |
 | Deployment | UDM Pro integriert |
 
 ## Rolle im Stack
@@ -112,27 +112,29 @@ UDM -- IOT
 
 ### Access Points
 
-| Name | Modell | Standort | Firmware |
-|------|--------|----------|----------|
-| AP-AC-LR-Werkstadt | UAP-AC-LR | Werkstadt | 6.8.2 |
-| AP-AC-LR-Dani | UAP-AC-LR | Dani | 6.8.2 |
-| AP-AC-LR-Gaste | UAP-AC-LR | Gäste | 6.8.2 |
-| AP-AC-LR-Koffer | UAP-AC-LR | Koffer | 6.8.2 |
-| AP-AC-LR-Garage | UAP-AC-LR | Garage | 6.8.2 |
-| AP-U6-PRO-Nina | UAP-U6-Pro | Nina | 6.8.2 |
-| AP-U6-PRO-Kuche | UAP-U6-Pro | Küche | 6.8.2 |
+Aktuelle Firmware-Versionen sind in der UniFi-Console unter Devices einsehbar.
+
+| Name | Modell | Standort |
+|------|--------|----------|
+| AP-AC-LR-Werkstadt | UAP-AC-LR | Werkstadt |
+| AP-AC-LR-Dani | UAP-AC-LR | Dani |
+| AP-AC-LR-Gaste | UAP-AC-LR | Gäste |
+| AP-AC-LR-Koffer | UAP-AC-LR | Koffer |
+| AP-AC-LR-Garage | UAP-AC-LR | Garage |
+| AP-U6-PRO-Nina | UAP-U6-Pro | Nina |
+| AP-U6-PRO-Kuche | UAP-U6-Pro | Küche |
 
 ### Switches
 
-| Name | Modell | Standort | Firmware |
-|------|--------|----------|----------|
-| 10G-Switch-Rack | USL8A (Aggregation) | Rack | 7.2.123 |
-| POE-Switch-Keller | US-8-60W | Keller | 7.2.123 |
-| 1G-Switch-Kammerli | US-24 | Kämmerli | 7.2.123 |
-| (unnamed) | US-24 | -- | 7.2.123 |
-| (unnamed) | US-8-150W | -- | 7.2.123 |
-| USW-Flex-Mini-Dani | Flex Mini | Dani | 2.1.6 |
-| USW-Flex-Mini-Gaeste | Flex Mini | Gäste | 2.1.6 |
+| Name | Modell | Standort |
+|------|--------|----------|
+| 10G-Switch-Rack | USL8A (Aggregation) | Rack |
+| POE-Switch-Keller | US-8-60W | Keller |
+| 1G-Switch-Kammerli | US-24 | Kämmerli |
+| (unnamed) | US-24 | -- |
+| (unnamed) | US-8-150W | -- |
+| USW-Flex-Mini-Dani | Flex Mini | Dani |
+| USW-Flex-Mini-Gaeste | Flex Mini | Gäste |
 
 ## Netzwerk-Segmente
 
@@ -151,10 +153,6 @@ Die kanonische Quelle für alle IP-Adressen ist die [Hosts und IPs](../_referenz
 ## WAN-Anbindung
 
 Der UDM Pro ist über den SFP+-Port (eth9) mit dem ISP-Router verbunden. Der RJ45-WAN-Port (eth8) ist nicht angeschlossen. Die öffentliche IP ist statisch.
-
-::: warning Root-Disk fast voll
-Die Root-Partition des UDM Pro ist zu 99% belegt (2.0 GB). Das kann zu Problemen bei Firmware-Updates und Logs führen.
-:::
 
 ## Verwandte Seiten
 

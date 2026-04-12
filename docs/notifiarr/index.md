@@ -1,6 +1,6 @@
 ---
 title: Notifiarr
-description: Notification Aggregator fuer den Media Stack
+description: Notification Aggregator für den Media Stack
 tags:
   - service
   - productivity

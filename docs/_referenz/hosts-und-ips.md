@@ -75,15 +75,15 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 | VM | IP | VM-ID | Host | Specs |
 | :--- | :--- | :--- | :--- | :--- |
-| vm-nomad-server-04 | 10.0.2.104 | 3004 | pve00 | 2 CPU, 4 GB RAM |
-| vm-nomad-server-05 | 10.0.2.105 | 3005 | pve01 | 2 CPU, 4 GB RAM |
-| vm-nomad-server-06 | 10.0.2.106 | 3006 | pve02 | 2 CPU, 4 GB RAM |
+| vm-nomad-server-04 | 10.0.2.104 | 3004 | pve00 | 2 CPU, 2 GB RAM |
+| vm-nomad-server-05 | 10.0.2.105 | 3005 | pve01 | 2 CPU, 2 GB RAM |
+| vm-nomad-server-06 | 10.0.2.106 | 3006 | pve02 | 2 CPU, 2 GB RAM |
 
 ## Nomad Clients
 
 | VM | IP | VM-ID | Host | Specs |
 | :--- | :--- | :--- | :--- | :--- |
-| vm-nomad-client-04 | 10.0.2.124 | 3104 | pve00 | 4 CPU, 12 GB RAM |
+| vm-nomad-client-04 | 10.0.2.124 | 3104 | pve00 | 4 CPU, 14 GB RAM |
 | vm-nomad-client-05 | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM |
 | vm-nomad-client-06 | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM |
 

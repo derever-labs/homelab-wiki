@@ -13,6 +13,40 @@ Konzepte und Rollback-Strategien für den laufenden Betrieb. Architektur und Ref
 
 Diese Seite enthält bewusst keine CLI-Befehle oder Deployment-Anleitungen -- das Operative übernimmt die Automation. Hier werden die Konzepte erklärt, die hinter den einzelnen Operations stehen.
 
+## Übersicht
+
+Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (server, worker, proxy, ldap). Das Deployment erfolgt über Nomad -- keine manuelle Konfiguration an den VMs nötig.
+
+## Abhängigkeiten
+
+- **PostgreSQL** (`postgres.service.consul`) -- primärer Datenspeicher, muss vor Authentik starten
+- **Vault** (`kv/data/authentik`, `kv/data/authentik-outpost`) -- Secret-Store für alle Schlüssel und Tokens
+- **Traefik** (VIP 10.0.2.20) -- Routing und ForwardAuth; Authentik benötigt Traefik für OIDC Discovery
+- **SMTP Relay** (`smtp.service.consul`) -- für Recovery-Mails und Alerting-Fallback
+
+## Automatisierung
+
+- **Backup:** täglicher `pg_dumpall`-Job (03:00 UTC) sichert die Authentik-Datenbank nach NFS
+- **Token-Rotation-Warnung:** periodischer Nomad-Batch-Job prüft `rotated_at` im Vault-Metadata; Warnung via Telegram wenn > 80 Tage
+- **Alerting:** Authentik-Event-Matchers leiten sicherheitsrelevante Events via Telegram-Relay weiter
+
+## Bekannte Einschränkungen
+
+- **Cache-Delay:** Änderungen an Flows und Policies werden erst nach bis zu 10 Minuten auf allen Workern wirksam (Cache-Timeout 600s)
+- **Outpost-Cache:** Nach einem Redeployment ist der LDAP-Bind-Cache leer -- der erste Login pro User durchläuft den vollen Flow
+- **Kein Redis mehr:** Ab Authentik 2025.10 läuft alles über PostgreSQL; Autovacuum-Tuning ist deshalb kritisch
+- **Login-Rate-Limit:** Playwright-Tests und Login-Skripte müssen mindestens 1 Minute zwischen Iterationen warten
+
+## Credentials
+
+Alle Credentials liegen in 1Password und Vault:
+
+- **akadmin:** 1Password "Authentik HOME" (inkl. Live-OTP-Feld)
+- **akadmin-breakglass:** 1Password "Authentik Breakglass (akadmin-breakglass)"
+- **API-Token:** 1Password "Authentik API Token akadmin"
+- **Outpost-Tokens:** Vault `kv/data/authentik-outpost` (`proxy_token`, `ldap_token`)
+- **Recovery-URLs:** 1Password "Authentik Recovery Runbook + Breakglass URLs" (zeitlich limitiert)
+
 ## Recovery-Layer (Safety Net)
 
 Authentik ist hart abgesichert (MFA-Zwang, Reputation Policy, Password Policy). Das erhöht die Wahrscheinlichkeit, dass man sich selbst aussperrt. Dafür gibt es fünf Recovery-Layer, sortiert von am wenigsten invasiv bis zuletzt verwendbar:
@@ -153,3 +187,10 @@ CrowdSec und die Reputation Policy ergänzen sich: CrowdSec reagiert auf bekannt
 6. Job erneut deployen -- alle vier Tasks starten
 7. Hardening nachziehen: MFA für Admins, Password Policy, Reputation Policy, Passwordless-Flow, Telegram-Alerting (Reihenfolge wichtig -- siehe Recovery-Layer oben, damit das Bootstrap nicht in einen Lockout läuft)
 :::
+
+## Verwandte Seiten
+
+- [Authentik Übersicht](./index.md) -- Architektur und Stack-Einbindung
+- [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
+- [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
+- [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay

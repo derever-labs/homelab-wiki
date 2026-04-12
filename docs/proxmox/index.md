@@ -16,8 +16,8 @@ tags:
 |-------------|------|
 | Cluster-Name | lenzburg |
 | Knoten | 3 (pve00, pve01, pve02) |
-| PVE Version | 9.1.7 |
-| PBS Version | 4.1.5 |
+| PVE | Proxmox VE (Version: Proxmox Web-UI) |
+| PBS | Proxmox Backup Server (Version: PBS Web-UI) |
 | HA-Modus | Migrate bei Shutdown |
 | Migration-Netzwerk | 10.99.1.0/24 (Thunderbolt) |
 | Web-UI | `https://<node-ip>:8006` |
@@ -38,10 +38,10 @@ Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zuga
 
 | Host | IP | VM-ID | Host | Rolle |
 |----|-----|-------|------|-------|
-| **lxc-dns-01** | 10.0.2.1 | -- | pve01 | Pi-hole v6 + Unbound (Primary DNS) |
-| **lxc-dns-02** | 10.0.2.2 | -- | pve02 | Pi-hole v6 + Unbound (Secondary DNS) |
-| **vm-traefik-01** | 10.0.2.21 | -- | pve01 | Traefik Reverse Proxy (VIP: 10.0.2.20) |
-| **vm-traefik-02** | 10.0.2.22 | -- | pve02 | Traefik Reverse Proxy (VIP: 10.0.2.20, Keepalived HA) |
+| **lxc-dns-01** | 10.0.2.1 | 4021 | pve01 | Pi-hole v6 + Unbound (Primary DNS) |
+| **lxc-dns-02** | 10.0.2.2 | 4022 | pve02 | Pi-hole v6 + Unbound (Secondary DNS) |
+| **vm-traefik-01** | 10.0.2.21 | 4011 | pve01 | Traefik Reverse Proxy (VIP: 10.0.2.20) |
+| **vm-traefik-02** | 10.0.2.22 | 4012 | pve02 | Traefik Reverse Proxy (VIP: 10.0.2.20, Keepalived HA) |
 | **checkmk** | 10.0.2.150 | 2000 | pve01 | Monitoring System |
 | **pbs-backup-server** | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
 | **datacenter-manager** | 10.0.2.60 | 99998 | pve01 | Management Tools |
@@ -50,15 +50,15 @@ Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zuga
 
 | VM | IP | VM-ID | Host | Specs |
 |----|-----|-------|------|-------|
-| **vm-nomad-server-04** | 10.0.2.104 | 3004 | pve00 | 2 CPU, 4 GB RAM |
-| **vm-nomad-server-05** | 10.0.2.105 | 3005 | pve01 | 2 CPU, 4 GB RAM |
-| **vm-nomad-server-06** | 10.0.2.106 | 3006 | pve02 | 2 CPU, 4 GB RAM |
+| **vm-nomad-server-04** | 10.0.2.104 | 3004 | pve00 | 2 CPU, 2 GB RAM |
+| **vm-nomad-server-05** | 10.0.2.105 | 3005 | pve01 | 2 CPU, 2 GB RAM |
+| **vm-nomad-server-06** | 10.0.2.106 | 3006 | pve02 | 2 CPU, 2 GB RAM |
 
 ### HashiCorp Stack -- Nomad Clients (3x)
 
 | VM | IP | VM-ID | Host | Specs |
 |----|-----|-------|------|-------|
-| **vm-nomad-client-04** | 10.0.2.124 | 3104 | pve00 | 4 CPU, 12 GB RAM |
+| **vm-nomad-client-04** | 10.0.2.124 | 3104 | pve00 | 4 CPU, 14 GB RAM |
 | **vm-nomad-client-05** | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM, iGPU Passthrough |
 | **vm-nomad-client-06** | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM, iGPU Passthrough |
 
@@ -143,7 +143,7 @@ Auf allen Proxmox-Hosts (`/etc/modprobe.d/zfs.conf`):
 - `zfs_vdev_async_read_max_active=8` -- Mehr parallele Async-Reads (Default 3)
 - `zfs_txg_timeout=3` -- Kürzere Sync-Intervalle für bessere Write-Latenz (Default 5)
 
-Nach Änderung: `update-initramfs -u -k all`
+Nach Änderung muss das initramfs neu generiert werden.
 
 ## Authentifizierung (SSO)
 
@@ -188,7 +188,7 @@ Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung des PVE Clust
 | Web UI | `https://pdm.ackermannprivat.ch` |
 | Port | 8443 |
 | OS | Debian 13 (trixie) |
-| Version | 1.0.1 |
+| Version | Siehe PDM Web-UI |
 
 ### Konfigurierte Remotes
 
