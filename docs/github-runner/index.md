@@ -127,6 +127,34 @@ Der Runner bedient alle Repos der Organisation `derever-labs`:
 - **homelab-nomad-jobs** -- Container-Builds (z.B. Immoscraper) + ZOT Push
 - **immo-monitor** -- SvelteKit Build + Deploy
 
+## Deploy-Pattern: Nomad Alloc-Stop Refresh
+
+Für Repos mit eigenem Container-Image (aktuell `immo-monitor`) hat sich folgendes Deploy-Muster als zuverlässig erwiesen: Build -> ZOT Push -> laufende Allocs per API stoppen -> Nomad reschedult automatisch und pullt das neue Image. Kein `nomad job run` nötig, kein Token-Wrangling für Job-Definitionen.
+
+Das Muster eignet sich für Nomad-Jobs, bei denen der Job-Spec stabil ist und sich nur das Image-Tag ändert (`:latest` + `force_pull = true`). Der Workflow lebt im Repo unter `.github/workflows/deploy.yml` und wird als Referenz-Beispiel für zukünftige Service-Repos gepflegt.
+
+::: warning Nomad API-Port: HTTPS 4646
+Die Nomad HTTP API läuft auf **Port 4646 mit HTTPS** (TLS aktiviert). Port 4647 ist der RPC-Port für cluster-interne mTLS-Kommunikation und ist für GitHub Runner **nicht** direkt nutzbar. Ein `curl http://...:4646` schlägt fehl, weil der Server ausschliesslich TLS akzeptiert. Der Runner verwendet `curl -sk` (self-signed CA) und den vollen URL `https://10.0.2.104:4646`.
+:::
+
+::: warning Restart per alloc-stop, nicht /v1/job/:id/restart
+Der Endpoint `POST /v1/job/:id/restart` erwartet einen JSON-Body und gibt ohne diesen HTTP 400 zurück -- das ist in der Nomad-Doku unklar dokumentiert. Der Workflow verwendet stattdessen `POST /v1/allocation/:id/stop` für jede laufende Alloc. Nomad reschedult automatisch und der Docker-Task mit `force_pull = true` holt das frische Image aus ZOT.
+:::
+
+Die benötigten Schritte:
+
+1. **Allocations holen** -- `GET /v1/job/<job-name>/allocations`, filtern auf `ClientStatus == "running"` (Python Inline-Parser reicht)
+2. **Jede Alloc stoppen** -- `POST /v1/allocation/<id>/stop` (leerer Body)
+3. **Fertig** -- Nomad stellt innerhalb von Sekunden neue Allocs aus ZOT bereit
+
+### NOMAD_TOKEN Secret
+
+Der Workflow braucht ein gültiges Nomad Management Token. Dieses liegt in 1Password unter `PRIVAT Agent / Nomad Home / password` und muss im GitHub Repository als Secret `NOMAD_TOKEN` hinterlegt werden. Bei der Rotation des Tokens muss das Repo-Secret manuell nachgezogen werden.
+
+::: info `force_pull = true` im Nomad Job
+Im Job-Spec (`immo-monitor.nomad`) muss der Docker-Task `force_pull = true` haben, sonst verwendet Nomad beim Reschedule das bereits gecachte Image und ignoriert den neuen Push. Ohne diese Option läuft der Deploy erfolgreich durch, deployt aber den alten Stand.
+:::
+
 ## Verwandte Seiten
 
 - [Wiki](../vitepress-wiki/index.md) -- CI/CD Pipeline und Deployment-Ablauf
