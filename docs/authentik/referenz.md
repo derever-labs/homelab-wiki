@@ -55,7 +55,8 @@ Der LDAP-Outpost (`homelab-ldap`) ist für Performance optimiert:
 - **Bind Mode:** `cached` -- nach dem ersten erfolgreichen Login wird das Ergebnis im Outpost-Memory gecacht. Nachfolgende Logins desselben Users brauchen <5ms statt ~2s
 - **Search Mode:** `cached` -- alle User/Groups werden periodisch vom Authentik-Server geladen und im Outpost-RAM gehalten
 - **MFA:** deaktiviert (der Flow hat keine MFA-Stage)
-- **Search Group:** aktuell **nicht** gesetzt. Jellyfin nutzt derzeit `akadmin` als Bind-User, weshalb ein `search_group=family`-Filter den Bind selbst ausschliessen würde. Der Wechsel auf `svc-jellyfin-ldap` als dedizierten Bind-Account ist offen (`kv/jellyfin` + Jellyfin-Plugin-Config), erst danach kann die Gruppen-Beschränkung aktiviert werden. Schutz erfolgt aktuell über das Bind-Passwort + die Reputation-Policy auf der Password-Stage
+- **Bind-User:** `svc-jellyfin-ldap` (Typ `internal`, Passwort in 1Password). Erhält `search_full_directory` über die Rolle `ldap-searcher` (Gruppe `ldap-searchers`), damit Jellyfin alle User durchsuchen kann
+- **App-Policy:** Expression-Policy `ldap-allowed-groups` auf der LDAP-Applikation: nur Mitglieder von `family` oder `guest` (sowie `svc-jellyfin-ldap` selbst) dürfen einen LDAP-Bind durchführen. Alle anderen User werden abgelehnt
 
 ::: warning Cache-Invalidierung
 Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der erste Login pro User durchläuft den vollen Authentik-Flow. Passwortänderungen werden erst nach Ablauf der Session im Cache wirksam.
