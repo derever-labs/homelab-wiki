@@ -364,6 +364,26 @@ Das Enrichment laeuft nach der Scraping-Phase mit maximal 20 Listings pro Lauf. 
 
 Die Ergebnisse werden in `enrichment_data` (JSONB) gespeichert und stehen in Metabase als filterbare Felder zur Verfuegung.
 
+## Photo-Archivierung auf NFS
+
+Der Scraper lädt die Inserat-Fotos nach dem Detail-Scrape auf die Synology-NFS-Share herunter. Damit sind sie unabhängig von Homegates signierten CDN-URLs, die nach wenigen Tagen ablaufen und historische Inserate sonst "blind" machen würden.
+
+Die Dateien liegen unter `/nfs/docker/immoscraper/photos/` in drei Konventionen:
+
+- **`{listing_id}/{sort_order:03d}.jpg`** -- pro Inserat ein Verzeichnis mit den Original-Fotos in Sortierung
+- **`{listing_id}/{sort_order:03d}_floorplan.jpg`** -- Grundrisse mit Suffix (verwendet `is_floorplan=true` im Photo-Row)
+- **`projects/<slug>/NNN.jpg`** -- generische Projektbilder (Visualisierungen, Drohnenaufnahmen, Baufortschritt), die als Fallback für deaktivierte Listings oder für `project_unit`-basierte Research-Listings dienen
+
+Die Felder `listing_photo.storage_path` (relativer Pfad) und `listing_photo.download_status` (`pending`, `downloaded`, `failed`, `expired`) tracken den Zustand. Der Scraper ruft die Bilder parallelisiert ab (Semaphore mit Concurrency-Limit) und setzt bei 403/404 den Status auf `failed`, ohne Retry.
+
+::: info Re-Scrape erhält storage_path
+Die `upsertPhotos()`-Logik behält den `storage_path` bei Re-Scrapes, solange die URL unverändert bleibt. Ändert Homegate die CDN-URL (neue Signatur), wird der Pfad auf `NULL` zurückgesetzt und ein neuer Download getriggert. Dadurch gehen bereits lokal archivierte Fotos bei Routine-Scans nicht verloren.
+:::
+
+### Frontend-Nutzung
+
+Der Immo-Monitor-Container mountet den NFS-Pfad read-only und liefert die Bilder über eine dedizierte Traefik-Route `/api/photos/*` (ohne Authentik-Middleware, mit Path-Traversal-Schutz im SvelteKit-Endpoint). Details im [Frontend-Wiki](../immo-monitor/index.md).
+
 ## Notifications (Telegram)
 
 Der Scraper sendet nach jedem Lauf eine Zusammenfassung an den gleichen Telegram Bot der auch von den Media-Batch-Jobs verwendet wird (Vault `kv/data/shared/telegram`).
@@ -451,8 +471,9 @@ Die Datenbank `immo` auf dem PostgreSQL Shared Cluster enthaelt folgende Tabelle
 
 ### Kerntabellen
 
-- **listing** -- Haupttabelle mit Unique Constraint `(portal, external_id)`. Basis-Felder (Titel, Preis, Zimmer, Flaeche, Koordinaten), Detail-Felder (Stockwerk, Heizung, Haustiere, Beschreibung), Enrichment-Felder (`enrichment_status`, `enrichment_data`, `enriched_at`), Meta-Felder (`first_seen_at`, `last_seen_at`, `is_active`)
-- **listing_photo** -- Foto-URLs mit `sort_order`, `caption` und `is_floorplan`. Unique auf `(listing_id, sort_order)`
+- **listing** -- Haupttabelle mit Unique Constraint `(portal, external_id)`. Basis-Felder (Titel, Preis, Zimmer, Flaeche, Koordinaten), Detail-Felder (Stockwerk, Heizung, Haustiere, Beschreibung), Enrichment-Felder (`enrichment_status`, `enrichment_data`, `enriched_at`), Meta-Felder (`first_seen_at`, `last_seen_at`, `is_active`), plus zwei manuell pflegbare Felder: `first_seen_at_override` (echter Vermarktungsstart) und `first_seen_source` (Provenance-Label fuer Frontend)
+- **listing_photo** -- Foto-URLs mit `sort_order`, `caption` und `is_floorplan`. Zusaetzlich `storage_path` (relativer NFS-Pfad) und `download_status` (`pending`, `downloaded`, `failed`, `expired`). Unique auf `(listing_id, sort_order)`
+- **listing_external_id_history** -- Historische externe IDs pro Portal mit eigener `first_seen_at`. Dient als primaere Quelle fuer den Vermarktungsstart bei Re-Listings, siehe Abschnitt Vermarktungsstart-Tracking im [Frontend-Wiki](../immo-monitor/index.md)
 - **listing_price_history** -- Preisaenderungen mit Zeitstempel. Wird bei Smart-Skip-Entscheidung "geaendert" automatisch befuellt
 - **listing_note** -- User-Bewertungen fuer Metabase (Rating, Favorit, Abgelehnt)
 
@@ -463,12 +484,12 @@ Die Datenbank `immo` auf dem PostgreSQL Shared Cluster enthaelt folgende Tabelle
 
 Homegate liefert Amenities als Boolean-Felder: `hasBalcony`, `hasElevator`, `hasGarage`, `hasParking`, `hasWashingMachine`, `isWheelchairAccessible`, `isChildFriendly`, `isNewBuilding`, `arePetsAllowed`. Diese werden in die normalisierten Tabellen gemappt (Metabase kann JSONB-Arrays nicht filtern).
 
-### Neubau-Projekt-Tabellen (vorbereitet)
+### Neubau-Projekt-Tabellen
 
-- **project** -- Neubauprojekte mit Developer, Architekt, Energiestandard, Heizung, Baufortschritt
+- **project** -- Neubauprojekte mit Developer, Architekt, Energiestandard, Heizung, Baufortschritt. Zusaetzlich `marketing_started_at` als etappenweite Datierung fuer `project_unit`-basierte Listings (z.B. Mattenpark Etappe 1: 2022-10-27, Etappe 2: 2025-07-01)
 - **project_listing** -- Junction zu Listings
 - **project_unit** -- Einzelne Wohneinheiten mit generiertem `price_per_m2`
-- **project_source** -- Recherche-Quellen mit Zeitstempel
+- **project_source** -- Recherche-Quellen mit Zeitstempel (Projekt-Websites, PDFs, Wayback-Snapshots, Presseartikel)
 
 ### Views und Tracking
 

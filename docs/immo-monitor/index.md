@@ -29,27 +29,54 @@ Immo Monitor ersetzt die bisherige Kombination aus Metabase + Leaflet + NocoDB d
 ## Architektur
 
 ```d2
-direction: right
-
-Browser: Browser { style.border-radius: 8 }
-
-Traefik: Traefik {
-  style.stroke-dash: 4
-  tooltip: "10.0.2.20"
-  RI: "intern-auth@file (LAN/VPN)" { style.border-radius: 8 }
-  RE: "public-auth@file (extern)" { style.border-radius: 8 }
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
 
-App: "Immo Monitor (SvelteKit)" { style.border-radius: 8 }
-PG: "PostgreSQL (n8n DB)" { shape: cylinder }
-Scraper: "immoscraper" { style.border-radius: 8 }
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: right
+
+Browser: Browser { class: node }
+
+Traefik: Traefik {
+  class: container
+  tooltip: "10.0.2.20"
+  RI: "intern-auth@file (LAN/VPN)" { class: node }
+  RE: "public-auth@file (extern)" { class: node }
+  RP: "Photo Route (ohne Auth, Priority 1000000)" { class: node }
+}
+
+App: "Immo Monitor (SvelteKit)" {
+  class: node
+  tooltip: "Drizzle ORM, Leaflet, shadcn-svelte"
+}
+PG: "PostgreSQL immo" {
+  shape: cylinder
+  tooltip: "Read-only ausser listing_note"
+}
+NFS: "NFS Photo-Archiv" {
+  shape: cylinder
+  tooltip: "/nfs/docker/immoscraper/photos/ | Read-only Mount"
+}
+Scraper: "immoscraper Batch-Job" { class: node }
 
 Browser -> Traefik.RI: HTTPS intern
 Browser -> Traefik.RE: HTTPS extern
+Browser -> Traefik.RP: "Bilder /api/photos/*"
 Traefik.RI -> App
 Traefik.RE -> App
+Traefik.RP -> App: "Path-Traversal-Schutz im Endpoint"
 App -> PG: "Lesen (listing, listing_photo, ...)\nSchreiben (listing_note)"
+App -> NFS: "Bilder lesen"
 Scraper -> PG: Schreibt Inseratedaten
+Scraper -> NFS: Schreibt Fotos
 ```
 
 ## Tech Stack
@@ -63,11 +90,48 @@ Scraper -> PG: Schreibt Inseratedaten
 ## Seiten
 
 - **Home** (`/`): KPIs + neue Inserate seit letztem Besuch (localStorage)
-- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich
+- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich, CHF/m²-Filter, "vermietet"-Badge für deaktivierte Listings
+- **Favoriten** (`/favoriten`): Gleicher Card-Grid wie Inserate, vorgefiltert auf `isFavorite`
 - **Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld, Preishistorie
-- **Karte** (`/karte`): CartoDB Positron, farbkodierte CircleMarker (CHF/m²), Heatmap-Toggle
-- **Überblick** (`/ueberblick`): 4 Charts (Preisverteilung, CHF/m² nach Ort, Zimmer, Amenities)
+- **Karte** (`/karte`): CartoDB Positron, farbkodierte CircleMarker (CHF/m²), Bauzonen-WMS (Aargau), Heatmap-Toggle
+- **Überblick** (`/ueberblick`): Charts inkl. Median CHF/m² pro Gemeinde (volle Breite)
 - **Vergleich** (`/vergleich`): Side-by-Side Tabelle für max. 3 Inserate
+- **About** (`/about`): Methoden-Transparenz -- Datenquellen, Farbskala, "vermietet"-Heuristik, Bauzonen-Layer
+
+## Photo-Archivierung
+
+Die Fotos werden nicht mehr direkt vom Homegate-CDN geladen, sondern als lokale Kopie auf der Synology NFS-Share ausgeliefert. Der Immo-Monitor-Container mountet `/nfs/docker/immoscraper/photos/` read-only und liefert die Bilder über eine dedizierte API-Route `/api/photos/*` aus.
+
+::: info Warum lokal archivieren
+Homegate-CDN-URLs enthalten signierte Query-Parameter, die nach einigen Tagen ablaufen. Deaktivierte Inserate (vermietet, zurückgezogen) verlieren damit rückwirkend ihre Fotos. Die NFS-Kopie garantiert, dass historische Inserate und Preisverläufe auch nach Monaten noch mit Bildern angezeigt werden können.
+:::
+
+Die Fotos werden pro Listing unter `{listing_id}/{sort_order:03d}.jpg` abgelegt. Zusätzlich gibt es das Verzeichnis `projects/<slug>/NNN.jpg` für generische Projektbilder (Visualisierungen, Drohnenaufnahmen, Baufortschritt), die als Fallback für deaktivierte Listings mit abgelaufenen CDN-URLs genutzt werden.
+
+### Traefik-Route ohne Authentik
+
+Die Route `/api/photos/*` läuft **ohne** Authentik-Middleware, weil Authentik bei jedem Bild-Request einen OIDC-Flow anstossen würde (langsam, bricht bei externem Embedding). Stattdessen kommt der Zugriffsschutz aus zwei Quellen:
+
+1. **Path-Traversal-Schutz im Endpoint**: Die SvelteKit-Route lehnt alle Pfade mit `..` ab und verhindert damit das Ausbrechen aus dem NFS-Mount.
+2. **Keine Directory-Listing**: Der Endpoint liefert nur existierende Dateien, kein Index.
+
+::: warning Traefik Router Priority
+Die Photo-Route muss eine höhere `priority` haben als die Host-basierten Default-Router (Path-Prefix-Router sonst überstimmt). Im Nomad Job ist `priority=1000000` gesetzt -- sonst greift die Authentik-Kette und Bilder werden mit 302 Redirects auf den Login geleitet.
+:::
+
+## Vermarktungsstart-Tracking
+
+Homegate setzt bei Re-Listings (gleiche Wohnung, neue externe ID) einen neuen `createdAt`-Zeitstempel. Der Scraper-`first_seen_at` entspricht damit nicht dem tatsächlichen Vermarktungsstart -- ein Inserat, das seit 1.5 Jahren auf dem Markt ist, wirkt im Monitor wie eine brandneue Listung.
+
+Die Lösung ist eine Prioritätskette mit drei Quellen für das "erstmals gesehen"-Datum:
+
+1. **`listing_external_id_history`** -- manuell recherchierter echter Vermarktungsstart (Projekt-Websites, Wayback Machine, Aargauer Zeitung). Ohne `min.`-Prefix, exakter Wert.
+2. **`listing.first_seen_at_override`** -- schneller manueller Override pro Inserat ohne Recherche-Eintrag.
+3. **`listing.first_seen_at`** -- Homegate `createdAt` als Fallback. Im Frontend mit `min.`-Prefix markiert, weil der echte Wert älter sein kann.
+
+Die Kette wird im Server-Load über eine SQL-Subquery aufgelöst und als `firstSeenSource` (`history` / `override` / `scraper`) an die Frontend-Komponenten weitergereicht. Diese zeigen den `min.`-Prefix nur dann, wenn die Quelle `scraper` ist.
+
+Für Projekt-Units aus der `project_unit`-Tabelle greift zusätzlich `project.marketing_started_at`, sofern das Feld im Projekt-Datensatz gesetzt ist. Damit lassen sich ganze Etappen (z.B. Mattenpark Etappe 1: 2022-10-27, Etappe 2: 2025-07-01) auf einmal datieren.
 
 ## Datenbank
 
@@ -85,13 +149,14 @@ Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank. Idealerweise soll
 
 ## Offene Punkte
 
-- Detail-Scraper: Fotos in `listing_photo` speichern (aktuell 0 Einträge)
 - DB-User `immo` mit eingeschränkten Rechten (SELECT + INSERT/UPDATE nur auf `listing_note`)
 - Filter-State in URL-Params persistieren
+- Photo-Fallback auch für noch aktive Listings auf NFS kopieren (aktuell nur deaktivierte im Archiv)
 
 ## Verwandte Seiten
 
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Scraper und Datenbank-Schema
+- [NAS Storage](../nas-storage/index.md) -- NFS-Share fuer Photo-Archiv
 - [n8n](../n8n/index.md) -- Shared PostgreSQL-Datenbank
 - [Metabase](../metabase/index.md) -- Alternatives BI-Dashboard
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
