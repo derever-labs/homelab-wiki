@@ -34,19 +34,21 @@ CS -> Block: { style.stroke-dash: 5 }
 
 ## Komponenten
 
-### OpenLDAP (Benutzerverzeichnis)
-
-Zentraler Identity Store für alle User-Accounts. Authentik ist per LDAP angebunden. Services wie Jellyfin authentifizieren direkt gegen LDAP.
-
-Details: [OpenLDAP & Benutzerverwaltung](../ldap/index.md)
-
-### Authentik (SSO Provider)
+### Authentik (Identity Store und SSO Provider)
 
 - **URL:** `https://auth.ackermannprivat.ch`
 - **Deployment:** Nomad Job
 - **ForwardAuth-Endpunkt:** Eingebunden in Middleware Chains `intern-auth` und `public-auth`
 
-Authentik ersetzt Keycloak (ehemals `sso.ackermannprivat.ch`). Die ForwardAuth-Integration läuft direkt in Traefik -- kein separater oauth2-proxy-Container mehr.
+Authentik ist der zentrale Identity Store für alle User-Accounts. Die User-Daten leben in der Authentik-eigenen PostgreSQL-Datenbank, nicht in einem externen Verzeichnis. Services authentifizieren über drei Wege:
+
+- **OIDC** für native Clients wie Grafana, Gitea, Proxmox
+- **ForwardAuth** für Web-UIs ohne OIDC-Support (via Traefik Middleware Chains)
+- **LDAP Bind** für Jellyfin über den [Authentik LDAP Outpost](../ldap/index.md)
+
+Authentik ersetzt die frühere Kombination aus Keycloak und oauth2-proxy. Die ForwardAuth-Integration läuft direkt in Traefik -- kein separater oauth2-proxy-Container mehr.
+
+Details: [Authentik](../authentik/index.md) -- Übersicht und Architektur. LDAP-Schichten im Homelab: [LDAP im Homelab](../ldap/index.md).
 
 ### CrowdSec (natives Traefik-Plugin)
 
@@ -89,5 +91,5 @@ Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in d
 
 - [Traefik Middlewares](../traefik/referenz.md) -- Vollständige Middleware-Chain-Dokumentation
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection und IP-Blocking
-- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- Zentrales Benutzerverzeichnis
+- [LDAP im Homelab](../ldap/index.md) -- LDAP-Schichten, Outpost, OpenLDAP-Legacy
 - [DNS-Architektur](../dns/index.md) -- DNS-Kette inkl. lxc-dns-01/02

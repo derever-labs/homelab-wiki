@@ -46,7 +46,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [LDAP](./ldap/) | OpenLDAP Benutzerverzeichnis |
+| [LDAP im Homelab](./ldap/) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
 | [Docker Registry](./docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
 | [Wiki](./vitepress-wiki/) | VitePress Dokumentations-Deployment |

@@ -51,7 +51,7 @@ Jede Information existiert an genau **einem** Ort. Andere Stellen verlinken mit 
 | Middleware Chains | [Traefik Referenz](./traefik/referenz.md) | System-Seiten |
 | DNS-Architektur | [DNS](./dns/) | netzwerk/ |
 | Backup-Architektur | [Backup](./backup/) | System-Seiten |
-| LDAP & Benutzerverwaltung | [OpenLDAP](./ldap/) | security/, System-Seiten |
+| LDAP & Benutzerverwaltung | [LDAP im Homelab](./ldap/) | security/, System-Seiten |
 | CrowdSec | [CrowdSec](./crowdsec/) | security/, traefik/ |
 | Service-Abhängigkeiten | [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | System-Seiten |
 | NFS-Exports, Mount-Pfade | [NAS-Speicher](./nas-storage/) | System-Seiten |
@@ -155,7 +155,7 @@ Jede Inhaltsseite endet mit einer `## Verwandte Seiten` Sektion. Aufzählungslis
 ## Verwandte Seiten
 
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
-- [OpenLDAP](../ldap/) -- Zentrales Benutzerverzeichnis
+- [LDAP im Homelab](../ldap/) -- LDAP-Schichten und Benutzerverwaltung
 ```
 
 ### Titel

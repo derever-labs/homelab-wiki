@@ -55,10 +55,89 @@ Der LDAP-Outpost (`homelab-ldap`) ist für Performance optimiert:
 - **Bind Mode:** `cached` -- nach dem ersten erfolgreichen Login wird das Ergebnis im Outpost-Memory gecacht. Nachfolgende Logins desselben Users brauchen <5ms statt ~2s
 - **Search Mode:** `cached` -- alle User/Groups werden periodisch vom Authentik-Server geladen und im Outpost-RAM gehalten
 - **MFA:** deaktiviert (der Flow hat keine MFA-Stage)
-- **Search Group:** auf `family` beschränkt -- Admin-Credentials (`akadmin`, `akadmin-breakglass`) können nicht per LDAP gebindet werden, das schützt vor Credential-Stuffing gegen Admin-Accounts über den Jellyfin-Pfad
+- **Search Group:** aktuell **nicht** gesetzt. Jellyfin nutzt derzeit `akadmin` als Bind-User, weshalb ein `search_group=family`-Filter den Bind selbst ausschliessen würde. Der Wechsel auf `svc-jellyfin-ldap` als dedizierten Bind-Account ist offen (`kv/jellyfin` + Jellyfin-Plugin-Config), erst danach kann die Gruppen-Beschränkung aktiviert werden. Schutz erfolgt aktuell über das Bind-Passwort + die Reputation-Policy auf der Password-Stage
 
 ::: warning Cache-Invalidierung
 Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der erste Login pro User durchläuft den vollen Authentik-Flow. Passwortänderungen werden erst nach Ablauf der Session im Cache wirksam.
+:::
+
+#### Login-Sequenz `watch.ackermannprivat.ch`
+
+Der vollständige Pfad vom Browser bis zur Jellyfin-Session inklusive aller Flow-Stages, Cache-Entscheidung und API-Roundtrips im Outpost:
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+sequence: Jellyfin LDAP-Login {
+  shape: sequence_diagram
+
+  user: Nutzer
+  browser: Browser
+  traefik: Traefik HA {
+    tooltip: "10.0.2.20 -- Reverse Proxy, CrowdSec, Rate-Limit"
+  }
+  jellyfin: Jellyfin {
+    tooltip: "Nomad Job media/jellyfin.nomad, LDAP-Plugin aktiv"
+  }
+  outpost: LDAP Outpost {
+    tooltip: "authentik-ldap.service.consul:3389"
+  }
+  ak: Authentik Server {
+    tooltip: "FlowExecutor + Policy Engine + API"
+  }
+  pg: PostgreSQL {
+    tooltip: "postgres.service.consul -- User-Store"
+  }
+
+  browser_in: "Browser-Seite" {
+    user -> browser: "E-Mail + Passwort eingeben"
+    browser -> traefik: "POST /Users/AuthenticateByName (HTTPS)"
+    traefik -> jellyfin: "Weiterleiten (kein ForwardAuth auf /Users/*)"
+    jellyfin -> outpost: "LDAP Simple Bind\ncn=<user>,ou=users,dc=ldap,dc=ackermannprivat,dc=ch"
+  }
+
+  hit: "bind_mode=cached -- Hit-Pfad (Folgelogin, unter 5ms)" {
+    outpost -> outpost: "boundUsers[DN] vorhanden + Passwort gegen gecachten Hash"
+    outpost -> jellyfin: "LDAPResult: Success"
+  }
+
+  miss: "Cache-Miss oder Erstlogin nach Outpost-Start (~1-2s)" {
+    flow: "1. Flow Execute (POST /api/v3/flows/executor/ldap-authentication-flow/)" {
+      outpost -> ak: "Stage 10 ldap-identification -- Username/E-Mail"
+      ak -> pg: "User-Lookup (case_insensitive)"
+      ak -> outpost: "Stage 20 ldap-password -- Reputation-Policy + Argon2"
+      outpost -> ak: "Solve: password"
+      ak -> outpost: "Stage 30 ldap-user-login -- Session erzeugen"
+      outpost -> ak: "Solve: trigger login"
+      ak -> outpost: "200 OK + authentik_session Cookie"
+    }
+
+    post: "2. Outpost Post-Processing" {
+      outpost -> ak: "GET /outposts/ldap/<pk>/check_access/"
+      ak -> outpost: "Access: passing"
+      outpost -> ak: "GET /core/users/me/"
+      ak -> outpost: "UserInfo (pk, groups, mail)"
+      outpost -> outpost: "Cache schreiben: boundUsers[DN]"
+    }
+
+    outpost -> jellyfin: "LDAPResult: Success"
+  }
+
+  finish: "Jellyfin Session" {
+    jellyfin -> jellyfin: "User-Match via mail-Attribut"
+    jellyfin -> browser: "AccessToken + SessionID"
+    browser -> user: "Startseite / Bibliothek"
+  }
+}
+```
+
+::: info Wieso zwei API-Calls nach dem Flow-Execute?
+Der Outpost ruft nach dem erfolgreichen Bind zusätzlich `check_access` (prüft die Provider-ACL) und `core/users/me` (holt UID, GID, Gruppen und Mail für die LDAP-Response). Beide Calls tragen den `authentik_session`-Cookie aus dem Flow-Execute — ohne diesen Cookie liefert der Authentik-Server `403 Authentication credentials were not provided`, was in der Vergangenheit zu Debugging-Schleifen geführt hat.
 :::
 
 ## Policies

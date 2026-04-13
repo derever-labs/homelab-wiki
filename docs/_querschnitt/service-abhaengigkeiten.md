@@ -25,7 +25,6 @@ Core: Core Infrastructure {
   CONSUL: Consul { style.border-radius: 8 }
   VAULT: Vault { style.border-radius: 8 }
   AUTHENTIK: Authentik { style.border-radius: 8 }
-  LDAP: OpenLDAP { style.border-radius: 8 }
   PG: PostgreSQL 16 { shape: cylinder; style.border-radius: 8 }
   SMTP: SMTP Relay { style.border-radius: 8 }
   NFS: Synology NAS { shape: cylinder; style.border-radius: 8 }
@@ -87,9 +86,9 @@ IoT: IoT {
   MOSQ: Mosquitto { style.border-radius: 8 }
 }
 
-Core.AUTHENTIK -> Core.LDAP
 Core.AUTHENTIK -> Core.PG
 
+Media.JF -> Core.AUTHENTIK: LDAP Bind
 Media.SONARR -> Core.PG
 Media.RADARR -> Core.PG
 Media.PROWLARR -> Core.PG
