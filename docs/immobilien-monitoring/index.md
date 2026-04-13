@@ -380,6 +380,16 @@ Die Felder `listing_photo.storage_path` (relativer Pfad) und `listing_photo.down
 Die `upsertPhotos()`-Logik behält den `storage_path` bei Re-Scrapes, solange die URL unverändert bleibt. Ändert Homegate die CDN-URL (neue Signatur), wird der Pfad auf `NULL` zurückgesetzt und ein neuer Download getriggert. Dadurch gehen bereits lokal archivierte Fotos bei Routine-Scans nicht verloren.
 :::
 
+### Grundriss-PDFs
+
+Homegate liefert Grundrisse als PDF-URLs (Attachment-Typ `DOCUMENT` oder `PLAN`), nicht als Bilder. Der Downloader erkennt PDFs am `Content-Type` bzw. am `%PDF`-Header und konvertiert sie direkt beim Download via `pdftoppm` (aus `poppler-utils`) zur ersten Seite als 150-DPI-JPG. Das Ergebnis wird unter dem bestehenden `_floorplan.jpg`-Pfad gespeichert, so dass das Frontend sie gleich wie normale Fotos als `<img>` rendern kann.
+
+Das Scraper-Image installiert `poppler-utils` als Runtime-Dependency im Alpine-Layer. Damit bleibt der Image-Zuwachs gering (~5 MB) und der Downloader kann `pdftoppm` als Subprozess aufrufen, ohne externe Services.
+
+::: warning Bestehende PDFs einmalig migrieren
+Vor der Konvertierungs-Logik wurden PDFs als `.jpg`-Dateien mit PDF-Inhalt abgelegt, die der Browser nicht rendern konnte. Solche Altdaten lassen sich auf der NAS in-place konvertieren (Ad-hoc-Container mit `pdftoppm` + `file`-Check), die Pfade in der DB bleiben identisch.
+:::
+
 ### Frontend-Nutzung
 
 Der Immo-Monitor-Container mountet den NFS-Pfad read-only und liefert die Bilder über eine dedizierte Traefik-Route `/api/photos/*` (ohne Authentik-Middleware, mit Path-Traversal-Schutz im SvelteKit-Endpoint). Details im [Frontend-Wiki](../immo-monitor/index.md).
