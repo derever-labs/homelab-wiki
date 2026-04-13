@@ -26,21 +26,21 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-auth` | ipAllowList → secure-headers → authentik-forward-auth → compress | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth |
+| `intern-auth` | secure-headers → authentik-forward-auth → ipAllowList → error-pages | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth + Error Pages |
 
 ### Für externen Zugriff mit Authentik-Login
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `public-auth` | crowdsec → secure-headers → authentik-forward-auth → compress | CrowdSec + Sicherheits-Header + Authentik ForwardAuth |
+| `public-auth` | crowdsec → secure-headers → authentik-forward-auth → error-pages | CrowdSec + Sicherheits-Header + Authentik ForwardAuth + Error Pages |
 
 ### Ohne Login
 
 | Chain | Komponenten | Beschreibung |
 |-------|-------------|--------------|
-| `public-noauth` | crowdsec → secure-headers → compress | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
+| `public-noauth` | crowdsec → secure-headers → error-pages | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
 | `intern-noauth` | ipAllowList → compress | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
-| `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen (ohne Compression) |
+| `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen, keine Error Pages (Backends liefern eigene JSON-Errors) |
 
 ### Sonderfall: Authentik Login-Route
 
@@ -110,9 +110,20 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
 
 ### error-pages
 
-Leitet HTTP-5xx-Antworten an einen Maintenance-Page-Service weiter. Nicht in allen Chains standardmässig enthalten -- bei Bedarf separat hinzufügen.
+Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit statischen HTML-Seiten) weiter. In allen Web-Chains (`intern-auth`, `public-auth`, `public-noauth`) standardmässig enthalten. Nicht in `intern-api` -- API-Endpoints liefern eigene JSON-Fehler.
 
-Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
+**Abgedeckte Statuscodes:** 404-405, 408, 429, 500-599
+
+**Bewusst ausgenommen:**
+- 400 (Bad Request) -- Backends liefern oft eigene JSON-Bodies mit Validierungsdetails
+- 401 (Unauthorized) -- würde den Authentik-Login-Flow (ForwardAuth-Redirect) unterbrechen
+- 403 (Forbidden) -- gehört dem Auth-Stack, nicht den Error Pages
+
+**Fallback:** Für unbekannte Codes (z.B. 418, 422) existieren generische Fallback-Seiten (`4xx.html`, `5xx.html`) via nginx `try_files`. Die Catch-All-Seiten enthalten bewusst keine Links zu internen Services um Information Disclosure bei Subdomain-Scans zu vermeiden.
+
+**Error Pages generieren:** `standalone-stacks/traefik-ha/configs/nginx/generate-error-pages.sh` ist die einzige Source-of-Truth. Nach Textänderungen Script ausführen, Dateien einchecken, auf beide Stacks deployen.
+
+Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die Middleware-Definition und `standalone-stacks/traefik-ha/configs/nginx/` für die HTML-Templates.
 
 ### login-ratelimit
 
