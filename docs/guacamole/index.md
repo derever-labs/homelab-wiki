@@ -72,12 +72,15 @@ Die Authentik-Extension ist aktiviert und ermöglicht die Anmeldung via Authenti
 
 - **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
 - **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
-- **OpenLDAP** -- Benutzerauthentifizierung via LDAP-Extension
 - **NFS** -- Konfigurationspersistenz
+
+::: info auth-ldap Extension ungenutzt
+Der Nomad Job lädt zwar die `auth-ldap`-Extension (`EXTENSIONS=auth-ldap`), setzt aber keine `LDAP_HOSTNAME`-Konfiguration. Die effektive Authentifizierung läuft ausschliesslich über die Traefik ForwardAuth-Middleware (`intern-auth@file`) -- Guacamole selbst sieht nur den bereits authentifizierten User aus dem Authentik-Header.
+:::
 
 ## Verwandte Seiten
 
-- [OpenLDAP & Benutzerverwaltung](../ldap/index.md) -- LDAP-Authentifizierung
+- [Authentik](../authentik/index.md) -- Identity Provider und ForwardAuth
 - [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
 - [Proxmox Cluster](../proxmox/index.md) -- VMs die via Guacamole erreichbar sind
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Konfiguration
