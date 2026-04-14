@@ -74,67 +74,60 @@ vars: {
   }
 }
 
-sequence: Jellyfin LDAP-Login {
-  shape: sequence_diagram
+direction: down
 
-  user: Nutzer
-  browser: Browser
-  traefik: Traefik HA {
-    tooltip: "10.0.2.20 -- Reverse Proxy, CrowdSec, Rate-Limit"
-  }
-  jellyfin: Jellyfin {
-    tooltip: "Nomad Job media/jellyfin.nomad, LDAP-Plugin aktiv"
-  }
-  outpost: LDAP Outpost {
-    tooltip: "authentik-ldap.service.consul:3389"
-  }
-  ak: Authentik Server {
-    tooltip: "FlowExecutor + Policy Engine + API"
-  }
-  pg: PostgreSQL {
-    tooltip: "postgres.service.consul -- User-Store"
-  }
+classes: {
+  user: { style.fill: "#e8f0fe" }
+  proxy: { style.fill: "#fff4e5" }
+  jf: { style.fill: "#fce8e6" }
+  outpost: { style.fill: "#e6f4ea" }
+  ak: { style.fill: "#f3e8fd" }
+  pg: { style.fill: "#fef6d8" }
+}
 
-  browser_in: "Browser-Seite" {
-    user -> browser: "E-Mail + Passwort eingeben"
-    browser -> traefik: "POST /Users/AuthenticateByName (HTTPS)"
-    traefik -> jellyfin: "Weiterleiten (kein ForwardAuth auf /Users/*)"
-    jellyfin -> outpost: "LDAP Simple Bind\ncn=<user>,ou=users,dc=ldap,dc=ackermannprivat,dc=ch"
+entry: 1. Login bis LDAP-Bind {
+  input: "Nutzer gibt E-Mail + Passwort im Browser ein" { class: user }
+  post: "Browser -> Traefik HA: POST /Users/AuthenticateByName (HTTPS)" { class: proxy }
+  fwd: "Traefik -> Jellyfin (kein ForwardAuth auf /Users/*)" { class: proxy }
+  bind: "Jellyfin -> LDAP Outpost: Simple Bind\ncn=<user>,ou=users,dc=ldap,...,dc=ch" { class: jf }
+  input -> post -> fwd -> bind
+}
+
+split: Outpost entscheidet anhand Bind-Cache {
+  hit: "Hit-Pfad -- bind_mode=cached (Folgelogin, unter 5ms)" {
+    check: "Outpost prüft boundUsers[DN] + Argon2 gegen gecachten Hash" { class: outpost }
+    ok: "Outpost -> Jellyfin: LDAPResult Success" { class: outpost }
+    check -> ok
   }
 
-  hit: "bind_mode=cached -- Hit-Pfad (Folgelogin, unter 5ms)" {
-    outpost -> outpost: "boundUsers[DN] vorhanden + Passwort gegen gecachten Hash"
-    outpost -> jellyfin: "LDAPResult: Success"
-  }
-
-  miss: "Cache-Miss oder Erstlogin nach Outpost-Start (~1-2s)" {
-    flow: "1. Flow Execute (POST /api/v3/flows/executor/ldap-authentication-flow/)" {
-      outpost -> ak: "Stage 10 ldap-identification -- Username/E-Mail"
-      ak -> pg: "User-Lookup (case_insensitive)"
-      ak -> outpost: "Stage 20 ldap-password -- Reputation-Policy + Argon2"
-      outpost -> ak: "Solve: password"
-      ak -> outpost: "Stage 30 ldap-user-login -- Session erzeugen"
-      outpost -> ak: "Solve: trigger login"
-      ak -> outpost: "200 OK + authentik_session Cookie"
+  miss: "Miss-Pfad -- Cache-Miss oder Erstlogin (~1-2s)" {
+    flow: "Flow Execute -- ldap-authentication-flow" {
+      s10: "Stage 10 ldap-identification\n(Outpost -> Authentik Server)" { class: outpost }
+      pgq: "Authentik -> PostgreSQL: User-Lookup\n(case_insensitive)" { class: ak }
+      s20: "Stage 20 ldap-password\n(Reputation-Policy + Argon2)" { class: ak }
+      s30: "Stage 30 ldap-user-login\n(Session erzeugen)" { class: ak }
+      done: "Authentik -> Outpost: 200 OK\n+ authentik_session Cookie" { class: ak }
+      s10 -> pgq -> s20 -> s30 -> done
     }
-
-    post: "2. Outpost Post-Processing" {
-      outpost -> ak: "GET /outposts/ldap/<pk>/check_access/"
-      ak -> outpost: "Access: passing"
-      outpost -> ak: "GET /core/users/me/"
-      ak -> outpost: "UserInfo (pk, groups, mail)"
-      outpost -> outpost: "Cache schreiben: boundUsers[DN]"
+    post: "Outpost Post-Processing" {
+      acc: "Outpost GET /outposts/ldap/<pk>/check_access/" { class: outpost }
+      me: "Outpost GET /core/users/me/\n(UserInfo: pk, groups, mail)" { class: outpost }
+      cache: "Outpost schreibt boundUsers[DN] in Cache" { class: outpost }
+      acc -> me -> cache
     }
-
-    outpost -> jellyfin: "LDAPResult: Success"
-  }
-
-  finish: "Jellyfin Session" {
-    jellyfin -> jellyfin: "User-Match via mail-Attribut"
-    jellyfin -> browser: "AccessToken + SessionID"
-    browser -> user: "Startseite / Bibliothek"
+    ok: "Outpost -> Jellyfin: LDAPResult Success" { class: outpost }
+    flow -> post -> ok
   }
 }
+
+finish: Jellyfin Session abschliessen {
+  match: "Jellyfin User-Match via mail-Attribut" { class: jf }
+  token: "Jellyfin -> Browser: AccessToken + SessionID" { class: jf }
+  home: "Browser zeigt Startseite / Bibliothek" { class: user }
+  match -> token -> home
+}
+
+entry -> split -> finish
 ```
 
 ::: info Wieso zwei API-Calls nach dem Flow-Execute?

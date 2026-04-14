@@ -82,23 +82,40 @@ Automatisches Starten und Stoppen des solidtime-Timers basierend auf dem Standor
 ### Ablauf
 
 ```d2
-shape: sequence_diagram
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-iPhone
-n8n
-solidtime
+direction: down
 
-iPhone -> n8n: "GET /webhook/arbeit-start (Ankunft Horw)"
-n8n -> solidtime: "POST /api/v1/.../time-entries (start=now, end=null)"
-solidtime -> n8n: Timer-ID
-n8n -> iPhone: "status: started"
+classes: {
+  iphone: { style.fill: "#e8f0fe" }
+  n8n: { style.fill: "#fff4e5" }
+  solid: { style.fill: "#e6f4ea" }
+}
 
-iPhone -> n8n: "GET /webhook/arbeit-stop (Verlassen Horw)"
-n8n -> solidtime: "GET /api/v1/.../time-entries?active=true"
-solidtime -> n8n: Laufender Timer
-n8n -> solidtime: "PUT /api/v1/.../time-entries/{id} (end=now)"
-solidtime -> n8n: Gestoppter Timer
-n8n -> iPhone: "status: stopped, duration: ..."
+start: Ankunft Horw -- Timer starten {
+  hook: "iPhone GET /webhook/arbeit-start" { class: iphone }
+  post: "n8n POST time-entries (start=now, end=null)" { class: n8n }
+  ack: "solidtime antwortet mit Timer-ID" { class: solid }
+  resp: "n8n meldet status: started zurück" { class: n8n }
+  hook -> post -> ack -> resp
+}
+
+stop: Verlassen Horw -- Timer stoppen {
+  hook: "iPhone GET /webhook/arbeit-stop" { class: iphone }
+  find: "n8n GET time-entries?active=true" { class: n8n }
+  cur: "solidtime liefert laufenden Timer" { class: solid }
+  close: "n8n PUT time-entries/{id} (end=now)" { class: n8n }
+  ack: "solidtime bestätigt gestoppten Timer" { class: solid }
+  resp: "n8n meldet status: stopped + duration" { class: n8n }
+  hook -> find -> cur -> close -> ack -> resp
+}
+
+start -> stop
 ```
 
 ### Einrichtung iOS
@@ -138,21 +155,40 @@ Automatische Zeiterfassung für private Repos basierend auf Git-Commits. Jeder C
 ### Ablauf
 
 ```d2
-shape: sequence_diagram
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-"Git (lokal)"
-n8n
-solidtime
+direction: down
 
-"Git (lokal)" -> n8n: "GET /webhook/git-commit?project_id=...&repo=Finanzen (git commit)"
-n8n -> solidtime: GET /time-entries (letzte 5)
-solidtime -> n8n: Bestehende Einträge
+classes: {
+  git: { style.fill: "#e8f0fe" }
+  n8n: { style.fill: "#fff4e5" }
+  solid: { style.fill: "#e6f4ea" }
+}
 
-n8n -> n8n: "Prüfe: Eintrag mit gleichem Projekt, Ende nach jetzt-30min?"
-n8n -> solidtime: "PUT /time-entries/ID (end=jetzt+30min) -- oder POST neuer 1h-Block"
-solidtime -> n8n: Bestätigung
+trigger: 1. Commit-Hook {
+  hook: "Git post-commit GET /webhook/git-commit\n(project_id + repo)" { class: git }
+}
 
-n8n -> "Git (lokal)": OK
+fetch: 2. Bestehende Einträge prüfen {
+  get: "n8n GET /time-entries (letzte 5)" { class: n8n }
+  list: "solidtime liefert Einträge" { class: solid }
+  check: "n8n prüft: gleicher Projekt-Eintrag, Ende nach jetzt-30min?" { class: n8n }
+  get -> list -> check
+}
+
+write: 3. Eintrag verlängern oder neu anlegen {
+  put: "n8n PUT time-entries/ID (end=jetzt+30min)\noder POST neuer 1h-Block" { class: n8n }
+  ack: "solidtime bestätigt" { class: solid }
+  ok: "n8n meldet OK zurück an Git-Hook" { class: n8n }
+  put -> ack -> ok
+}
+
+trigger -> fetch -> write
 ```
 
 ### Technische Details
