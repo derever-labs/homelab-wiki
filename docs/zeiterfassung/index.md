@@ -89,29 +89,34 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 classes: {
-  iphone: { style.fill: "#e8f0fe" }
-  n8n: { style.fill: "#fff4e5" }
-  solid: { style.fill: "#e6f4ea" }
+  iphone: { style: { border-radius: 8; stroke: "#1a73e8" } }
+  n8n: { style: { border-radius: 8; stroke: "#e8710a" } }
+  solid: { style: { border-radius: 8; stroke: "#188038" } }
+  phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 start: Ankunft Horw -- Timer starten {
-  hook: "iPhone GET /webhook/arbeit-start" { class: iphone }
-  post: "n8n POST time-entries (start=now, end=null)" { class: n8n }
-  ack: "solidtime antwortet mit Timer-ID" { class: solid }
-  resp: "n8n meldet status: started zurück" { class: n8n }
+  class: phase
+  direction: down
+  hook: "iPhone GET\n/webhook/arbeit-start" { class: iphone }
+  post: "n8n POST time-entries\nstart=now, end=null" { class: n8n }
+  ack: "solidtime:\nTimer-ID" { class: solid }
+  resp: "n8n Response:\nstatus=started" { class: n8n }
   hook -> post -> ack -> resp
 }
 
 stop: Verlassen Horw -- Timer stoppen {
-  hook: "iPhone GET /webhook/arbeit-stop" { class: iphone }
-  find: "n8n GET time-entries?active=true" { class: n8n }
-  cur: "solidtime liefert laufenden Timer" { class: solid }
-  close: "n8n PUT time-entries/{id} (end=now)" { class: n8n }
-  ack: "solidtime bestätigt gestoppten Timer" { class: solid }
-  resp: "n8n meldet status: stopped + duration" { class: n8n }
+  class: phase
+  direction: down
+  hook: "iPhone GET\n/webhook/arbeit-stop" { class: iphone }
+  find: "n8n GET time-entries\n?active=true" { class: n8n }
+  cur: "solidtime:\nlaufender Timer" { class: solid }
+  close: "n8n PUT time-entries\nend=now" { class: n8n }
+  ack: "solidtime:\ngestoppter Timer" { class: solid }
+  resp: "n8n Response:\nstatus=stopped + duration" { class: n8n }
   hook -> find -> cur -> close -> ack -> resp
 }
 
@@ -162,29 +167,36 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 classes: {
-  git: { style.fill: "#e8f0fe" }
-  n8n: { style.fill: "#fff4e5" }
-  solid: { style.fill: "#e6f4ea" }
+  git: { style: { border-radius: 8; stroke: "#1a73e8" } }
+  n8n: { style: { border-radius: 8; stroke: "#e8710a" } }
+  solid: { style: { border-radius: 8; stroke: "#188038" } }
+  phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 trigger: 1. Commit-Hook {
-  hook: "Git post-commit GET /webhook/git-commit\n(project_id + repo)" { class: git }
+  class: phase
+  direction: down
+  hook: "Git post-commit GET\n/webhook/git-commit" { class: git }
 }
 
-fetch: 2. Bestehende Einträge prüfen {
-  get: "n8n GET /time-entries (letzte 5)" { class: n8n }
-  list: "solidtime liefert Einträge" { class: solid }
-  check: "n8n prüft: gleicher Projekt-Eintrag, Ende nach jetzt-30min?" { class: n8n }
+fetch: 2. Einträge prüfen {
+  class: phase
+  direction: down
+  get: "n8n GET /time-entries\nletzte 5" { class: n8n }
+  list: "solidtime:\nbestehende Einträge" { class: solid }
+  check: "n8n: gleicher Projekt-Eintrag,\nEnde nach jetzt-30min?" { class: n8n }
   get -> list -> check
 }
 
-write: 3. Eintrag verlängern oder neu anlegen {
-  put: "n8n PUT time-entries/ID (end=jetzt+30min)\noder POST neuer 1h-Block" { class: n8n }
+write: 3. Verlängern oder neu {
+  class: phase
+  direction: down
+  put: "n8n PUT end=jetzt+30min\noder POST neuer 1h-Block" { class: n8n }
   ack: "solidtime bestätigt" { class: solid }
-  ok: "n8n meldet OK zurück an Git-Hook" { class: n8n }
+  ok: "n8n Response OK\nan Git-Hook" { class: n8n }
   put -> ack -> ok
 }
 
