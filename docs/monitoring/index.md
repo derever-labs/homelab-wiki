@@ -76,10 +76,14 @@ Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alert
 
 **Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
 
-## Uptime Kuma
-Überwacht alle externen und internen Endpunkte via HTTP/TCP-Checks.
-- **Benachrichtigungen:** Bei Ausfall erfolgt eine Meldung via Telegram (konfiguriert in Vault).
-- **Datenbank:** `kuma.db` (Repliziert via Litestream auf NAS).
+## Verfuegbarkeits-Monitoring (Gatus + Uptime Kuma)
+
+Das Homelab hat **zwei** Verfuegbarkeits-Monitore, bewusst mit Aufgabenteilung statt Ueberlappung:
+
+- **Gatus** -- Nur Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher). Jeder Endpoint alarmiert sofort via `custom`-Provider → `telegram-relay` → Topic `monitoring`. Details: [Gatus](../gatus/index.md).
+- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore fuer Batch-Jobs. Alarmierung optional pro Monitor. Details: [Uptime Kuma](../uptime-kuma/index.md).
+
+Die Kern-Infra wird zusaetzlich als zweite Meinung in Kuma dupliziert -- faellt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt.
 
 ## Backup-Monitoring
 
