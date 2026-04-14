@@ -29,6 +29,24 @@ Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (serv
 - **Backup:** täglicher `pg_dumpall`-Job (03:00 UTC) sichert die Authentik-Datenbank nach NFS
 - **Token-Rotation-Warnung:** periodischer Nomad-Batch-Job prüft `rotated_at` im Vault-Metadata; Warnung via Telegram wenn > 80 Tage
 - **Alerting:** Authentik-Event-Matchers leiten sicherheitsrelevante Events via Telegram-Relay weiter
+- **Group-Binding-Drift-Audit:** periodischer Nomad-Batch-Job prüft täglich, ob alle 45 Apps mindestens eine Group-Binding haben. Alarm via Telegram wenn eine App ohne Binding auftaucht (Schutz gegen "46. App wurde ohne Binding hinzugefügt"-Fall)
+
+## Blueprint-Workflow
+
+Authentik-Gruppen und Group-Bindings liegen deklarativ im Repo unter `authentik-blueprints/`. Änderungen folgen dem PR-Review-Prozess:
+
+1. Feature-Branch für die gewünschte Tier-Änderung oder neue App
+2. YAML-File editieren (10/20/30-yamls, je nach Tier)
+3. Lokal validieren mit `ak blueprint validate` in einem Temp-Container
+4. PR gegen `main`, CODEOWNERS-Approval
+5. Merge
+6. Apply: `nomad job run nomad-jobs/identity/authentik.nomad` -- der Worker-Task liest die YAMLs via HCL2 `file()`, schreibt sie ins Container-Volume, der Authentik-Reconciler picked sie auf
+
+Kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT -- Apply ist atomar und manuell ausgelöst. Drift wird vom Audit-Job erkannt, aber nicht automatisch korrigiert.
+
+Rollback-Reihenfolge: `git revert <commit>` → Push → `nomad job run`. Der Reconciler setzt die Bindings auf den vorherigen Stand zurück.
+
+Tier-Zuordnung und App-Liste: [Authentik Referenz](./referenz.md#tier-mapping-stand-2026-04-14).
 
 ## Bekannte Einschränkungen
 
@@ -76,6 +94,16 @@ Details zur Backup-Infrastruktur: [Backup](../backup/index.md).
 ### Layer 5 -- Re-Bootstrap
 
 Letzte Eskalationsstufe: Die komplette Authentik-Installation wird aus Vault-Secrets (`kv/data/authentik`, `kv/data/authentik-outpost`) und dem Nomad-Job neu aufgebaut. Alle Flows, Policies und Anpassungen müssen danach erneut provisioniert werden. Dieser Layer wird praktisch nie benötigt, solange die Datenbank-Backups funktionieren.
+
+### Rollback Group-Bindings
+
+Für den spezifischen Fall "Group-Binding-Rollout hat Problem verursacht":
+
+- **Einzelne App aussperrt legitime User:** Blueprint-Eintrag entfernen (oder `enabled: false`) → `nomad job run`. Reconciler deaktiviert die Binding; Default ist fail-open (App wieder offen für alle)
+- **Gesamtes Tier-Setup kippt:** `git revert` auf den Blueprint-Commit → Push → `nomad job run`
+- **Katastrophe (Blueprint blockiert Reconciler):** Baseline-JSON aus `state/authentik-baseline-YYYY-MM-DD.json` heranziehen und via API-Script den vorherigen Zustand wiederherstellen. Die Baseline ist pre-change-Snapshot aller Apps, Providers, Groups, Bindings und Expression-Policies
+
+Verifikation, dass Breakglass funktioniert: Vor jedem riskanten Rollout-Schritt prüfen, dass `akadmin-breakglass` sich über `/if/admin/` einloggen kann. Der Breakglass-Account hat keinen direkten App-Zugriff (nicht in `admin`), aber die Admin-UI bleibt unabhängig von Policy-Bindings erreichbar.
 
 ## Breakglass-Account
 

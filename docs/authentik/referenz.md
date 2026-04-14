@@ -30,10 +30,10 @@ Diese Seite listet alle konfigurierten Flows, Policies, Stages und OIDC-Provider
 Der Default-Flow wurde für Passwortmanager-Kompatibilität optimiert:
 
 - **Single-Page Login** -- Password Stage ist direkt in der Identification Stage referenziert (`password_stage` Feld), E-Mail und Passwort erscheinen auf einer Seite
-- **Username und E-Mail** -- `user_fields` akzeptiert beide
-- **Recovery-Link** -- die Identification Stage referenziert `default-recovery-flow` über `recovery_flow`. Auf der Login-Seite erscheint dezent "Benutzername oder Passwort vergessen?"
+- **Nur E-Mail** -- `user_fields=["email"]`, damit das Label auf "E-Mail" reduziert bleibt. Username-Login ist im Haupt-Flow nicht mehr möglich; Notzugang via `admin-local-login`
+- **Recovery-Link** -- die Identification Stage referenziert `default-recovery-flow` über `recovery_flow`. Auf der Login-Seite erscheint dezent "Passwort vergessen?"
 - **Passwordless-Link** -- gleiche Mechanik über `passwordless_flow`, Button "Mit Passkey anmelden"
-- **Remember-Me** -- Identification Stage hat `enable_remember_me=true`, Login-Stage hat `remember_me_offset=14 Tage`. Standard-Session ist 1 Tag, mit Remember-Me bis 14 Tage
+- **Fixe 7-Tage-Session** -- Login-Stage hat `session_duration=days=7`, `remember_me_offset=seconds=0`. Die "Angemeldet bleiben"-Checkbox wird nicht mehr gerendert, jede Session läuft automatisch 7 Tage
 - **Terminate other sessions** -- Login-Stage beendet vorhandene Sessions des gleichen Users bei einem Neulogin
 
 ### Passwordless Flow
@@ -235,7 +235,8 @@ Das Default-Brand hat den Titel `ackermannprivat.ch` und verwendet das Custom-CS
 - Labels, Sprachauswahl, Authentik-Footer und Pflichtfeld-Sternchen ausgeblendet
 - Placeholder-Texte auf "E-Mail" und "Passwort" vereinfacht (per `::after` pseudo-element)
 - Recovery-Link und Passkey-Link sitzen dezent zentriert innerhalb des Login-Cards
-- Remember-Me-Checkbox klein und grau unter dem Password-Feld
+- Stage-Konsistenz: Avatar-Banner, "Nicht Sie?"-Link, Helper-Texte und Secondary-Buttons werden in TOTP-, MFA- und E-Mail-Stages ausgeblendet, damit alle Stages gleich aussehen wie der Login
+- Recovery-Sent-Stage zeigt den Bestätigungstext via `:host(ak-stage-email)::before`; der "E-Mail erneut senden"-Button ist als Textlink optisch zurückgenommen
 - Akzent-Farbe `#4f6ef7` (Indigo-Blau)
 - Background `#f0f2f5` (Hellgrau)
 
@@ -260,17 +261,72 @@ Access-Logs in Traefik sind so konfiguriert, dass sicherheitsrelevante Header (`
 
 Authentik verwaltet Benutzer intern. Passwort-Änderungen und Gruppen-Management erfolgen über die Authentik-UI oder via User-Portal / Recovery-Flow.
 
+### Gruppen
+
 | Gruppe | Zugriff | Bemerkung |
 | :--- | :--- | :--- |
-| `authentik Admins` | Voller Zugriff auf alles | Superuser, MFA erzwungen |
-| `admin` | Admin-Zugriff auf Services | MFA erzwungen |
-| `family` | Familien-Zugriff (Jellyfin, Jellyseerr, Media-Stack) | Kein MFA, darf LDAP-Bind |
-| `guest` | Eingeschränkt | — |
+| `authentik Admins` | Admin-UI + System-Admin (nicht automatisch alle Apps) | Superuser-Flag via Gruppe, MFA erzwungen. Bypassed Policy-Bindings NICHT |
+| `admin` | Alle 45 Apps (admin-Tier + inherits via Multi-Binding auch family/guest-Tier) | MFA erzwungen |
+| `family` | family-Tier (immo-monitor) + guest-Tier (jellyseerr) | Kein MFA, darf LDAP-Bind für Jellyfin |
+| `guest` | guest-Tier (jellyseerr) | — |
+| `ldap-searchers` | LDAP-Suche für Jellyfin-Bind-User (`svc-jellyfin-ldap`) | Rolle `ldap-searcher` |
 
 Admin-Accounts:
 
-- `akadmin` -- primärer Admin. Credentials in 1Password unter "Authentik HOME" (inkl. Live-OTP-Feld)
-- `akadmin-breakglass` -- Lifeline-Account, getrennte Credentials in 1Password unter "Authentik Breakglass (akadmin-breakglass)". Nutzung und Konzept: siehe [Betrieb](./betrieb.md)
+- `akadmin` -- primärer Admin. In `authentik Admins` UND `admin`. Credentials in 1Password unter "Authentik HOME" (inkl. Live-OTP-Feld)
+- `akadmin-breakglass` -- Lifeline-Account, nur in `authentik Admins`. Getrennte Credentials in 1Password unter "Authentik Breakglass (akadmin-breakglass)". Hat keinen direkten App-Zugang, dient als Admin-UI-Fallback. Nutzung: siehe [Betrieb](./betrieb.md)
+
+### Group-Binding-Strategie
+
+Alle 45 Applications sind explizit einer der drei Tiers (`admin`, `family`, `guest`) zugeordnet. Autoritative Zuordnung und Apply-Mechanik liegen deklarativ im Ordner [`authentik-blueprints/`](https://github.com/derever-labs/PRIVAT-infra/tree/main/authentik-blueprints) -- siehe Abschnitt [Blueprint-Quelle](#blueprint-quelle).
+
+Kernregeln:
+
+- **`policy_engine_mode = any`** auf jeder App (OR-Logik: User darf rein sobald eine gebundene Gruppe passt)
+- **Multi-Binding pro Tier-Übergang.** Authentik 2026.2.x vererbt Gruppen-Mitgliedschaft über das `parent`-Feld NICHT transitiv (empirisch bestätigt per `check_access`-Endpoint am 2026-04-14). Deshalb bekommen niederschwellig berechtigte Apps mehrere Bindings:
+
+  - **guest-Tier** (Apps, die jeder authentifizierte User sehen soll): Bindings auf `admin` (order 0), `family` (order 1), `guest` (order 2)
+  - **family-Tier**: Bindings auf `admin` (order 0), `family` (order 1)
+  - **admin-Tier**: Binding nur auf `admin` (order 0)
+
+- **Keine Negate-Flags.** Negate-Interaktion mit `policy_engine_mode=any` ist bekannt paradox (Issues #9627, #17692 im Authentik-Repo)
+- **`parent`-Feld bleibt leer.** Da Vererbung nicht wirkt, bringt es nichts ausser UI-Kosmetik
+
+Superuser-Verhalten: Mitglieder von `authentik Admins` (is_superuser=True) umgehen Policy-Bindings NICHT. Der `superuser_full_list=true`-Flag zeigt Superusern die App-Liste vollständig in der Admin-UI, die tatsächliche Authorization läuft aber über das Binding. akadmin muss deshalb in `admin` bleiben, sonst verliert er nach Rollout den App-Zugang.
+
+### Tier-Mapping (Stand 2026-04-14)
+
+**guest-Tier** (1 App)
+
+- `jellyseerr`
+
+**family-Tier** (1 App)
+
+- `immo-monitor`
+
+**admin-Tier** (43 Apps)
+
+- Core/OIDC: `proxmox`, `gitea-oidc`, `grafana-oidc`, `open-webui-oidc`, `paperless-oidc`, `grafana`, `gitea`
+- Dashboards: `homelab-admin`, `homelab-family`, `homelab-guest`, `homepage-intra`, `flame`, `flame-intra`
+- Observability: `gatus`, `uptime-kuma`, `loki`, `influxdb`, `metabase`
+- Storage/DB: `linstor-gui`, `dbgate`
+- Docs/Knowledge: `vitepress-wiki`
+- Media-Stack: `audiobookshelf`, `jellystat`, `sonarr`, `radarr`, `lazylibrarian`, `sabnzbd`, `prowlarr`, `stash`, `stash-secure`, `notifiarr`
+- Office/Productivity: `kimai`, `solidtime`, `tandoor`
+- Utilities: `czkawka`, `handbrake`, `guacamole`, `meshcmd`, `zigbee2mqtt`
+- Download/Media-Tools: `special-youtube-dl`, `special-yt-dlp`, `video-grabber`, `youtube-dl`
+
+### Blueprint-Quelle
+
+Die Tier-Zuordnung und Gruppen-Bindings werden über Authentik-Blueprints verwaltet (deklarative YAML im Git-Repo):
+
+- **Pfad:** `authentik-blueprints/` im Infra-Repo (Subfolder, kein Submodule)
+- **Files:** `00-groups.yaml` (Gruppen), `10-apps-guest-tier.yaml`, `20-apps-family-tier.yaml`, `30-apps-admin-tier.yaml`
+- **Einbindung:** Der `authentik.nomad`-Worker-Task liest die YAMLs beim `nomad job run` via HCL2 `file()` und mountet den Ordner read-only nach `/blueprints/homelab/` im Container. Der Authentik-Reconciler entdeckt und appliziert sie automatisch (Labels `blueprints.goauthentik.io/system: true` + `instantiate: true`)
+- **Kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT.** Apply = `nomad job run nomad-jobs/identity/authentik.nomad`
+- **Änderungs-Workflow:** Feature-Branch → PR → CODEOWNERS-Review → Merge → manueller Apply über Nomad. Rollback = `git revert` + erneuter `nomad job run`
+- **Validierung lokal:** `docker run --rm -v $PWD:/bp ghcr.io/goauthentik/server:2026.2.2 ak blueprint validate /bp/authentik-blueprints/*.yaml`
+- **Readme im Repo:** siehe `authentik-blueprints/README.md` für Tier-Logik-Details und App-Aufnahme-Workflow
 
 ## Alerting und Events
 
