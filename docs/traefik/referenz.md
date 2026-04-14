@@ -26,13 +26,15 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-auth` | secure-headers → authentik-forward-auth → ipAllowList → error-pages | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth + Error Pages |
+| `intern-auth` | secure-headers → authentik-forward-auth → ipAllowList → error-pages | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth + Error Pages. Default für interne Apps |
+| `intern-auth-strict` | secure-headers → authentik-forward-auth → ipAllowList → error-pages-strict | Wie `intern-auth`, aber fängt zusätzlich 401/403 vom Backend ab (Maintenance-Page statt rohem Fehler). Für yt-dlp, special-youtube-dl, special-yt-dlp, video-grabber |
 
 ### Für externen Zugriff mit Authentik-Login
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
 | `public-auth` | crowdsec → secure-headers → authentik-forward-auth → error-pages | CrowdSec + Sicherheits-Header + Authentik ForwardAuth + Error Pages |
+| `public-auth-strict` | crowdsec → secure-headers → authentik-forward-auth → error-pages-strict | Wie `public-auth`, aber mit 401/403 in Error Pages. Für externe Apps mit UI-kaputten Backend-401/403-Responses |
 
 ### Ohne Login
 
@@ -116,8 +118,16 @@ Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit
 
 **Bewusst ausgenommen:**
 - 400 (Bad Request) -- Backends liefern oft eigene JSON-Bodies mit Validierungsdetails
-- 401 (Unauthorized) -- würde den Authentik-Login-Flow (ForwardAuth-Redirect) unterbrechen
-- 403 (Forbidden) -- gehört dem Auth-Stack, nicht den Error Pages
+- 401 (Unauthorized) -- Authentik-Outpost liefert bei fehlender Session 302-Redirect (nicht 401), aber manche Backends senden eigene 401 für API-Contracts -- default reicht 401 durch
+- 403 (Forbidden) -- Authentik-Outpost redirectet bei fehlender Berechtigung ebenfalls auf 302 zur Access-Denied-Seite; 403 kommt typischerweise vom Backend und bleibt unangetastet
+
+### error-pages-strict
+
+Variante von `error-pages`, die zusätzlich 401 und 403 auf die Maintenance-Page umleitet. Nur für Apps einsetzen, deren Backend-401/403-Responses UI-kaputt oder JSON-only sind (z.B. yt-dlp-Container liefert rohes "403 Forbidden"-Plain-HTML). Verwendet in den Chains `intern-auth-strict` und `public-auth-strict`.
+
+::: warning Nicht global einsetzen
+API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-Renewal-Trigger). Strict-Chain würde diese Semantik brechen. Deshalb gezielt nur für die vier Media-Tool-Apps aktiviert.
+:::
 
 **Fallback:** Für unbekannte Codes (z.B. 418, 422) existieren generische Fallback-Seiten (`4xx.html`, `5xx.html`) via nginx `try_files`. Die Catch-All-Seiten enthalten bewusst keine Links zu internen Services um Information Disclosure bei Subdomain-Scans zu vermeiden.
 
