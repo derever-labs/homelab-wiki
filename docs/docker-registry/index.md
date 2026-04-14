@@ -12,7 +12,7 @@ tags:
 
 # Zot Container Registry
 
-Zot ist eine OCI-native Container Registry mit S3-Backend und Pull-Through Cache für Docker Hub, ghcr.io, quay.io und lscr.io. Als Nomad System Job läuft eine Instanz auf jedem Client-Node und teilt sich den S3-Bucket auf dem NAS.
+Zot ist eine OCI-native Container Registry mit S3-Backend und Pull-Through Cache für Docker Hub, ghcr.io und quay.io. Als Nomad System Job läuft eine Instanz auf jedem Client-Node und teilt sich den S3-Bucket auf dem NAS.
 
 ## Übersicht
 
@@ -28,7 +28,7 @@ Zot ist eine OCI-native Container Registry mit S3-Backend und Pull-Through Cache
 
 | Aspekt | Docker Registry v2 | Zot |
 | :--- | :--- | :--- |
-| **Pull-Through Cache** | Nur Docker Hub | Docker Hub, ghcr.io, quay.io, lscr.io |
+| **Pull-Through Cache** | Nur Docker Hub | Docker Hub, ghcr.io, quay.io |
 | **UI** | Keines | Eingebaut |
 | **Search** | Nein | Ja (GraphQL API) |
 | **OCI-native** | Nein (Docker Schema) | Ja |
@@ -43,7 +43,7 @@ S3: "MinIO S3 (NAS)\nBucket: zot-registry" { shape: cylinder }
 Zot1: "Zot\nlocalhost:5000\n(client-04)" { tooltip: 10.0.2.124 }
 Zot2: "Zot\nlocalhost:5000\n(client-05)" { tooltip: 10.0.2.125 }
 Zot3: "Zot\nlocalhost:5000\n(client-06)" { tooltip: 10.0.2.126 }
-Cache: "On-Demand Proxy Cache\nDocker Hub, ghcr.io,\nquay.io, lscr.io"
+Cache: "On-Demand Proxy Cache\nDocker Hub, ghcr.io,\nquay.io"
 
 S3 -> Zot1
 S3 -> Zot2
@@ -67,12 +67,16 @@ Die vollständige Konfiguration (Zot Config, S3 Storage, Proxy Cache, Docker Hub
 
 ### Proxy Cache Registries
 
-| Registry | URL | Beschreibung |
-| :--- | :--- | :--- |
-| Docker Hub | registry-1.docker.io | Mit Docker Hub Credentials (Rate Limit 200/6h) |
-| GitHub CR | ghcr.io | On-Demand |
-| Quay.io | quay.io | On-Demand |
-| LinuxServer | lscr.io | On-Demand |
+| Registry | URL | Prefix | Beschreibung |
+| :--- | :--- | :--- | :--- |
+| Docker Hub | registry-1.docker.io | `library/**`, `**` | Mit Docker Hub Credentials (Rate Limit 200/6h) |
+| GitHub CR | ghcr.io | `ghcr.io/**` | On-Demand |
+| Quay.io | quay.io | `quay.io/**` | On-Demand |
+| LinuxServer via GHCR | ghcr.io | `linuxserver/**` | On-Demand -- Image-Pfade bleiben `linuxserver/...`, Upstream ist ghcr.io |
+
+::: info LinuxServer.io: Upstream ghcr.io statt lscr.io
+Image-Pfade in den Nomad-Jobs lauten weiterhin `linuxserver/jellyfin` o.ä. (kein `ghcr.io/`-Prefix), obwohl ZOT intern von `ghcr.io` pullt. Grund: `lscr.io` ist kein eigenständiges OCI-Registry, sondern ein Scarf-Redirect-Service -- der `/v2/`-Endpunkt antwortet mit 405, und Auth-Tokens kommen ohnehin von `ghcr.io`. ZOT kam mit dem Redirect nicht sauber klar. Umstellung auf `ghcr.io` als direktem Upstream entfernt die Indirektion. Die Tags auf `ghcr.io/linuxserver/...` sind identisch mit jenen auf `lscr.io/linuxserver/...`, deshalb können die Nomad-Job-Pfade unverändert bleiben.
+:::
 
 ### On-Demand Sync Verhalten
 
@@ -151,6 +155,7 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 | 21.02.2026 | Fix: `compat: ["docker2s2"]` für Multi-Arch Push Support |
 | 22.02.2026 | Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` — verhindert 5min+ Blockierungen bei DNS- oder Rate-Limit-Problemen |
 | 18.03.2026 | S3-Credentials aus Nomad-Job in Vault migriert (`kv/data/zot-s3`), Vault Workload Identity aktiviert |
+| 14.04.2026 | Upstream `lscr.io` → `ghcr.io` umgestellt (Scarf-Redirect war OCI-inkompatibel) |
 
 ## Verwandte Seiten
 

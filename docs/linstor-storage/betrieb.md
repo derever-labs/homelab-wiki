@@ -151,16 +151,9 @@ Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert u
 
 ## LINBIT GUI
 
-| Eigenschaft | Wert |
-|-------------|------|
-| URL | `https://linstor-gui.ackermannprivat.ch` |
-| Deployment | Nomad Service Job (`system/linstor-gui.nomad`) |
-| Image | Self-built (Details im Nomad-Job `system/linstor-gui.nomad`) |
-| Auth | Authentik ForwardAuth (`intern-auth`) |
-| Backend | `linstor-controller.service.consul:3370` (Consul DNS) |
-| Constraint | `vm-nomad-client-05`, `vm-nomad-client-06` |
-
-Die GUI verbindet sich automatisch mit dem aktiven Linstor Controller via Consul DNS -- bei einem Controller-Failover bleibt die GUI funktional.
+::: warning Archiviert 14.04.2026
+Der `linstor-gui`-Job wurde archiviert (`system/linstor-gui.nomad.deprecated`). Grund: LINBIT publiziert `linstor-gui` nirgends öffentlich als Docker-Image, der bisher verwendete Tag `v2.4.0` liess sich nicht mehr nachvollziehen. Operations laufen über die `linstor` CLI auf den Controller-Nodes; eine GUI ist für den Betrieb nicht erforderlich. Bei Bedarf kann das Image aus dem GitHub-Repo (`LINBIT/linstor-gui`, letzter Release `v1.8.2`) selbst gebaut werden.
+:::
 
 ## CSI Boot Race Condition
 
