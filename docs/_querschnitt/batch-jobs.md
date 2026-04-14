@@ -109,7 +109,7 @@ Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../ba
 | `renovate` | batch | Täglich 05:00 | Kontrollierte Docker-Image-Updates via GitHub PRs | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, NFS-Cache, Uptime Kuma Push |
 
 ::: info Renovate ersetzt Watchtower
-Watchtower (`watchtower.nomad`, `count = 0`) ist deaktiviert. Renovate erstellt Pull Requests für veraltete Images statt sie direkt zu aktualisieren. Patch-Updates werden automatisch gemerged, Major-Updates und stateful Services (Datenbanken, Authentik) erfordern manuelles Review. Details: [Renovate](./renovate.md)
+Watchtower wurde am 2026-04-14 vollständig zurückgebaut. Renovate erstellt Pull Requests für veraltete Images statt sie direkt zu aktualisieren. Patch-Updates werden automatisch gemerged, Major-Updates und stateful Services (Datenbanken, Authentik) erfordern manuelles Review. Details: [Renovate](./renovate.md)
 :::
 
 ## Reihenfolge und Abhängigkeiten

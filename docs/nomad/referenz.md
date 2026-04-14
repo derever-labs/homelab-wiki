@@ -15,7 +15,7 @@ Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichn
 
 | Verzeichnis | Inhalt |
 |-------------|--------|
-| batch-jobs/ | Watchtower, Docker Prune, Daily Cleanup/Reboot/Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup |
+| batch-jobs/ | Renovate, Docker Prune, Daily Cleanup/Reboot/Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup |
 | databases/ | PostgreSQL (DRBD), DbGate, OpenLDAP (Legacy, Abschaltung offen) |
 | infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
@@ -28,7 +28,7 @@ Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichn
 
 ### Docker Driver
 
-Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der internen [Zot Registry](../docker-registry/) bezogen. Watchtower (batch-jobs/) prüft regelmässig auf neue Image-Versionen.
+Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der internen [Zot Registry](../docker-registry/) bezogen. Image-Updates laufen kontrolliert über [Renovate](../_querschnitt/renovate.md), das Pull Requests für veraltete Images erstellt.
 
 ### NFS Volumes
 
