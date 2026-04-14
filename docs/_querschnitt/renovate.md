@@ -14,11 +14,7 @@ Renovate Self-Hosted scannt täglich alle Repositories im `derever`-Account nach
 
 ## Warum
 
-Watchtower hat Container direkt aktualisiert -- ohne Review, ohne Rollback-Möglichkeit, ohne Audit-Trail. Das war besonders bei stateful Services (Datenbanken, Authentik) riskant. Renovate löst dieses Problem durch kontrollierte Updates via Pull Requests mit differenziertem Auto-Merge.
-
-::: info Watchtower deaktiviert
-`watchtower.nomad` ist auf `count = 0` gesetzt und wird nicht mehr ausgeführt. Renovate ist der alleinige Update-Mechanismus.
-:::
+Bis April 2026 lief Watchtower als Update-Mechanismus. Es hat Container direkt aktualisiert -- ohne Review, ohne Rollback-Möglichkeit, ohne Audit-Trail. Das war besonders bei stateful Services (Datenbanken, Authentik) riskant. Renovate löst dieses Problem durch kontrollierte Updates via Pull Requests mit differenziertem Auto-Merge und ist seit 2026-04-14 der alleinige Update-Mechanismus -- Watchtower wurde vollständig zurückgebaut.
 
 ## Funktionsweise
 

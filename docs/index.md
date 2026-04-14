@@ -107,7 +107,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | :--- | :--- |
 | [Cluster-Restart](./_querschnitt/cluster-restart.md) | Runbook für Cluster-Neustart |
 | [Smart Shutdown](./_querschnitt/smart-shutdown.md) | Graceful Drain für Nomad und Linstor |
-| [Batch Jobs](./_querschnitt/batch-jobs.md) | Periodische Aufgaben (Watchtower, Backups, Cleanup) |
+| [Batch Jobs](./_querschnitt/batch-jobs.md) | Periodische Aufgaben (Renovate, Backups, Cleanup) |
 | [Datenbank-Architektur](./_querschnitt/datenbank-architektur.md) | PostgreSQL Shared Cluster, DRBD |
 | [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | Abhängigkeitsdiagramm aller Services |
 | [Datenstrategie](./_querschnitt/datenstrategie.md) | Speicher-Ebenen, Replikation, Backups |
