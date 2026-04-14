@@ -125,43 +125,54 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 classes: {
-  gh: { style.fill: "#e8f0fe" }
-  runner: { style.fill: "#fff4e5" }
-  vault: { style.fill: "#e6f4ea" }
-  nomad: { style.fill: "#fce8e6" }
+  gh: { style: { border-radius: 8; stroke: "#1a73e8" } }
+  runner: { style: { border-radius: 8; stroke: "#e8710a" } }
+  vault: { style: { border-radius: 8; stroke: "#188038" } }
+  nomad: { style: { border-radius: 8; stroke: "#d93025" } }
+  phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 trigger: 1. Trigger {
-  push: "push auf main\npaths matched" { class: gh }
-  dispatch: "GitHub Actions dispatcht Workflow" { class: gh }
+  class: phase
+  direction: down
+  push: "GitHub: push auf main" { class: gh }
+  dispatch: "GitHub Actions\ndispatcht Workflow" { class: gh }
   push -> dispatch
 }
 
 setup: 2. Runner-Setup {
-  prep: "checkout + install nomad CLI" { class: runner }
+  class: phase
+  direction: down
+  prep: "checkout + install\nnomad CLI" { class: runner }
 }
 
-token: 3. Kurzlebigen Nomad-Token holen {
-  req: "Runner GET nomad/creds/github-deploy\n(Workload-Token)" { class: runner }
-  engine: "Vault Engine POST /v1/acl/token\n(Engine-Mgmt-Token)" { class: vault }
-  issue: "Nomad liefert Client-Token\nTTL 30m, max 1h" { class: nomad }
-  deliver: "Vault gibt secret_id + lease_id an Runner" { class: vault }
+token: 3. Token holen {
+  class: phase
+  direction: down
+  req: "Runner GET\nnomad/creds/github-deploy" { class: runner }
+  engine: "Vault POST /v1/acl/token" { class: vault }
+  issue: "Nomad: Client-Token\nTTL 30m, max 1h" { class: nomad }
+  deliver: "secret_id + lease_id\nan Runner" { class: vault }
   req -> engine -> issue -> deliver
 }
 
 deploy: 4. Deploy {
-  diff: "git diff + Blocklist-Filter" { class: runner }
-  plan: "nomad job plan\n(X-Nomad-Token)" { class: runner }
+  class: phase
+  direction: down
+  diff: "git diff +\nBlocklist-Filter" { class: runner }
+  plan: "nomad job plan" { class: runner }
   run: "nomad job run -detach" { class: runner }
   diff -> plan -> run
 }
 
 cleanup: 5. Cleanup {
-  revoke: "Runner PUT sys/leases/revoke" { class: runner }
-  engine: "Vault widerruft Client-Token bei Nomad" { class: vault }
+  class: phase
+  direction: down
+  revoke: "Runner PUT\nsys/leases/revoke" { class: runner }
+  engine: "Vault widerruft\nClient-Token" { class: vault }
   revoke -> engine
 }
 
@@ -216,12 +227,16 @@ Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
 ### Blocklist
 
-Folgende Verzeichnisse werden von der automatischen Pipeline ausgeschlossen und müssen manuell deployed werden:
+Nur die CD-Pipeline-Bootstrap-Trägerschicht wird ausgeschlossen und muss manuell deployed werden. Grund: Wenn einer dieser Jobs kaputt deployed wird, kann die Pipeline selbst nicht mehr fixen (Bootstrap-Deadlock):
 
-- `infrastructure/`, `ingress/`, `system/`, `databases/`, `identity/`, `volumes/`, `monitoring/`
+- `infrastructure/zot-registry.nomad` -- Image-Registry, von der alle Nodes pullen
+- `infrastructure/github-runner.nomad` -- Runner, der den Workflow ausführt
+- `batch-jobs/renovate.nomad` -- Tool, das die PRs erzeugt
 
-::: warning Nur Service-Jobs via Pipeline
-Die Blocklist schützt kritische Infrastruktur-Jobs vor versehentlichen automatischen Deploys. Alles ausserhalb der Blocklist (typisch: Anwendungs-Services) wird automatisch deployed.
+Alles andere -- Vault, Traefik, Datenbanken, Authentik, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
+
+::: info Bewusste Entscheidung
+Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault/Traefik/Authentik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
 :::
 
 ## Aktive Pipelines im Überblick
