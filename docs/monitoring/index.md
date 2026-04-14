@@ -40,10 +40,14 @@ Erfolgt via Authentik ForwardAuth. Nur Benutzer der Gruppe `admin` haben Zugriff
 ### Deployment
 Grafana nutzt PostgreSQL (`postgres.service.consul`) als Backend-Datenbank für Session-State, Unified Alerting und Konfiguration. Das frühere Linstor CSI Volume `grafana-data` (SQLite) wurde entfernt und deregistriert.
 
-- **Dashboards:** JSON-Dateien unter `/nfs/docker/grafana/dashboards/` (aus Git, read-only gemountet).
+- **Dashboards:** GitOps via Grafana HTTP-API. Quelle-der-Wahrheit sind die JSON-Dateien im Repo unter `nomad-jobs/monitoring/grafana-dashboards/`. Ein GitHub-Actions Workflow pusht geänderte Dashboards direkt per `POST /api/dashboards/db`. Kein NFS-Mount, keine File-Provisionierung mehr.
 - **Datasources:** Via Nomad Template aus Vault Secrets (`kv/grafana`, `kv/influxdb`, `kv/jellystat`) provisioniert.
 - **Alerting:** Unified Alerting aktiv, Alert Rules via File Provisioning (siehe unten).
-- **Scheduling:** Kein Node-Constraint mehr (CSI-Abhängigkeit entfällt), Affinität auf client-05/06 für NFS-Nähe beibehalten.
+- **Scheduling:** Kein Node-Constraint mehr (CSI-Abhängigkeit entfällt), Affinität auf client-05/06 beibehalten.
+
+::: info Auth-Kette für den GitOps-Push
+Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `github-runner-deploy` (gebunden an `nomad_job_id=github-runner`) bekommt die Policy `grafana-deploy-fetch`, die nur das Feld `service_account_token` in `kv/data/grafana` lesen darf. Die Grafana-Adresse wird dynamisch über den Consul-Catalog aufgelöst, damit der Workflow unabhängig von dynamischen Nomad-Ports funktioniert und Authentik umgeht. Pattern ist symmetrisch zu `nomad-deploy-fetch` -- siehe [GitHub Runner Referenz](../github-runner/referenz.md).
+:::
 
 ### Alerting (Unified Alerting)
 Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alerts.
@@ -223,7 +227,14 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 
 ## Wartung
 ### Grafana Dashboards
-Dashboards werden teilweise als JSON in `infra/nomad-jobs/monitoring/grafana-dashboards/` verwaltet oder direkt in der UI erstellt.
+Dashboards sind als JSON unter `nomad-jobs/monitoring/grafana-dashboards/` im Git versioniert. Jeder Merge auf `main` triggert den Workflow `deploy-grafana-dashboards.yml`, der nur die geänderten Dashboards via API nach Grafana pusht. Rollbacks laufen über `git revert` -- der Workflow pushed die vorherige Version zurück. Manuelle UI-Änderungen gehen bis zum nächsten API-Push -- für dauerhafte Änderungen muss das JSON ins Git.
+
+::: tip Initial-Upload / force-all
+Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dashboards (ausser `_backup`/`_research`) einmal durchpusht. Wird nach grösseren Refactorings oder bei Neueinrichtung einer Grafana-Instanz genutzt.
+:::
+
+### InfluxDB Downsampling-Tasks
+6 Flux-Tasks in der InfluxDB-UI aggregieren Rohdaten in 1y- und 5y-Buckets (`telegraf`, `proxmox`, `homeassistant`). Source-of-Truth ist `nomad-jobs/monitoring/influxdb-tasks/` -- das README dort dokumentiert Task-IDs, Zeitpläne und den Import-Pfad in die UI. Jeder Task sendet einen Heartbeat an einen Uptime-Kuma Push-Monitor, sodass ein Task-Ausfall innert ~1h auffällt.
 
 ## Verwandte Seiten
 

@@ -34,7 +34,7 @@ Der Runner-Job authentifiziert sich bei Vault über die JWT-Auth-Methode `jwt-no
 - **Auth-Method** -- `auth/jwt-nomad`
 - **Role** -- `github-runner-deploy`
   - `bound_claims.nomad_job_id` == `github-runner`
-  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`
+  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`, `grafana-deploy-fetch`
 - **Vault-Stanza im Job** -- `vault { role = "github-runner-deploy" }`
 
 Die Workload-Identity-Role ist damit zugleich die Brücke zur CD-Pipeline: Derselbe Runner erhält sowohl Zugriff auf seinen PAT als auch auf die Nomad Secret Engine.
@@ -208,6 +208,14 @@ Minimale Permissions für den kurzlebigen Nomad-Token:
 
 Policy-Datei: `homelab-hashicorp-stack/nomad-configs/policies/github-deploy.hcl`
 
+### Vault-Policy `grafana-deploy-fetch`
+
+Zweite CD-Pipeline: erlaubt dem Runner-Workload, das Grafana Service-Account Token aus Vault zu lesen, um Dashboards über die Grafana HTTP-API zu deployen.
+
+- `read` auf `kv/data/grafana` (Feld `service_account_token` wird im Workflow extrahiert)
+
+Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/grafana-deploy-fetch.hcl`. Das zugehörige Grafana Service-Account (`sa-1-gitops-dashboards`, Admin-Rolle) und der dazugehörige Token ohne Expiry existieren nur in Grafana und Vault, parallel als 1Password-Item "Grafana GitOps SA".
+
 ## Workflow: `deploy-nomad-jobs.yml`
 
 Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
@@ -239,9 +247,35 @@ Alles andere -- Vault, Traefik, Datenbanken, Authentik, Monitoring -- wird autom
 Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault/Traefik/Authentik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
 :::
 
+## Workflow: `deploy-grafana-dashboards.yml`
+
+Workflow-Datei im Repo: `.github/workflows/deploy-grafana-dashboards.yml`
+
+- **Trigger** -- push auf `main`, paths-Filter auf `monitoring/grafana-dashboards/*.json`; zusätzlich `workflow_dispatch` mit Flag `force_all`
+- **Concurrency-Group** -- `grafana-dashboards-deploy`
+- **Checkout** -- SHA-gepinnte `actions/checkout@v4.2.2`
+
+### Pipeline-Ablauf
+
+1. Checkout des Repositories
+2. Vault-Token-Fetch: das Grafana Service-Account Token aus `kv/data/grafana` (über Policy `grafana-deploy-fetch`)
+3. Grafana-URL-Resolve: Abfrage des Consul-Catalogs (`/v1/catalog/service/grafana`) liefert Host und dynamischen Nomad-Port -- der Workflow umgeht damit Traefik/Authentik und ist unabhängig von Port-Churn
+4. Diff-Filter: geänderte Dashboard-JSONs ermitteln (im `workflow_dispatch`-Modus mit `force_all`: alle Dateien in `grafana-dashboards/`, Unterordner mit führendem Underscore wie `_backup/`, `_research/` ausgeschlossen)
+5. Für jede Datei: `POST /api/dashboards/db` mit `overwrite: true` und einer Commit-Message als Audit-Trail
+6. Failed-Counter am Ende gibt den Exit-Code
+
+### Warum API statt File-Provisioning
+
+Die frühere NFS-Lösung (`/nfs/docker/grafana/dashboards` read-only mount + Grafana Dashboard-Provider) hatte drei Probleme: keine Git-Sync-Automation (manuelle `rsync`-Skripte), keine Audit-Spur wer wann welchen Dashboard-Change deployed hat, und ein impliziter Kopplungspunkt an die NAS-Verfügbarkeit. Der API-Push invertiert das Modell: Grafanas PostgreSQL ist State-of-Record, die JSONs im Repo sind die Sourcecodes, GitHub Actions ist der Sync.
+
+::: warning Provisioned Dashboards beim Umbau
+Ein File-provisioned Dashboard bleibt in Grafana als "provisioned" markiert, auch nach einem API-Overwrite. Wird der Provider anschliessend entfernt, räumt Grafana die provisionierten Dashboards auf. Beim einmaligen Wechsel mussten die betroffenen Dashboards deshalb nach dem Provisioner-Entfernen ein zweites Mal via API gepusht werden -- dann sind sie reguläre DB-Einträge.
+:::
+
 ## Aktive Pipelines im Überblick
 
 - **deploy-nomad-jobs.yml** -- Vault-basiertes CD, alle `nomad-jobs/**/*.nomad` ausserhalb der Blocklist
+- **deploy-grafana-dashboards.yml** -- Grafana Dashboards via API-Push, Trigger auf `monitoring/grafana-dashboards/*.json`
 - **deploy.yml** (immo-monitor Repo) -- Alloc-Stop-Refresh via statischem `NOMAD_TOKEN` Repo-Secret (älteres Pattern)
 
 ## Verwandte Seiten
