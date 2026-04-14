@@ -29,7 +29,7 @@ Traefik: Traefik
 Plugin: CrowdSec Bouncer (Traefik Plugin)
 Backend: Backend Service
 Engine: CrowdSec Engine (LAPI)
-Logs: Traefik Logs { tooltip: "/var/log/docker/traefik/" }
+Logs: Traefik Container-Logs { tooltip: "Docker-Socket Source (stdout des Traefik-Containers)" }
 
 Internet -> Traefik
 Traefik -> Plugin
@@ -49,7 +49,7 @@ Analysiert Traefik Access Logs und erkennt Angriffspatterns anhand von Szenarien
 | Eigenschaft | Wert |
 | :--- | :--- |
 | **Image** | `crowdsecurity/crowdsec` (gepinnt, siehe Docker Compose) |
-| **Log-Pfad** | `/var/log/traefik/*` (read-only) |
+| **Log-Quelle** | Docker-Socket (`/var/run/docker.sock:ro`), `source: docker` + `container_name: [traefik]` in `acquis.yaml` |
 | **Config** | `/nfs/docker/crowdsec/config` |
 | **Daten** | `/nfs/docker/crowdsec/data` |
 

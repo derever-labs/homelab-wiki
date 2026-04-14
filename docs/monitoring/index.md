@@ -208,7 +208,7 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | Vault | `INFO` | `ansible/roles/vault/defaults/main.yml` |
 | Authentik | `info` | `identity/authentik.nomad` |
 | Traefik (Core) | `WARN` | `traefik.yml.j2` |
-| Traefik (Access) | aktiv (JSON) | Separates Access-Log, `minDuration: 10ms` |
+| Traefik (Access) | aktiv (JSON, stdout) | Filter: `statusCodes: 400-599` + `minDuration: 2s` + `retryAttempts`; Rotation via Docker-Log-Driver |
 
 ### Log-Abfrage in Grafana
 - Datasource: **Loki** (uid: `loki-logs`)
