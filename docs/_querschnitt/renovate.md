@@ -38,12 +38,16 @@ Renovate verwendet drei Custom Regex Manager, um verschiedene Image-Formate in N
 ### Auto-Merge-Regeln
 
 - **Patch-Updates** (z.B. 1.2.3 → 1.2.4): Automatisch gemerged
-- **Minor-Updates** (z.B. 1.2 → 1.3): Pull Request, manuelles Review
+- **Digest-Updates** (Layer-Rebuilds ohne Tag-Änderung): Automatisch gemerged
+- **Vulnerability-Alerts** (CVE-Updates, GitHub/OSV-getrieben): Automatisch gemerged, Label `security`. Diese Regel überschreibt `matchUpdateTypes`, greift also auch bei Minor- oder Major-Sprüngen wenn eine CVE der Anlass ist.
+- **Minor-Updates** (z.B. 1.2 → 1.3): Pull Request mit Label `minor-update`, manuelles Review
 - **Major-Updates** (z.B. 1.x → 2.x): Pull Request mit Label `major-update`, kein Auto-Merge
+
+Kombiniert mit der schlanken CD-Pipeline-Blocklist bedeutet das: Patches, Digests und Security-Fixes landen nach Merge automatisch im Cluster (Merge = Review-Gate). Siehe [github-runner/referenz.md](../github-runner/referenz.md#blocklist).
 
 ### Stateful-Blocklist
 
-Folgende Packages werden nie automatisch gemerged, unabhängig vom Update-Typ: `postgres`, `redis`, `mariadb`, `mongo`, `couchdb`, `influxdb`, `authentik`, `ldap`, `keycloak`, `gitea`, `vaultwarden`, `nextcloud`. Diese PRs erhalten das Label `stateful`.
+Folgende Packages werden nie automatisch gemerged, auch nicht bei Patch/Digest oder Vulnerability-Alerts: `postgres`, `redis`, `mariadb`, `mongo`, `couchdb`, `influxdb`, `authentik`, `ldap`, `keycloak`, `gitea`, `vaultwarden`, `nextcloud`, `n8nio/n8n`. Diese PRs erhalten das Label `stateful`. Grund: Breaking-Changes via Patch-Level-Tags sind bei stateful Services real (Schema-Migrationen, n8nio/n8n ist ein bekannter Fall).
 
 ## Dependency Dashboard
 
