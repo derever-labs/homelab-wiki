@@ -89,14 +89,67 @@ Scraper -> NFS: Schreibt Fotos
 
 ## Seiten
 
-- **Home** (`/`): KPIs + neue Inserate seit letztem Besuch (localStorage)
-- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich, CHF/m²-Filter, "vermietet"-Badge für deaktivierte Listings
-- **Favoriten** (`/favoriten`): Gleicher Card-Grid wie Inserate, vorgefiltert auf `isFavorite`
-- **Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld, Preishistorie
-- **Karte** (`/karte`): CartoDB Positron, farbkodierte CircleMarker (CHF/m²), Bauzonen-WMS (Aargau), Heatmap-Toggle
-- **Überblick** (`/ueberblick`): Charts inkl. Median CHF/m² pro Gemeinde (volle Breite)
-- **Vergleich** (`/vergleich`): Side-by-Side Tabelle für max. 3 Inserate
-- **About** (`/about`): Methoden-Transparenz -- Datenquellen, Farbskala, "vermietet"-Heuristik, Bauzonen-Layer
+- **Home** (`/`): Dashboard mit KPIs und Überblick-Charts (Preisverteilung, Zimmerverteilung, CHF/m² pro Gemeinde). Ersetzt die separate `/ueberblick`-Seite (redirected auf `/`).
+- **Projekte** (`/projekte`): Card-Grid der Neubauprojekte mit Status-Chips (Planung, Bau, Fertig, Bestand) und Sort-Dropdown. Zentrale Hub-Seite für Neubau-Recherche.
+- **Projekt-Detail** (`/projekte/[id]`): Zweispaltige Detail-Ansicht mit Unit-Tabelle, verknüpften Inseraten, Recherche-Notizen, Quellen, Sidebar (Eckdaten, Einheiten-Stats, Mini-Karte) und klickbaren Etappen-Unterprojekten.
+- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich, CHF/m²-Filter, "Nur Inserate" (ohne Research-Daten), Sort auf-/absteigend für Datum/CHF/m²/Miete/Fläche.
+- **Favoriten** (`/favoriten`): Gleicher Card-Grid wie Inserate, vorgefiltert auf `isFavorite`.
+- **Inserat-Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld, Preishistorie.
+- **Karte** (`/karte`): CartoDB Positron oder Swisstopo SWISSIMAGE (Satelliten-Toggle), farbkodierte CircleMarker (CHF/m²), Projekt-Marker mit Status-Farben, Bauzonen-WMS (Aargau), Heatmap-Toggle. Marker am gleichen Ort werden automatisch in einem Raster angeordnet (siehe "Grid-Clustering").
+- **Vergleich** (`/vergleich`): Side-by-Side Tabelle für max. 3 Inserate.
+- **About** (`/about`): Methoden-Transparenz -- Datenquellen, Farbskala, "vermietet"-Heuristik, Bauzonen-Layer.
+
+## Datenmodell: Listings vs. Projekte
+
+Zwei unabhängige Datenquellen werden nebeneinander geführt:
+
+- **`listing`** wird vom Homegate-Scraper befüllt. `is_active` wird auf `false` gesetzt, sobald der Scraper das Inserat 5 Tage nicht mehr sieht.
+- **`project`** und **`project_unit`** werden manuell via Research-Skill oder direkte DB-Operationen gepflegt. Der Scraper aktualisiert diese Tabellen aktuell NICHT.
+- Die `project_listing`-Junction verknüpft Inserate mit Neubauprojekten (z.B. alle Mattenpark-Inserate zeigen auf project_id 1 und 45).
+
+::: warning Kein automatisches Status-Tracking
+Wenn ein Homegate-Listing inaktiv wird, bleibt der verknüpfte `project_unit.status` auf `available`. Die Ground Truth muss über Projekt-Websites oder den melon.rent-API-Scraper (geplant) nachgezogen werden.
+:::
+
+### Unit-Status-Workflow
+
+Mögliche Status pro `project_unit`:
+
+- `planned` -- geplant, noch nicht vermarktet
+- `available` -- aktiv vermietbar
+- `reserved` -- reserviert (nicht definitiv)
+- `rented` -- vermietet
+- `sold` -- verkauft (Eigentumswohnungen)
+
+### Projekt-Status-Workflow
+
+Mögliche Status pro `project`:
+
+- `planning` -- Baugesuch, noch nicht im Bau
+- `construction` -- im Bau
+- `completed` -- Bau fertig (bedeutet NICHT zwingend vollvermietet)
+- `established` -- Bestand, länger vermietet
+
+### Etappen via `parent_project_id`
+
+Mehrstufige Projekte werden als Parent + Kinder modelliert. Beispiele:
+
+- Mattenpark: Etappe 1 (Ho4/Ho6/Ho8, 40 MWG, vollvermietet seit Dez 2023) + Etappe 2 (Ho10/Ho12/Le6/Li2/Li4, 60 MWG, Bezug ab 2026)
+- Furter Areal Im Holzpark: Parent + Etappen 1-3 (bestand), Etappe 4 MFH (bezogen Sept 2024), Etappe 5 (Baugesuch Jan 2026)
+
+Die Detail-Seite zeigt Kinder-Projekte als klickbare Verknüpfung.
+
+## Karte: Grid-Clustering
+
+Projekte mit identischen Koordinaten (auf 5 Dezimalstellen gerundet) werden beim Rendern automatisch in einem ceil(sqrt(N)) × ceil(N/cols) Raster um den Original-Punkt versetzt -- typischerweise rund 10m Spacing. Die DB-Koordinaten bleiben unverändert. Beispiel: Die 4 Furter-Etappen (Parent + 3 Kinder) werden als 2×2-Raster dargestellt.
+
+## Externe Datenquellen
+
+- **Homegate** via Scrapfly-Scraper (Job `immoscraper`) -- aktive Mietinserate
+- **Projekt-Websites** und **Architektenseiten** via Research-Skill und WebFetch -- Units, Quellen, Details
+- **melon.rent API** (geplant, Sub-Task) -- direkte CMS-API für Projekte wie Mattenpark, Sommerpark etc. Liefert Vollständige Einheitenliste inklusive Reservierungen und Nettomieten, was Portale nicht zeigen.
+- **Swisstopo Geocoding API** (`api3.geo.admin.ch`) -- Koordinaten-Lookup bei Projekt-Einträgen
+- **Swisstopo WMTS** -- Satelliten-Layer auf der Karte
 
 ## Photo-Archivierung
 
@@ -149,6 +202,11 @@ Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank. Idealerweise soll
 
 ## Offene Punkte
 
+- **melon.rent API-Scraper** als Sub-Scraper für Projekt-Wohnungsspiegel (ClickUp 86c9akgc0)
+- **Auto-Unit-Status-Tracking**: Nightly-Job, der `project_unit.status` auf `rented` setzt, wenn alle verknüpften Listings länger als 14 Tage inaktiv sind
+- **Admin-UI** für Bulk-Update von Unit-Status auf der Projekt-Detail-Seite
+- **KI-Baubewilligungs-Scraper** und **KI-Neubau-Scraper** für automatische Erfassung neuer Projekte aus Gemeinde-Websites, Architekten-/GU-Seiten und Lokalpresse
+- **Homegate Kauf-Scraper** (offerType=BUY) zusätzlich zum Mietscraper
 - DB-User `immo` mit eingeschränkten Rechten (SELECT + INSERT/UPDATE nur auf `listing_note`)
 - Filter-State in URL-Params persistieren
 - Photo-Fallback auch für noch aktive Listings auf NFS kopieren (aktuell nur deaktivierte im Archiv)
