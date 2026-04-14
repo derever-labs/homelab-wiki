@@ -194,6 +194,7 @@ Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bz
 
 ## Sicherheit auf einen Blick
 
+- **3-Tier-Zugriffskontrolle** -- `admin` (alles) > `family` (family-Tier + guest-Tier via Multi-Binding) > `guest` (guest-Tier). Jede App hat eine explizite Gruppen-Bindung. Ohne Bindung = offen (Authentik-Default fail-open) -- deshalb werden alle 45 Apps deklarativ via [Blueprints](./referenz.md#blueprint-quelle) zugeordnet. Ein Drift-Audit-Job überwacht täglich, dass keine neue App ohne Binding auftaucht
 - **MFA-Zwang für Admins** -- Mitglieder von `admin` und `authentik Admins` sowie alle Superuser müssen TOTP oder Passkey registrieren. Non-Admins loggen weiterhin nur mit Passwort ein
 - **Password Policy** -- mindestens 12 Zeichen, zxcvbn-Score ≥ 3, gebunden an alle Password-Write-Stages
 - **Reputation Policy** -- Threshold −3 auf Username und IP, gebunden an Password-Stages (Auth + LDAP) sowie an Recovery-Identification und MFA-Validate
