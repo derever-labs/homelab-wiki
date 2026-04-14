@@ -74,60 +74,63 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 classes: {
-  user: { style.fill: "#e8f0fe" }
-  proxy: { style.fill: "#fff4e5" }
-  jf: { style.fill: "#fce8e6" }
-  outpost: { style.fill: "#e6f4ea" }
-  ak: { style.fill: "#f3e8fd" }
-  pg: { style.fill: "#fef6d8" }
+  user: { style: { border-radius: 8; stroke: "#1a73e8" } }
+  proxy: { style: { border-radius: 8; stroke: "#e8710a" } }
+  jf: { style: { border-radius: 8; stroke: "#d93025" } }
+  outpost: { style: { border-radius: 8; stroke: "#188038" } }
+  ak: { style: { border-radius: 8; stroke: "#8430ce" } }
+  pg: { style: { border-radius: 8; stroke: "#c29c10" } }
+  phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 entry: 1. Login bis LDAP-Bind {
-  input: "Nutzer gibt E-Mail + Passwort im Browser ein" { class: user }
-  post: "Browser -> Traefik HA: POST /Users/AuthenticateByName (HTTPS)" { class: proxy }
-  fwd: "Traefik -> Jellyfin (kein ForwardAuth auf /Users/*)" { class: proxy }
-  bind: "Jellyfin -> LDAP Outpost: Simple Bind\ncn=<user>,ou=users,dc=ldap,...,dc=ch" { class: jf }
+  class: phase
+  direction: down
+  input: "Nutzer E-Mail + Passwort\nim Browser" { class: user }
+  post: "Browser POST\n/Users/AuthenticateByName" { class: proxy }
+  fwd: "Traefik -> Jellyfin\nkein ForwardAuth auf /Users/*" { class: proxy }
+  bind: "Jellyfin LDAP Simple Bind\ncn=USER,ou=users,..." { class: jf }
   input -> post -> fwd -> bind
 }
 
-split: Outpost entscheidet anhand Bind-Cache {
-  hit: "Hit-Pfad -- bind_mode=cached (Folgelogin, unter 5ms)" {
-    check: "Outpost prüft boundUsers[DN] + Argon2 gegen gecachten Hash" { class: outpost }
-    ok: "Outpost -> Jellyfin: LDAPResult Success" { class: outpost }
-    check -> ok
-  }
-
-  miss: "Miss-Pfad -- Cache-Miss oder Erstlogin (~1-2s)" {
-    flow: "Flow Execute -- ldap-authentication-flow" {
-      s10: "Stage 10 ldap-identification\n(Outpost -> Authentik Server)" { class: outpost }
-      pgq: "Authentik -> PostgreSQL: User-Lookup\n(case_insensitive)" { class: ak }
-      s20: "Stage 20 ldap-password\n(Reputation-Policy + Argon2)" { class: ak }
-      s30: "Stage 30 ldap-user-login\n(Session erzeugen)" { class: ak }
-      done: "Authentik -> Outpost: 200 OK\n+ authentik_session Cookie" { class: ak }
-      s10 -> pgq -> s20 -> s30 -> done
-    }
-    post: "Outpost Post-Processing" {
-      acc: "Outpost GET /outposts/ldap/<pk>/check_access/" { class: outpost }
-      me: "Outpost GET /core/users/me/\n(UserInfo: pk, groups, mail)" { class: outpost }
-      cache: "Outpost schreibt boundUsers[DN] in Cache" { class: outpost }
-      acc -> me -> cache
-    }
-    ok: "Outpost -> Jellyfin: LDAPResult Success" { class: outpost }
-    flow -> post -> ok
-  }
+hit: "Hit-Pfad -- bind_mode=cached" {
+  class: phase
+  direction: down
+  check: "Outpost prüft boundUsers\n+ Argon2 gegen Cache-Hash" { class: outpost }
+  ok: "Outpost -> Jellyfin\nLDAPResult Success" { class: outpost }
+  check -> ok
 }
 
-finish: Jellyfin Session abschliessen {
-  match: "Jellyfin User-Match via mail-Attribut" { class: jf }
-  token: "Jellyfin -> Browser: AccessToken + SessionID" { class: jf }
-  home: "Browser zeigt Startseite / Bibliothek" { class: user }
+miss: "Miss-Pfad -- Cache-Miss / Erstlogin" {
+  class: phase
+  direction: down
+  s10: "Stage 10 ldap-identification\nOutpost -> Authentik" { class: outpost }
+  pgq: "Authentik -> PostgreSQL\nUser-Lookup (case-insensitive)" { class: ak }
+  s20: "Stage 20 ldap-password\nReputation + Argon2" { class: ak }
+  s30: "Stage 30 ldap-user-login\nSession erzeugen" { class: ak }
+  acc: "Outpost GET\n/outposts/ldap/PK/check_access/" { class: outpost }
+  me: "Outpost GET /core/users/me/\nUserInfo: pk, groups, mail" { class: outpost }
+  cache: "Outpost schreibt\nboundUsers in Cache" { class: outpost }
+  ok: "Outpost -> Jellyfin\nLDAPResult Success" { class: outpost }
+  s10 -> pgq -> s20 -> s30 -> acc -> me -> cache -> ok
+}
+
+finish: Jellyfin Session {
+  class: phase
+  direction: down
+  match: "Jellyfin User-Match\nvia mail-Attribut" { class: jf }
+  token: "Jellyfin -> Browser\nAccessToken + SessionID" { class: jf }
+  home: "Browser zeigt\nStartseite / Bibliothek" { class: user }
   match -> token -> home
 }
 
-entry -> split -> finish
+entry -> hit
+entry -> miss
+hit -> finish
+miss -> finish
 ```
 
 ::: info Wieso zwei API-Calls nach dem Flow-Execute?

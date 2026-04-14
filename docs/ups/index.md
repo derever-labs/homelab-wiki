@@ -66,38 +66,47 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 classes: {
-  usv: { style.fill: "#fce8e6" }
-  nut: { style.fill: "#e8f0fe" }
-  slave: { style.fill: "#fff4e5" }
+  usv: { style: { border-radius: 8; stroke: "#d93025" } }
+  nut: { style: { border-radius: 8; stroke: "#1a73e8" } }
+  slave: { style: { border-radius: 8; stroke: "#e8710a" } }
+  phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 onbatt: 1. Stromausfall {
-  ev: "APC USV meldet ONBATT an NUT Master" { class: usv }
-  n1: "NUT Master sendet Telegram-Benachrichtigung" { class: nut }
-  drain: "USV-Batterie entlädt sich" { class: usv }
+  class: phase
+  direction: down
+  ev: "USV meldet ONBATT\nan NUT Master" { class: usv }
+  n1: "NUT Master sendet\nTelegram-Nachricht" { class: nut }
+  drain: "USV-Batterie\nentlädt sich" { class: usv }
   ev -> n1 -> drain
 }
 
 lowbatt: 2. Kritischer Batteriestand {
-  ev: "USV meldet LOWBATT an NUT Master" { class: usv }
-  n2: "NUT Master sendet Telegram-Benachrichtigung" { class: nut }
+  class: phase
+  direction: down
+  ev: "USV meldet LOWBATT\nan NUT Master" { class: usv }
+  n2: "NUT Master sendet\nTelegram-Nachricht" { class: nut }
   ev -> n2
 }
 
-slaves: 3. Slaves fahren herunter {
-  cmd: "NUT Master sendet SHUTDOWN an PVE Slave 1 + 2" { class: nut }
-  vms: "Slaves stoppen VMs/CTs" { class: slave }
-  halt: "Slaves fahren Host herunter" { class: slave }
+slaves: 3. Slaves herunterfahren {
+  class: phase
+  direction: down
+  cmd: "NUT Master sendet SHUTDOWN\nan PVE Slave 1 + 2" { class: nut }
+  vms: "Slaves stoppen\nVMs/CTs" { class: slave }
+  halt: "Slaves fahren\nHost herunter" { class: slave }
   cmd -> vms -> halt
 }
 
-master: 4. Master fährt als Letzter herunter {
-  delay: "NUT Master wartet FINALDELAY" { class: nut }
-  vms: "Master stoppt eigene VMs/CTs" { class: nut }
-  halt: "Master fährt Host herunter" { class: nut }
+master: 4. Master als Letzter {
+  class: phase
+  direction: down
+  delay: "NUT Master wartet\nFINALDELAY" { class: nut }
+  vms: "Master stoppt\neigene VMs/CTs" { class: nut }
+  halt: "Master fährt\nHost herunter" { class: nut }
   delay -> vms -> halt
 }
 
