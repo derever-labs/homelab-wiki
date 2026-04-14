@@ -149,7 +149,9 @@ Die benötigten Schritte:
 
 ### NOMAD_TOKEN Secret
 
-Der Workflow braucht ein gültiges Nomad Management Token. Dieses liegt in 1Password unter `PRIVAT Agent / Nomad Home / password` und muss im GitHub Repository als Secret `NOMAD_TOKEN` hinterlegt werden. Bei der Rotation des Tokens muss das Repo-Secret manuell nachgezogen werden.
+Für das ältere Alloc-Stop-Deploy-Pattern (aktuell: `immo-monitor`) braucht der Workflow ein gültiges Nomad Management Token. Dieses liegt in 1Password unter `PRIVAT Agent / Nomad Home / password` und ist im GitHub Repository als Secret `NOMAD_TOKEN` hinterlegt. Bei der Rotation des Tokens muss das Repo-Secret manuell nachgezogen werden.
+
+Für die neue `deploy-nomad-jobs.yml`-Pipeline wird kein statisches Repo-Secret mehr benötigt: Der Runner holt sich über die Vault Nomad Secret Engine zur Laufzeit einen kurzlebigen Nomad-Client-Token (TTL 30 min). Dieser wird am Workflow-Ende sofort revoked. Details zur CD-Pipeline: [Referenz](./referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ::: info `force_pull = true` im Nomad Job
 Im Job-Spec (`immo-monitor.nomad`) muss der Docker-Task `force_pull = true` haben, sonst verwendet Nomad beim Reschedule das bereits gecachte Image und ignoriert den neuen Push. Ohne diese Option läuft der Deploy erfolgreich durch, deployt aber den alten Stand.
