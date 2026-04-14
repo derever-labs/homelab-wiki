@@ -48,10 +48,112 @@ Die Workload-Identity-Role ist damit zugleich die Brücke zur CD-Pipeline: Derse
 
 Die `deploy-nomad-jobs.yml`-Pipeline nutzt die Vault Nomad Secret Engine statt einem statischen Repo-Secret. Beim Deployment wird ein kurzlebiger Nomad-Client-Token dynamisch ausgestellt und am Workflow-Ende sofort revoked.
 
+### Architektur-Übersicht
+
+```d2
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
+
+gh: GitHub Actions\nWorkflow {
+  class: node
+  tooltip: "deploy-nomad-jobs.yml\nTrigger: push auf main\n**/*.nomad"
+}
+
+runner: Self-hosted Runner\n(Homelab) {
+  class: node
+  tooltip: "runs-on: [self-hosted, homelab]\nVault-Workload-Identity\nRole: github-runner-deploy"
+}
+
+vault: Vault {
+  class: container
+
+  engine: Nomad Secret Engine\nnomad/ {
+    class: node
+    tooltip: "Role: github-deploy\nLease-TTL: 30 min\nMax-TTL: 1 h"
+  }
+}
+
+nomad: Nomad Cluster {
+  class: container
+
+  api: Nomad API {
+    class: node
+    tooltip: "nomad job plan\nnomad job run"
+  }
+}
+
+gh -> runner: dispatcht Job
+runner -> vault.engine: liest nomad/creds/github-deploy {
+  style.stroke-dash: 3
+}
+vault.engine -> runner: kurzlebiger Client-Token {
+  style.stroke-dash: 3
+}
+runner -> nomad.api: plan + run\n(mit kurzlebigem Token)
+runner -> vault.engine: sys/leases/revoke\n(am Workflow-Ende) {
+  style.stroke-dash: 3
+}
+```
+
+### Token-Lebenszyklus (Sequence)
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+shape: sequence_diagram
+
+merge: Git Merge\n(main)
+gh: GitHub Actions
+runner: Self-hosted Runner
+vault: Vault Nomad Engine
+nomad: Nomad API
+
+merge -> gh: "push-Event\npaths matched"
+gh -> runner: "dispatch Workflow"
+runner -> runner: "checkout + install nomad CLI"
+runner -> vault: "GET nomad/creds/github-deploy\n(Workload-Token)"
+vault -> nomad: "POST /v1/acl/token\n(Engine-Mgmt-Token)"
+nomad -> vault: "neuer Client-Token\nTTL 30m, max 1h"
+vault -> runner: "secret_id + lease_id"
+runner -> runner: "git diff + Blocklist-Filter"
+runner -> nomad: "nomad job plan\n(X-Nomad-Token)"
+nomad -> runner: "plan OK (rc=0 oder 1)"
+runner -> nomad: "nomad job run -detach"
+nomad -> runner: "deployment submitted"
+runner -> vault: "PUT sys/leases/revoke"
+vault -> nomad: "revoke Client-Token"
+vault -> runner: "lease gone"
+```
+
 ### Vault Nomad Secret Engine
 
 - **Mount-Pfad** -- `nomad/`
-- **Engine-Mgmt-Token** -- separater Nomad Management-Token, konfiguriert via `nomad/config/access`. Accessor zwecks Recovery in 1Password ("Nomad Recovery Homelab", Accessor `ef54c5c7-b27e-56c3-e7bd-0f96a01e466d`).
+- **Engine-Mgmt-Token** -- separater Nomad Management-Token, konfiguriert via `nomad/config/access`. Accessor bei Bedarf über Recovery-Token (1Password "Nomad Recovery Homelab") auslesbar.
 - **Role** -- `nomad/role/github-deploy`
   - Stellt Client-Tokens mit Nomad-Policy `github-deploy` aus
   - Lease-TTL: 30 min, Max-TTL: 1 h
@@ -69,10 +171,11 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/nomad-deploy-fetch
 
 Minimale Permissions für den kurzlebigen Nomad-Token:
 
-- `namespace.default` -- write: submit-job, dispatch-job, read-logs, read-job, list-jobs
+- `namespace.default` -- write mit Capabilities submit-job, dispatch-job, read-logs, read-job, list-jobs, csi-mount-volume, csi-register-plugin, csi-write-volume
 - `node` -- read
 - `agent` -- read
-- Bewusst kein `alloc-exec`, kein `operator`
+- `plugin` -- read (CSI-Plugin-Zugriff, für Jobs mit CSI-Volume-Claims zwingend)
+- Bewusst kein `alloc-exec`, kein `operator`, kein `sentinel-override`
 
 Policy-Datei: `homelab-hashicorp-stack/nomad-configs/policies/github-deploy.hcl`
 
