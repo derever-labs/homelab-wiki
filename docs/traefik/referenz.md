@@ -131,6 +131,8 @@ API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-R
 
 **Fallback:** Für unbekannte Codes (z.B. 418, 422) existieren generische Fallback-Seiten (`4xx.html`, `5xx.html`) via nginx `try_files`. Die Catch-All-Seiten enthalten bewusst keine Links zu internen Services um Information Disclosure bei Subdomain-Scans zu vermeiden.
 
+**Cache-Verhalten:** 5xx-Seiten werden mit `Cache-Control: no-store` ausgeliefert (temporäre Serverfehler nicht cachen). 4xx-Seiten werden mit `Cache-Control: public, max-age=30` kurz gecached -- knapp genug, damit der 404-Flicker während eines Nomad-Alloc-Cutover (neuer Container ersetzt alten, Consul-Service-Registration braucht wenige Sekunden) nicht im Browser hängenbleibt, aber hoch genug um Bot- und Scanner-Requests auf echte 404s zu dämpfen. Definiert in `standalone-stacks/traefik-proxy/configs/nginx/config/default.conf`.
+
 **Error Pages generieren:** `standalone-stacks/traefik-ha/configs/nginx/generate-error-pages.sh` ist die einzige Source-of-Truth. Nach Textänderungen Script ausführen, Dateien einchecken, auf beide Stacks deployen.
 
 Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die Middleware-Definition und `standalone-stacks/traefik-ha/configs/nginx/` für die HTML-Templates.
