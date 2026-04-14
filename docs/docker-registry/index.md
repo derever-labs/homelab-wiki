@@ -95,6 +95,20 @@ Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen 
 | Root Directory | /zot |
 | Credentials | Vault `kv/data/zot-s3` (Workload Identity) |
 
+### Sync Credentials
+
+Damit der Pull-Through Cache nicht in Docker Hubs Anonymous-Rate-Limit (100/6h) läuft, authentisiert sich Zot beim Sync gegen einen dedizierten Docker-Hub-Account und erhält damit das Authenticated-Limit (200/6h).
+
+| Parameter | Wert |
+| :--- | :--- |
+| Vault-Pfad | `kv/data/dockerhub` (Workload Identity, Felder: `username`, `token`) |
+| Account | Eigener Docker Hub Service-Account mit Personal Access Token |
+| Scope | Public Read (kein Push, keine Schreibrechte) |
+
+::: tip Rotation
+Personal Access Token rotieren: neuen Token im Docker Hub Web-UI erzeugen, in Vault unter `kv/dockerhub` aktualisieren, dann Zot-Job neu deployen (`nomad job run`) damit Nomad das Sync-Credentials-Template re-rendert. Ein blosser Restart reicht nicht -- Templates werden nur bei Spec- oder Inhaltsänderung neu gerendert.
+:::
+
 ### Docker daemon.json
 
 Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet durch Ansible). Docker versucht erst localhost:5000 (Zot), bei Nichterreichbarkeit automatisch Docker Hub direkt.
