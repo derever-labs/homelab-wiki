@@ -238,6 +238,7 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 
 ## Verwandte Seiten
 
+- [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
 - [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
