@@ -115,7 +115,7 @@ runner -> vault.engine: sys/leases/revoke\n(am Workflow-Ende) {
 }
 ```
 
-### Token-Lebenszyklus (Sequence)
+### Token-Lebenszyklus
 
 ```d2
 vars: {
@@ -125,29 +125,47 @@ vars: {
   }
 }
 
-shape: sequence_diagram
+direction: down
 
-merge: Git Merge\n(main)
-gh: GitHub Actions
-runner: Self-hosted Runner
-vault: Vault Nomad Engine
-nomad: Nomad API
+classes: {
+  gh: { style.fill: "#e8f0fe" }
+  runner: { style.fill: "#fff4e5" }
+  vault: { style.fill: "#e6f4ea" }
+  nomad: { style.fill: "#fce8e6" }
+}
 
-merge -> gh: "push-Event\npaths matched"
-gh -> runner: "dispatch Workflow"
-runner -> runner: "checkout + install nomad CLI"
-runner -> vault: "GET nomad/creds/github-deploy\n(Workload-Token)"
-vault -> nomad: "POST /v1/acl/token\n(Engine-Mgmt-Token)"
-nomad -> vault: "neuer Client-Token\nTTL 30m, max 1h"
-vault -> runner: "secret_id + lease_id"
-runner -> runner: "git diff + Blocklist-Filter"
-runner -> nomad: "nomad job plan\n(X-Nomad-Token)"
-nomad -> runner: "plan OK (rc=0 oder 1)"
-runner -> nomad: "nomad job run -detach"
-nomad -> runner: "deployment submitted"
-runner -> vault: "PUT sys/leases/revoke"
-vault -> nomad: "revoke Client-Token"
-vault -> runner: "lease gone"
+trigger: 1. Trigger {
+  push: "push auf main\npaths matched" { class: gh }
+  dispatch: "GitHub Actions dispatcht Workflow" { class: gh }
+  push -> dispatch
+}
+
+setup: 2. Runner-Setup {
+  prep: "checkout + install nomad CLI" { class: runner }
+}
+
+token: 3. Kurzlebigen Nomad-Token holen {
+  req: "Runner GET nomad/creds/github-deploy\n(Workload-Token)" { class: runner }
+  engine: "Vault Engine POST /v1/acl/token\n(Engine-Mgmt-Token)" { class: vault }
+  issue: "Nomad liefert Client-Token\nTTL 30m, max 1h" { class: nomad }
+  deliver: "Vault gibt secret_id + lease_id an Runner" { class: vault }
+  req -> engine -> issue -> deliver
+}
+
+deploy: 4. Deploy {
+  diff: "git diff + Blocklist-Filter" { class: runner }
+  plan: "nomad job plan\n(X-Nomad-Token)" { class: runner }
+  run: "nomad job run -detach" { class: runner }
+  diff -> plan -> run
+}
+
+cleanup: 5. Cleanup {
+  revoke: "Runner PUT sys/leases/revoke" { class: runner }
+  engine: "Vault widerruft Client-Token bei Nomad" { class: vault }
+  revoke -> engine
+}
+
+trigger -> setup -> token -> deploy -> cleanup
 ```
 
 ### Vault Nomad Secret Engine

@@ -59,30 +59,49 @@ NUT darf nicht als Nomad-Container betrieben werden. Bei einem Shutdown fährt P
 ## Shutdown-Ablauf
 
 ```d2
-shutdown: {
-  shape: sequence_diagram
-
-  USV: "APC USV"
-  NUT: "NUT Master (PVE-Host)"
-  S1: "PVE Slave 1"
-  S2: "PVE Slave 2"
-  TG: Telegram
-
-  USV -> NUT: "ONBATT (Stromausfall)"
-  NUT -> TG: Benachrichtigung
-  USV -> USV: "Batterie entlädt sich..."
-  USV -> NUT: "LOWBATT (kritisch)"
-  NUT -> TG: Benachrichtigung
-  NUT -> S1: SHUTDOWN
-  NUT -> S2: SHUTDOWN
-  S1 -> S1: "VMs/CTs stoppen"
-  S2 -> S2: "VMs/CTs stoppen"
-  S1 -> S1: Host herunterfahren
-  S2 -> S2: Host herunterfahren
-  NUT -> NUT: "FINALDELAY abwarten"
-  NUT -> NUT: "VMs/CTs stoppen"
-  NUT -> NUT: Host herunterfahren
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
+
+direction: down
+
+classes: {
+  usv: { style.fill: "#fce8e6" }
+  nut: { style.fill: "#e8f0fe" }
+  slave: { style.fill: "#fff4e5" }
+}
+
+onbatt: 1. Stromausfall {
+  ev: "APC USV meldet ONBATT an NUT Master" { class: usv }
+  n1: "NUT Master sendet Telegram-Benachrichtigung" { class: nut }
+  drain: "USV-Batterie entlädt sich" { class: usv }
+  ev -> n1 -> drain
+}
+
+lowbatt: 2. Kritischer Batteriestand {
+  ev: "USV meldet LOWBATT an NUT Master" { class: usv }
+  n2: "NUT Master sendet Telegram-Benachrichtigung" { class: nut }
+  ev -> n2
+}
+
+slaves: 3. Slaves fahren herunter {
+  cmd: "NUT Master sendet SHUTDOWN an PVE Slave 1 + 2" { class: nut }
+  vms: "Slaves stoppen VMs/CTs" { class: slave }
+  halt: "Slaves fahren Host herunter" { class: slave }
+  cmd -> vms -> halt
+}
+
+master: 4. Master fährt als Letzter herunter {
+  delay: "NUT Master wartet FINALDELAY" { class: nut }
+  vms: "Master stoppt eigene VMs/CTs" { class: nut }
+  halt: "Master fährt Host herunter" { class: nut }
+  delay -> vms -> halt
+}
+
+onbatt -> lowbatt -> slaves -> master
 ```
 
 **Reihenfolge:** Slaves fahren zuerst herunter, der Master wartet (`FINALDELAY`) und fährt als Letzter herunter. Proxmox stoppt bei `shutdown -h` automatisch alle VMs und Container graceful.
