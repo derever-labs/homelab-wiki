@@ -143,36 +143,54 @@ jobs:
           curl -s --max-time 120 \
             "https://wiki.ackermannprivat.ch/_webhook/cgi-bin/pull?token=${{ secrets.WIKI_WEBHOOK_TOKEN }}"
 
-      - name: Telegram bei Build-Fehler
-        if: failure() || steps.result.outputs.status == 'failed'
+      - name: Telegram-Notification (Erfolg oder Fehler)
+        if: always()
+        continue-on-error: true
         run: |
-          # Fehler-Zusammenfassung erstellen
+          STATUS="${{ job.status }}"
+          SEVERITY="info"
+          if [ "$STATUS" = "failure" ] || [ "${{ steps.result.outputs.status }}" = "failed" ]; then
+            TITLE="<b>Wiki Build fehlgeschlagen</b>"
+            SEVERITY="alert"
+          elif [ "${{ steps.result.outputs.status }}" = "degraded" ]; then
+            TITLE="<b>Wiki Build degraded</b> (Fallback-Build)"
+            SEVERITY="warning"
+          else
+            TITLE="<b>Wiki Build erfolgreich</b>"
+          fi
+
+          # Fehler-Zusammenfassung nur bei Failure
           ERRORS=""
-          if [ -f /tmp/vitepress-build.log ]; then
-            ERRORS=$(grep -iE "(error|dead link|failed|ENOENT)" /tmp/vitepress-build.log | head -10 | sed 's/"/\\"/g')
-          fi
-          if [ -f /tmp/vitepress-fallback.log ]; then
-            FALLBACK_ERRORS=$(grep -iE "(error|failed|ENOENT)" /tmp/vitepress-fallback.log | head -5 | sed 's/"/\\"/g')
-            if [ -n "$FALLBACK_ERRORS" ]; then
-              ERRORS="${ERRORS}
-          Fallback: ${FALLBACK_ERRORS}"
-            fi
+          if [ "$SEVERITY" != "info" ] && [ -f /tmp/vitepress-build.log ]; then
+            ERRORS=$(grep -iE "(error|dead link|failed|ENOENT)" /tmp/vitepress-build.log | head -10)
           fi
 
-          # Nachricht kuerzen falls zu lang (Telegram max 4096 Zeichen)
-          ERRORS=$(echo "$ERRORS" | head -c 2000)
-
-          MSG="Build fehlgeschlagen: ${{ github.repository }}
+          TEXT="$TITLE
+          Repo: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
           Commit: ${{ github.sha }}
           Autor: ${{ github.actor }}
-          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          ${ERRORS}"
+          if [ -n "$ERRORS" ]; then
+            TEXT="$TEXT
 
-          curl --silent --show-error --fail --no-progress-meter \
-            -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="HTML" \
-            -d text="<b>Wiki Build fehlgeschlagen</b>
-          <pre>$(echo "$MSG" | head -c 3500)</pre>" || echo "::warning::Telegram-Benachrichtigung fehlgeschlagen"
+          $(echo "$ERRORS" | head -c 1500)"
+          fi
+
+          python3 -c "
+          import json, sys, urllib.request
+          payload = json.dumps({
+              'text': sys.argv[1],
+              'topic': 'ci-cd',
+              'source': 'gitea-actions/wiki',
+              'severity': sys.argv[2],
+          }).encode()
+          req = urllib.request.Request(
+              'http://telegram-relay.service.consul:9095/notify',
+              data=payload,
+              headers={'Content-Type': 'application/json'},
+              method='POST',
+          )
+          urllib.request.urlopen(req, timeout=10).read()
+          " "$TEXT" "$SEVERITY" || echo "::warning::Telegram-Relay-Notification fehlgeschlagen"
