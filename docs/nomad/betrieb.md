@@ -36,6 +36,23 @@ Alle drei Server sind gleichwertig als API-Endpunkt nutzbar. ACLs sind aktiv -- 
 
 **CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../linstor-storage/betrieb.md#csi-boot-race-condition)
 
+### Disk-Housekeeping
+
+Auf allen Linux-Clients greifen mehrere Mechanismen gegen Volllaufen der Boot-Disk:
+
+- **BuildKit GC** (primär, im Docker-Daemon) -- kappt den Build Cache automatisch bei 10 GB. Konfiguriert in `/etc/docker/daemon.json` (`builder.gc`). Relevant, weil der GitHub-Runner-Container den Docker-Socket mountet und auf dem Host Images baut -- ohne Limit würde der Build Cache kontinuierlich wachsen.
+- **Nomad Docker GC** -- entfernt ungenutzte Images nach Karenz. Greift auf Image-Ebene, nicht auf Build Cache.
+- **Docker Prune Cron** -- wöchentliches Safety-Net für Orphans, die BuildKit GC und Nomad GC verfehlen.
+- **Journald-Limit** -- begrenzt `/var/log/journal` auf 500 MB.
+
+::: info Symptom bei Disk-Mangel
+Nomad meldet `DimensionExhausted: disk` und platziert Allocations mit EphemeralDisk nicht mehr. Typische Ursache bei Clients mit Runner: Build Cache in `/var/lib/docker` wächst unbegrenzt.
+:::
+
+::: warning Docker-Restart disruptiert Nomad-Tasks
+Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart docker` kurz als failed und rescheduled sie. Änderungen an `daemon.json` vor dem nächsten Maintenance-Fenster machen oder den Node vorher drainen.
+:::
+
 ## Bekannte Einschränkungen
 
 **Kapazität bei Node-Drain:** Bei 3 Client-Nodes und aktivem Drain eines Nodes laufen alle Container auf 2 Nodes. Die verbleibende Kapazität (CPU, RAM) muss ausreichen -- es gibt keine automatische Prüfung vorab.
