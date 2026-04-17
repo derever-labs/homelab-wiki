@@ -53,37 +53,7 @@ Aktuell bekannte Push-Monitore:
 
 ## Kern-Infra-Mindestabdeckung
 
-Zusaetzlich zu den App-Monitoren ueberwacht Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Pruefungen als **unabhaengige zweite Meinung**. Damit bleibt die Verfuegbarkeits-Sicht stabil, auch wenn Gatus selbst ausfaellt. SOLL-Zustand (Stand 2026-04-15):
-
-### Ingress
-
-- Traefik Dashboard: `https://traefik.ackermannprivat.ch/` -- HTTP 200
-
-### SSO
-
-- Authentik Login-Flow: `https://auth.ackermannprivat.ch/if/flow/default-authentication-flow/` -- HTTP 200
-- Authentik Health: `https://auth.ackermannprivat.ch/-/health/ready/` (bestehend)
-
-### DNS (PiHole 01 / 02)
-
-- DNS-Query: `10.0.2.1` / `10.0.2.2` mit Query `golem.de` -- rcode NOERROR
-- Web: `http://10.0.2.1/admin/login` / `http://10.0.2.2/admin/login` -- HTTP 200
-- TCP-Port 53: `10.0.2.1:53` / `10.0.2.2:53` -- Port offen
-
-### Cluster Brain (Nomad / Consul / Vault, alle drei Server)
-
-- Nomad: `https://10.0.2.104:4646/v1/status/leader` + `...105...` + `...106...` -- HTTPS mit `Ignore TLS Errors`, HTTP 200
-- Consul: `http://10.0.2.104:8500/v1/status/leader` + `...105...` + `...106...` -- HTTP 200
-- Vault: `http://10.0.2.104:8200/v1/sys/health?standbyok=true&perfstandbyok=true` + `...105...` + `...106...` -- HTTP 200
-
-### Speicher
-
-- Linstor Controller: `http://linstor-controller.service.consul:3370/v1/controller/version` -- HTTP 200 (oder `10.0.2.125:3370` als Fallback)
-- Haupt-NAS: `10.0.0.200:40001` TCP-Port oder `https://10.0.0.200:40001/` HTTP-Check
-
-::: info Delta-Pflege
-Der SOLL-Zustand wird vom Wiki aus gefuehrt. Wer die Gatus-Kernliste aendert, aktualisiert hier gleichzeitig die Soll-Checks und laesst den Uptime-Kuma-Bestand nachziehen. Gatus ist die Live-Quelle der Kern-Liste (siehe [Gatus](../gatus/index.md)).
-:::
+Zusaetzlich zu den App-Monitoren soll Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Pruefungen als **unabhaengige zweite Meinung** fuehren. Die konkrete SOLL-Liste mit URLs, Typen und Parametern wird im ClickUp-Task [86c9ctawj](https://app.clickup.com/t/86c9ctawj) als Checklist gefuehrt. Die kanonische Quelle der Kern-Check-Liste ist das Gatus-Nomad-Template (siehe [Gatus](../gatus/index.md)).
 
 ## Alerting
 
