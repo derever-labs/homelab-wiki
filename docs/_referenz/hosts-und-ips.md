@@ -92,7 +92,7 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | VM | IP | VM-ID | Host | Rolle |
 | :--- | :--- | :--- | :--- | :--- |
 | homeassistant | 10.0.0.100 | 1000 | pve02 | Home Assistant OS |
-| zigbee-node | 10.0.0.110 | 1100 | pve02 | Zigbee2MQTT, Mosquitto |
+| ~~zigbee-node~~ | ~~10.0.0.110~~ | ~~1100~~ | ~~pve02~~ | ~~Dekomissioniert 2026-04-17. Dienste migriert nach Nomad.~~ |
 
 ## NAS
 
