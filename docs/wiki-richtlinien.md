@@ -30,6 +30,7 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - **Keine CLI-Befehle** in Bash-Blöcken -- höchstens als Inline-Code (`befehl`) wenn unverzichtbar
 - **Keine Konfigurationsdateien** -- "Verwaltet durch Ansible" oder "Siehe `pfad/zur/datei`"
 - **Keine Installationsanleitungen** -- gehören ins Repo (README, Ansible Roles)
+- **Keine offenen Punkte, TODOs, "nächste Schritte", ausstehenden Aufgaben oder Incidents** -- diese gehören als ClickUp-Task in die Privat IT Generell Liste (List 901504641206). Das Wiki beschreibt Ist-Zustand und Architektur. Bekannte Architektur-Limitationen ohne konkreten Handlungsauftrag dürfen als `::: warning` oder `::: danger` dokumentiert werden -- alles mit Action-Charakter gehört ins ClickUp.
 
 ## Single Source of Truth (SSOT)
 

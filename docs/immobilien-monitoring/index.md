@@ -386,9 +386,6 @@ Homegate liefert Grundrisse als PDF-URLs (Attachment-Typ `DOCUMENT` oder `PLAN`)
 
 Das Scraper-Image installiert `poppler-utils` als Runtime-Dependency im Alpine-Layer. Damit bleibt der Image-Zuwachs gering (~5 MB) und der Downloader kann `pdftoppm` als Subprozess aufrufen, ohne externe Services.
 
-::: warning Bestehende PDFs einmalig migrieren
-Vor der Konvertierungs-Logik wurden PDFs als `.jpg`-Dateien mit PDF-Inhalt abgelegt, die der Browser nicht rendern konnte. Solche Altdaten lassen sich auf der NAS in-place konvertieren (Ad-hoc-Container mit `pdftoppm` + `file`-Check), die Pfade in der DB bleiben identisch.
-:::
 
 ### Frontend-Nutzung
 
