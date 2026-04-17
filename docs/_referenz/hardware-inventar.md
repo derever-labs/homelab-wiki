@@ -10,38 +10,51 @@ tags:
 # Hardware
 
 ```d2
-:::config
-theme-id: 1
-layout-engine: elk
-:::
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
 
 direction: down
 
 rack: Lenzburg Rack {
-  style.stroke-dash: 4
-  style.border-radius: 8
+  class: container
 
   pve00: pve00 {
-    style.border-radius: 8
+    class: node
     tooltip: "Minisforum DeskMini N100\nBIOS: DNB20 V0.07 (2024-07-31)\nRAM: 16 GB DDR4-3200\nStorage: 512 GB NVMe HighRel"
   }
 
   pve01: pve01 {
-    style.border-radius: 8
+    class: node
     tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
   }
 
   pve02: pve02 {
-    style.border-radius: 8
+    class: node
     tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
   }
 
-  pve01 <-> pve02: 2x Thunderbolt 4 Bond {
-    style.animated: true
-  }
+  pve01 <-> pve02: 2x Thunderbolt 4 Bond
 
   aggregation: UniFi USL8A {
-    style.border-radius: 8
+    class: node
   }
 
   pve00 -> aggregation
@@ -50,11 +63,11 @@ rack: Lenzburg Rack {
 }
 
 udmpro: UDM Pro {
-  style.border-radius: 8
+  class: node
 }
 
 internet: Internet {
-  style.border-radius: 8
+  class: node
 }
 
 rack.aggregation -> udmpro
