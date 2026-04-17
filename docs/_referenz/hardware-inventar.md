@@ -9,18 +9,57 @@ tags:
 
 # Hardware
 
-::: warning Unvollständig
-Diese Seite ist ein Platzhalter. Folgende Details müssen noch ergänzt werden:
-- Server-Marke und Modell (pve00, pve01, pve02)
-- CPU-Typ (Intel/AMD, Modell, Taktfrequenz)
-- RAM-Module (Hersteller, Typ, Taktfrequenz, Slots)
-- PSU (Wattage, Modell, Effizienzklasse)
-- Gehäuse (Modell, Formfaktor)
-- Garantie und Kaufdatum
-- NAS-Modell (Synology Modellbezeichnung)
-- NAS-Festplatten (Anzahl, Grösse, Typ, RAID-Level)
-- Stromverbrauch (gemessen, Leerlauf vs. Last)
+```d2
+:::config
+theme-id: 1
+layout-engine: elk
 :::
+
+direction: down
+
+rack: Lenzburg Rack {
+  style.stroke-dash: 4
+  style.border-radius: 8
+
+  pve00: pve00 {
+    style.border-radius: 8
+    tooltip: "Minisforum DeskMini N100\nBIOS: DNB20 V0.07 (2024-07-31)\nRAM: 16 GB DDR4-3200\nStorage: 512 GB NVMe HighRel"
+  }
+
+  pve01: pve01 {
+    style.border-radius: 8
+    tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+  }
+
+  pve02: pve02 {
+    style.border-radius: 8
+    tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+  }
+
+  pve01 <-> pve02: 2x Thunderbolt 4 Bond {
+    style.animated: true
+  }
+
+  aggregation: UniFi USL8A {
+    style.border-radius: 8
+  }
+
+  pve00 -> aggregation
+  pve01 -> aggregation
+  pve02 -> aggregation
+}
+
+udmpro: UDM Pro {
+  style.border-radius: 8
+}
+
+internet: Internet {
+  style.border-radius: 8
+}
+
+rack.aggregation -> udmpro
+udmpro -> internet
+```
 
 ## Server-Übersicht
 
@@ -28,9 +67,9 @@ Detaillierte VM-Zuordnung und IP-Adressen: [Proxmox Cluster](../proxmox/index.md
 
 | Server | Rolle | IP | CPU (Kerne) | RAM | Storage | Modell |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **pve00** | Quorum / VM Host | 10.0.2.40 | 4 | 16 GB | unbekannt | unbekannt |
-| **pve01** | Main Compute Node | 10.0.2.41 | 16 | 64 GB | unbekannt | unbekannt |
-| **pve02** | Main Compute Node | 10.0.2.42 | 16 | 64 GB | unbekannt | unbekannt |
+| **pve00** | Quorum / VM Host | 10.0.2.40 | 4 | 16 GB DDR4-3200 | 512 GB NVMe | Minisforum DeskMini |
+| **pve01** | Main Compute Node | 10.0.2.41 | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
+| **pve02** | Main Compute Node | 10.0.2.42 | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
 
 ### pve00 -- Quorum Node
 
@@ -38,10 +77,22 @@ Kleinster Node im Cluster. Dient primär als Quorum-Geber für die Proxmox-Clust
 
 | Eigenschaft | Wert |
 | :--- | :--- |
-| CPU | 4 Kerne (Details unbekannt) |
-| RAM | 16 GB |
-| Lokaler Storage | unbekannt |
+| Hersteller/Modell | Micro Computer (HK) -- DeskMini Series (Board DNBOE) |
+| Seriennummer | YY047LU10PCCMPE00322 |
+| CPU | Intel N100, 4 Kerne / 4 Threads, 1 Socket |
+| RAM | 1× 16 GB DDR4-3200 (Part: DDR4 NB 16GB 3200MHZ) |
+| Lokaler Storage | 512 GB NVMe -- HighRel 512GB SSD (FW: SN14665) |
+| NICs | Intel I226-V 2.5G, Intel CNVi Wi-Fi |
 | VMs | vm-nomad-server-04, vm-nomad-client-04 |
+
+#### Firmware-Stand pve00
+
+Stand: 2026-04-17
+
+- BIOS: DNB20 V0.07 -- 2024-07-31
+- NVMe HighRel 512GB: SN14665
+- Proxmox: pve-manager/9.1.7
+- Kernel: 6.17.13-2-pve
 
 ### pve01 -- Main Compute Node
 
@@ -49,11 +100,24 @@ Einer der beiden leistungsstarken Nodes. Mit pve02 über Thunderbolt verbunden.
 
 | Eigenschaft | Wert |
 | :--- | :--- |
-| CPU | 16 Kerne (Details unbekannt) |
-| RAM | 64 GB |
-| Lokaler Storage | unbekannt |
+| Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
+| Seriennummer | MD126US129QQMQG00027 |
+| CPU | Intel i9-12900H, 14 Kerne (20 Threads), 1 Socket |
+| RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
+| Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
+| NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
 | Thunderbolt IP | 10.99.1.1 |
 | VMs | vm-proxy-dns-01, checkmk, datacenter-manager, vm-nomad-server-05, vm-nomad-client-05 |
+
+#### Firmware-Stand pve01
+
+Stand: 2026-04-17
+
+- BIOS: 1.26 -- 2024-10-14
+- NVMe Kingston FURY Renegade (nvme0n1): EIFK31.7
+- NVMe Kingston FURY Renegade (nvme1n1): EIFK31.7
+- Proxmox: pve-manager/9.1.7
+- Kernel: 6.17.13-2-pve
 
 ### pve02 -- Main Compute Node
 
@@ -61,11 +125,24 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 
 | Eigenschaft | Wert |
 | :--- | :--- |
-| CPU | 16 Kerne (Details unbekannt) |
-| RAM | 64 GB |
-| Lokaler Storage | unbekannt |
+| Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
+| Seriennummer | MF146VS129EDMHA00010 |
+| CPU | Intel i9-12900H, 14 Kerne (20 Threads), 1 Socket |
+| RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
+| Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
+| NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
 | Thunderbolt IP | 10.99.1.2 |
 | VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06 |
+
+#### Firmware-Stand pve02
+
+Stand: 2026-04-17
+
+- BIOS: 1.26 -- 2024-10-14
+- NVMe Kingston FURY Renegade (nvme0n1): EIFK31.7
+- NVMe Kingston FURY Renegade (nvme1n1): EIFK31.7
+- Proxmox: pve-manager/9.1.7
+- Kernel: 6.17.13-2-pve
 
 ## NAS
 
