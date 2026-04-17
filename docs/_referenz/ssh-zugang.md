@@ -69,7 +69,7 @@ LXC-Container sind nicht direkt per SSH erreichbar. Zugriff via ProxyJump über 
 | VM | IP | Benutzer | Bemerkung |
 | :--- | :--- | :--- | :--- |
 | homeassistant | 10.0.0.100 | -- | Kein SSH, Web-UI und CLI via Proxmox Console |
-| zigbee-node | 10.0.0.110 | sam | Zigbee2MQTT, Mosquitto |
+| ~~zigbee-node~~ | ~~10.0.0.110~~ | ~~sam~~ | ~~Dekomissioniert 2026-04-17~~ |
 
 ## Verwandte Seiten
 

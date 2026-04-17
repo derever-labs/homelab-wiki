@@ -65,7 +65,7 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | RAM | 64 GB |
 | Lokaler Storage | unbekannt |
 | Thunderbolt IP | 10.99.1.2 |
-| VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, zigbee-node, vm-nomad-server-06, vm-nomad-client-06 |
+| VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06 |
 
 ## NAS
 

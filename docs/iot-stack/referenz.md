@@ -13,27 +13,24 @@ tags:
 
 ## Mosquitto Übersicht
 
-| Attribut | Wert |
-| :--- | :--- |
-| **Status** | Produktion |
-| **Deployment** | Nomad Job (`services/mosquitto.nomad`) |
-| **Nodes** | `vm-nomad-client-05/06` (Constraint) |
-| **Ports** | 1883 (MQTT), 9001 (WebSocket) |
-| **Consul Services** | `mosquitto` (MQTT), `mosquitto-websocket` (WS) |
-| **Config** | Nomad Template (embedded `mosquitto.conf`) |
-| **Data-Storage** | Linstor CSI Volume (`mosquitto-data`) |
-| **passwd** | NFS `/nfs/docker/mosquitto/config/passwd` (read-only) |
+- **Status:** Produktion
+- **Deployment:** Nomad Job (`services/mosquitto.nomad`)
+- **Consul Services:** `mosquitto` (MQTT), `mosquitto-websocket` (WS)
+- **Ports:** 1883 (MQTT), 9001 (WebSocket)
+- **Config:** Nomad Template (embedded `mosquitto.conf`)
+- **Data-Storage:** Linstor CSI Volume (`mosquitto-data`)
+- **passwd:** NFS `/nfs/docker/mosquitto/config/passwd` (read-only, PBKDF2-SHA512 Hashes)
 
 ## Rolle im Stack
 
-Mosquitto ist der zentrale MQTT Message Broker für alle IoT-Komponenten. Zigbee2MQTT publiziert Gerätedaten über Mosquitto, und zukünftige Subscriber (z.B. Home Assistant) konsumieren diese Nachrichten.
+Mosquitto ist der zentrale MQTT Message Broker für alle IoT-Komponenten. Zigbee2MQTT publiziert Gerätedaten über Mosquitto, Home Assistant subscribt auf die Topics für die Hausautomation.
 
 ```d2
 direction: right
 
-Z2M: Zigbee2MQTT { style.border-radius: 8 }
-MQ: "Mosquitto Port 1883" { style.border-radius: 8; tooltip: "Port 1883 (MQTT), Port 9001 (WebSocket)" }
-HA: "Home Assistant (zukünftig)" { style.border-radius: 8 }
+Z2M: Zigbee2MQTT { style.border-radius: 8; tooltip: "User: z2m" }
+MQ: "Mosquitto Port 1883" { style.border-radius: 8; tooltip: "Port 1883 (MQTT), Port 9001 (WebSocket)\nConsul: mosquitto.service.consul" }
+HA: "Home Assistant" { style.border-radius: 8; tooltip: "User: homeassistant\nVM 1000, 10.0.0.100" }
 WS: Web-Clients { style.border-radius: 8 }
 
 Z2M -> MQ: Publish
@@ -41,15 +38,25 @@ MQ -> HA: Subscribe
 MQ -> WS: WebSocket 9001
 ```
 
+## MQTT-Benutzer
+
+Jeder Client hat einen eigenen Benutzer im Mosquitto `passwd`-File. Credentials sind in 1Password (Vault "PRIVAT Agent") hinterlegt.
+
+- **z2m** -- Zigbee2MQTT (Nomad-Container auf vm-nomad-client-06)
+- **homeassistant** -- Home Assistant (VM 1000 auf Proxmox, 10.0.0.100)
+- **sam** -- Legacy-User (inaktiv, historisch)
+
 ## Storage
 
-| Mount | Pfad im Container | Quelle |
-| :--- | :--- | :--- |
-| Config | `/mosquitto/config/mosquitto.conf` | Nomad Template (embedded im Job) |
-| Daten (Persistence) | `/mosquitto/data` | Linstor CSI Volume (`mosquitto-data`) |
-| passwd | `/mosquitto/config/passwd` | NFS `/nfs/docker/mosquitto/config/passwd` (read-only) |
+- **Config:** `/mosquitto/config/mosquitto.conf` -- Nomad Template (embedded im Job)
+- **Daten (Persistence):** `/mosquitto/data` -- Linstor CSI Volume (`mosquitto-data`)
+- **passwd:** `/mosquitto/config/passwd` -- NFS `/nfs/docker/mosquitto/config/passwd` (read-only)
 
 Logs werden direkt auf stdout geschrieben und von Nomad eingesammelt -- kein separates Log-Volume nötig.
+
+::: warning passwd-Datei bearbeiten
+Die passwd-Datei liegt auf NFS und ist im Container read-only gemountet. Neue Benutzer werden via `mosquitto_passwd` im laufenden Container erzeugt und per `tee -a` an die NFS-Datei angehängt (inode-safe, Bind-Mount bleibt intakt). Danach SIGHUP an den Container-Prozess senden zum Reload.
+:::
 
 ## Netzwerk
 
