@@ -16,7 +16,7 @@ Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichn
 | Verzeichnis | Inhalt |
 |-------------|--------|
 | batch-jobs/ | Renovate, Docker Prune, Daily Cleanup/Reboot/Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup |
-| databases/ | PostgreSQL (DRBD), DbGate, OpenLDAP (Legacy, Abschaltung offen) |
+| databases/ | PostgreSQL (DRBD), DbGate, OpenLDAP (Legacy) |
 | infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, iperf3-to-influxdb |

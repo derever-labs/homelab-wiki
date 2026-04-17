@@ -12,7 +12,7 @@ tags:
 LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen und Credentials leben ausschliesslich in [Authentik](../authentik/index.md). Der Begriff "LDAP" taucht trotzdem an zwei Stellen auf:
 
 - **Authentik LDAP Outpost** -- stellt ein LDAP-Bind-Interface bereit, damit Services wie Jellyfin ohne OAuth-Flow gegen Authentik authentifizieren können
-- **OpenLDAP (Legacy)** -- ehemaliger zentraler Verzeichnisdienst, Nomad Job läuft noch, hat aber keinen aktiven Consumer mehr. Abschaltung offen
+- **OpenLDAP (Legacy)** -- ehemaliger zentraler Verzeichnisdienst, Nomad Job läuft noch, hat aber keinen aktiven Consumer mehr
 
 ## Übersicht
 
@@ -23,7 +23,7 @@ LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen
 | Consul Service (Outpost) | `authentik-ldap.service.consul:3389` |
 | Base DN (Outpost) | `DC=ldap,DC=ackermannprivat,DC=ch` |
 | Aktive Consumer | [Jellyfin](../jellyfin/index.md) (LDAP-Plugin) |
-| Deprecation | [OpenLDAP](#openldap-legacy) (kein aktiver Consumer, Abschaltung offen) |
+| Deprecation | [OpenLDAP](#openldap-legacy) (kein aktiver Consumer) |
 
 ## Architektur
 
@@ -85,7 +85,7 @@ Legacy: Legacy (inaktiv) {
 
   OLDAP: "OpenLDAP (ldap Job)" {
     class: legacy
-    tooltip: "Nomad Job databases/open-ldap.nomad -- kein aktiver Consumer, Abschaltung offen"
+    tooltip: "Nomad Job databases/open-ldap.nomad -- kein aktiver Consumer"
   }
 }
 
@@ -133,8 +133,6 @@ Der Nomad Job `databases/open-ldap.nomad` (`osixia/openldap`, Port 389) läuft n
 - Authentik nutzt OpenLDAP **nicht** mehr als Source -- User leben in der Authentik-PostgreSQL
 - Jellyfin bindet gegen den LDAP Outpost (`authentik-ldap.service.consul:3389`), nicht gegen OpenLDAP
 - Guacamole hat zwar die `auth-ldap`-Extension geladen, aber keine `LDAP_HOSTNAME`-Konfiguration -- die effektive Authentifizierung läuft über `intern-auth@file` (ForwardAuth)
-
-Die Abschaltung des OpenLDAP-Jobs ist offen. Vor dem Entfernen muss verifiziert sein, dass kein externes System (Ansible-Provisioning, Ad-hoc-Skripte) noch darauf verweist.
 
 ## Verwandte Seiten
 

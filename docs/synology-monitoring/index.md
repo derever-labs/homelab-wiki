@@ -123,9 +123,7 @@ RAID-Degraded und Bad-Sector Alerts feuern aktuell korrekt (eine Disk in Bay 6 i
 
 Ein optionales fio-Script auf dem NAS misst die RAID-Performance (Sequential Read und Random 4K Read) und schreibt die Ergebnisse direkt an InfluxDB. Die Ergebnisse erscheinen in zwei dedizierten Dashboard-Panels.
 
-::: warning Benchmark pausiert
-Der Benchmark ist aktuell deaktiviert und soll erst nach dem Ersatz der defekten Disk (Bay 6) als regelmässiger Task aktiviert werden (DSM Task Scheduler, alle 10 Minuten).
-:::
+Der Benchmark ist aktuell deaktiviert.
 
 ## Verwandte Seiten
 

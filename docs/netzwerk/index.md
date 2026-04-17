@@ -20,12 +20,6 @@ tags:
 
 Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch.
 
-::: warning Unvollständig
-Folgende Details fehlen noch:
-- Firewall-Regeln zwischen VLANs
-- Inter-VLAN Routing-Konfiguration
-- Tailscale Exit-Node Konfiguration
-:::
 
 ## Netzwerk-Diagramm
 
@@ -166,12 +160,6 @@ Details zur Konfiguration und IP-Zuordnung: [Proxmox](../proxmox/)
 
 Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CGNAT-Bereich 100.64.0.0/10.
 
-::: warning Unvollständig
-- Exit-Node Konfiguration
-- Welche Nodes sind Tailscale-Mitglieder
-- Subnet-Router Konfiguration
-- ACL-Regeln
-:::
 
 ## Externe Erreichbarkeit
 

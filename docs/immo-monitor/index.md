@@ -147,7 +147,6 @@ Projekte mit identischen Koordinaten (auf 5 Dezimalstellen gerundet) werden beim
 
 - **Homegate** via Scrapfly-Scraper (Job `immoscraper`) -- aktive Mietinserate
 - **Projekt-Websites** und **Architektenseiten** via Research-Skill und WebFetch -- Units, Quellen, Details
-- **melon.rent API** (geplant, Sub-Task) -- direkte CMS-API für Projekte wie Mattenpark, Sommerpark etc. Liefert Vollständige Einheitenliste inklusive Reservierungen und Nettomieten, was Portale nicht zeigen.
 - **Swisstopo Geocoding API** (`api3.geo.admin.ch`) -- Koordinaten-Lookup bei Projekt-Einträgen
 - **Swisstopo WMTS** -- Satelliten-Layer auf der Karte
 
@@ -190,26 +189,13 @@ Für Projekt-Units aus der `project_unit`-Tabelle greift zusätzlich `project.ma
 
 Die App nutzt eine eigene PostgreSQL-Datenbank (`postgres.service.consul:5432/immo`, User `immo`).
 
-::: warning Eingeschränkte Rechte ausstehend
-Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank. Idealerweise sollten die Rechte eingeschränkt werden (SELECT auf alle Tabellen, INSERT/UPDATE nur auf `listing_note`).
-:::
+Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank.
 
 ## Vault Secrets
 
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/immo-monitor` | `db_password` |
-
-## Offene Punkte
-
-- **melon.rent API-Scraper** als Sub-Scraper für Projekt-Wohnungsspiegel (ClickUp 86c9akgc0)
-- **Auto-Unit-Status-Tracking**: Nightly-Job, der `project_unit.status` auf `rented` setzt, wenn alle verknüpften Listings länger als 14 Tage inaktiv sind
-- **Admin-UI** für Bulk-Update von Unit-Status auf der Projekt-Detail-Seite
-- **KI-Baubewilligungs-Scraper** und **KI-Neubau-Scraper** für automatische Erfassung neuer Projekte aus Gemeinde-Websites, Architekten-/GU-Seiten und Lokalpresse
-- **Homegate Kauf-Scraper** (offerType=BUY) zusätzlich zum Mietscraper
-- DB-User `immo` mit eingeschränkten Rechten (SELECT + INSERT/UPDATE nur auf `listing_note`)
-- Filter-State in URL-Params persistieren
-- Photo-Fallback auch für noch aktive Listings auf NFS kopieren (aktuell nur deaktivierte im Archiv)
 
 ## Verwandte Seiten
 

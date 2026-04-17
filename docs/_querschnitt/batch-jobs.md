@@ -86,8 +86,8 @@ t06 -> Container.cr
 | `daily_container_restart` | sysbatch | Täglich 06:00 | Jellyfin via `nomad job restart` neustarten | Alle Nodes | raw_exec, Priorität 100 |
 | `daily_restart_jellyfin` | batch | Täglich 04:00 | Jellyfin via Nomad HTTP API neustarten | Nur `vm-nomad-client-05` | exec, `curl POST /v1/job/jellyfin/restart` |
 
-::: danger Duplikat: Jellyfin-Neustart
-`daily_container_restart` und `daily_restart_jellyfin` starten beide Jellyfin täglich neu -- mit unterschiedlichen Methoden und Zeitpunkten. Zusätzlich startet `daily_reboot` um 04:00 alle Nodes neu, was Jellyfin ebenfalls betrifft. Diese Redundanz sollte konsolidiert werden.
+::: info Jellyfin-Neustart: mehrere Jobs aktiv
+`daily_container_restart` (06:00, raw_exec) und `daily_restart_jellyfin` (04:00, HTTP API) starten beide Jellyfin täglich neu. Zusätzlich startet `daily_reboot` um 04:00 alle Nodes neu, was Jellyfin ebenfalls betrifft.
 :::
 
 ### Backup

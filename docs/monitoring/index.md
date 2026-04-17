@@ -203,8 +203,6 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | Synology NAS | Syslog → Alloy Receiver | `syslog` |
 | UniFi | Syslog → Alloy Receiver | `syslog` |
 
-**Hinweis:** Synology und UniFi Syslog-Integration sind noch in Arbeit (siehe GitHub Issues #5 und #6).
-
 ### Log-Levels
 
 | Komponente | Log-Level | Konfigurationsort |
