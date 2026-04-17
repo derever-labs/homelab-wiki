@@ -76,6 +76,28 @@ Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alert
 
 **Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
 
+### Admin-Zugang zur Grafana-HTTP-API
+
+Interner Admin-Zugang (ohne Authentik-ForwardAuth) läuft über einen Grafana Service Account mit Bearer-Token:
+
+- 1P-Item `Grafana API Claude` (Vault `PRIVAT Agent`) -- SA-Name `claude-automation`, Admin-Rolle, ewiges Token
+- Aufruf-Pfad: SSH-Tunnel auf einen Nomad-Client, Target ist `grafana.service.consul` mit dynamischem Nomad-Port aus dem Consul-Catalog
+- Authentik-Kette entfällt, solange der Tunnel direkt auf die Container-Adresse zielt
+
+Für GitOps-Deploys (Dashboards) existiert weiterhin der separate SA `gitops-dashboards`, dessen Token über Vault gezogen wird -- siehe [Deployment](#deployment).
+
+### Alerts silencen
+
+Silences werden über die Alertmanager-API gesetzt, nicht über die UI -- so bleibt die Silence-Historie im Git-Workflow nachvollziehbar und Silences sind scriptbar.
+
+- Endpoint: `POST /api/alertmanager/grafana/api/v2/silences`
+- Matcher nach `alertname` (mit `isRegex` für Pattern), Laufzeit per `startsAt`/`endsAt`, Grund ins `comment`-Feld mit ClickUp-Task-Referenz
+- Silence-ID in den ClickUp-Task schreiben, damit das Entfernen nach Fix zurückverfolgbar ist
+
+::: info Silence-Policy
+Silences müssen einen ClickUp-Task referenzieren und eine Laufzeit (14--30 Tage) haben. Ohne Laufzeit-Limit verlieren sich Silences im Noise. Wenn ein Silence ausläuft bevor die Ursache gefixt ist, erzeugt der erneute Alert den Druck, den Fix zu priorisieren.
+:::
+
 ## Verfuegbarkeits-Monitoring (Gatus + Uptime Kuma)
 
 Das Homelab hat **zwei** Verfuegbarkeits-Monitore, bewusst mit Aufgabenteilung statt Ueberlappung:
