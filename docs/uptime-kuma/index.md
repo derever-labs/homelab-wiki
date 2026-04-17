@@ -53,7 +53,11 @@ Aktuell bekannte Push-Monitore:
 
 ## Kern-Infra-Mindestabdeckung
 
-Zusaetzlich zu den App-Monitoren soll Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Pruefungen als **unabhaengige zweite Meinung** fuehren. Die konkrete SOLL-Liste mit URLs, Typen und Parametern wird im ClickUp-Task [86c9ctawj](https://app.clickup.com/t/86c9ctawj) als Checklist gefuehrt. Die kanonische Quelle der Kern-Check-Liste ist das Gatus-Nomad-Template (siehe [Gatus](../gatus/index.md)).
+Zusaetzlich zu den App-Monitoren fuehrt Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Pruefungen als **unabhaengige zweite Meinung**. Die kanonische Quelle der Kern-Check-Liste ist das Gatus-Nomad-Template (siehe [Gatus](../gatus/index.md)); Kuma-Monitore sind mit dem Tag `Infrastruktur` (tag_id=1) gruppiert.
+
+::: warning Kuma-CRUD nur per Direkt-SQL
+Kuma v2 bietet keinen Admin-API-Endpunkt fuer Monitor-Create/Update. Das UI arbeitet ueber Socket.IO mit Session-Cookie. Bulk-Aenderungen (z.B. Nachziehen wenn Gatus eine Kernliste umbaut) laufen per `sqlite3 /app/data/kuma.db` im Kuma-Container plus anschliessendem `docker restart` fuer Cache-Reload. Letzter Bulk-Insert: 2026-04-17, Backup unter `/app/data/kuma.db.bak-2026-04-17`.
+:::
 
 ## Alerting
 
