@@ -159,6 +159,23 @@ Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
 `disk-flushes no` ist nur sicher wenn ZFS als unterliegendes Dateisystem genutzt wird. Bei LVM/ext4 als Backend NICHT deaktivieren -- Datenverlust-Risiko bei Stromausfall.
 :::
 
+**Connection Timing (tolerant gegen CPU-Kontention):**
+- `DrbdOptions/Net/ping-timeout` = 20 (2 s, Default 5 = 500 ms)
+
+Der Default-ping-timeout von 500 ms ist auf einer VM mit enger CPU-Allocation zu knapp. Wenn der Kernel-Receiver-Thread nicht innerhalb von 500 ms auf einen PingAck antwortet -- z. B. während ein dpkg-Install Kernel-Module neu schreibt oder während ein Docker-Daemon-Restart läuft -- markiert DRBD die Verbindung als tot und initiiert einen Reconnect. Das verursacht Flap-Kaskaden mit Telegram-Noise, ohne dass ein echtes Netzwerkproblem vorliegt.
+
+2 Sekunden fangen Mikro-Stalls aus CPU-Steal, Kernel-Freezes beim Modul-Reload und kurze Netzwerk-Jitter ab, ohne echte Verbindungsprobleme zu maskieren: ein länger als 2 s ausgefallener Peer ist in jedem Fall nicht mehr ok.
+:::
+
+## Nomad-Client-Sizing
+
+Die Nomad-Worker-VMs hängen je 1:1 an einem Proxmox-Host. Auf den N100-Mini-PCs (`pve00`, 4 pCPU, 15 GB RAM) gilt: VM-vCPU-Allocation muss unter den physischen Cores bleiben.
+
+- **Richtig**: 2 vCPU für die Worker-VM, 2 für Host + Nomad-Server-VM
+- **Falsch**: 4 vCPU für die Worker-VM auf einem 4-Core-Host -- keine Reserve, jede Host-Aktivität erzeugt VM-Steal, kurze Stalls verletzen DRBD-Timeouts
+
+Auf den i9-12900H-Hosts (`pve01`/`pve02`, 16 pCPU) ist die Ratio unkritisch -- dort laufen Worker-VMs mit 16 vCPU ohne Steal-Risiko.
+
 ## DClab Konfiguration
 
 Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Replikation zwischen den Storage-Nodes.
