@@ -44,22 +44,23 @@ Jeder Client hat einen eigenen Benutzer im Mosquitto `passwd`-File. Credentials 
 
 - **z2m** -- Zigbee2MQTT (Nomad-Container auf vm-nomad-client-06). Credentials werden per Nomad Template aus Vault (`kv/zigbee2mqtt`) als `ZIGBEE2MQTT_CONFIG_MQTT_USER` / `..._PASSWORD` env-vars in den Container injiziert. Kein Klartext in der `configuration.yaml`.
 - **homeassistant** -- Home Assistant (VM 1000 auf Proxmox, 10.0.0.100). Credentials in `core.config_entries` (storage-file, nicht Vault -- HA laeuft nicht auf Nomad).
-- **sam** -- Legacy-User (inaktiv, historisch)
 
-::: tip Vault als Single Source of Truth fuer z2m
-`kv/zigbee2mqtt` enthaelt `mqtt_user` und `mqtt_password`. Password-Rotation = Vault-Update + z2m-Restart (Nomad rendert Template neu). Der Nomad-Job verwendet die `nomad-workloads`-Policy mit Workload-Identity-Scope auf die Job-ID.
+::: tip Vault als Single Source of Truth
+Der Mosquitto `passwd`-File wird als Nomad Template aus `kv/mosquitto` (Feld `passwd_content`) gerendert -- die PBKDF2-Hashes liegen nicht mehr im NFS-Klartext. Password-Rotation fuer z2m: (1) `kv/zigbee2mqtt` updaten, (2) neuen Hash in `kv/mosquitto.passwd_content` einfuegen, (3) beide Jobs restarten. Mosquitto erhaelt automatisch SIGHUP zum Reload.
 :::
 
 ## Storage
 
 - **Config:** `/mosquitto/config/mosquitto.conf` -- Nomad Template (embedded im Job)
 - **Daten (Persistence):** `/mosquitto/data` -- Linstor CSI Volume (`mosquitto-data`)
-- **passwd:** `/mosquitto/config/passwd` -- NFS `/nfs/docker/mosquitto/config/passwd` (read-only)
+- **passwd:** `/mosquitto/config/passwd` -- Nomad Template aus Vault `kv/mosquitto` (alloc-dir bind-mount, `change_signal = SIGHUP` fuer Hot-Reload)
 
 Logs werden direkt auf stdout geschrieben und von Nomad eingesammelt -- kein separates Log-Volume nötig.
 
-::: warning passwd-Datei bearbeiten
-Die passwd-Datei liegt auf NFS und ist im Container read-only gemountet. Neue Benutzer werden via `mosquitto_passwd` im laufenden Container erzeugt und per `tee -a` an die NFS-Datei angehängt (inode-safe, Bind-Mount bleibt intakt). Danach SIGHUP an den Container-Prozess senden zum Reload.
+::: tip Neue Benutzer hinzufügen
+1. `mosquitto_passwd` im laufenden Container nutzen (`docker exec ... mosquitto_passwd -c -b /tmp/x user password`), Hash-Zeile auslesen.
+2. `vault kv get kv/mosquitto` lesen, neue Zeile anhaengen, `vault kv put kv/mosquitto passwd_content=- <<< "$neuer_content"`.
+3. `nomad alloc restart` auf Mosquitto -- Template wird neu gerendert, SIGHUP loest Reload aus.
 :::
 
 ## Netzwerk
