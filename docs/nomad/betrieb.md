@@ -27,7 +27,14 @@ Alle drei Server sind gleichwertig als API-Endpunkt nutzbar. ACLs sind aktiv -- 
 
 **Preemption** ist seit 01.04.2026 für Service- und Batch-Jobs aktiv. Nomad kann niedrigprioritäre Allocations verdrängen, um höherprioritären Jobs Platz zu schaffen. Das Mindest-Prioritätsdelta beträgt 10 Punkte (Priorität 100 kann Priorität 90 oder tiefer verdrängen). Verdrängte Jobs werden automatisch rescheduled, sofern eine `reschedule`-Stanza konfiguriert ist.
 
-**Drain on Shutdown** ist auf allen Client-Nodes aktiv. Beim Stoppen des Nomad-Systemd-Services drainiert der Node automatisch seine Allocations mit einer Deadline von 5 Minuten. System-Jobs sind vom automatischen Drain ausgenommen.
+**Smart Shutdown (v10.1, Refactor 2026-04-23)** -- der Drain wird nicht mehr ueber die Nomad-Client-Option `drain_on_shutdown` getriggert, sondern explizit ueber `nomad-shutdown-drain.service` mit einem `systemctl is-system-running`-Guard. Unterschied:
+
+- **Bei Reboot / Halt / Shutdown** (`systemctl reboot`) feuert der Guard, und `ExecStop` triggert in Reihenfolge: `nomad node drain -enable -self -yes -deadline 5m -ignore-system`, dann `drbd-reactorctl evict --delay 30 linstor_db`, dann Mount-Wait-Loop fuer LINSTOR-CSI-Volumes.
+- **Bei systemctl restart nomad** (Config-Reload, Ansible-Run) wird der Guard abgewiesen (Zustand `running`) und der Node draint NICHT. Tasks bleiben auf dem Node, Nomad-Agent zyklt in unter 10 Sekunden.
+
+Zusaetzlich: `nomad-boot-enable.service` hat `EnvironmentFile=-/etc/nomad-boot-enable/token.env` (graceful bei fehlendem Token) und bewusst KEIN `PartOf=nomad.service` (sonst wuerde jeder apt-daily-upgrade-Trigger die Unit erneut aufrufen -- das war der Vorfall vom 22.04.2026). `/var/lib/nomad/drain-manual` dient als Sentinel-File: solange es existiert, ueberspringt `nomad-boot-enable` das Re-Enable beim Boot (Admin-Drain bleibt ueber Reboot hinweg erhalten).
+
+Ausgerollt via `scripts/install_smart_shutdown_v10_1.sh` im Homelab-Infra-Repo. Auf allen Nodes ausserdem `needrestart`-Blacklist fuer `nomad.service` (`/etc/needrestart/conf.d/nomad.conf`), damit apt-daily-upgrade Nomad nicht per daemon-reexec restartet.
 
 **Restart/Reschedule Policies** sind auf allen CSI-Jobs konfiguriert:
 - `restart` -- lokaler Neustart des Tasks bei Crashes (3 Versuche in 5 Minuten)
