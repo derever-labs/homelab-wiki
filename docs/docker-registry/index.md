@@ -145,13 +145,19 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 
 **Restore:** MinIO Bucket wiederherstellen, dann Nomad Job starten.
 
-### DNS-Abhängigkeit
+### DNS-Abhängigkeit (v10.2, 24.04.2026)
 
-Zot läuft mit `network_mode = "host"` im Nomad Job. Das bedeutet:
+Zot läuft mit `network_mode = "host"` im Nomad Job, hat aber **explizit** `dns_servers = ["1.1.1.1", "8.8.8.8"]` gesetzt. Damit ist der ZOT-Container komplett unabhängig von internen DNS-Servern (Pi-hole). Das ist bewusst so:
 
-- `dns_servers` in der Nomad Docker-Config wird **ignoriert** — Zot nutzt die DNS-Konfiguration des Hosts (systemd-resolved).
-- Wenn die DNS-Server (lxc-dns-01 / lxc-dns-02, Details: [DNS](../dns/index.md)) nicht erreichbar sind, können keine Upstream-Registries aufgelöst werden.
-- systemd-resolved hat eingebaute Fallback-DNS (1.1.1.1, 8.8.8.8) die bei DNS-Ausfall greifen, aber mit Verzögerung.
+- Upstream-Registries (`registry-1.docker.io`, `ghcr.io`) werden direkt über Public DNS aufgelöst -- kein Hop über Pi-hole.
+- Der MinIO-S3-Endpoint ist als IP (`http://10.0.0.200:9000`) konfiguriert, keine DNS-Auflösung nötig.
+- Die Redis-URL (`redis://redis-zot...`) wird nicht mehr zur Laufzeit via Consul-DNS aufgelöst, sondern **zur Deploy-Zeit per Consul-Template** in die `config.json` gerendert (`{{ range service "redis-zot" }}...{{ end }}`). ZOT sieht zur Laufzeit nur eine feste IP:Port.
+
+Ergebnis: ZOT ist zur Runtime nicht mehr vom Pi-hole und nicht mehr vom Consul-DNS abhängig. Ein Ausfall einer der beiden Schichten crasht ZOT nicht mehr.
+
+::: warning Vorfall 2026-04-23 (gefixt)
+Zuvor hatte ZOT `dns_servers = ["10.0.2.1", "10.0.2.2"]` (Pi-hole) gesetzt und `redis-zot.service.consul` zur Runtime auflösen müssen. Pi-hole kennt keine `.service.consul`-Records → ZOT crashte im Startup. Parallel hatte `redis-zot.nomad` sein Image aus `localhost:5000/library/redis:7-alpine` gezogen (also aus ZOT selbst) → zirkulärer Deadlock. Fixes: DNS auf public, Consul-Template für Redis-URL, `redis-zot` Image auf `docker.io/library/redis:7-alpine`. Details im ClickUp-Task Privat IT Generell 86c9g378x.
+:::
 
 ## Troubleshooting
 
@@ -175,6 +181,7 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 - 18.03.2026: S3-Credentials aus Nomad-Job in Vault migriert (`kv/data/zot-s3`), Vault Workload Identity aktiviert
 - 14.04.2026: Upstream `lscr.io` → `ghcr.io` umgestellt (Scarf-Redirect war OCI-inkompatibel)
 - 18./19.04.2026: Sanierung -- htpasswd Auth (nomad-client/ci-push), Redis cacheDriver, Retention-Policy (Whitelist + Spam-Killer), CI/CD-Pipelines auf ci-push umgestellt
+- 23.04.2026: Bootstrap-Deadlock-Fix -- `redis-zot` pullt Image direkt von `docker.io` (statt aus ZOT selbst), ZOT-DNS auf Public (1.1.1.1/8.8.8.8), Redis-URL als Consul-Template zur Deploy-Zeit. Vermeidet zirkuläre Abhängigkeit bei Kaltstart.
 
 ## Verwandte Seiten
 
