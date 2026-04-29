@@ -162,6 +162,10 @@ Pi-hole v6 mit eingebettetem dnsmasq (FTL) übernimmt DNS-Eingangs-Router und Ad
 | `*.consul` | Consul Server (104/105/106) | 8600 |
 | `*.local` | Router (10.0.0.1) | 53 |
 
+::: info DNS-Rate-Limit deaktiviert
+Pi-holes Default-Rate-Limit (1000 Anfragen pro 60 s pro Client) ist auf Browser-Last dimensioniert und nicht auf Nomad-Worker mit hoher Container-Dichte. Beim Hochfahren vieler Container gleichzeitig (z. B. Init-Container wie `wait-for-postgres`, die `*.service.consul` im 2-Sekunden-Takt resolven) wird die Schwelle überschritten -- Pi-hole antwortet `REFUSED`, die Init-Container hängen im Loop und halten den Rate-Limit-Zustand aktiv (Cascade-Lock). Daher ist das Limit auf beiden DNS-LXCs deaktiviert. Verwaltet via Ansible-Variable `pihole_rate_limit_count` in `ansible/roles/pihole/defaults/main.yml`.
+:::
+
 ### Unbound
 
 Rekursiver Resolver mit DNSSEC-Validierung. Löst Anfragen direkt gegen die Root-Server auf.
