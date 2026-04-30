@@ -140,6 +140,32 @@ CSI -> C05: Linstor API {
 - Node 04 ist diskless Witness (nur Quorum, keine Daten)
 - Verhindert Split-Brain bei Netzwerkpartitionierung
 
+### Connection Paths (Homelab)
+
+Strukturell identisch zum DClab: client-04 hängt physisch nur am Management-Netzwerk (10.0.2.0/24), nicht an der Thunderbolt-Bridge (10.99.1.0/24). PrefNic auf client-05 und -06 ist `thunderbolt`. Ohne expliziten Path-Override versucht DRBD c04 über die Thunderbolt-IP zu erreichen, was scheitert.
+
+Lösung analog zum DClab: zwei Node-Connection-Paths auf Cluster-Ebene zwingen DRBD bei Verbindungen zu c04 auf das Mgmt-Interface (`default`).
+
+| Verbindung | Netzwerk | Interface | Konfiguration |
+|------------|----------|-----------|---------------|
+| client-04 -- client-05 | Management (10.0.2.0/24) | default -- default | node-connection path management-path |
+| client-04 -- client-06 | Management (10.0.2.0/24) | default -- default | node-connection path management-path |
+| client-05 -- client-06 | Thunderbolt (10.99.1.0/24) | thunderbolt -- thunderbolt | node-connection path thunderbolt |
+
+## CSI Health Monitoring
+
+Auf `vm-nomad-client-05` und `-06` läuft ein Cron-Skript jede Minute, das zwei Influx-Metriken nach `/nfs/docker/telegraf/metrics/csi_health_<hostname>.influx` schreibt. Telegraf nimmt sie automatisch via `inputs.file` auf, InfluxDB-Bucket `telegraf` und Grafana mit zwei Alert-Rules in der `Storage Alerts`-Gruppe (`csi-stale-mount-warn`, `csi-plugin-down-crit`) routen via Keep an Telegram.
+
+- **`csi_mounts.stale_count`** -- Anzahl Mount-Pfade unter `/opt/nomad/client/csi/.../per-alloc/<id>/`, deren `<id>` nicht in den running Allocs der Node existiert (orphan Mount nach Crash, OOM, Quorum-Stall).
+- **`csi_plugin.socket_alive`** -- 1 wenn der CSI-Plugin-Container läuft und seine `csi.sock` im Filesystem da ist; 0 sonst.
+- **`csi_plugin.uptime_seconds`** -- Plugin-Container-Uptime, hilft Alerts auf "Plugin lebt schon zu lange ohne Restart" zu fahren (siehe linstor-csi v0.13.1 State-Drift-Bug).
+
+Token: `/etc/nomad.d/csi-monitor.token` (mode 0400 root:root) -- Nomad-ACL-Policy `csi-monitor` mit `node:read` + `namespace:read`. Token-Wert in 1Password als "Nomad CSI Monitor Token" (Privat Vault).
+
+::: info Detection-only, kein Auto-Cleanup
+Die erste Iteration alarmiert nur, sie löscht keine Mounts selbst. Cleanup nach Alert: SSH auf die Node, `findmnt | grep csi` plus `nomad alloc status -short`, `umount` der orphan Pfade. Auto-Cleanup wäre eine zweite Iteration nach 30 Tagen Beobachtung der Detection-Verlässlichkeit.
+:::
+
 ## Performance Tuning
 
 Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
@@ -262,13 +288,15 @@ DC03 -> DC01: Management 1 Gbit {
 
 ### Connection Paths
 
-Da client-01 das 10GbE-Netzwerk nicht erreichen kann, müssen explizite Connection-Paths konfiguriert werden. Ohne diese würde Linstor versuchen, alle Verbindungen über das PrefNic-Interface (drbd-sync) aufzubauen.
+Da client-01 das 10GbE-Netzwerk nicht erreichen kann, würde Linstor ohne expliziten Path-Override versuchen, alle Verbindungen über das PrefNic-Interface (drbd-sync) aufzubauen -- Resultat: asymmetrische Pfade c83:172.x → c01:10.x, die topologisch nicht connectbar sind und zu permanenten `connection:Connecting`-Zuständen führen.
 
-| Verbindung | Netzwerk | Interface |
-|------------|----------|-----------|
-| client-01 -- client-02 | Management (10.180.46.x) | default -- default |
-| client-01 -- client-03 | Management (10.180.46.x) | default -- default |
-| client-02 -- client-03 | DRBD-Sync (172.180.46.x) | drbd-sync -- drbd-sync |
+Lösung: zwei `linstor node-connection path create`-Einträge auf Cluster-Ebene, die DRBD für jede Verbindung zu c01 auf das `default`-Interface auf beiden Seiten zwingen. Diese wirken als Fallback für jede Resource-Connection ohne eigenes Path-Property -- alle dynamisch via CSI angelegten Volumes erben das Routing automatisch (Quelle: `ConfFileBuilder.java`, Resource-Connection-Path überschattet Node-Connection-Path).
+
+| Verbindung | Netzwerk | Interface | Konfiguration |
+|------------|----------|-----------|---------------|
+| client-01 -- client-02 | Management (10.180.46.x) | default -- default | node-connection path management-path |
+| client-01 -- client-03 | Management (10.180.46.x) | default -- default | node-connection path management-path |
+| client-02 -- client-03 | DRBD-Sync (172.180.46.x) | drbd-sync -- drbd-sync | PrefNic-Default, kein Override |
 
 ### IP-Reservierungen (172.180.46.0/24)
 
