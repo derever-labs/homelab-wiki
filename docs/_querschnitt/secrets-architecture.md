@@ -97,7 +97,9 @@ Kein laufender Cluster-Service liest mehr aktiv aus 1P. Phishing-/1P-Compromise-
 
 Routing: Grafana → Webhook → Keep → Telegram (severity-Eskalation an VIP-Bot bei `critical`).
 
-Layer 2 (Telegraf systemd_units defensive Redundanz) und Layer 3 (Uptime Kuma Push-Monitor active-probe fuer Token-Validity) sind als ClickUp-Tasks deferred -- Layer 1 deckt die wesentlichen Failure-Modes ab.
+**Layer 2 -- Telegraf Host-Agent (systemd_units, defensive Redundanz):** Code in `ansible/roles/telegraf-host/` committed. Telegraf liest `vault/vault-unseal/nomad/nomad-boot-enable/docker.service` State, schreibt zu zentralem InfluxDB. Greift wenn Loki-Pipeline ausfaellt. **Rollout pending** -- Inventory-Variablen + Grafana-Alert-Rule auf systemd_units.state=failed muessen in eigener Session umgesetzt werden (siehe ClickUp).
+
+**Layer 3 -- Uptime Kuma Push-Monitor (active-probe, Token-Validity):** Code in `ansible/roles/vault-token-healthcheck/` committed. Skript ruft `nomad acl token self` auf, push-monitort zu Uptime Kuma. Schliesst die einzige Luecke "Token im File aber tot" die Loki nicht erkennt. **Rollout pending** -- pro Host UK-Push-Monitor anlegen + `uptime_kuma_token_health_push_url` in inventory host_vars setzen (siehe ClickUp).
 
 ## Verwandte Seiten
 
