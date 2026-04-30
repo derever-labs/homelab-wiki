@@ -82,6 +82,14 @@ PostgreSQL-Datenbank `gitea` auf dem Shared Cluster, Zugriff über Consul DNS (`
 
 Der integrierte SSH-Server lauscht auf Port 2222 (static). Registriert als separater Consul Service (`gitea-ssh`) mit TCP Health Check.
 
+### Networking (Bridge-Mode)
+
+Der Job nutzt `network_mode = "bridge"` statt `host`. Grund: das offizielle Gitea-Image (`gitea/gitea`, ab mindestens 1.21) bringt zusätzlich zum Built-in Go-SSH-Server einen klassischen OpenSSH-Daemon mit (s6-supervised, `/etc/s6/openssh/run`), der hardcoded auf Container-Port 22 hört. Mit `host`-Mode würde dieser Daemon den Host-Port 22 belegen und SSH-Wartung des Storage-Nodes blockieren -- alle Verbindungsversuche zu Port 22 landen dann im Container-sshd, der nur `git`-User mit signierten CA-Keys kennt.
+
+::: warning Image-Quirk: kein env-Schalter für openssh
+Es gibt im offiziellen Image keinen offiziellen Schalter (env-Variable, Flag), um den s6-openssh-Service zu deaktivieren. Bridge-Mode mit explizitem Port-Mapping (3003 + 2222) isoliert den Daemon container-intern; nur die zwei in der `network`-Stanza definierten Host-Ports sind nach aussen sichtbar.
+:::
+
 ### Sicherheit
 
 - Registrierung ist deaktiviert (`DISABLE_REGISTRATION=true`)
