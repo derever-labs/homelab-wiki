@@ -19,6 +19,7 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
+| **Keep** | Incident-Hub, Alert-Routing, Dedup | [keep.ackermannprivat.ch](https://keep.ackermannprivat.ch) |
 | **Grafana** | Dashboards, Metriken, Log-Alerts | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) |
 | **InfluxDB** | Time-Series Metriken-Backend | [influx.ackermannprivat.ch](https://influx.ackermannprivat.ch) |
 | **Telegraf** | Metriken-Collector (SNMP, Prometheus, Exec) | — (Nomad Job) |
@@ -50,10 +51,12 @@ Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `gith
 :::
 
 ### Alerting (Unified Alerting)
-Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alerts.
+Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-basierte Alert-Rules ausgewertet werden. Der Versand an Telegram laeuft seither nicht mehr direkt aus Grafana, sondern ueber den zentralen Hub [Keep](keep.md).
 
-**Contact Point:** Telegram (Bot-Token aus `kv/data/telegram` via Vault)
-**Notification Policy:** Alle Alerts → Telegram, Group-Wait 30s, Repeat 4h
+**Contact Point:** Webhook auf `https://keep.ackermannprivat.ch/alerts/event/grafana`
+**Notification Policy:** Alle Alerts -> Keep, Group-Wait 30s, Repeat 4h
+
+Keep uebernimmt anschliessend Source-Routing in Forum-Topics, Severity-Eskalation an den VIP-Bot und Deduplizierung. Details siehe [Keep](keep.md).
 
 **Metrik-basierte Alert Rules (InfluxDB):**
 
@@ -75,6 +78,143 @@ Grafana Unified Alerting ist die zentrale Stelle für alle metrikbasierten Alert
 | Vault Permission Denied | `>10 "permission denied" in 5min` | sofort | Warning |
 
 **Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
+
+### Alert-Routing-Pipeline
+
+```d2
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  svc: {
+    style: {
+      border-radius: 8
+    }
+  }
+  agent: {
+    style: {
+      border-radius: 8
+      stroke-dash: 2
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+  db: {
+    shape: cylinder
+    style: {
+      border-radius: 8
+    }
+  }
+  sink: {
+    shape: hexagon
+    style: {
+      border-radius: 8
+    }
+  }
+}
+
+# --- Quellen mit Direct-Webhook (Pfad 1) ---
+direct: Direct-Webhook (Pfad 1) {
+  class: container
+  gatus: Gatus {class: svc}
+  kuma: Uptime Kuma {class: svc}
+  authentik: Authentik {class: svc}
+  arr: Sonarr/Radarr/Prowlarr {class: svc}
+  notifiarr: Notifiarr {class: svc}
+  immo: Immo-Scraper {class: svc}
+  checkmk: CheckMK {class: svc}
+}
+
+# --- Logs/Metrics fuer Pfad 2/3 ---
+sources_l: Log-Quellen (Pfad 2) {
+  class: container
+  apps: Container/Hosts {class: svc}
+  unifi: UniFi (Syslog) {class: svc}
+}
+sources_m: Metrik-Quellen (Pfad 3) {
+  class: container
+  snmp: SNMP Targets {class: svc}
+  hosts: Hosts/Container {class: svc}
+}
+
+alloy: Grafana Alloy {class: agent}
+telegraf: Telegraf {class: agent}
+loki: Loki {class: db}
+influx: InfluxDB {class: db}
+grafana: Grafana\nUnified Alerting {class: svc}
+
+keep: Keep\nIncident-Hub\nDedup + Routing {class: svc}
+
+bot_batch: batch-Bot\nbatch_ackermann_bot {
+  class: agent
+  tooltip: "Standard-Schiene; postet in Forum-Topics"
+}
+bot_vip: vip-Bot\ntop_uptime_ackermann_bot {
+  class: agent
+  tooltip: "Critical-Eskalation; postet im 1:1-Chat"
+}
+
+homelab_alerts: Homelab Alerts\nForum-Channel\n(chat-id -1003971798942) {
+  class: container
+  monitoring: Topic 3 monitoring {class: sink}
+  security: Topic 4 security {class: sink}
+  cicd: Topic 5 ci-cd {class: sink}
+  backup: Topic 6 backup {class: sink}
+  downloader: Topic 7 downloader {class: sink}
+  immo: Topic 8 immo {class: sink}
+}
+
+vip_chat: 1:1 Chat\n(chat-id 813893907) {
+  class: sink
+}
+
+# Pfad 1: Direct-Webhook
+direct.gatus -> keep: webhook
+direct.kuma -> keep: webhook
+direct.authentik -> keep: webhook
+direct.arr -> keep: webhook
+direct.notifiarr -> keep: webhook
+direct.immo -> keep: webhook
+direct.checkmk -> keep: webhook
+
+# Pfad 2: Logs -> Loki -> Grafana-Rule
+sources_l.apps -> alloy: Docker / journald
+sources_l.unifi -> alloy: Syslog 1514
+alloy -> loki: push
+loki -> grafana: LogQL Query
+grafana -> keep: webhook
+
+# Pfad 3: Metriken -> InfluxDB -> Grafana-Rule
+sources_m.snmp -> telegraf: scrape
+sources_m.hosts -> telegraf: scrape
+telegraf -> influx: write
+influx -> grafana: Flux Query
+
+# Keep -> Bots -> Topics
+keep -> bot_batch: "default + alle Severitaeten"
+keep -> bot_vip: "critical / high / page"
+bot_batch -> homelab_alerts.monitoring
+bot_batch -> homelab_alerts.security
+bot_batch -> homelab_alerts.cicd
+bot_batch -> homelab_alerts.backup
+bot_batch -> homelab_alerts.downloader
+bot_batch -> homelab_alerts.immo
+bot_vip -> vip_chat
+```
+
+::: info Routing-Logik
+**Source -> Topic** wird vom Keep-Workflow per Source-Regex bestimmt (`homelab-route-monitoring|security|cicd|backup|downloader|immo`). **Severity -> Bot** laeuft als `if`-Condition innerhalb desselben Workflows. Standard-Alerts gehen ueber den batch-Bot in den passenden Forum-Topic, `critical|high|page` eskaliert zusaetzlich an den vip-Bot in den 1:1-Chat.
+:::
 
 ### Admin-Zugang zur Grafana-HTTP-API
 
@@ -262,6 +402,8 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 
 ## Verwandte Seiten
 
+- [Keep](./keep.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
+- [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (default/vip/batch + Topic-IDs)
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
 - [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
