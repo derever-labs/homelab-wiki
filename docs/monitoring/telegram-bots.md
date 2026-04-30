@@ -1,6 +1,6 @@
 ---
 title: Telegram Bots
-description: Zentraler Benachrichtigungs-Kanal für Monitoring, Alerting und Security-Events
+description: Bot- und Channel-Inventar fuer den Output-Channel von Keep
 tags:
   - monitoring
   - alerting
@@ -10,122 +10,125 @@ tags:
 
 # Telegram Bots
 
-Telegram ist der primäre Push-Notification-Kanal im Homelab. Alle kritischen Events (Monitoring-Ausfälle, Security-Alerts, Backup-Probleme) erreichen Samuel per Telegram auf dem Handy -- im Gegensatz zu E-Mail ist die Latenz niedrig und Alerts lassen sich nach Priorität auf unterschiedliche Chats aufteilen.
+Telegram ist der primaere Output-Channel der [Keep](keep.md)-Routing-Pipeline. Alle Alert-Quellen melden an Keep, und Keep verteilt nach Source/Severity an einen der drei Bots in den entsprechenden Channel und Forum-Topic.
 
 ## Rolle im Stack
 
-Telegram ist kein dedizierter Service im Cluster -- es wird direkt über die Bot-API von `api.telegram.org` angesprochen. Homelab-Services senden Nachrichten entweder **direkt** (wenn der Service Telegram nativ unterstützt) oder **über einen Relay** (wenn Tokens nicht in Klartext in Service-Konfigurationen landen sollen).
+Telegram ist **kein** dedizierter Service im Cluster -- es wird ueber die Bot-API von `api.telegram.org` angesprochen. Im Regelbetrieb gibt es genau einen einzigen Pfad: **Quelle -> Keep -> Bot -> Channel/Topic**. Direkte Bot-Aufrufe aus Services existieren nur noch fuer Apprise-Integrationen ueber den Telegram-Relay (siehe unten).
 
 ```d2
 direction: right
 
-Services: Homelab-Services {
-  style.stroke-dash: 4
-  Grafana: Grafana Alerting
-  Kuma: Uptime Kuma
-  Notifiarr: Notifiarr
-  Authentik: Authentik
-  Backup: Backup-Jobs
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
 }
 
-Relay: Telegram Relay (Nomad) {
-  style.stroke-dash: 4
-  RELAY: HTTP /notify Endpoint { tooltip: "Token + Chat-ID als Consul-Template aus Vault" }
+classes: {
+  svc: { style: { border-radius: 8 } }
+  agent: { style: { border-radius: 8, stroke-dash: 2 } }
+  container: { style: { border-radius: 8, stroke-dash: 4 } }
+  sink: { shape: hexagon, style: { border-radius: 8 } }
 }
 
-Vault: Vault (kv/telegram) { shape: cylinder }
+keep: Keep\nIncident-Hub { class: svc }
 
-TG: Telegram Bot API {
-  style.stroke-dash: 4
-  BOT_DEFAULT: default Bot
-  BOT_VIP: vip Bot
+bots: Telegram-Bots {
+  class: container
+  batch: batch-Bot\nbatch_ackermann_bot {
+    class: agent
+    tooltip: "Standard-Schiene; postet in Forum-Topics"
+  }
+  vip: vip-Bot\ntop_uptime_ackermann_bot {
+    class: agent
+    tooltip: "Critical-Eskalation; postet im 1:1-Chat"
+  }
+  default: default-Bot\nuptime_ackermann_bot {
+    class: agent
+    tooltip: "Legacy fuer ad-hoc; nicht im Keep-Routing"
+  }
 }
 
-Services.Grafana -> TG.BOT_DEFAULT: Direct (Grafana Native Contact Point)
-Services.Kuma -> TG.BOT_DEFAULT: Direct
-Services.Notifiarr -> TG.BOT_DEFAULT: Direct
-Services.Authentik -> Relay.RELAY: Webhook (intern-only)
-Services.Backup -> Relay.RELAY: Webhook (intern-only)
-Relay.RELAY -> TG.BOT_VIP
-Vault -> Relay.RELAY: Consul-Template { style.stroke-dash: 5 }
-Vault -> Services.Grafana: Consul-Template { style.stroke-dash: 5 }
+forum: Homelab Alerts (Forum-Channel) {
+  class: container
+  monitoring: Topic 3 monitoring { class: sink }
+  security: Topic 4 security { class: sink }
+  cicd: Topic 5 ci-cd { class: sink }
+  backup: Topic 6 backup { class: sink }
+  downloader: Topic 7 downloader { class: sink }
+  immo: Topic 8 immo { class: sink }
+}
+
+vipchat: 1:1 Chat\n(Samuel) { class: sink }
+
+keep -> bots.batch: "Standard-Severitaeten"
+keep -> bots.vip: "critical / high / page"
+bots.batch -> forum.monitoring
+bots.batch -> forum.security
+bots.batch -> forum.cicd
+bots.batch -> forum.backup
+bots.batch -> forum.downloader
+bots.batch -> forum.immo
+bots.vip -> vipchat
 ```
 
-## Zwei Bot-Kanäle
+## Drei Bots
 
-Zur Aufteilung nach Priorität gibt es zwei separate Telegram-Bots mit eigenen Chats:
+- **batch** -- `batch_ackermann_bot`. Standard-Schiene fuer alle Severitaeten. Postet in den Forum-Channel `Homelab Alerts` (chat-id `-1003971798942`) und sortiert per `message_thread_id` in das passende Topic. Hohe Frequenz erwartbar.
+- **vip** -- `top_uptime_ackermann_bot`. Eskalations-Schiene fuer `critical | high | page`. Postet zusaetzlich zur batch-Nachricht im 1:1-Chat (chat-id `813893907`) fuer sofortige Sichtbarkeit unabhaengig vom Channel-Notification-Setting. Pro Tag idealerweise null Nachrichten -- jede eingehende ist ernst.
+- **default** -- `uptime_ackermann_bot`. Legacy-Bot fuer Direct-Pushes aus Skripten oder ad-hoc Notifications. **Nicht** Teil der Keep-Routing-Workflows. Wird vom Telegram-Relay (Apprise-Bridge) genutzt.
 
-- **default** -- allgemeiner Monitoring-Kanal. Häufige Nachrichten: Uptime-Kuma-Status, Backup-Logs, Notifiarr-Meldungen aus dem Media-Stack. Kann auch mal 10 Nachrichten pro Tag enthalten, ist "Rauschkanal".
-- **vip** -- kritischer Kanal für Alerts die sofortige Aufmerksamkeit brauchen. Security-Events (Authentik Failed-Logins, Reputation-Blocks), Grafana-Critical-Alerts, Vault-Fehler, Proxmox-Host-Down. Pro Tag idealerweise 0 Nachrichten -- jede eingehende Nachricht ist ernst.
+Alle drei Bots sind als Provider in Keep installiert (`telegram-homelab-batch`, `telegram-homelab-vip`, `telegram-homelab-default`); aktiv im Routing sind nur batch und vip.
 
-Die Trennung ist bewusst: wer alle Events in einen Chat mischt, gewöhnt sich an Rauschen und übersieht die wichtigen.
+## Forum-Topics
 
-## Bot-Konsumenten
+Source-Cluster -> Topic-Mapping liegt in den [Keep-Workflows](keep.md#routing-workflows):
 
-Direkt integrierte Services (Bot-Token liegt in der Service-Config):
+| Topic-ID | Name | Quellen |
+| :--- | :--- | :--- |
+| 3 | monitoring | gatus, kuma, uptime, grafana, checkmk, prometheus, telegraf, loki, test, keep |
+| 4 | security | authentik, crowdsec, security |
+| 5 | ci-cd | gitea, github, runner, ci |
+| 6 | backup | borg, restic, duplicati, backup, pbs |
+| 7 | downloader | sonarr, radarr, sabnzbd, prowlarr, jellyseerr, downloader, notifiarr, lazylibrarian |
+| 8 | immo | immo, scraper, immoscraper |
 
-- **Grafana Unified Alerting** -- nutzt den `default` Bot als Contact Point. Sendet Metrik- und Log-basierte Alerts (LVM, DRBD, CheckMK via Loki). Details: [Monitoring Stack](./index.md)
-- **Uptime Kuma** -- nutzt den `default` Bot bei HTTP/TCP-Check-Failures. Credentials in der `kuma.db` Datenbank, via Litestream auf NAS gesichert
-- **Notifiarr** -- nutzt den `default` Bot für Media-Stack-Events (Radarr/Sonarr-Grabs, Quality-Profile-Syncs)
+## Telegram-Relay (Apprise-Bridge)
 
-Über den Telegram-Relay angebundene Services (kein Token in der Service-Config):
+Der Telegram-Relay (`nomad-jobs/services/telegram-relay.nomad`) ist ein kleiner HTTP-Endpoint `POST /notify`, der Apprise-`json://` Payloads entgegennimmt und ueber den default-Bot weiterleitet. Er existiert noch fuer Skripte und Tools die Apprise reden, aber nicht direkt zu Keep. Im Regelbetrieb soll alles ueber Keep laufen -- der Relay ist die letzte Bridge fuer Legacy-Anbindungen.
 
-- **Authentik** -- sendet Security-Events (Failed-Logins, Reputation-Blocks, LDAP-Bind-Fails, Configuration-Errors) an den `vip` Bot
-- Weitere Services können jederzeit hinzukommen, solange sie HTTP-Webhooks absetzen können
+- **Endpoint** -- `http://telegram-relay.service.consul:PORT/notify`
+- **Body** -- mindestens `text`, optional `title` (wird vorangestellt). Apprise-`message`-Feld wird als Fallback fuer `text` akzeptiert.
+- **Bot** -- nutzt den default-Bot, postet in den 1:1-Chat von Samuel.
 
-## Relay-Service
+Wenn ein Tool sowohl Webhooks als auch Apprise kann, **immer Webhook nach Keep** bevorzugen, nicht den Relay.
 
-Der Telegram-Relay ist ein kleiner Nomad-Job mit einem HTTP-Endpoint `POST /notify`. Er nimmt JSON-Payloads entgegen und leitet sie an die Telegram-Bot-API weiter. Der Bot-Token liegt als Consul-Template aus Vault nur im Relay-Container -- nicht in den Configs der anbindenden Services.
+## Secrets
 
-**Warum ein Relay statt Direct-Integration für Authentik & Co.?**
+Bot-Tokens und Chat-IDs liegen in 1Password unter dem Item `Monitoring Telegram Bots` im Privat-Vault:
 
-- Authentik speichert Webhook-URLs inklusive eingebetteter Tokens **im Klartext** in der Datenbank. Ein DB-Backup-Leak würde den Bot-Token exponieren und alle Chats des Bots kompromittieren
-- Der Relay liegt nur auf Consul-internem Netz erreichbar (`telegram-relay.service.consul`), der Endpoint ist nicht von aussen ansprechbar
-- Format-Normalisierung: der Relay fügt Tags wie `[Authentik/alert/LDAP]` hinzu, Severity-Icons, Timestamps -- Services müssen nur Text liefern
-- Rate-Limit und Deduplication zentral möglich (Telegram-Bot-API hat Rate-Limits auf 30 msg/sec)
+- `default_bot_token`, `default_chat_id`
+- `vip_bot_token`, `vip_chat_id`
+- `batch_bot_token`, `batch_chat_id`, `batch_topics` (JSON-Map mit Topic-ID-Lookup)
 
-Der Relay-Job liegt unter [nomad-jobs/services/telegram-relay.nomad](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/nomad-jobs/services/telegram-relay.nomad).
+Der Vault-Pfad `kv/data/telegram` und `kv/data/telegram-relay` enthaelt nur die Tokens, die der Telegram-Relay-Job zur Laufzeit braucht.
 
-## Secrets in Vault
+## Neue Quelle anbinden
 
-Die Bot-Credentials werden zentral in Vault unter folgenden Pfaden abgelegt:
+Drei Muster, abhaengig vom Service:
 
-- `kv/data/telegram` -- legacy Pfad, genutzt von Grafana. Enthält Default-Bot-Token und Default-Chat-ID
-- `kv/data/telegram-relay` -- Relay-spezifische Credentials. Enthält den VIP-Bot-Token und die Chat-IDs für Security-Alerts
+1. **Service hat Webhook-Mechanismus** (Grafana, Gatus, Authentik, Sonarr/Radarr/Prowlarr, CheckMK, Notifiarr) -- Webhook auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Source-Name bestimmt Topic-Routing in Keep. Severity im Body bestimmt Bot.
+2. **Service liefert nur Logs** (UniFi Syslog, App-Stdout) -- Alloy nimmt auf, Loki speichert, Grafana hat LogQL-Alert-Rule, Rule postet als Webhook nach Keep.
+3. **Service liefert nur Metriken** (SNMP, Prometheus-Scrape, Exec) -- Telegraf scraped, InfluxDB speichert, Grafana hat Flux-Alert-Rule, Rule postet als Webhook nach Keep.
 
-Das Duplikat ist beabsichtigt: Grafana bleibt bei seinem bestehenden Vault-Pfad, der Relay hat einen eigenen Pfad, damit beide unabhängig rotiert werden können. Die Original-Credentials liegen zusätzlich in 1Password im Item `Monitoring Telegram Bots` (Felder `default_bot_token`, `default_chat_id`, `vip_bot_token`, `vip_chat_id`).
-
-## Neue Services anbinden
-
-Drei Muster, abhängig vom Service:
-
-1. **Service unterstützt Telegram nativ** (Grafana, Uptime Kuma, Notifiarr, Prometheus Alertmanager)
-   - Bot-Token direkt in die Service-Config über Consul-Template aus Vault
-   - Bevorzugt für Services die den Token über Template-Rendering bekommen und nicht persistieren
-2. **Service kann Webhooks absetzen** (Authentik, Custom-Scripts, Backup-Jobs)
-   - Webhook-URL auf den Relay zeigen lassen: `http://telegram-relay.service.consul:PORT/notify`
-   - Body muss mindestens `text` enthalten, optional `severity` (`alert`, `warning`, `info`) und `source`
-3. **Service kann nur E-Mail** (legacy Tools)
-   - E-Mail an `services@ackermann.systems` absetzen (via `smtp.service.consul`)
-   - Bei Bedarf einen separaten Mail-zu-Telegram-Filter aufsetzen -- aktuell nicht im Einsatz
-
-Welcher Chat (default vs. vip) verwendet wird, hängt an der **Relevanz** der Events, nicht am Service selbst: Authentik Login-Statistiken gingen in `default`, Authentik Security-Alerts gehen in `vip`. Die Trennung muss auf Rule-Level stattfinden, nicht auf Service-Level.
-
-## Rate-Limits und Deduplication
-
-Die Telegram-Bot-API erlaubt maximal 30 Nachrichten pro Sekunde und 20 Nachrichten pro Minute pro Chat. Im Homelab-Alltag sind wir weit darunter. Sollte ein fehlerhafter Alert-Loop entstehen (z. B. Oscillating Service-Check), blockt Telegram automatisch -- der Relay sollte diese Fehler absorbieren und zurückmelden, nicht retrien.
-
-Deduplication läuft heute **nicht zentral** -- wenn Grafana und Authentik gleichzeitig einen Ausfall melden, kommen zwei Nachrichten. Falls das stört, kann der Relay später eine 5-Minuten-Fingerprint-Cache-Logik bekommen.
-
-## Test und Health-Check
-
-Der Relay-Service registriert sich als Consul-Service `telegram-relay`. Ein Health-Check auf `GET /health` prüft ob der Service läuft und Vault-Credentials lesen konnte. Falls das fehlschlägt (z. B. Vault-Token expired), wird der Service im Consul als `critical` markiert und die anbindenden Services bekommen `503` statt der Nachricht.
-
-Regression-Tests für einen neuen Alert-Pfad erfolgen immer am Ende der Einrichtung: echter End-to-End-Test mit Trigger am Service (nicht nur Relay-Smoke-Test).
+Direkter Telegram-Bot-Aufruf aus dem Service (alter Stil) ist **nicht** mehr der gewuenschte Pfad. Der Telegram-Relay bleibt nur fuer Apprise-Tools, die nichts anderes koennen.
 
 ## Verwandte Seiten
 
-- [Monitoring Stack](./index.md) -- Grafana, Uptime Kuma, CheckMK
-- [Notifiarr](../notifiarr/index.md) -- Media-Stack-Benachrichtigungen
-- [Authentik Alerting](../authentik/betrieb.md) -- Security-Event-Pipeline (wird im Zuge des Hardening-Sprints angelegt)
-- [Vault](../vault/index.md) -- Secret-Storage für Bot-Tokens
+- [Keep](keep.md) -- Hub fuer Routing, Severity-Eskalation und Dedup
+- [Monitoring](index.md) -- Stack-Uebersicht und Datenfluesse
+- [Notifiarr](../notifiarr/index.md) -- Media-Stack-Benachrichtigungen (Webhook nach Keep)
+- [Authentik Alerting](../authentik/betrieb.md) -- Security-Event-Pipeline
+- [Vault](../vault/index.md) -- Secret-Storage fuer Bot-Tokens
