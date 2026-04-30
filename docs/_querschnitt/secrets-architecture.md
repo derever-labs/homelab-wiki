@@ -28,13 +28,16 @@ Token-Rotation: alle 12 Monate manuell (Kalender-Eintrag). Blast Radius minimal 
 
 ## Phase 2 -- Vault Auto-Unseal weg von 1P
 
-::: warning Status: deferred
-Nachverfolgt in ClickUp. Pro-Cluster-Migration ohne Cross-Cluster-Coupling.
+::: tip Status: umgesetzt 2026-04-30 (war live, nun auch im Repo versioniert)
 :::
 
-Aktuell: Vault Auto-Unseal nutzt 1P-CLI-Provider. Ziel: Token-on-Disk pro Cluster in Kombination mit LUKS-Disk-Encryption auf VM-Ebene. Recovery-Keys offline-Backup.
+Vault Auto-Unseal nutzt **Token-on-Disk** Pattern pro Cluster: `vault-unseal.service` (Systemd, Type=oneshot) liest Shamir-Recovery-Keys aus `/etc/vault.d/unseal-keys` (mode 0600, root) und ruft beim Boot `vault operator unseal` pro Key auf. Skript versioniert in `ansible/roles/vault/templates/vault-unseal.j2`.
 
-Trade-off bewusst gewaehlt: Disk-Compromise des Vault-Servers bedeutet Vault-Master-Compromise. Aber wer Root auf der laufenden Vault-VM hat, hat eh Zugang zum Vault-Binary -- effektiv kein neues Risiko gegenueber dem Status-quo.
+Setup war seit Initial-Bootstrap auf beiden Clustern Live, war aber im Repo bisher mit einem anderen (nicht eingesetzten) Pattern versioniert. Drift-Korrektur 2026-04-30: Repo entspricht jetzt Live.
+
+`/etc/vault.d/unseal-keys` wird **nicht** von Ansible deployed -- muss beim Initial-Provisioning eines neuen Vault-Servers manuell angelegt werden. Recovery-Keys-Backup liegt offline in 1P "Vault Token Privat" (Vault "PRIVAT Agent").
+
+Trade-off bewusst gewaehlt: Disk-Compromise des Vault-Servers bedeutet Vault-Master-Compromise. Aber wer Root auf der laufenden Vault-VM hat, hat eh Zugang zum Vault-Binary -- effektiv kein neues Risiko gegenueber externem 1P-Provider, und externe Angriffsoberflaeche (Phishing, 1P-Cloud-Outage) ist eliminiert.
 
 Cross-Cluster-Cross-Unseal (Homelab unsealt DCLab oder umgekehrt) wurde bewusst verworfen. DCLab und Homelab bleiben technisch unabhaengig.
 
