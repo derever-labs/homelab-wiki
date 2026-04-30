@@ -40,13 +40,14 @@ Cross-Cluster-Cross-Unseal (Homelab unsealt DCLab oder umgekehrt) wurde bewusst 
 
 ## Phase 3 -- ZOT-Auth und GitHub-Runner aus Vault
 
-::: warning Status: deferred
-Nachverfolgt in ClickUp.
+::: tip Status: umgesetzt 2026-04-30
 :::
 
-ZOT htpasswd kommt heute aus 1P "ZOT HTPasswd nomad-client". Migration zu Vault-KV `kv/zot/htpasswd` mit gleichem Pattern wie Phase 1.
+ZOT htpasswd kommt aus Vault-KV `kv/zot/htpasswd` (Felder `username` + `password`). 1P "ZOT HTPasswd nomad-client" bleibt als Backup. Provisionierung via existing `playbooks/docker-registry-auth.yml`, Operator setzt vor Run `ZOT_NOMAD_CLIENT_PW=$(vault kv get -field=password kv/zot/htpasswd)` und ruft Ansible mit `--extra-vars`. Gleicher Pattern wie Phase 1.
 
-GitHub-Runner nutzt bereits Vault Nomad Secret Engine (`nomad/creds/github-deploy`) fuer kurzlebige Tokens. Phase 3 ist hier reine Verifikation, kein Migrations-Aufwand.
+Live-deployed auf vm-nomad-client-04/05/06 -- Test-Pull `localhost:5000/library/alpine:3.21` OK.
+
+GitHub-Runner nutzt bereits Vault Nomad Secret Engine (`nomad/creds/github-deploy`) fuer kurzlebige Tokens (30 min TTL). Keine Migration noetig -- ist heute schon 1P-frei im CD-Pipeline-Pfad.
 
 ## End-Zustand
 
