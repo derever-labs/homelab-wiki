@@ -72,6 +72,8 @@ Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart do
 
 **Postgres-Sonderbehandlung bei Reschedule:** PostgreSQL hat eine bewusst begrenzte `reschedule`-Policy (`max 3 Versuche, mode = "fail"`). Endloses automatisches Failover zwischen Nodes wäre gefährlich, da DRBD (`single-node-writer`) die eigentliche Fencing-Schicht ist -- nicht Nomad. Bei wiederholtem Failure ist manuelles Eingreifen nötig.
 
+**Restart-Counter via REST-API statt Prometheus:** Die Nomad-Prometheus-Telemetrie liefert keine verlässlichen Restart-Counter. `nomad_client_allocs_restart` existiert in aktuellen Nomad-Versionen nicht im `/v1/metrics`-Output (HashiCorp Issue #3060 ungelöst seit 2016) und `nomad_nomad_job_summary_failed` wird durch Nomad-GC zurückgesetzt -- `rate()`/`increase()`/`spread()`-Patterns liefern False-Positives. Restart- und Reschedule-Loop-Detection läuft daher über ein Cron-Bash-Script (`/usr/local/bin/nomad-job-health-metrics.sh`) auf jedem Worker, das via REST-API `/v1/node/<id>/allocations` die Felder `TaskStates.<task>.Restarts` und `ClientStatus`+`CreateTime` ausliest und als Influx-Lines (`nomad_alloc_restarts`, `nomad_job_health`) nach Telegraf schreibt. Die zwei Grafana-Alerts (`nomad-restart-storm-warn`, `nomad-failed-allocs-crit`) konsumieren diese Quelle. ACL-Policy `nomad-monitor` und Token-File auf jedem Worker; Token in 1Password als "Nomad Monitor Token". Pattern analog zur CSI-Health-Detection.
+
 ## Credentials
 
 Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
