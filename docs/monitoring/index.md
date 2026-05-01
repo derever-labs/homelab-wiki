@@ -406,6 +406,7 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 
 ## Verwandte Seiten
 
+- [Coverage](./coverage.md) -- Welcher Host und Service wird wie überwacht und was bewusst ausgelassen
 - [Keep](./keep.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
 - [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (default/vip/batch + Topic-IDs)
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
