@@ -58,11 +58,15 @@ Renovate erstellt in jedem gescannten Repository ein GitHub Issue als Dependency
 
 ## Monitoring
 
-Nach erfolgreichem Abschluss sendet der Job einen Push an Uptime Kuma. Der Push-Monitor hat ein Heartbeat-Intervall von 25 Stunden, sodass ein einzelner fehlgeschlagener Lauf noch keinen Alarm auslöst.
+Zwei Pfade ergänzen sich:
+
+- **Job-Health** -- Nach erfolgreichem Abschluss sendet Renovate einen Push an Uptime Kuma. Der Push-Monitor hat ein Heartbeat-Intervall von 25 Stunden, sodass ein einzelner fehlgeschlagener Lauf noch keinen Alarm auslöst. Bleibt der Push länger aus, alarmiert Uptime Kuma -- damit ist nur der "Renovate läuft nicht" Fall abgedeckt.
+- **Backlog-Health** -- Ein zweiter Batch-Job `renovate-backlog-watchdog` läuft täglich um 06:00 (1h nach Renovate). Er zählt offene Renovate-PRs älter als 7 Tage und schickt einen Alert an Keep (`/alerts/event/keep`, Source `github`, Topic CI/CD). Severity-Schwellen: ab 10 PRs `warning`, ab 25 `high`, ab 50 `critical`. Unter 10 PRs sendet er `resolved`, womit Keep den Alert schliesst. Damit wird nicht nur Job-Tot, sondern auch ein wachsender Review-Backlog sichtbar.
 
 ## Job-Datei
 
-`nomad-jobs/batch-jobs/renovate.nomad`
+- `nomad-jobs/batch-jobs/renovate.nomad` -- Renovate selbst
+- `nomad-jobs/batch-jobs/renovate-backlog-watchdog.nomad` -- Backlog-Watchdog (Keep)
 
 ## Verwandte Seiten
 
