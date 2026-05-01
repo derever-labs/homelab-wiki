@@ -79,6 +79,18 @@ Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizit
 | `inputs.exec` | Jellyfin Library Counts | 60s | `jellyfin` |
 | `inputs.exec` | Radarr/Sonarr Queue | 60s | `arr_*` |
 
+## CheckMK als zusätzliche Quelle
+
+Die CheckMK-Site `homelab` schreibt Service-Performance-Metriken aller monitored Hosts (`checkmk` selbst, Proxmox-Hosts, Nomad-Cluster, beide Synology-NAS) zusätzlich in den `telegraf`-Bucket. Damit landen Hardware-Metriken aus CheckMK (CPU/Mem/Filesystem/Disk-IO/Network) und Telegraf-SNMP-Metriken im selben Bucket und können in Grafana mit gleichen Datasources kombiniert werden.
+
+| Forwarder | CheckMK-Connection | Bucket | Endpoint |
+| :--- | :--- | :--- | :--- |
+| `cmc_influxdb_service_metrics` | `InfluxDB_Ops_Privat` | `telegraf` | aktuelle Nomad-Allocation-IP des `influxdb`-Service |
+
+::: info Endpoint-Drift
+CheckMK (vm-checkmk Homelab) schreibt direkt auf die Nomad-Allocation-IP, weil der CheckMK-Site kein Consul-DNS-Resolver konfiguriert ist. Bei Reschedule muss `influxdb_connections.mk` manuell aktualisiert werden.
+:::
+
 ## Secrets-Verwaltung
 
 Alle Secrets werden via Vault injiziert:

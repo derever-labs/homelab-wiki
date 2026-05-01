@@ -33,7 +33,7 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Nomad Server:** vm-nomad-server-04/05/06 -- Systemdienste, Ressourcenauslastung
 - **Nomad Clients:** vm-nomad-client-04/05/06 -- CPU, RAM, Disk, Docker-Daemon
 - **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
-- **NAS (Synology DS):** SNMP-Host -- Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen
+- **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS2419+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
 - **Home Assistant:** Verfügbarkeit und Systemzustand
 - **Proxmox Special Agent:** In Einrichtung -- tiefere Proxmox-Integration via API (nicht nur Agent)
 - **Nomad-Container:** Alle laufenden Allocs via Docker Piggyback-Mechanismus auf den Client-Nodes
@@ -65,7 +65,13 @@ Die Skripte liegen unter `homelab-hashicorp-stack/ansible/files/` und werden nac
 
 ### Synology als SNMP-Host
 
-Die Synology NAS ist kein Agent-Host, sondern ein SNMP-Host. CheckMK fragt die NAS direkt via SNMP ab -- kein Agent nötig. Die SNMP-Credentials sind in CheckMK konfiguriert.
+Beide Synology-NAS sind SNMP-only-Hosts (User `checkmk`, authPriv MD5/CBC-DES). CheckMK fragt die Synology Built-in-Plugins ab und liefert Hardware-Health (Disks/Cache/M.2, RAID, Fans, Power), Filesystem-Auslastung der `/volume*`-Hauptmounts, CPU- und RAM-Last sowie Network-Interface-Throughput. Disk-IO wird auf RAID-Aggregate-Ebene gemessen. SMART-Detail-Counter sind nicht via SNMP, dafür DSM Resource Monitor.
+
+Generische SNMP-Sub-Devices (per-Disk-IO, hr_fs für System-Mounts, Container-Submounts unter `/volume*/@`) sind via `ignored_services`-Rule unterdrückt, weil sie das Free-Tier-Limit sprengen würden ohne neuen Erkenntniswert.
+
+::: info Tailscale-Vorbedingung für Dottikon Nana
+Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscale erreichbar (192.168.2.0/23 wird von `pve-01-nana` als Subnet-Route angeboten). Damit CheckMK darauf pollen kann, läuft auf der CheckMK-VM ein Tailscale-Client mit Tag `tag:homelab` und `--accept-routes`.
+:::
 
 ### Proxmox Special Agent (in Einrichtung)
 
