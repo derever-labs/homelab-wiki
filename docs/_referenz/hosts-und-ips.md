@@ -53,12 +53,18 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 ## Externe Plattformen
 
-| Host | IP (LAN) | IP (Tailscale) | Standort | Rolle |
-| :--- | :--- | :--- | :--- | :--- |
-| pve-01-nana | 192.168.2.41 | 100.81.116.122 | Dottikon Nana | Externer Watchdog-Proxmox (Single-Node, kein Cluster-Mitglied) |
+| Host | IP (LAN) | IP (Tailscale) | DNS | Standort | Rolle |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| pve-01-nana | 192.168.2.41 | 100.81.116.122 | pve01.nana.ackermannprivat.ch | Dottikon Nana | Externer Watchdog-Proxmox für Homelab (Single-Node, kein Cluster-Mitglied) |
 
-::: info Externer Watchdog
+::: info Externer Watchdog (nur Homelab)
 `pve-01-nana` steht physisch ausserhalb des Homelab-Standorts und ist via Tailscale als Subnet-Router für `192.168.2.0/23` ins Tailnet eingebunden. Wird vom Homelab-Ansible über die Inventory-Gruppe `proxmox_external` (bzw. `all_proxmox_hosts` für gemeinsame Plays) angesprochen.
+
+DNS via Pi-hole-Override (lxc-dns-01/02 → `100.81.116.122`). In PDM (`pdm.ackermannprivat.ch`) als Remote `pve-01-nana` eingehängt -- Cross-Cluster-Migration vom lenzburg-Cluster ist via PDM-UI verfügbar.
+
+Cross-Site-VPN ist heute Tailscale, Endzustand ist Unifi SD-WAN sobald Public-IP an Nana-Seite verfügbar.
+
+DCLab hat **keinen** externen Watchdog -- siehe Memory `feedback_no_cross_cluster_coupling`.
 :::
 
 ## Infrastruktur
