@@ -85,10 +85,10 @@ Die CheckMK-Site `homelab` schreibt Service-Performance-Metriken aller monitored
 
 | Forwarder | CheckMK-Connection | Bucket | Endpoint |
 | :--- | :--- | :--- | :--- |
-| `cmc_influxdb_service_metrics` | `InfluxDB_Ops_Privat` | `telegraf` | aktuelle Nomad-Allocation-IP des `influxdb`-Service |
+| `cmc_influxdb_service_metrics` | `InfluxDB_Ops_Privat` | `telegraf` | `influxdb.service.consul:8086` |
 
-::: info Endpoint-Drift
-CheckMK (vm-checkmk Homelab) schreibt direkt auf die Nomad-Allocation-IP, weil der CheckMK-Site kein Consul-DNS-Resolver konfiguriert ist. Bei Reschedule muss `influxdb_connections.mk` manuell aktualisiert werden.
+::: info Service-Discovery via vm-proxy-dns-01
+vm-checkmk Homelab nutzt `10.0.2.1` (`vm-proxy-dns-01`) als DNS-Server, der `*.consul`-Anfragen an die Consul-Cluster weiterleitet. Damit folgt der Forwarder automatisch jedem Reschedule des Influx-Service.
 :::
 
 ## Secrets-Verwaltung
