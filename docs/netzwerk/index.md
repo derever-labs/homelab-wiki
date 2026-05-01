@@ -158,7 +158,7 @@ Details zur Konfiguration und IP-Zuordnung: [Proxmox](../proxmox/)
 
 ## Tailscale
 
-Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CGNAT-Bereich 100.64.0.0/10.
+Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CGNAT-Bereich 100.64.0.0/10. Seit Mai 2026 ist das Tailnet durch eine ACL-Policy in zwei Cluster getrennt -- HSLU/DCLab und Homelab sehen einander nicht, `tag:admin` sieht beide. Details, Tag-Schema und Diagramm: [Tailscale](./tailscale.md).
 
 
 ## Externe Erreichbarkeit
