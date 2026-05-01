@@ -33,26 +33,26 @@ Diese Seite ist die **Ist-Stand-Übersicht**. Offene Coverage-Lücken werden im 
 
 ## Externer Watchdog
 
-- **pve-01-nana** (192.168.2.41 LAN, 100.81.116.122 Tailscale, Dottikon) -- **Coverage-Lücke**. Geplanter Pfad: CheckMK-Agent über Tailscale + ZFS-rpool + NVMe-SMART (`86c9knpm4`). Externe Watchdog-Rolle für Homelab, kein Cluster-Mitglied
+- **pve-01-nana** (100.81.116.122 Tailscale, Dottikon) -- als CheckMK-Host angelegt (cmk-agent Tag, gepollt via Tailscale-IP). Agent-Install via Ansible-Playbook `06-checkmk-agent.yml` ausstehend. ZFS-rpool + NVMe-SMART folgen mit Agent (`86c9knpm4`). Externe Watchdog-Rolle für Homelab, kein Cluster-Mitglied
 
 ## Storage
 
 - **synology-nas** (Homelab DS2419+) -- CheckMK SNMP via Synology Built-in Plugins (Disks/RAID/PSU/Fan/Temp/Volumes/CPU/RAM/IF). Live seit 2026-05-01
 - **nana-nas** (Dottikon DS1517+, via Tailscale) -- analog synology-nas. Live seit 2026-05-01. CheckMK-VM hat dafür einen Tailscale-Client mit `tag:homelab` und `--accept-routes`
-- **pbs-backup-server** (10.0.2.50, Proxmox Backup Server) -- **Coverage-Lücke**. Geplanter Pfad: CheckMK Standard-Agent + df-Plugin für Datastores + Loki-Pattern für PBS-Sync/Verify-Fehler (`86c9knpm4`)
+- **pbs-backup-server** (10.0.2.50, Proxmox Backup Server) -- als CheckMK-Host angelegt (cmk-agent Tag). Agent-Install ausstehend. df-Plugin für Datastores + Loki-Pattern für PBS-Sync/Verify-Fehler folgen mit Agent (`86c9knpm4`)
 - **Linstor/DRBD** (auf vm-nomad-client-05/06) -- CheckMK-Agent + Linstor-Local-Checks via Ansible-Playbook `checkmk-linstor-checks.yml`. Stale-Mount-Detection via Telegraf-File-Input
 - **MinIO NAS** (10.0.0.200:9000, S3 auf Synology) -- HTTP-Probe via UK; Bucket-Coverage über Telegraf prom-Scrape
 
 ## Network
 
-- **UDM Pro Lenzburg** (10.0.0.1, Gateway + Unifi Controller) -- **Coverage-Lücke**. Welle-3-Subtask `86c9kmc3u`: SNMP-Standard-Plugins + Syslog-Forward nach Alloy
+- **udm-pro** (10.0.0.1, Gateway + Unifi Controller) -- als ICMP-only-Host in CheckMK (Reachability live). Welle-3-Subtask `86c9kmc3u`: SNMP-Aktivierung in Unifi-Controller + Standard-Plugins + Syslog-Forward nach Alloy
 - **Switches Unifi** (10.0.0.172, .181, .184-.186) -- Coverage-Lücke. SNMP-Standard-Plugins geplant (`86c9knpm4`); UniFi-Controller liefert ergänzend SDK-Daten
 - **Access Points** (10.0.0.191-.197) -- Coverage über Unifi-Controller; eigenständige CheckMK-Hosts nicht vorgesehen
-- **lxc-dns-01** (10.0.2.1, Pi-hole+Unbound Primary) -- **Coverage-Lücke**. Geplanter Pfad: CheckMK Standard-Agent + `pihole-FTL.service` als systemd-Service (`86c9knpm4`)
+- **lxc-dns-01** (10.0.2.1, Pi-hole+Unbound Primary) -- als CheckMK-Host angelegt (cmk-agent Tag). Agent-Install ausstehend. `pihole-FTL.service` als systemd-Service folgt mit Agent (`86c9knpm4`)
 - **lxc-dns-02** (10.0.2.2, Pi-hole+Unbound Secondary) -- analog lxc-dns-01
-- **vm-traefik-01** (10.0.2.21, MASTER + CrowdSec) -- **Coverage-Lücke**. CheckMK Standard-Agent + Traefik prom-Endpoint via Telegraf (`86c9knpm4`)
+- **vm-traefik-01** (10.0.2.21, MASTER + CrowdSec) -- als CheckMK-Host angelegt (cmk-agent Tag). Agent-Install ausstehend. Traefik prom-Endpoint via Telegraf folgt (`86c9knpm4`)
 - **vm-traefik-02** (10.0.2.22, BACKUP + CrowdSec) -- analog vm-traefik-01
-- **Traefik VIP** (10.0.2.20, keepalived) -- Reachability-Probe via UK; VRRP-State-Probe geplant
+- **traefik-vip** (10.0.2.20, keepalived) -- als ICMP-only in CheckMK (Reachability live); VRRP-State-Probe geplant
 - **USV** -- USV-Plan offen (siehe Memory `project_ups_psu_2026`); Coverage erst nach Beschaffung
 
 ## Auth & Identity
@@ -73,8 +73,8 @@ Diese Seite ist die **Ist-Stand-Übersicht**. Offene Coverage-Lücken werden im 
 
 ## Sonstige Linux-Services
 
-- **datacenter-manager** (10.0.2.60, PDM Cross-Cluster) -- Coverage-Lücke. CheckMK Standard-Agent + UK HTTP-Probe geplant (`86c9knpm4`)
-- **reddit-downloader** (10.0.2.72) -- Coverage-Lücke (low prio). CheckMK Standard-Agent geplant (`86c9knpm4`)
+- **datacenter-manager** (10.0.2.60, PDM Cross-Cluster) -- als CheckMK-Host angelegt (cmk-agent Tag). Agent-Install ausstehend. UK HTTP-Probe separat (`86c9knpm4`)
+- **reddit-downloader** (10.0.2.72) -- low prio. Geplant als CheckMK Standard-Agent (`86c9knpm4`)
 
 ## Apps und Container (Telegraf-Pfad statt CheckMK)
 
@@ -87,24 +87,17 @@ Container-Workloads laufen als Nomad-Jobs auf vm-nomad-client-04/05/06 und werde
 
 ## Bewusst nicht überwacht (Apps und IoT)
 
-- **zigbee-node** (10.0.0.110) -- dekommissioniert 2026-04-17. Sollte aus CheckMK entfernt werden falls noch eingetragen
-- **vm-proxy-dns-01** (10.0.2.3), **vm-vpn-dns-01** (10.0.2.4) -- stillgelegt (Parallelbetrieb-Phase abgeschlossen). DNS-Funktion via lxc-dns-01/02
 - **Endgeräte im Device-VLAN** (10.0.10.0/24) -- bewusst nicht überwacht (Mobile/Desktops, kein 24/7-Charakter)
 - **Gäste-VLAN** (10.0.30.0/24) -- bewusst nicht überwacht
 - **Access Points einzeln** -- via Unifi-Controller abgedeckt, kein eigener CheckMK-Host pro AP
 
 ::: info Begründung
-Container-Apps werden über Docker-Piggyback und Telegraf prom-Scrape erfasst statt als eigene CheckMK-Hosts. Stillgelegte VMs und dekommissioniertes IoT-Equipment werden aus dem Inventar entfernt sobald CheckMK-Cleanup gefahren wird (`86c9knpm4`).
+Container-Apps werden über Docker-Piggyback und Telegraf prom-Scrape erfasst statt als eigene CheckMK-Hosts.
 :::
 
-## Stale-Einträge im Ist-Stand
+## Offene Drift-Punkte
 
-Diese Einträge sollten geprüft und ggf. entfernt werden (`86c9knpm4`):
-
-- **pve-5** -- alter Hostname in Special-Agents, vermutlich Reste von pve-Renaming
-- **94 Container-Discovery-Einträge** -- Drift in `all_hosts`, sollten in eigenen Folder `homelab/containers/` strukturiert oder aus Discovery genommen werden
-- **vm-proxy-dns-01**, **vm-vpn-dns-01** -- stillgelegt, Eintrag in CheckMK noch vorhanden
-- **zigbee-node** -- dekommissioniert 2026-04-17
+- **94 Container-Discovery-Einträge** -- Drift in `all_hosts`, sollten in eigenen Folder `homelab/containers/` strukturiert oder aus Discovery genommen werden (`86c9knpm4`)
 
 ## Verwandte Doku
 
