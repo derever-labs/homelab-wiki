@@ -97,9 +97,15 @@ Kein laufender Cluster-Service liest mehr aktiv aus 1P. Phishing-/1P-Compromise-
 
 Routing: Grafana → Webhook → Keep → Telegram (severity-Eskalation an VIP-Bot bei `critical`).
 
-**Layer 2 -- Telegraf Host-Agent (systemd_units, defensive Redundanz):** Code in `ansible/roles/telegraf-host/` committed. Telegraf liest `vault/vault-unseal/nomad/nomad-boot-enable/docker.service` State, schreibt zu zentralem InfluxDB. Greift wenn Loki-Pipeline ausfaellt. **Rollout pending** -- Inventory-Variablen + Grafana-Alert-Rule auf systemd_units.state=failed muessen in eigener Session umgesetzt werden (siehe ClickUp).
+::: tip Layer 2: live seit 2026-05-01
+:::
 
-**Layer 3 -- Uptime Kuma Push-Monitor (active-probe, Token-Validity):** Code in `ansible/roles/vault-token-healthcheck/` committed. Skript ruft `nomad acl token self` auf, push-monitort zu Uptime Kuma. Schliesst die einzige Luecke "Token im File aber tot" die Loki nicht erkennt. **Rollout pending** -- pro Host UK-Push-Monitor anlegen + `uptime_kuma_token_health_push_url` in inventory host_vars setzen (siehe ClickUp).
+**Layer 2 -- Telegraf Host-Agent (systemd_units, defensive Redundanz):** Deployed auf allen 6 Privat-Hosts (3 Server + 3 Clients). Telegraf liest `vault/vault-unseal/nomad/nomad-boot-enable/docker.service` State und schreibt zu InfluxDB Bucket `telegraf-host` (org `ackermann`). Grafana Alert-Rule `secrets-systemd-service-failed` alarmiert bei `active_state=failed` (Code 3). Greift wenn Loki-Pipeline ausfaellt. Code: `ansible/roles/telegraf-host/`.
+
+::: tip Layer 3: live seit 2026-05-01
+:::
+
+**Layer 3 -- Uptime Kuma Push-Monitor (active-probe, Token-Validity):** Deployed auf allen 6 Privat-Hosts. Cron-Job `/usr/local/bin/nomad-token-healthcheck.sh` laeuft alle 15 Minuten, prueft Token-Validity gegen Vault und pusht Status an Uptime Kuma (Monitore ID 89-94). Schliesst die Luecke "Token im File aber tot" die Loki nicht erkennt. Code: `ansible/roles/vault-token-healthcheck/`.
 
 ## Verwandte Seiten
 
