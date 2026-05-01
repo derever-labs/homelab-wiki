@@ -51,6 +51,16 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | pve01 | 10.0.2.41 | Main Compute Node | 16 CPU / 64 GB |
 | pve02 | 10.0.2.42 | Main Compute Node | 16 CPU / 64 GB |
 
+## Externe Plattformen
+
+| Host | IP (LAN) | IP (Tailscale) | Standort | Rolle |
+| :--- | :--- | :--- | :--- | :--- |
+| pve-01-nana | 192.168.2.41 | 100.81.116.122 | Dottikon Nana | Externer Watchdog-Proxmox (Single-Node, kein Cluster-Mitglied) |
+
+::: info Externer Watchdog
+`pve-01-nana` steht physisch ausserhalb des Homelab-Standorts und ist via Tailscale als Subnet-Router für `192.168.2.0/23` ins Tailnet eingebunden. Wird vom Homelab-Ansible über die Inventory-Gruppe `proxmox_external` (bzw. `all_proxmox_hosts` für gemeinsame Plays) angesprochen.
+:::
+
 ## Infrastruktur
 
 | Ressource | IP | VM-ID | Host | Rolle |
