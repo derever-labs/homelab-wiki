@@ -25,15 +25,15 @@ Uptime Kuma ueberwacht alle Services, die **nicht** zur Kern-Infrastruktur gehoe
 
 ## Rolle im Stack
 
-Uptime Kuma ist das **Flaechen-Monitoring**. Es deckt alle Services ab, die fuer den End-User spuerbar sind, aber beim Ausfall nicht sofort einen Telegram-Alert wert sind. Batch-Jobs (Backups, Scheduled Tasks) senden zusaetzlich Heartbeats an Kuma-Push-Monitore -- damit laesst sich "Hat der Job heute morgen gelaufen?" ohne Log-Parsing beantworten.
+Uptime Kuma ist das **Flaechen-Monitoring**. Es deckt alle Services ab, die fuer den End-User spuerbar sind. Batch-Jobs (Backups, Scheduled Tasks) senden zusaetzlich Heartbeats an Kuma-Push-Monitore -- damit laesst sich "Hat der Job heute morgen gelaufen?" ohne Log-Parsing beantworten.
 
-Die strikte Trennung zu Gatus: Gatus alarmiert sofort via Telegram, Kuma zeigt rot im Dashboard aber alarmiert nur bei den wenigen Services mit Benachrichtigungs-Konfig.
+Alle Monitore alarmieren via Single-Notifier "Keep" mit Default Enabled (siehe [Alerting](#alerting)). Die Severity-Klasse ergibt sich aus dem Monitor selbst (Down = `critical`); das Topic-Routing entscheidet Keep.
 
 ## Abgrenzung Gatus / Uptime Kuma
 
 ::: info Welches Tool ueberwacht was
 - **Gatus** ([Details](../gatus/index.md)) -- Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault, Storage). Jeder Endpoint alarmiert sofort. ~19 Checks.
-- **Uptime Kuma** -- Alles andere. Apps, Media, Productivity, AI, IoT, Remote, Dashboards. Plus Push-Monitore fuer Batch-Jobs. Alarmierung nur bei Bedarf pro Monitor.
+- **Uptime Kuma** -- Alles andere. Apps, Media, Productivity, AI, IoT, Remote, Dashboards. Plus Push-Monitore fuer Batch-Jobs. Alarmierung via Single-Notifier "Keep" mit Default Enabled (alle Monitore senden ueber denselben Notifier).
 :::
 
 ::: warning Keine Ueberlappung
@@ -61,10 +61,18 @@ Kuma v2 bietet keinen Admin-API-Endpunkt fuer Monitor-Create/Update. Das UI arbe
 
 ## Alerting
 
-Uptime Kuma hat eine eigene Telegram-Notification-Konfiguration. Nicht jeder Monitor braucht einen Alert -- die Entscheidung haengt davon ab, wie kritisch ein stilles Ausfallen ist. Services deren Ausfall fuer 24h unbemerkt bleiben darf, laufen ohne Alert.
+Uptime Kuma nutzt **genau einen** Webhook-Notifier "Keep" mit aktivem `Default Enabled`. Damit haengt der Notifier automatisch an jedem neuen wie bestehenden Monitor; ein Coverage-Gap pro Monitor entsteht nicht.
 
-::: warning Kuma und Gatus senden beide an Telegram
-Bei Kern-Infra-Ausfaellen koennen parallele Nachrichten aus Gatus (ueber `telegram-relay`) und Uptime Kuma eingehen. Beide Pfade sind gewollt -- sie bestaetigen sich gegenseitig und vermeiden Single-Point-of-Failure im Alerting.
+- **Notifier-Name** -- Keep
+- **Provider-Type** -- Webhook
+- **URL** -- `https://keep.ackermannprivat.ch/alerts/event/uptime-kuma`
+- **HTTP-Method** -- POST mit JSON-Payload
+- **Default Enabled** -- aktiviert
+
+Severity-Klasse, Topic-Wahl und Bot-Routing entscheidet Keep (siehe [Keep](../monitoring/keep.md)). Discord, Email oder andere Notifier in Uptime Kuma sind nicht Teil der Architektur und werden nicht angelegt.
+
+::: info Redundanz Gatus + Uptime Kuma
+Beide Tools schicken via Keep, nicht direkt an Telegram (Gatus ueber `telegram-relay` mit Webhook-Backend, Kuma ueber den `Keep`-Notifier). Die Redundanz bleibt erhalten: faellt Gatus oder Kuma einseitig aus, alarmiert das verbliebene Tool weiter ueber den gleichen Keep-Hub. Bei Kern-Infra-Ausfaellen koennen parallele Nachrichten aus beiden Quellen eingehen -- gewollt, weil Routing dann zweifach an denselben Topic landet und Single-Point-of-Failure im Alerting vermieden wird.
 :::
 
 ## Entscheidungslog

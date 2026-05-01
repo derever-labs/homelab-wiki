@@ -247,9 +247,9 @@ Silences müssen einen ClickUp-Task referenzieren und eine Laufzeit (14--30 Tage
 Das Homelab hat **zwei** Verfuegbarkeits-Monitore, bewusst mit Aufgabenteilung statt Ueberlappung:
 
 - **Gatus** -- Nur Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher). Jeder Endpoint alarmiert sofort via `custom`-Provider → `telegram-relay` → Topic `monitoring`. Details: [Gatus](../gatus/index.md).
-- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore fuer Batch-Jobs. Alarmierung optional pro Monitor. Details: [Uptime Kuma](../uptime-kuma/index.md).
+- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore fuer Batch-Jobs. Single-Notifier "Keep" mit Default Enabled, Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
 
-Die Kern-Infra wird zusaetzlich als zweite Meinung in Kuma dupliziert -- faellt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt.
+Die Kern-Infra wird zusaetzlich als zweite Meinung in Kuma dupliziert -- faellt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt. Beide Tools schicken via Keep, nicht direkt an Telegram.
 
 ## Backup-Monitoring
 
