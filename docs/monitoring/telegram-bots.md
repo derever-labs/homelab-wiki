@@ -28,9 +28,9 @@ vars: {
 
 classes: {
   svc: { style: { border-radius: 8 } }
-  agent: { style: { border-radius: 8, stroke-dash: 2 } }
-  container: { style: { border-radius: 8, stroke-dash: 4 } }
-  sink: { shape: hexagon, style: { border-radius: 8 } }
+  agent: { style: { border-radius: 8; stroke-dash: 2 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  sink: { style: { border-radius: 8 } }
 }
 
 keep: Keep\nIncident-Hub { class: svc }

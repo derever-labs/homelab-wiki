@@ -151,7 +151,7 @@ Zot läuft mit `network_mode = "host"` im Nomad Job, hat aber **explizit** `dns_
 
 - Upstream-Registries (`registry-1.docker.io`, `ghcr.io`) werden direkt über Public DNS aufgelöst -- kein Hop über Pi-hole.
 - Der MinIO-S3-Endpoint ist als IP (`http://10.0.0.200:9000`) konfiguriert, keine DNS-Auflösung nötig.
-- Die Redis-URL (`redis://redis-zot...`) wird nicht mehr zur Laufzeit via Consul-DNS aufgelöst, sondern **zur Deploy-Zeit per Consul-Template** in die `config.json` gerendert (`{{ range service "redis-zot" }}...{{ end }}`). ZOT sieht zur Laufzeit nur eine feste IP:Port.
+- Die Redis-URL (`redis://redis-zot...`) wird nicht mehr zur Laufzeit via Consul-DNS aufgelöst, sondern **zur Deploy-Zeit per Consul-Template** in die `config.json` gerendert (<span v-pre>`{{ range service "redis-zot" }}...{{ end }}`</span>). ZOT sieht zur Laufzeit nur eine feste IP:Port.
 
 Ergebnis: ZOT ist zur Runtime nicht mehr vom Pi-hole und nicht mehr vom Consul-DNS abhängig. Ein Ausfall einer der beiden Schichten crasht ZOT nicht mehr.
 
