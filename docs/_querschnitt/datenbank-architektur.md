@@ -1,9 +1,10 @@
 ---
 title: Datenbank-Architektur
-description: PostgreSQL Shared Cluster Konzept mit DRBD-Replikation über Thunderbolt
+description: PostgreSQL und MariaDB Shared Cluster mit DRBD-Replikation über Thunderbolt
 tags:
   - architektur
   - postgresql
+  - mariadb
   - drbd
   - querschnitt
 ---
@@ -12,9 +13,14 @@ tags:
 
 ## Übersicht
 
-Das Homelab verwendet einen zentralen PostgreSQL 16 Cluster auf einem DRBD-replizierten Volume. Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken.
+Das Homelab verwendet zwei zentrale Datenbank-Cluster auf DRBD-replizierten Volumes:
 
-Dieser Ansatz minimiert den Betriebsaufwand: ein einzelner Cluster mit einem Backup-Job, einer Monitoring-Konfiguration und einem Restore-Prozess -- statt dutzender individueller Datenbank-Instanzen.
+- **PostgreSQL 16** für Services mit PostgreSQL-Backend (Standard für die meisten Apps)
+- **MariaDB 11.4** für Services die zwingend MySQL/MariaDB benötigen (Kimai, Uptime Kuma)
+
+Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432` bzw. `mariadb.service.consul:3306`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken (z.B. Obsidian LiveSync mit CouchDB).
+
+Dieser Ansatz minimiert den Betriebsaufwand: zwei Cluster mit je einem Backup-Job, einer Monitoring-Konfiguration und einem Restore-Prozess -- statt dutzender individueller Datenbank-Instanzen.
 
 ## Architektur
 
@@ -101,6 +107,12 @@ pve01.D1 <-> pve02.D2: Thunderbolt ~20 Gbps { tooltip: 10.99.1.0/24 }
 
 Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welchem Client der PostgreSQL-Job läuft.
 
+## MariaDB Cluster
+
+MariaDB 11.4 (LTS) folgt dem gleichen Storage-Pattern wie PostgreSQL: Single-Instance auf DRBD-replizierter Linstor-CSI-Volume, Failover via Nomad-Reschedule auf zweite Storage-Node. Die Performance-Konfiguration ist auf DRBD-Storage abgestimmt: `innodb_flush_log_at_trx_commit=2`, `innodb_doublewrite=OFF` (DRBD garantiert atomare Block-Writes auf Block-Ebene), und InnoDB-Buffering ist auf O_DIRECT-Äquivalent gesetzt.
+
+Neue Datenbanken und User werden über den idempotenten `mariadb-setup`-Batch-Job angelegt -- analog zum `postgres-setup`-Pattern. Service-Passwörter liegen unter `kv/data/shared/mariadb` (z.B. `kimai_password`, `uptime_kuma_password`).
+
 ## Backup
 
 Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
@@ -108,6 +120,7 @@ Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
 | Methode | Zeitplan | Retention | Ziel |
 | :--- | :--- | :--- | :--- |
 | pg_dumpall | Täglich 03:00 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/postgres/` |
+| mariadb-dump | Täglich 03:15 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/mariadb/` |
 | Linstor Snapshots | Täglich 02:00 Uhr | 7 Snapshots | Lokal auf DRBD |
 | Linstor S3 Shipping | Täglich | GFS: 7d/4w/3m | MinIO `linstor-backups` |
 
