@@ -137,11 +137,22 @@ jobs:
             }
 
       - name: Trigger wiki rebuild
+        id: webhook
         if: steps.result.outputs.status != 'failed'
         continue-on-error: true
         run: |
-          curl -s --max-time 120 \
-            "https://wiki.ackermannprivat.ch/_webhook/cgi-bin/pull?token=${{ secrets.WIKI_WEBHOOK_TOKEN }}"
+          RESP=$(curl -s --max-time 300 \
+            "https://wiki.ackermannprivat.ch/_webhook/cgi-bin/pull?token=${{ secrets.WIKI_WEBHOOK_TOKEN }}")
+          echo "Webhook response: $RESP"
+          # status aus JSON extrahieren (ready|degraded|failed)
+          STATUS=$(echo "$RESP" | grep -oE '"status":"[^"]+"' | sed 's/.*"\([^"]*\)"$/\1/')
+          echo "container_status=${STATUS:-unknown}" >> "$GITHUB_OUTPUT"
+          case "$STATUS" in
+            ready)    echo "Container-Build OK." ;;
+            degraded) echo "::warning::Container-Build degraded (Dead Links via Fallback ignoriert)" ;;
+            failed)   echo "::error::Container-Build fehlgeschlagen"; exit 1 ;;
+            *)        echo "::warning::Webhook-Response unklar: $RESP" ;;
+          esac
 
       - name: Telegram-Notification (Erfolg oder Fehler)
         if: always()
