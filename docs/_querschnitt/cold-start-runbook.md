@@ -10,7 +10,7 @@ tags:
 
 # Cluster Cold-Start Runbook
 
-Bei einem vollstaendigen Homelab-Cluster-Ausfall (z.B. Stromausfall, Pi-hole-Crash + Quorum-Loss, Synology-Reboot) muss die Infrastruktur in einer bestimmten Reihenfolge hochgefahren werden, sonst entstehen Henne-Ei-Probleme bei denen Komponente A auf B wartet, B aber A braucht. Diese Seite dokumentiert die Reihenfolge und die vier wichtigsten Bootstrap-Fallen.
+Bei einem vollstaendigen Homelab-Cluster-Ausfall (z.B. Stromausfall, Pi-hole-Crash + Quorum-Loss, Synology-Reboot) muss die Infrastruktur in einer bestimmten Reihenfolge hochgefahren werden, sonst entstehen Henne-Ei-Probleme bei denen Komponente A auf B wartet, B aber A braucht. Diese Seite dokumentiert die Reihenfolge und die fuenf wichtigsten Bootstrap-Fallen.
 
 ## Reihenfolge beim Cold-Start
 
@@ -26,7 +26,7 @@ Bei einem vollstaendigen Homelab-Cluster-Ausfall (z.B. Stromausfall, Pi-hole-Cra
 
 Pro Schritt vor dem naechsten verifizieren dass die Komponente tatsaechlich healthy ist. Verweise auf cluster-restart.md fuer einen einfacheren Restart-Fall (alles laeuft schon, nur Service-Restart-Sequenz).
 
-## Vier Henne-Ei-Probleme
+## Fuenf Henne-Ei-Probleme
 
 ### 1. Vault Auto-Unseal darf nicht gegen Consul
 
@@ -48,7 +48,13 @@ Loesung: ZOT-Bootstrap-Image preloaded auf jedem Worker per Ansible (siehe Click
 
 Alternative falls Pre-Load fehlt: Notfall-Job-Spec mit `image = "docker.io/project-zot/zot-linux-amd64:latest"` direkt von Hub statt localhost:5000 -- braucht aber Docker-Hub-Auth und nicht-rate-limited Account (Account dreverrr ist zwischen Homelab und DCLab geshared, 200 pulls/6h).
 
-### 4. Pi-hole-Upstream darf nicht auf Consul
+### 4. Service-Bootstrap-Klasse darf nicht via ZOT pullen
+
+Wenn ZOT down ist und Keep oder Uptime-Kuma neu gestartet werden muessen, blockiert ein `localhost:5000/...`-Image-Pfad den Restart -- genau dann wenn man Alerts oder Status-Sicht am dringendsten braucht. Resultat: ZOT-Outage wird nicht alarmiert.
+
+Loesung: Diese Jobs pullen direkt vom Upstream (bare Hub-Name oder expliziter Hostname). Bei bare Hub-Names greift der `registry-mirror` im Normalfall trotzdem ueber ZOT (Cache nutzt), faellt aber bei ZOT-404/down auf Docker Hub zurueck. Details und Liste der Bootstrap-Klasse in [docker-registry/index.md](../docker-registry/index.md#proxy-cache-registries).
+
+### 5. Pi-hole-Upstream darf nicht auf Consul
 
 Wenn Pi-hole als Upstream-DNS Consul-Server (`*.service.consul`-Aufloesung) eintraegt und Consul down ist: Recursion-Loop. Jede DNS-Query timeoutet, weil Pi-hole versucht Consul anzufragen, der nicht antwortet.
 
