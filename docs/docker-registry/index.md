@@ -85,9 +85,33 @@ Beim absoluten Kaltstart (leerer Bucket, leerer Redis) durchläuft ZOT trotzdem 
 
 Alle Registries laufen mit Whitelist-Prefixes. Anfragen ausserhalb der Whitelist werden nicht synchronisiert.
 
-- Docker Hub: 45 explizite Namespace-Prefixes (library, bitnami, linuxserver, grafana, prometheus, influxdb, nginx, redis, postgres, mariadb, mysql, mongo, rabbitmq, traefik, consul, vault, gitea, n8nio, minio, nextcloud, sonarqube, portainer, pihole, homeassistant, emqx, eclipse-mosquitto, zigbee2mqtt, eclipse, prom, cadvisor, zwavejs, zwave, dozzle, duplicati, kavita, komga, trilium, paperless, filebrowser, uptime-kuma, changedetection, homer, dasherr, homarr, vikunja, vaultwarden, mealie, audiobookshelf, stash) -- Sync-Credentials (nomad-client)
-- GitHub Container Registry (ghcr.io): 15 Namespace-Prefixes (goauthentik, project-zot, renovatebot, linuxserver, immich-app, jellyfin, paperless-ngx, crowdsec, dani-garcia, nzbgetcom, nzbgetvip, sonarr, radarr, whisperx, imio) -- Sync-Credentials (ci-push PAT)
-- Quay.io: offener Prefix -- ohne Credentials
+::: danger Whitelist und Retention sind doppelt gepflegt -- bei neuen Images BEIDE anpassen
+ZOT hat zwei voneinander unabhängige Listen, die exakt synchron gehalten werden müssen, sonst werden frisch gepullte Images entweder nicht synchronisiert oder nach 24h wieder gelöscht:
+
+1. `extensions.sync.registries[].content[].prefix` -- entscheidet, ob ein On-Demand-Pull vom Upstream erlaubt ist. Fehlt der Prefix, antwortet ZOT mit 404.
+2. `extensions.scrub.retention.policies[].repositories` -- entscheidet, ob ein bereits gecachtes Image nach 24h gelöscht wird. Fehlt der Eintrag, fällt das Repo in die Spam-Killer-Policy (`keepTags = 0`).
+
+SSOT ist immer der Nomad-Job (`infrastructure/zot-registry.nomad`), nicht diese Seite. Die Wiki-Aufzählungen unten waren beim letzten Audit phantasievoll.
+
+Vor jedem `image = "localhost:5000/<prefix>/..."`-Add: prüfen ob `<prefix>` in BEIDEN Listen steht; falls nicht, ergänzen und Job neu deployen (Template-Re-Render erforderlich). Bei neuer Upstream-Registry zusätzlich einen neuen `registries[]`-Eintrag mit eigenen Sync-Credentials anlegen.
+:::
+
+::: warning Bootstrap-Klasse: bewusste Direkt-Pulls ohne Cache
+Einige Jobs sollen bei einem ZOT-Ausfall trotzdem starten können. Sie pullen deshalb so, dass `registry-mirrors` einen Hub-Fallback erlaubt (bare Docker-Hub-Name) oder gar nicht erst durch ZOT laufen (explizite Hostnames wie `quay.io/...`, `ghcr.io/...`, `us-central1-docker.pkg.dev/...`). Erkennbar an einem Header-Kommentar im jeweiligen Nomad-Job.
+
+- ZOT selbst (`ghcr.io/project-zot/...`) -- Chicken-Egg
+- Redis-ZOT (`docker.io/library/redis:7-alpine`) -- ZOT-MetaDB
+- Keep (`alpine`, `redis:8-alpine`, `quay.io/soketi/...`, `us-central1-docker.pkg.dev/keephq/...`) -- Alert-Bastion: ohne Keep schickt niemand mehr den Alert raus
+- Uptime-Kuma (`louislam/uptime-kuma`) -- Monitoring-Bastion: ohne Uptime-Kuma sieht niemand mehr was kaputt ist
+
+Bei `image = "<bare-hub-name>"` läuft der Pull im Normalfall via `registry-mirrors` durch ZOT (Cache nutzt). Erst wenn ZOT 404 oder down liefert, fällt Docker auf Docker Hub direkt zurück. Damit ist der Bootstrap-Pfad robust, ohne den Cache-Vorteil im Normalbetrieb zu opfern. Whitelist-Prefix für diese Hub-Namespaces (z.B. `library/**`, `louislam/**`) trotzdem in der Sync-Liste belassen.
+
+Bei `image = "<host>/<repo>"` (z.B. `quay.io/soketi/...`) greift `registry-mirrors` nicht und der Pull geht immer direkt zum Upstream. Hier reicht es, den Pfad einfach nicht via `localhost:5000/<host>/...` zu schreiben.
+:::
+
+- Docker Hub (`registry-1.docker.io`) -- TLS-Verify, Sync-Credentials (nomad-client). Whitelist-Prefixes siehe `infrastructure/zot-registry.nomad` (`extensions.sync.registries[0].content[].prefix`).
+- GitHub Container Registry (`ghcr.io`) -- Sync-Credentials (ci-push PAT). Whitelist analog im Nomad-Job.
+- Quay.io (`quay.io`) -- aktuell **nicht** als Sync-Registry konfiguriert. Quay-Pulls erfolgen ausschliesslich direkt vom Upstream (Bootstrap-Klasse, siehe oben).
 
 ::: info LinuxServer.io: Upstream ghcr.io statt lscr.io
 Image-Pfade in den Nomad-Jobs lauten weiterhin `linuxserver/jellyfin` o.ä. (kein `ghcr.io/`-Prefix), obwohl ZOT intern von `ghcr.io` pullt. Grund: `lscr.io` ist kein eigenständiges OCI-Registry, sondern ein Scarf-Redirect-Service -- der `/v2/`-Endpunkt antwortet mit 405, und Auth-Tokens kommen ohnehin von `ghcr.io`. ZOT kam mit dem Redirect nicht sauber klar. Umstellung auf `ghcr.io` als direktem Upstream entfernt die Indirektion. Die Tags auf `ghcr.io/linuxserver/...` sind identisch mit jenen auf `lscr.io/linuxserver/...`, deshalb können die Nomad-Job-Pfade unverändert bleiben.
