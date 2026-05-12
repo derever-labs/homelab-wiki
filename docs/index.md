@@ -92,6 +92,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Metabase](./metabase/) | Business Intelligence |
 | [Zeiterfassung](./zeiterfassung/) | solidtime und Kimai |
 | [Immobilien-Monitoring](./immobilien-monitoring/) | Immobilien-Überwachung |
+| [Directus Gravel](./directus-gravel/) | Headless CMS für Gravel-Bike-Recherche |
 | [Utility Tools](./utility-tools/) | Czkawka, MeshCommander, Filebrowser |
 
 ## IoT und AI
