@@ -20,6 +20,7 @@ Alle Service-Secrets liegen in Vault unter dem KV v2 Mount. Nomad Jobs authentif
 | Service | Vault-Pfad | Inhalt |
 | :--- | :--- | :--- |
 | PostgreSQL | `kv/data/postgres` | Superuser-Passwort |
+| Directus Gravel | `kv/data/directus-gravel` | DB + S3 + Admin-Credentials, Encryption Keys |
 | Radarr | `kv/data/radarr` | DB-Credentials |
 | Sonarr | `kv/data/sonarr` | DB-Credentials |
 | Prowlarr | `kv/data/prowlarr` | DB-Credentials |
@@ -47,6 +48,9 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 | Service | Vault | Item | Inhalt |
 | :--- | :--- | :--- | :--- |
 | UniFi | PRIVAT Agent | Ubiquiti Unifi Konto Ackermann | UI.com SSO + SSH-Passwort (UDM Pro) |
+| MinIO NAS | PRIVAT Agent | MinIO NAS | Admin-Login + Access/Secret Keys (S3 API) |
+| MinIO Peer | PRIVAT Agent | MinIO Peer | Zweite MinIO-Instanz (Replikation, vorbereitet) |
+| Directus Gravel | PRIVAT Agent | Directus Gravel | Admin-Login + Service-Keys (DB, S3, Encryption) |
 
 ## Vault Authentifizierung
 

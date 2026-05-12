@@ -412,8 +412,8 @@ Alternative wenn Pflege zu hoch: Telegraf-`inputs.checkmk` (Plugin existiert) ge
 
 - [Monitoring](index.md) -- Komponenten-Uebersicht
 - [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
+- [Monitoring: CheckMK Discovery-Policy](checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
 - [Monitoring: Keep-Correlations](keep-correlations.md) -- Correlation-Patterns fuer Keep
-- [Monitoring: Betrieb](betrieb.md) -- Eskalation und Incident-Workflow
 - ClickUp Privat [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
 - ClickUp Privat [`86c9knpgj`](https://app.clickup.com/t/86c9knpgj) -- CheckMK->Keep-Webhook Homelab (Vorbedingung Welle 3)
 - ClickUp Privat [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) -- CheckMK-Coverage-Bundle Homelab
