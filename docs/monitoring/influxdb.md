@@ -111,8 +111,13 @@ Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitori
 | `InfluxDB-Flux` | `cf7vieensej28c` | `telegraf` |
 | `InfluxDB-Proxmox` | `cf7vogqv7xyiod` | `proxmox` |
 | `InfluxDB-InfluxQL` | `PAD860D6E340F6174` | `telegraf_1y` |
+| `InfluxDB-InfluxQL-Hot` | `influxql-hot-telegraf` | `telegraf` |
 
 `InfluxDB-InfluxQL` nutzt die schnellere InfluxQL-Abfragesprache (6-30x schneller als Flux für einfache Aggregationen). Empfohlen für Dashboards. Flux-Datasources bleiben für komplexe Queries mit `pivot()` oder `map()`.
+
+::: warning Bucket-Wahl für Alert-Rules
+Real-Time-Alerts mit Eval-Window unter 1h **müssen** gegen den Hot-Bucket (DS `InfluxDB-InfluxQL-Hot`) zeigen. `telegraf_1y` ist ein Downsample-Target (`every: 1h` Task, 5-Minuten-Aggregate) -- bei Eval-Window 10 Minuten gegen `telegraf_1y` entsteht ein Phantom-Storm-Cycle (`Pending → Alerting → MissingSeries` pro Volume pro Stunde), der wie ein echtes Cluster-Problem aussieht. Konvention: Dashboards mit Trends > 30d nutzen weiterhin `telegraf_1y` (1 Jahr Retention), Real-Time-Alerts holen aus `telegraf` (90d Retention, 60s-Auflösung).
+:::
 
 ## Performance Tuning
 
