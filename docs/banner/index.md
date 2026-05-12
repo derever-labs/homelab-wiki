@@ -19,7 +19,9 @@ Ein zentral pflegbarer Banner der ueber alle Apps hinter Traefik eingeblendet we
 | URL | [banner.ackermannprivat.ch](https://banner.ackermannprivat.ch) |
 | Admin-UI | [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) (Pocketbase eigene Auth) |
 | Public-Endpoint | `/banner.js` (dynamisch aus aktueller Config gerendert) |
-| Storage | Linstor CSI `pocketbase-data` (SQLite) |
+| Storage | Linstor CSI `banner-pb-data` (SQLite, autoPlace=2) |
+| Admin-Auth | Authentik-Forward-Auth via `intern-auth` Chain (pocketbase-admin Router, Priority 10) |
+| Public-Endpoints | `/banner.js`, `/api/health` ueber `public-noauth` Chain (pocketbase-public Router, Priority 100) |
 | Deployment | Nomad Job `services/pocketbase.nomad` |
 | Image | `ghcr.io/muchobien/pocketbase` (Direct-Pull, kein ZOT-Mirror) |
 | Traefik-Plugin | `traefik/plugin-rewritebody v0.3.1` |
@@ -81,7 +83,14 @@ PB.ui -> PB.db: "Pflege-Workflow"
 
 ## Banner-Steuerung
 
-Das Banner wird ueber das Pocketbase-Admin-UI verwaltet. Single-Record-Collection `banner_config` mit folgenden Feldern:
+Das Banner wird ueber das Pocketbase-Admin-UI verwaltet. Collection `banner_config` mit zwei Records (`audience: intern` und `audience: extern`). Beide Audiences unabhaengig steuerbar:
+
+- **intern** -- erscheint auf allen Routen mit `intra.*` Hostname (z.B. intra.ackermannprivat.ch). Typisch fuer technische Wartungs-Infos an Admins
+- **extern** -- erscheint auf allen anderen Routen (welcome, watch, wish, gitea, ...). Typisch fuer User-Freundliche Wartungs-Hinweise
+
+Die Audience-Wahl passiert client-seitig im Banner-JS via `location.hostname.startsWith("intra.")`. Daher muss Traefik die Chains NICHT pro Audience splitten -- eine einzige `banner-inject` Middleware reicht. Der Pocketbase-Hook liefert beide Configs inline in der gleichen `banner.js`-Response.
+
+Felder pro Record:
 
 | Feld | Typ | Bedeutung |
 |------|-----|-----------|
