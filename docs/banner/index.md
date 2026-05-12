@@ -85,11 +85,9 @@ Das Banner wird ueber das Pocketbase-Admin-UI verwaltet. Single-Record-Collectio
 
 | Feld | Typ | Bedeutung |
 |------|-----|-----------|
+| `severity` | select | Farb-Preset (`wartung` orange, `info` blau, `incident` rot, `resolved` gruen). Default `wartung` |
 | `enabled` | bool | Master-Schalter. `false` = Banner aus, unabhaengig von den Zeit-Feldern |
 | `text` | string | Anzeigetext, max 500 Zeichen |
-| `severity` | select | Farb-Preset (`wartung` orange, `info` blau, `incident` rot, `resolved` gruen). Wenn gesetzt: ueberschreibt bg/fg_color |
-| `bg_color` | string | Optionale Hintergrundfarbe als Hex, wenn `severity` nicht gesetzt. Default `#ff9900` |
-| `fg_color` | string | Optionale Textfarbe als Hex, wenn `severity` nicht gesetzt. Default `#000000` |
 | `start_at` | datetime | Optional. Wenn gesetzt: Banner erscheint erst ab diesem Zeitpunkt |
 | `end_at` | datetime | Optional. Wenn gesetzt: Banner verschwindet automatisch nach diesem Zeitpunkt |
 
@@ -116,6 +114,10 @@ Loesung: Eine Headers-Middleware setzt vor `banner-inject` den Request-Header `A
 Diese Middleware ist Teil aller `*-with-banner` Chains. Bei stark komprimierungs-abhaengigen Routen mit grossen HTML-Bodies waere sie ein Performance-Tradeoff -- bei den aktuellen Routen vernachlaessigbar.
 
 ## Bekannte Grenzen
+
+::: tip Error-Pages bleiben sauber
+Bei 4xx/5xx ersetzt die `error-pages`-Middleware den Backend-Body durch die nginx-error-page (Title-Format `"<status> - <text>"`). Das Banner-JS erkennt dieses Title-Pattern (`^\d{3} - `) und rendert auf Error-Seiten nicht -- so erscheint kein doppelter Wartungs-Hinweis ueber der eh schon prominenten Maintenance-Page. Plugin-rewritebody injiziert das Script-Tag dort trotzdem (technisch unvermeidbar weil das Plugin nach error-pages auf den finalen Body greift), aber das Banner-JS bricht beim Title-Check frueh ab.
+:::
 
 ::: warning Content-Security-Policy
 Apps mit strikter `Content-Security-Policy` (`script-src 'self'`) blockieren das externe Banner-Script im Browser. Aktuelle Apps mit `secure-headers`-Chain sind nicht betroffen (kein `script-src` gesetzt). Bei zukuenftigen Apps mit eigener strenger CSP muss Traefik einen Headers-Override pro Domain bereitstellen.
