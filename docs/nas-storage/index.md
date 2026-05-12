@@ -42,14 +42,30 @@ Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfigu
 
 ## MinIO S3
 
-Das NAS betreibt eine MinIO-Instanz als S3-kompatiblen Object Store.
+Das NAS betreibt eine MinIO-Instanz auf Synology DSM als S3-kompatiblen Object Store. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik.
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Zweck** | Linstor S3 Shipping, Terraform State |
-| **Buckets** | `linstor-backups`, `terraform-state` |
+| **API-Endpoint** | `http://10.0.0.200:9000` |
+| **Console** | Siehe [Web-Interfaces](../_referenz/web-interfaces.md#management) |
+| **Credentials** | Siehe [Zugangsdaten](../_referenz/credentials.md#1password) |
+| **Replikation** | Zweite MinIO-Instanz vorbereitet (1P-Item "MinIO Peer") |
 
-Credentials werden in 1Password verwaltet.
+### Buckets
+
+| Bucket | Zweck | Verwendet von |
+| :--- | :--- | :--- |
+| `linstor-backups` | Linstor S3 Shipping (Daily/Weekly/Monthly) | drbd_storage Cron |
+| `harbor` | Container-Registry-Daten (historisch, vor ZOT-Migration) | Harbor (legacy) |
+| `litestream` | SQLite-Replikation (Litestream Stream Backups) | Litestream-Sidecars |
+| `zot-registry` | Zot OCI Registry Storage Backend | ZOT (system job) |
+| `gravel-recherche` | Bilder + Files Directus Gravel-Bike-Recherche | Directus Gravel |
+
+Neue Buckets werden über die MinIO Console angelegt. Pro App empfiehlt sich ein dedizierter Service-Account (IAM User) mit Bucket-Policy auf nur diesen Bucket -- nicht der globale Admin-Account.
+
+### Linstor Remote
+
+Linstor adressiert MinIO über das Remote `nas-backup`. Die S3-Konfiguration (Endpoint, Credentials, Bucket, Region) ist im Linstor-Controller hinterlegt; das Setup-Playbook ist in [`infra/homelab-hashicorp-stack/ansible/playbooks/setup-backup-infrastructure.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/ansible/playbooks/setup-backup-infrastructure.yml) dokumentiert.
 
 ## Troubleshooting
 
@@ -73,6 +89,21 @@ Credentials werden in 1Password verwaltet.
 ### Staler NFS-Directory-Cache
 
 Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) führen dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die während Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand übereinstimmt.
+
+## SSH-Zugang und Hardening
+
+Die NAS-Konsole ist via SSH (Port 22, Key-Only-Auth) erreichbar -- Login als `admin` mit Public-Key, Passwort-Auth deaktiviert. Konsistent gehärtet seit 2026-05-01 nach demselben Pattern wie die DCLab-NAS:
+
+- **Auth:** ausschliesslich Public-Key, `PasswordAuthentication no`, `PermitRootLogin no`
+- **Crypto:** moderne Cipher/KEX/MAC-Suites (chacha20-poly1305, aes256-gcm, curve25519, sha2-512-etm) -- die DSM-Defaults mit 3DES und SHA1 werden über einen `managed-by-claude-ssh-hardening`-Marker-Block am Anfang von `/etc/ssh/sshd_config` überschrieben (OpenSSH first-obtained-value-wins)
+- **AllowUsers:** nur `admin`; die als `csh`-Shell konfigurierten Familien-Accounts haben keinen SSH-Bedarf und sind ausgeschlossen
+- **Permissions:** `~/.ssh` 700, `authorized_keys` 600
+
+::: tip Boot-Persistenz
+Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederhergestellt. Ein Boot-up-Task `ssh-hardening-reapply` im DSM Task Scheduler (User root) ruft `/usr/local/sbin/ssh-hardening-reapply.sh` und reapplied den Hardening-Block idempotent. Auf dem Homelab-NAS via DSM-UI angelegt und nach Reboot verifiziert.
+:::
+
+Die NAS-Login-Credentials liegen im 1Password Vault `PRIVAT Agent` als `NAS Privat Homeserver Admin`. Public/Private-Key kommen aus `SSH Homelab Kopie` im selben Vault, der 1P SSH Agent macht sie automatisch verfügbar.
 
 ## Wartung
 
