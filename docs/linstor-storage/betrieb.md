@@ -201,7 +201,7 @@ Ab 2026-05-12 ersetzt die Linstor Schedule-Engine (`backup-daily`) den Cron-basi
 
 - **Zeitplan:** täglich 04:00 (`0 4 * * *`)
 - **Scope:** alle 11 Resource Groups / 22 Resources
-- **KEEP_LOCAL:** 0, **KEEP_REMOTE:** 14
+- **KEEP_LOCAL:** 0, **KEEP_REMOTE:** 7
 - **S3 Remote:** Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
 - **Garage-Key:** in 1Password PRIVAT Agent Vault
 

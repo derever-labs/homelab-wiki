@@ -321,7 +321,7 @@ Ab 2026-05-12 ersetzt die Linstor Schedule-Engine den Cron-basierten Snapshot-An
 **Homelab Schedule `backup-daily`:**
 - Zeitplan: täglich 04:00 (`0 4 * * *`)
 - Scope: alle 11 Resource Groups / 22 Resources
-- KEEP_LOCAL: 0, KEEP_REMOTE: 14
+- KEEP_LOCAL: 0, KEEP_REMOTE: 7
 - S3 Remote: Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
 
 ```d2
@@ -342,7 +342,7 @@ classes: {
 
 sched: Schedule-Engine\nbackup-daily 04:00 {
   class: node
-  tooltip: "KEEP_LOCAL=0, KEEP_REMOTE=14, On-Failure=RETRY | 11 RGs / 22 Resources"
+  tooltip: "KEEP_LOCAL=0, KEEP_REMOTE=7, On-Failure=RETRY | 11 RGs / 22 Resources"
 }
 
 drbd: DRBD Volumes\n(c05 + c06) {
