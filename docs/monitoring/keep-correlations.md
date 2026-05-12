@@ -66,6 +66,7 @@ Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Ke
 - **Symptome**: alle Apps hinter Authentik werfen 502
 - **Inhibit**: einzelne App-502-Alerts wenn Authentik selbst betroffen ist
 - **Action**: Forum-Topic "Auth", Severity escalation gemaess Severity-Logik
+- **Live-Anlage Pilot**: Homelab-Live-Anlage als Pilot-Schritt 4 [`86c9ktav9`](https://app.clickup.com/t/86c9ktav9) (CEL-Filter + Webhook-Replay-Test). DCLab-Rollout nach 7d Pilot-Stabilitaet [`86c9ktax4`](https://app.clickup.com/t/86c9ktax4). Parallel-Track Root-Cause [`86c9ktajz`](https://app.clickup.com/t/86c9ktajz) -- PgBouncer/Connection-Pool-Limit
 
 ### 4. dns-outage
 

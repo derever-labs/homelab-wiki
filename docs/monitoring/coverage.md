@@ -52,7 +52,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | pve-01-nana hwmon Temp | pve-01-nana | influx | missing | P1 | thermal-throttle silent | `inputs.temp + hwmon` |
 | pve-01-nana Power-Loss | pve-01-nana | influx | missing | P0 | DeskMini Single-PSU, keine USV im Standort Dottikon | `smart_unsafe_shutdowns delta`-Alert + USV-Erweiterung Standort pruefen. Memory `project_ups_psu_2026` |
 | USV (NUT/upsd) | Producer unbekannt | influx | partial | P0 | `upsd`-Measurement-Quelle unbekannt | UPS-Alerts waeren auf toter Datenquelle. Pipeline-Investigate + Alerts bauen |
-| synology-nas (Homelab DS2419+) | 10.0.0.200 | checkmk SNMP | live | P0 | -- | Built-in synology_* Plugins seit 2026-05-01 (RAID/Disk/PSU/Fan/Temp/Volumes/CPU/RAM/IF) |
+| synology-nas (Homelab DS2419+) | 10.0.0.200 | checkmk SNMP | live | P0 | -- | Built-in synology_* Plugins seit 2026-05-01 (RAID/Disk/PSU/Fan/Temp/Volumes/CPU/RAM/IF). Drift 2026-05-02: 7 NAS/LVM-Alerts flappen mit nahezu identischer Count (94-100/50h, LVM Thin Pool 75/85%, Metadata 75%, Disk Temp 55C, SMART, RAID Degraded) -- vermutlich Series-Flapping aus Datenquelle, Investigation [`86c9ktgdw`](https://app.clickup.com/t/86c9ktgdw) |
 | nana-nas (Dottikon DS1517+) | via Tailscale | checkmk SNMP | live | P0 | -- | analog. CheckMK-VM hat Tailscale-Client mit `tag:homelab` und `--accept-routes` |
 | iperf3-Server | 10.0.2.50:5201 (PBS-VM) | uptime | missing | P2 | Service-tot silent | undokumentiert wer Client ist |
 
@@ -79,7 +79,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 
 | Item | Adresse | Pfad | Status | Prio | Silent-Fail | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Linstor-Cluster (Controller + Satellites) | c04/c05/c06 + drbd-reactor | influx + loki | partial | P1 | Controller-Failover silent | Linstor-Node-Offline + DRBD-Out-of-Sync abgedeckt; Failover-Alert fehlt |
+| Linstor-Cluster (Controller + Satellites) | c04/c05/c06 + drbd-reactor | influx + loki | partial | P1 | Controller-Failover silent | Drift 2026-05-01: `DRBD Verbindung getrennt`-Alert flapped 8601 Transitions / 50h seit Recovery 2026-04-29 (~80% Alert-Volumen Homelab) -- Root-Cause-Investigation [`86c9ktgag`](https://app.clickup.com/t/86c9ktgag). Linstor-Node-Offline + DRBD-Out-of-Sync abgedeckt; Failover-Alert fehlt |
 | Linstor-Backup-Pipeline | cron c05+c06 + Uptime-Kuma | uptime + loki | partial | P0 | Partial-Failure mit `Errors > 0` wird nicht alarmiert | Heartbeat sieht nur 0-vs-mehr; LogQL-Pattern auf `Errors: [1-9]` fehlt |
 | pbs-backup-server (Datastore) | 10.0.2.50 | checkmk + direct | partial | P0 | Datastore 91% USED silent (95% Critical / 90% Warning); Postfix kein Relayhost konfiguriert (legacy-sendmail-Notifications silent) | Host als `cmk-agent` angelegt. Agent-Install ausstehend. df-Plugin fuer Datastores + Loki-Pattern fuer PBS-Sync/Verify-Fehler folgen [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) |
 | synology-nas (Linstor-S3 + NFS-Mounts) | 10.0.0.200 | checkmk SNMP | live | P2 | -- | RAID/Volume/SMART/Temp covered seit 2026-05-01 (built-in Plugins). Power-Status-Change + DSM-Upgrade als Nice-to-have |
@@ -114,7 +114,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | Item | Adresse | Pfad | Status | Prio | Silent-Fail | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | vm-nomad-server-04/05/06 | 10.0.2.104/.105/.106 | checkmk + influx | partial | P0 | Job-Crashloop silent, Server-Metriken fehlen | CheckMK Standard-Agent live. `inputs.nomad` Plugin nachruesten |
-| vm-nomad-client-04/05/06 | 10.0.2.124/.125/.126 | checkmk + influx | partial | P0 | analog | CheckMK Standard-Agent + Docker-Piggyback live. Reschedule-Storm-Detection via Telegraf-File-Input live seit 2026-05-01. Linstor-CSI-Health auf c05/c06 |
+| vm-nomad-client-04/05/06 | 10.0.2.124/.125/.126 | checkmk + influx | partial | P0 | analog | Drift 2026-05-01: `Nomad Task Restart-Storm` 158 Transitions / 50h Homelab vs. nur 6 DCLab -- Cluster-Parity-Drift, Investigation [`86c9ktgb7`](https://app.clickup.com/t/86c9ktgb7) (umfasst auch `Nomad Client Node Down` 104/50h flap und `Nomad Failed Allocations` 100/50h). CheckMK Standard-Agent + Docker-Piggyback live. Reschedule-Storm-Detection via Telegraf-File-Input live seit 2026-05-01. Linstor-CSI-Health auf c05/c06 |
 | Consul Cluster | vm-nomad-server-04/05/06 | influx | partial | P1 | Quorum-Loss kein Alert, Backup-HB OK | Telegraf-Prometheus auf `:8500` |
 | Vault HA Cluster | vm-nomad-server-04/05/06 | influx | missing | P0 | Sealed silent bis App-Failure | Sealed-Alert + Synthetic-Heartbeat. Memory `reference_vault_unseal_token_on_disk` |
 | etcd Server-Cluster (Legacy?) | vm-nomad-server-04/05/06 | none | missing | P2 | -- | vermutlich Decommissioning -- erst Verifikation, dann ab oder monitor |
@@ -149,7 +149,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | --- | --- | --- | --- | --- | --- | --- |
 | Loki Homelab | monitoring/loki.nomad -> 10.0.2.126:3100, drbd1010 13% voll | influx + uptime | missing | P0 | WAL-voll silent, Cardinality-Explosion silent (default 5000 streams, aktuell 471), kein Self-Detection-Alert | DCLab-Pattern (`loki-ingester-down` Absent-Alert) portieren |
 | InfluxDB Homelab | 10.0.2.126:8086, drbd1002 14% voll | influx + uptime | partial | P0 | `noDataState=NoData` Default macht alle Influx-Down-Szenarien silent | `noDataState=Alerting`, Volume-Fill, Task-Failure. Memory `feedback_grafana_nodatastate_per_query_type` |
-| Grafana Homelab | -- | direct + uptime | partial | P0 | Henne-Ei -- wenn Grafana tot, fehlen alle Alert-Trigger | externer Watchdog-Probe Pflicht |
+| Grafana Homelab | -- | direct + uptime | partial | P0 | Henne-Ei -- wenn Grafana tot, fehlen alle Alert-Trigger | API-Route `/api/*` live seit 2026-05-01 (`intern-api@file`, IP-Allowlist 10/8 + 100.64/10, Bearer-Token via 1P `Grafana API Claude`) -- ermoeglicht direkte Annotations-Queries fuer Frequenz-Audits ohne Authentik-Bypass. UI-Route weiterhin `intern-auth@file`. Externer Watchdog-Probe weiterhin Pflicht. Memory `feedback_traefik_explicit_service_tag` |
 | Telegraf Homelab (system-Job) | system network=host | influx | missing | P0 | Telegraf-tot bedeutet alle Metriken weg, kein Absent-Alert | absent-Pattern (Synology-SNMP fuer NAS aktiv) |
 | Alloy Homelab (system-Job) | -- | influx | partial (Consul-Health) | P0 | Crash silent, Log-Pattern-Alerts feuern nicht | absent-Pattern + Push-Fail-Detection |
 | Keep Homelab (Single-Point-of-Routing) | -- | direct extern | missing | P0 | KRITISCH -- wenn Keep tot, geht JEDER Alert verloren; kein externer Heartbeat | Externer Watchdog auf pve-01-nana (Dottikon). Plattform live seit 2026-05-01, Stack-Deployment offen [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
@@ -193,6 +193,9 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 
 ## Open Questions
 
+- **DRBD-Storm-Pattern seit Recovery 2026-04-29** -- 8601 `Verbindung getrennt`-Transitions / 50h, ~80% Alert-Volumen. Investigation [`86c9ktgag`](https://app.clickup.com/t/86c9ktgag) klaert ob Recovery-Stabilisierungs-Luecke oder Alert-Threshold zu sensitiv
+- **Nomad-Cluster-Flap Homelab vs DCLab Drift** -- Restart-Storm 158/50h Homelab, nur 6 DCLab. Investigation [`86c9ktgb7`](https://app.clickup.com/t/86c9ktgb7)
+- **Synology-NAS Series-Flapping-Verdacht** -- 7 Alerts mit fast identischer Count, vermutlich Datenquelle. Investigation [`86c9ktgdw`](https://app.clickup.com/t/86c9ktgdw)
 - **CrowdSec ohne Repo-Doku, 3 stale Bouncers** -- drift gegen LAPI. Documentation-Backlog
 - **Tailscale Cross-Tailnet HSLU/Privat** -- HSLU-Geraete in Privat-Tailnet, Risiko-relevant aber nicht monitort. Cross-cluster-Item
 - **NAS HyperBackup-Schedule** -- Off-Site-Strategie fuer NAS-Inhalt selbst unbekannt
@@ -228,3 +231,5 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 - [Keep](keep.md) -- Alert-Hub
 - ClickUp-Bundle [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) -- offene CheckMK-Coverage-Items Homelab
 - ClickUp-Master [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
+- ClickUp Pilot [`86c9ktagw`](https://app.clickup.com/t/86c9ktagw) -- Keep Alert-Fatigue Tuning Homelab (5 Subtasks: Status-quo, Reschedule for:, Heartbeat, Auth-Correlation, 7d-Beobachtung)
+- ClickUp Authentik-Track [`86c9ktajz`](https://app.clickup.com/t/86c9ktajz) -- Connection-Pool / PgBouncer Root-Cause (Parallel-Track zum Pilot)
