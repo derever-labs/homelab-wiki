@@ -32,7 +32,7 @@ Diese Tabelle ist der Pflege-Punkt fuer Coverage-Status. Andere Agenten, die Dri
 
 Disk-Full-Alerts unterscheiden zwei Storage-Klassen:
 
-- **Backup/NAS-Storage** (PBS-Datastore, MinIO, NFS-Backup-Mounts, Synology-Volumes): Critical 95%, optional Warning 90%. Backup-Storage darf voll laufen, kontrolliertes Erreichen ist akzeptabel
+- **Backup/NAS-Storage** (PBS-Datastore, Garage/MinIO, NFS-Backup-Mounts, Synology-Volumes): Critical 95%, optional Warning 90%. Backup-Storage darf voll laufen, kontrolliertes Erreichen ist akzeptabel
 - **Live-Storage** (DRBD/Linstor-Volumes fuer Apps wie `loki-data`, `influxdb-data`, `keep-data`): Warning 75%, Critical 90%. Live-Volumes haben FS-Korruptions-Risiko bei Voll
 
 PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein akuter Incident, sondern ein P0-Item fuer Threshold-Setup + Massnahme bei Erreichen. Ableitung dieser Konvention im Memory `feedback_nas_storage_threshold_95`.
@@ -83,7 +83,8 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | Linstor-Backup-Pipeline | cron c05+c06 + Uptime-Kuma | uptime + loki | partial | P0 | Partial-Failure mit `Errors > 0` wird nicht alarmiert | Heartbeat sieht nur 0-vs-mehr; LogQL-Pattern auf `Errors: [1-9]` fehlt |
 | pbs-backup-server (Datastore) | 10.0.2.50 | checkmk + direct | partial | P0 | Datastore 91% USED silent (95% Critical / 90% Warning); Postfix kein Relayhost konfiguriert (legacy-sendmail-Notifications silent) | Host als `cmk-agent` angelegt. Agent-Install ausstehend. df-Plugin fuer Datastores + Loki-Pattern fuer PBS-Sync/Verify-Fehler folgen [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) |
 | synology-nas (Linstor-S3 + NFS-Mounts) | 10.0.0.200 | checkmk SNMP | live | P2 | -- | RAID/Volume/SMART/Temp covered seit 2026-05-01 (built-in Plugins). Power-Status-Change + DSM-Upgrade als Nice-to-have |
-| MinIO | 10.0.0.200:9000 | none | missing | P1 | Health-Endpoint nicht gepingt; nur 24h-Backup-Heartbeat-Verzoegerung | Linstor-S3 indirekt, aber MinIO selbst nicht. Memory `reference_minio_nas` |
+| Garage S3 (aktiv) | 10.0.0.200:9012/9014 | Telegraf-Scrape pending | partial | P1 | `/metrics` Bearer-Token-Endpoint vorhanden, Telegraf-Input noch nicht deployt im Homelab | Memory `reference_s3_garage_minio` |
+| MinIO (Legacy bis Cleanup) | 10.0.0.200:9000 | none | missing | P3 | wird durch Garage abgeloest (Migration 2026-05-12), Rollback-Pfad bis ~Juni 2026 | -- |
 | CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot/NFS-Mount-Loss silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Memory `project_csi_health_monitoring_2026_04_30` |
 | NFS-Mount-Pipeline | 5 Mounts pro Storage-Node + PBS | none | missing | P1 | Mount-Loss silent; Staleness-Pattern fehlt | indirekt ueber csi-health, aber kein dedizierter Mount-Loss-Alert |
 | iperf3-Server | PBS userspace | none | missing | P2 | -- | wofuer? wer ist Client? |
@@ -209,14 +210,14 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 
 ## Verfolgte Risiken (ausserhalb Monitoring-Scope)
 
-- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (csi-health, jellyfin-streams, cert, logs, docker), MinIO terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down
+- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (csi-health, jellyfin-streams, cert, logs, docker), Garage/MinIO terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down
 - **Homelab Single-PSU pve-Hosts** (Memory `project_ups_psu_2026`) -- Konsumer-Hardware, jeder Power-Loss kann FS-Korruption verursachen. Restrisiko bleibt nach USV-Aufbau
 - **Corosync Single ring0** -- Network-Partition kann Quorum killen
 - **gatus-watchdog ist Pseudo-extern** -- sitzt auf gleicher Hardware (pve01). Externer Watchdog `pve-01-nana` in Dottikon ist die geplante Mitigation (Plattform live seit 2026-05-01; Stack-Deployment [`86c9km53e`](https://app.clickup.com/t/86c9km53e))
 
 ## Severity-Mapping (kompakt)
 
-- **critical** (VIP-Bot): alle P0-Items mit Cluster-weitem Blast (Vault Sealed, NFS 91%, PBS-Voll, Authentik-Server-Down, LE-Cert <14d, OpenLDAP-Bind-Fail, CrowdSec-Down, Pi-hole Double-Down, Traefik-Double-Down, Cloudflare-DDNS-Failed, UDM-ICMP-Down, MinIO-Down, ZFS-DEGRADED, NVMe Critical-Warning, USV Battery-Low, ZOT-Down, NFS-Synology-95-Percent, gatus-watchdog-broken, Keep-Down, Telegraf-Tot, Alloy-Tot)
+- **critical** (VIP-Bot): alle P0-Items mit Cluster-weitem Blast (Vault Sealed, NFS 91%, PBS-Voll, Authentik-Server-Down, LE-Cert <14d, OpenLDAP-Bind-Fail, CrowdSec-Down, Pi-hole Double-Down, Traefik-Double-Down, Cloudflare-DDNS-Failed, UDM-ICMP-Down, Garage-Down, ZFS-DEGRADED, NVMe Critical-Warning, USV Battery-Low, ZOT-Down, NFS-Synology-95-Percent, gatus-watchdog-broken, Keep-Down, Telegraf-Tot, Alloy-Tot)
 - **warning** (Standard-Bot): alle P1-Items (Slow-Queries, Memory-Pressure, Cardinality >80%, Cert <30d, Outpost-Disconnect, Restart-Loops, NFS-Slow, Backup-Stale, Switch-Down, Tailscale-Node-Offline, CrowdSec-Bouncer-Stale, nebula-sync-failed, certs-dumper-stale, ph_downloader-stale, sabnzbd-stalled)
 - **info** (nur Dashboard): alle P2-Items (iperf3, etcd, Redis, NAS-Firmware, Cardinality-Trend, gpu-utilization)
 
