@@ -19,7 +19,7 @@ Headless CMS fuer die strukturierte Recherche von Gravel-Bike-Herstellern und -M
 | URL | Siehe [Web-Interfaces](../_referenz/web-interfaces.md#produktivität) |
 | Auth | Authentik Forward-Auth via `intern-auth@file` + Directus eigene Admin-Login |
 | Database | PostgreSQL (Shared Cluster, DB `gravel_recherche`) -- Details in [Datenbanken](../_referenz/datenbanken.md) |
-| File Storage | MinIO S3, Bucket `gravel-recherche` (Service-Account mit dedizierter Bucket-Policy) -- Details in [NAS-Speicher](../nas-storage/) |
+| File Storage | Garage S3 (NAS :9012, Migration von MinIO 2026-05-12), Bucket `gravel-recherche`, dedizierter Per-Bucket-Access-Key -- Details in [NAS-Speicher](../nas-storage/) |
 | Secrets | Vault `kv/data/directus-gravel`, 1Password Item "Directus Gravel" |
 | Nomad Job | `infra/nomad-jobs/services/directus-gravel.nomad` |
 
@@ -49,7 +49,7 @@ Doppelte Auth-Schicht: Traefik laesst nur Authentik-authentifizierte interne Req
 
 ## Verwandte Seiten
 
-- [NAS-Speicher](../nas-storage/) -- MinIO S3 Bucket-Architektur
+- [NAS-Speicher](../nas-storage/) -- Garage S3 (Nachfolger MinIO) und Bucket-Architektur
 - [Datenbanken](../_referenz/datenbanken.md) -- Postgres-Cluster und DB-Zuordnung
 - [Web-Interfaces](../_referenz/web-interfaces.md) -- URL-Verzeichnis
 - [Zugangsdaten](../_referenz/credentials.md) -- Vault- und 1P-Speicherorte

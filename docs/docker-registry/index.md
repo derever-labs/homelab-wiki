@@ -19,7 +19,7 @@ Zot ist eine OCI-native Container Registry mit S3-Backend, Redis-MetaDB und Pull
 - URL (intern): `localhost:5000` (jeder Node, via System Job)
 - URL (extern): `registry.ackermannprivat.ch`
 - Deployment: Nomad Job `infrastructure/zot-registry.nomad` (System Job, `type = "system"`, 3 Allocs)
-- Storage Backend: MinIO S3 auf [NAS](../nas-storage/index.md)
+- Storage Backend: Garage S3 auf [NAS](../nas-storage/index.md) (Migration von MinIO am 2026-05-12; Endpoint :9012, Bucket `zot-registry`)
 - MetaDB: Redis cacheDriver, Port 6380 (client-04/05 oder NAS-Redis)
 - Auth: htpasswd -- nomad-client (read), ci-push (read+write), anonymousPolicy=[]
 - UI: Eingebaut (Zot UI Extension)
@@ -38,7 +38,7 @@ Zot ist eine OCI-native Container Registry mit S3-Backend, Redis-MetaDB und Pull
 ```d2
 direction: down
 
-S3: "MinIO S3 (NAS)\nBucket: zot-registry" { shape: cylinder }
+S3: "Garage S3 (NAS)\nBucket: zot-registry\n:9012" { shape: cylinder }
 Zot1: "Zot\nlocalhost:5000\n(client-04)" { tooltip: 10.0.2.124 }
 Zot2: "Zot\nlocalhost:5000\n(client-05)" { tooltip: 10.0.2.125 }
 Zot3: "Zot\nlocalhost:5000\n(client-06)" { tooltip: 10.0.2.126 }
@@ -131,10 +131,10 @@ Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen 
 
 ### S3 Storage
 
-- Endpoint: MinIO auf NAS (Port 9000) -- siehe [NAS-Speicher](../nas-storage/index.md)
+- Endpoint: Garage auf NAS (Port 9012, Migration von MinIO 2026-05-12) -- siehe [NAS-Speicher](../nas-storage/index.md)
 - Bucket: zot-registry
 - Root Directory: /zot
-- Credentials: Vault `kv/data/zot-s3` (Workload Identity)
+- Credentials: Vault `kv/data/zot-s3` (Workload Identity, Felder: endpoint, region, accesskey, secretkey, bucket)
 
 ### Sync Credentials
 
