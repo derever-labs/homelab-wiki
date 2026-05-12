@@ -35,19 +35,13 @@ Die Felder werden in UTC erwartet -- das Pocketbase-UI zeigt die lokale Zeit abe
 
 ## Eine zusaetzliche Domain mit Banner ausstatten
 
-1. Zugehoerigen Nomad-Job-File aufmachen (z.B. `nomad-jobs/services/<app>.nomad`)
-2. Im `service { tags = [...] }` Block die Middleware aendern:
-   - Bisher `intern-auth@file` -> neu `intern-auth-with-banner@file`
-   - Bisher `public-auth@file` -> neu `public-auth-with-banner@file`
-   - Bisher `public-noauth@file` -> neu `public-noauth-with-banner@file`
-3. Job neu deployen (`nomad job run`). Traefik nimmt die neuen Tags ueber Consul-Catalog auf -- kein Traefik-Restart noetig.
-4. Verifizieren: Im Browser die Domain oeffnen, Banner muss erscheinen wenn `enabled=true`.
+Das Banner ist Teil der Base-Chains `intern-auth`, `public-auth`, `public-noauth` (und der Strict-Varianten). Jede Route die eine dieser Chains nutzt zeigt automatisch das Banner -- nichts zu tun pro App.
 
-Bei komprimierungs-aktiven Backends (z.B. neue Java/Python-Apps): Routes mit Banner profitieren automatisch von `force-identity-encoding` weil das Teil der `*-with-banner` Chains ist.
+Wenn eine neue App eine eigene Custom-Chain braucht: `force-identity-encoding` ganz vorne in der Liste, dann die regulaeren Middlewares, dann `banner-inject` VOR `error-pages`.
 
-## Eine Domain wieder ohne Banner
+## Eine Domain bewusst ohne Banner
 
-Tag zurueck auf die unmarkierte Variante (`intern-auth@file`, `public-auth@file`, `public-noauth@file`), neu deployen.
+Eine Route auf `intern-api` umstellen (kein Banner, keine Error-Pages) oder eine eigene Chain ohne `banner-inject` definieren. Standardfall: alle HTML-liefernden Apps sollen das Banner haben -- Ausnahmen nur fuer Webhook- oder API-only-Routen.
 
 ## Test ob das Banner auf einer Domain ankommt
 

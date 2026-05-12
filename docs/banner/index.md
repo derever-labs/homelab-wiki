@@ -87,8 +87,9 @@ Das Banner wird ueber das Pocketbase-Admin-UI verwaltet. Single-Record-Collectio
 |------|-----|-----------|
 | `enabled` | bool | Master-Schalter. `false` = Banner aus, unabhaengig von den Zeit-Feldern |
 | `text` | string | Anzeigetext, max 500 Zeichen |
-| `bg_color` | string | Hintergrundfarbe (Default `#ff9900`) |
-| `fg_color` | string | Textfarbe (Default `#000000`) |
+| `severity` | select | Farb-Preset (`wartung` orange, `info` blau, `incident` rot, `resolved` gruen). Wenn gesetzt: ueberschreibt bg/fg_color |
+| `bg_color` | string | Optionale Hintergrundfarbe als Hex, wenn `severity` nicht gesetzt. Default `#ff9900` |
+| `fg_color` | string | Optionale Textfarbe als Hex, wenn `severity` nicht gesetzt. Default `#000000` |
 | `start_at` | datetime | Optional. Wenn gesetzt: Banner erscheint erst ab diesem Zeitpunkt |
 | `end_at` | datetime | Optional. Wenn gesetzt: Banner verschwindet automatisch nach diesem Zeitpunkt |
 
@@ -96,13 +97,15 @@ Aktivierungslogik im Client-JS: `enabled && (start_at unset oder now >= start_at
 
 ## Banner-faehige Routen
 
-Drei spezialisierte Middleware-Chains aktivieren das Banner pro Route (Quelle: [`traefik-proxy/configurations/middleware-chains.yml`](https://github.com/derever-labs/infra/blob/main/homelab-hashicorp-stack/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml)):
+Banner ist Teil der Base-Chains in [`middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml). Jede Route die eine dieser Chains nutzt bekommt automatisch das Banner-Verhalten:
 
-- `intern-auth-with-banner` -- wie `intern-auth`, plus `force-identity-encoding` und `banner-inject`. Fuer interne Apps mit Authentik-Auth.
-- `public-auth-with-banner` -- wie `public-auth`, plus die beiden Banner-Middlewares. Fuer extern verfuegbare Apps mit Authentik.
-- `public-noauth-with-banner` -- wie `public-noauth`. Fuer extern verfuegbare Apps ohne Authentik (z.B. Jellyfin mit eigener Auth).
+- `intern-auth` / `intern-auth-strict`
+- `public-auth` / `public-auth-strict`
+- `public-noauth`
 
-Eine Route bekommt das Banner indem ihr Traefik-Tag `traefik.http.routers.<name>.middlewares` auf eine dieser Chains zeigt.
+Reihenfolge in der Chain ist relevant: `force-identity-encoding` ganz vorne (sonst sieht das Plugin komprimierte Bytes), `banner-inject` VOR `error-pages` (so wird bei 4xx/5xx der Body durch die Error-Page komplett ersetzt und das Banner verschwindet automatisch auf Error-Seiten -- kein doppeltes Banner).
+
+Routen ohne Banner: `intern-api` (JSON-API-Endpoints) und `keep-webhook` (machine-to-machine ohne User-Browser).
 
 ## force-identity-encoding (technische Notwendigkeit)
 
