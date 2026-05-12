@@ -12,6 +12,23 @@ tags:
 
 Ein zentral pflegbarer Banner der ueber alle Apps hinter Traefik eingeblendet werden kann, ohne jede App einzeln anfassen zu muessen. Pflege erfolgt ueber das Pocketbase-Admin-UI mit Master-Schalter und optionalem Zeitfenster.
 
+## Schnellanleitung: Wartungsfenster ankuendigen
+
+1. [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) oeffnen, mit Pocketbase-Credentials einloggen (1P-Item `Pocketbase Banner`)
+2. Collection `banner_config` -> einen der zwei Records anklicken:
+   - **`audience: intern`** -> erscheint auf allen `intra.*` Seiten (z.B. intra.ackermannprivat.ch)
+   - **`audience: extern`** -> erscheint auf allen anderen Seiten (welcome, wish, watch, gitea, ...)
+3. Felder editieren:
+   - `enabled` auf `true` (das ist der Master-Schalter)
+   - `severity` waehlen: `wartung` (orange), `info` (blau), `incident` (rot), `resolved` (gruen)
+   - `text` mit der Botschaft fuellen
+   - Optional `start_at` und `end_at` setzen, dann erscheint und verschwindet das Banner automatisch
+4. Save
+
+Der Banner erscheint beim naechsten Page-Reload auf den entsprechenden Apps. Zum Ausschalten `enabled` auf `false` setzen.
+
+Detail-Runbook und Edge-Cases siehe [Betrieb](betrieb.md).
+
 ## Uebersicht
 
 | Attribut | Wert |
