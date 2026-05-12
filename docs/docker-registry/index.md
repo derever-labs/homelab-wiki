@@ -1,32 +1,32 @@
 ---
 title: Zot Container Registry
-description: OCI-native Container Registry mit S3 Backend, Redis MetaDB und Pull-Through Cache
+description: OCI-native Container Registry mit Linstor-CSI DRBD Volume, BoltDB MetaDB und Pull-Through Cache
 tags:
   - docker
   - registry
   - container
   - infrastructure
-  - s3
+  - linstor
   - zot
 ---
 
 # Zot Container Registry
 
-Zot ist eine OCI-native Container Registry mit S3-Backend, Redis-MetaDB und Pull-Through Cache für Docker Hub, ghcr.io und quay.io. Als Nomad System Job läuft eine Instanz auf jedem Client-Node und teilt sich S3-Bucket und Redis-Cache auf dem NAS.
+Zot ist eine OCI-native Container Registry mit Linstor-CSI DRBD-Volume, BoltDB (embedded) und Pull-Through Cache für Docker Hub, ghcr.io und quay.io. Als Nomad Service Job läuft eine Instanz auf dem Nomad-Cluster und wird bei Node-Ausfall automatisch rescheduled.
 
 ## Übersicht
 
-- URL (intern): `localhost:5000` (jeder Node, via System Job)
+- URL (intern): `zot.service.consul:5000` (via Consul DNS)
 - URL (extern): `registry.ackermannprivat.ch`
-- Deployment: Nomad Job `infrastructure/zot-registry.nomad` (System Job, `type = "system"`, 3 Allocs)
-- Storage Backend: Garage S3 auf [NAS](../nas-storage/index.md) (Migration von MinIO am 2026-05-12; Endpoint :9012, Bucket `zot-registry`)
-- MetaDB: Redis cacheDriver, Port 6380 (client-04/05 oder NAS-Redis)
+- Deployment: Nomad Job `infrastructure/zot-registry.nomad` (Service Job, `type = "service"`, 1 Alloc)
+- Storage Backend: Linstor-CSI Volume `zot-data` (150 GB, ext4 noatime, `placement_count = 3`)
+- MetaDB: BoltDB embedded (kein Redis mehr)
 - Auth: htpasswd -- nomad-client (read), ci-push (read+write), anonymousPolicy=[]
 - UI: Eingebaut (Zot UI Extension)
 
 ## Warum Zot statt Docker Registry v2?
 
-- Pull-Through Cache: Docker Registry v2 unterstützt nur Docker Hub -- Zot unterstützt Docker Hub, ghcr.io, quay.io mit Whitelist
+- Pull-Through Cache: Docker Registry v2 unterstützt nur Docker Hub -- Zot unterstützt Docker Hub, ghcr.io und quay.io
 - UI: Docker Registry v2 hat kein UI -- Zot hat eine eingebaute Web-UI
 - Search: Docker Registry v2 hat keine Suche -- Zot hat GraphQL API
 - OCI-native: Docker Registry v2 nutzt das Docker Schema -- Zot ist nativ OCI
@@ -38,29 +38,31 @@ Zot ist eine OCI-native Container Registry mit S3-Backend, Redis-MetaDB und Pull
 ```d2
 direction: down
 
-S3: "Garage S3 (NAS)\nBucket: zot-registry\n:9012" { shape: cylinder }
-Zot1: "Zot\nlocalhost:5000\n(client-04)" { tooltip: 10.0.2.124 }
-Zot2: "Zot\nlocalhost:5000\n(client-05)" { tooltip: 10.0.2.125 }
-Zot3: "Zot\nlocalhost:5000\n(client-06)" { tooltip: 10.0.2.126 }
-Cache: "On-Demand Proxy Cache\nDocker Hub, ghcr.io,\nquay.io"
+Volume: "Linstor-CSI Volume\nzot-data (150 GB)\nDRBD 3-Replica" { shape: cylinder }
+Zot: "Zot\nzot.service.consul:5000\n(Service Job, 1 Alloc)"
+Cache: "Pull-Through Cache\nDocker Hub, ghcr.io, quay.io"
+Mirror: "daemon.json registry-mirrors\nAlle Nodes → zot.service.consul:5000"
 
-S3 -> Zot1
-S3 -> Zot2
-S3 -> Zot3
-Zot1 -> Cache
-Zot2 -> Cache
-Zot3 -> Cache
+Volume -> Zot
+Zot -> Cache
+Mirror -> Zot
 ```
 
-**Vorteile:**
-- Alle Instanzen teilen S3 Storage (kein Sync nötig)
-- Ein Push auf Node A ist sofort auf B/C verfügbar
-- On-Demand Proxy Cache für 4 Upstream-Registries
-- Fallback zu Docker Hub wenn Registry nicht erreichbar
+**Eigenschaften:**
+- Linstor-CSI DRBD-Volume mit 3 Replicas: Daten bleiben bei Node-Ausfall erhalten
+- Nomad rescheduled die Allokation auf einen anderen Node -- Volume folgt über CSI
+- BoltDB embedded: keine externe Metadaten-Datenbank, kein Redis mehr
+- Pull-Through Cache für 3 Upstream-Registries mit Docker-Hub-Pro-Limit (unlimited pulls)
+
+### daemon.json Mirror-Pattern
+
+Auf allen Nodes ist `zot.service.consul:5000` als `registry-mirrors` konfiguriert. Das Mirror-Matching greift **nur** bei Kurz-Format-Referenzen (`library/nginx:1.27`, `louislam/uptime-kuma`). Referenzen mit explizitem Hostname (`ghcr.io/...`, `quay.io/...`) gehen direkt zum Upstream und umgehen den Mirror.
+
+Deshalb nutzen alle Nomad-Job-Files explizite Referenzen der Form `zot.service.consul:5000/<prefix>/<image>:<tag>` statt sich auf den Mirror-Mechanismus zu verlassen. Das macht den tatsächlichen Zugriffspfad im Job-File sichtbar und verhindert überraschende direkte Upstream-Pulls.
 
 ## Konfiguration
 
-Die vollständige Konfiguration (Zot Config, S3 Storage, Redis CacheDriver, Proxy Cache, Auth) ist im Nomad Job definiert: `infrastructure/zot-registry.nomad`
+Die vollständige Konfiguration (Zot Config, Linstor-Volume, Proxy Cache, Auth) ist im Nomad Job definiert: `infrastructure/zot-registry.nomad`
 
 **Wichtig:** `compat: ["docker2s2"]` in der HTTP-Konfiguration ist nötig, damit Docker-Format Manifeste (v2 Schema 2) akzeptiert werden. Ohne dieses Setting schlägt der Push von Multi-Arch Images fehl mit `manifest invalid`.
 
@@ -73,75 +75,44 @@ ZOT nutzt htpasswd mit zwei Usern:
 
 `anonymousPolicy = []` -- kein anonymer Zugriff.
 
-### Redis CacheDriver
+### Storage: Linstor-CSI Volume
 
-Alle ZOT-Instanzen nutzen Redis als geteilte Metadaten-Datenbank (`cacheDriver: redis`, `remoteCache: true`, Port 6380). Das ermöglicht schnelle Starts nach dem ersten ParseStorage-Durchlauf, da Metadaten aus Redis kommen statt aus S3 rekonstruiert werden.
-
-::: warning Cold-Start
-Beim absoluten Kaltstart (leerer Bucket, leerer Redis) durchläuft ZOT trotzdem ParseStorage. Erst danach sind Folgestarts schnell.
-:::
+- Volume-Name: `zot-data`
+- Grösse: 150 GB
+- Dateisystem: ext4, Mount-Option `noatime`
+- Linstor `placement_count = 3`: Block-Daten auf 3 Nodes repliziert (DRBD)
+- Kein S3-Backend mehr, keine Abhängigkeit vom NAS
 
 ### Proxy Cache Registries
 
-Alle Registries laufen mit Whitelist-Prefixes. Anfragen ausserhalb der Whitelist werden nicht synchronisiert.
+Drei Upstream-Registries mit Catch-All Sync-Konfiguration (`content: [{"prefix": "**"}]`). Das `retryDelay` ist auf 5 Minuten gesetzt (war früher 1 Stunde -- ein Killer bei Upstream-Störungen).
 
-::: danger Whitelist und Retention sind doppelt gepflegt -- bei neuen Images BEIDE anpassen
-ZOT hat zwei voneinander unabhängige Listen, die exakt synchron gehalten werden müssen, sonst werden frisch gepullte Images entweder nicht synchronisiert oder nach 24h wieder gelöscht:
+- Docker Hub (`registry-1.docker.io`) -- Catch-All Default, alle Namespaces. Docker-Hub-Pro-Plan aktiv (unlimited pulls).
+- GitHub Container Registry (`ghcr.io`) -- Destination-Prefix `/ghcr.io` im ZOT-Pfad. Sync-Credentials via ci-push PAT.
+- Quay.io (`quay.io`) -- Destination-Prefix `/quay.io` im ZOT-Pfad.
 
-1. `extensions.sync.registries[].content[].prefix` -- entscheidet, ob ein On-Demand-Pull vom Upstream erlaubt ist. Fehlt der Prefix, antwortet ZOT mit 404.
-2. `extensions.scrub.retention.policies[].repositories` -- entscheidet, ob ein bereits gecachtes Image nach 24h gelöscht wird. Fehlt der Eintrag, fällt das Repo in die Spam-Killer-Policy (`keepTags = 0`).
+Weil ZOT das Destination-Mapping nutzt, entsprechen die Image-Pfade 1:1 dem Upstream-Format:
 
-SSOT ist immer der Nomad-Job (`infrastructure/zot-registry.nomad`), nicht diese Seite. Die Wiki-Aufzählungen unten waren beim letzten Audit phantasievoll.
+- Docker Hub `nginx:1.27` → `zot.service.consul:5000/library/nginx:1.27`
+- `ghcr.io/project-zot/zot:v2.1.0` → `zot.service.consul:5000/ghcr.io/project-zot/zot:v2.1.0`
+- `quay.io/prometheus/prometheus:v3` → `zot.service.consul:5000/quay.io/prometheus/prometheus:v3`
 
-Vor jedem `image = "localhost:5000/<prefix>/..."`-Add: prüfen ob `<prefix>` in BEIDEN Listen steht; falls nicht, ergänzen und Job neu deployen (Template-Re-Render erforderlich). Bei neuer Upstream-Registry zusätzlich einen neuen `registries[]`-Eintrag mit eigenen Sync-Credentials anlegen.
-:::
-
-::: warning Bootstrap-Klasse: bewusste Direkt-Pulls ohne Cache
-Einige Jobs sollen bei einem ZOT-Ausfall trotzdem starten können. Sie pullen deshalb so, dass `registry-mirrors` einen Hub-Fallback erlaubt (bare Docker-Hub-Name) oder gar nicht erst durch ZOT laufen (explizite Hostnames wie `quay.io/...`, `ghcr.io/...`, `us-central1-docker.pkg.dev/...`). Erkennbar an einem Header-Kommentar im jeweiligen Nomad-Job.
-
-- ZOT selbst (`ghcr.io/project-zot/...`) -- Chicken-Egg
-- Redis-ZOT (`docker.io/library/redis:7-alpine`) -- ZOT-MetaDB
-- Keep (`alpine`, `redis:8-alpine`, `quay.io/soketi/...`, `us-central1-docker.pkg.dev/keephq/...`) -- Alert-Bastion: ohne Keep schickt niemand mehr den Alert raus
-- Uptime-Kuma (`louislam/uptime-kuma`) -- Monitoring-Bastion: ohne Uptime-Kuma sieht niemand mehr was kaputt ist
-
-Bei `image = "<bare-hub-name>"` läuft der Pull im Normalfall via `registry-mirrors` durch ZOT (Cache nutzt). Erst wenn ZOT 404 oder down liefert, fällt Docker auf Docker Hub direkt zurück. Damit ist der Bootstrap-Pfad robust, ohne den Cache-Vorteil im Normalbetrieb zu opfern. Whitelist-Prefix für diese Hub-Namespaces (z.B. `library/**`, `louislam/**`) trotzdem in der Sync-Liste belassen.
-
-Bei `image = "<host>/<repo>"` (z.B. `quay.io/soketi/...`) greift `registry-mirrors` nicht und der Pull geht immer direkt zum Upstream. Hier reicht es, den Pfad einfach nicht via `localhost:5000/<host>/...` zu schreiben.
-:::
-
-- Docker Hub (`registry-1.docker.io`) -- TLS-Verify, Sync-Credentials (nomad-client). Whitelist-Prefixes siehe `infrastructure/zot-registry.nomad` (`extensions.sync.registries[0].content[].prefix`).
-- GitHub Container Registry (`ghcr.io`) -- Sync-Credentials (ci-push PAT). Whitelist analog im Nomad-Job.
-- Quay.io (`quay.io`) -- aktuell **nicht** als Sync-Registry konfiguriert. Quay-Pulls erfolgen ausschliesslich direkt vom Upstream (Bootstrap-Klasse, siehe oben).
-
-::: info LinuxServer.io: Upstream ghcr.io statt lscr.io
-Image-Pfade in den Nomad-Jobs lauten weiterhin `linuxserver/jellyfin` o.ä. (kein `ghcr.io/`-Prefix), obwohl ZOT intern von `ghcr.io` pullt. Grund: `lscr.io` ist kein eigenständiges OCI-Registry, sondern ein Scarf-Redirect-Service -- der `/v2/`-Endpunkt antwortet mit 405, und Auth-Tokens kommen ohnehin von `ghcr.io`. ZOT kam mit dem Redirect nicht sauber klar. Umstellung auf `ghcr.io` als direktem Upstream entfernt die Indirektion. Die Tags auf `ghcr.io/linuxserver/...` sind identisch mit jenen auf `lscr.io/linuxserver/...`, deshalb können die Nomad-Job-Pfade unverändert bleiben.
+::: warning Catch-All statt Whitelist
+Seit der Migration am 2026-05-12/13 gibt es keine gepflegte Prefix-Whitelist mehr. Der Catch-All (`**`) synchronisiert jeden angefragten Pfad on-demand. Nicht mehr gecachte Images bleiben erhalten -- die Retention-Policies (Whitelist + Spam-Killer) übernehmen das Aufräumen.
 :::
 
 ### On-Demand Sync Verhalten
 
-Zot synchronisiert Images bei `onDemand: true` bei jedem Request mit dem Upstream. Das bedeutet:
+Zot synchronisiert Images bei `onDemand: true` bei jedem Request mit dem Upstream:
 
-- **Gecachte Images mit unverändertem Tag:** Zot prüft kurz beim Upstream ob eine neuere Version existiert ("already synced") und liefert sofort aus dem S3-Cache.
-- **Rate Limiting:** Wenn der Upstream (z.B. Docker Hub) ein 429 zurückgibt, blockiert der Request bis zum nächsten Retry.
-- **Konfiguration:** `maxRetries: 1`, `retryDelay: 15s` — maximale Blockierzeit pro Image ca. 15 Sekunden (statt bis zu 15 Minuten bei der alten Konfiguration mit `maxRetries: 3`, `retryDelay: 5m`).
-
-::: warning Nach Zot-Restart
-Nach einem Restart aller 3 Zot-Instanzen versuchen die Docker-Daemons auf allen Nodes gleichzeitig, ihre Images via Zot zu aktualisieren. Da alle Instanzen die gleichen Docker Hub Credentials nutzen, wird das Rate Limit schnell erreicht. Die Queue arbeitet sich mit den neuen Retry-Werten aber deutlich schneller ab (~15s statt ~5min pro Rate-Limited Request).
-:::
-
-### S3 Storage
-
-- Endpoint: Garage auf NAS (Port 9012, Migration von MinIO 2026-05-12) -- siehe [NAS-Speicher](../nas-storage/index.md)
-- Bucket: zot-registry
-- Root Directory: /zot
-- Credentials: Vault `kv/data/zot-s3` (Workload Identity, Felder: endpoint, region, accesskey, secretkey, bucket)
+- **Gecachte Images mit unverändertem Tag:** Zot prüft kurz beim Upstream ob eine neuere Version existiert und liefert sofort aus dem Volume-Cache.
+- **Rate Limiting:** Dank Docker-Hub-Pro-Plan (unlimited pulls) ist ein 429 vom Docker Hub im Normalbetrieb nicht mehr zu erwarten.
+- **Retry:** `retryDelay: 5m` -- bei einem temporären Upstream-Fehler wird nach 5 Minuten erneut versucht (kein sofortiger Pull-Fehler).
 
 ### Sync Credentials
 
-Damit der Pull-Through Cache nicht in Docker Hubs Anonymous-Rate-Limit (100/6h) läuft, authentisiert sich Zot beim Sync gegen einen dedizierten Docker-Hub-Account und erhält damit das Authenticated-Limit (200/6h).
-
 - Vault-Pfad: `kv/data/zot-registry` (Workload Identity)
-- Account: Eigener Docker Hub Service-Account mit Personal Access Token, Public Read (kein Push)
+- Docker Hub: Eigener Service-Account mit Personal Access Token, Public Read (kein Push). Pro-Plan aktiv.
 - htpasswd-Hashes: nomad-client und ci-push ebenfalls in `kv/data/zot-registry`
 
 ::: tip PAT-Rotation
@@ -150,50 +121,71 @@ Personal Access Token rotieren: neuen Token im Docker Hub Web-UI erzeugen, in Va
 
 ### Retention
 
-Zwei Policies (produktiv seit 2026-04-19):
+Zwei Policies:
 
-- Whitelist-Policy: alle erlaubten Docker-Hub- und ghcr.io-Namespaces + lokale Images (homelab/*, immo-monitor/*, timber-viewer-*) -- `keepTags = 10`, `deleteUntagged = true`
+- Whitelist-Policy: alle explizit whitelisted Namespaces + lokale Images (homelab/*, immo-monitor/*, timber-viewer-*) -- `keepTags = 10`, `deleteUntagged = true`
 - Spam-Killer-Policy: alle übrigen Repos -- `keepTags = 0`, `deleteUntagged = true`. Räumt nicht-whitelisted Einträge automatisch auf.
 
-Die Retention ersetzt die früheren externen Purge-Tools (DEPRECATED).
+SSOT ist immer der Nomad-Job (`infrastructure/zot-registry.nomad`), nicht diese Seite.
 
-### Docker daemon.json
+### Bootstrap-Klasse: bewusste Direkt-Pulls ohne Cache
 
-Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet durch Ansible). Docker versucht erst localhost:5000 (Zot), bei Nichterreichbarkeit automatisch Docker Hub direkt.
+Einige Jobs sollen bei einem ZOT-Ausfall trotzdem starten können. Sie nutzen explizite Upstream-Hostnames und umgehen damit `registry-mirrors` vollständig. Erkennbar an einem Header-Kommentar im jeweiligen Nomad-Job:
+
+- ZOT selbst (`ghcr.io/project-zot/...`) -- Chicken-Egg
+- Keep (`alpine`, `redis:8-alpine`, `quay.io/soketi/...`, `us-central1-docker.pkg.dev/keephq/...`) -- Alert-Bastion
+- Uptime-Kuma (`louislam/uptime-kuma`) -- Monitoring-Bastion
+
+::: info LinuxServer.io: Upstream ghcr.io statt lscr.io
+Image-Pfade in den Nomad-Jobs nutzen weiterhin `linuxserver/jellyfin` o.ä., obwohl ZOT intern von `ghcr.io` pullt. Grund: `lscr.io` ist ein Scarf-Redirect-Service -- der `/v2/`-Endpunkt antwortet mit 405, Auth-Tokens kommen ohnehin von `ghcr.io`. Die Tags auf `ghcr.io/linuxserver/...` sind identisch mit jenen auf `lscr.io/linuxserver/...`.
+:::
+
+## Failover & Wiederanlauf
+
+Mit `type = "service"` und Linstor-CSI DRBD-Volume vereinfacht sich der Wiederanlauf gegenüber dem früheren System-Job mit S3-Backend deutlich:
+
+1. Node fällt aus → Nomad erkennt fehlgeschlagene Health Checks
+2. Nomad rescheduled die Allokation auf einen anderen Node
+3. Linstor-CSI meldet das DRBD-Volume auf dem Ziel-Node an -- kein Daten-Sync nötig (DRBD repliziert Block-Level live)
+4. ZOT startet mit vollem Datenstand, BoltDB-Index bereits vorhanden
+5. `zot.service.consul` zeigt auf die neue Allokation -- Nodes, die `registry-mirrors` nutzen, verbinden sich automatisch zur neuen Instanz
+
+::: warning CSI Stale-Claim Pattern
+Nach einem unclean Node-Ausfall kann der CSI-Volume-Claim im "stale" Zustand hängen bleiben (Nomad kennt den alten Alloc noch, der Node meldet sich nicht mehr zurück). Symptom: neue Allokation startet nicht, Volume-Mount schlägt fehl.
+
+Workaround: `nomad system gc` ausführen -- bereinigt stale Alloc-Einträge und gibt den CSI-Claim frei. Danach startet Nomad die Allokation neu. Der DRBD-Volume-Inhalt bleibt dabei unberührt.
+:::
+
+::: tip Kein Warm-Up nach Restart
+Da BoltDB embedded ist, hat ZOT nach dem Restart sofort Zugriff auf seinen Metadaten-Index. Ein Cold-Start-ParseStorage-Durchlauf (wie früher mit Redis/S3) entfällt.
+:::
 
 ## Backup
 
-| Pfad | Inhalt |
-| :--- | :--- |
-| Garage: zot-registry/* | Alle Registry Blobs und Manifeste (Bucket On-Demand wiederbefüllbar) |
-
-**Restore:** Bei Totalverlust reicht ein leerer Bucket -- der Pull-Through-Cache füllt sich on-demand neu aus den Upstream-Registries. Eine echte Wiederherstellung ist nur für eigene Pushes (`localhost:5000/library/immo-monitor` usw.) nötig.
-
-### DNS-Abhängigkeit (v10.2, 24.04.2026)
-
-Zot läuft mit `network_mode = "host"` im Nomad Job, hat aber **explizit** `dns_servers = ["1.1.1.1", "8.8.8.8"]` gesetzt. Damit ist der ZOT-Container komplett unabhängig von internen DNS-Servern (Pi-hole). Das ist bewusst so:
-
-- Upstream-Registries (`registry-1.docker.io`, `ghcr.io`) werden direkt über Public DNS aufgelöst -- kein Hop über Pi-hole.
-- Der Garage-S3-Endpoint ist als IP (`http://10.0.0.200:9012`) konfiguriert, keine DNS-Auflösung nötig.
-- Die Redis-URL (`redis://redis-zot...`) wird nicht mehr zur Laufzeit via Consul-DNS aufgelöst, sondern **zur Deploy-Zeit per Consul-Template** in die `config.json` gerendert (<span v-pre>`{{ range service "redis-zot" }}...{{ end }}`</span>). ZOT sieht zur Laufzeit nur eine feste IP:Port.
-
-Ergebnis: ZOT ist zur Runtime nicht mehr vom Pi-hole und nicht mehr vom Consul-DNS abhängig. Ein Ausfall einer der beiden Schichten crasht ZOT nicht mehr.
-
-::: warning Vorfall 2026-04-23 (gefixt)
-Zuvor hatte ZOT `dns_servers = ["10.0.2.1", "10.0.2.2"]` (Pi-hole) gesetzt und `redis-zot.service.consul` zur Runtime auflösen müssen. Pi-hole kennt keine `.service.consul`-Records → ZOT crashte im Startup. Parallel hatte `redis-zot.nomad` sein Image aus `localhost:5000/library/redis:7-alpine` gezogen (also aus ZOT selbst) → zirkulärer Deadlock. Fixes: DNS auf public, Consul-Template für Redis-URL, `redis-zot` Image auf `docker.io/library/redis:7-alpine`. Details im ClickUp-Task Privat IT Generell 86c9g378x.
-:::
+- Linstor-CSI Volume `zot-data` (150 GB DRBD): Block-Level 3-Replica im Cluster -- kein separates Backup-Job nötig für Availability. Für Disaster-Recovery (alle 3 Nodes gleichzeitig verloren) gilt: Pull-Through-Cache füllt sich on-demand aus Upstream-Registries neu. Eigene Pushes (`homelab/...`, `immo-monitor/...`) müssen separat gesichert werden.
 
 ## Troubleshooting
 
-### Langsame Image Pulls (>15s)
+### Langsame Image Pulls (>30s)
 
-1. **DNS prüfen:** DNS-Auflösung von `registry-1.docker.io` via lxc-dns-01 testen -- muss sofort antworten
-2. **Rate Limit prüfen:** Zot-Container-Logs auf `TOOMANYREQUESTS` prüfen -- wenn Docker Hub 429 zurückgibt, warten bis Rate Limit abläuft
-3. **Zot Health prüfen:** Zot-Endpunkt `http://localhost:5000/v2/` -- muss 200 zurückgeben
+1. **Zot Health prüfen:** `curl http://zot.service.consul:5000/v2/` muss 200 zurückgeben
+2. **Allokation prüfen:** `nomad job status zot-registry` -- 1 Alloc im Status `running`
+3. **CSI-Volume prüfen:** `nomad volume status zot-data` -- Volume gemounted und nicht stale
+4. **Upstream prüfen:** Zot-Container-Logs auf `TOOMANYREQUESTS` oder Connection-Timeouts
+
+### CSI-Claim stale nach Node-Ausfall
+
+Symptom: neue Allokation startet nicht, Volume-Mount-Fehler in den Alloc-Logs.
+
+```
+nomad system gc
+```
+
+Bereinigt stale Alloc-Einträge -- danach rescheduled Nomad automatisch.
 
 ### Nach Cluster-Restart
 
-Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docker Hub Rate Limiting). Das normalisiert sich nach 10-15 Minuten.
+ZOT startet mit BoltDB-Index sofort wieder. Keine Wartezeit wie beim früheren S3/Redis-Cold-Start. Kurze Anlaufzeit nur für den CSI-Volume-Mount (DRBD-Attach, typisch < 10s).
 
 ## Historie
 
@@ -201,16 +193,16 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 - 29.12.2025: Migration zu Docker Registry v2 (Zwischenlösung)
 - 29.12.2025: Migration zu Zot Registry (OCI-native, On-Demand Cache)
 - 21.02.2026: Fix: `compat: ["docker2s2"]` für Multi-Arch Push Support
-- 22.02.2026: Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` -- verhindert 5min+ Blockierungen bei DNS- oder Rate-Limit-Problemen
+- 22.02.2026: Fix: `retryDelay: 5m → 15s`, `maxRetries: 3 → 1` -- verhindert 5min+ Blockierungen
 - 18.03.2026: S3-Credentials aus Nomad-Job in Vault migriert (`kv/data/zot-s3`), Vault Workload Identity aktiviert
 - 14.04.2026: Upstream `lscr.io` → `ghcr.io` umgestellt (Scarf-Redirect war OCI-inkompatibel)
 - 18./19.04.2026: Sanierung -- htpasswd Auth (nomad-client/ci-push), Redis cacheDriver, Retention-Policy (Whitelist + Spam-Killer), CI/CD-Pipelines auf ci-push umgestellt
-- 23.04.2026: Bootstrap-Deadlock-Fix -- `redis-zot` pullt Image direkt von `docker.io` (statt aus ZOT selbst), ZOT-DNS auf Public (1.1.1.1/8.8.8.8), Redis-URL als Consul-Template zur Deploy-Zeit. Vermeidet zirkuläre Abhängigkeit bei Kaltstart.
-- 12.05.2026: Backend von MinIO auf Garage (`http://10.0.0.200:9012`) umgestellt. Bucket-Reset statt rclone-Migration (Pull-Through-Cache füllt sich on-demand neu). Lifecycle-Rule `AbortIncompleteMultipartUpload: 7d` aktiv, damit abgebrochene Pushes nicht akkumulieren.
+- 23.04.2026: Bootstrap-Deadlock-Fix -- `redis-zot` pullt Image direkt von `docker.io`, ZOT-DNS auf Public (1.1.1.1/8.8.8.8), Redis-URL als Consul-Template zur Deploy-Zeit
+- 12.05.2026: Backend von MinIO auf Garage S3 (`http://10.0.0.200:9012`) umgestellt. Lifecycle-Rule `AbortIncompleteMultipartUpload: 7d` aktiv.
+- 12./13.05.2026: Fundamentale Architektur-Migration: `type = "system"` count=3 → `type = "service"` count=1; S3+Redis → Linstor-CSI DRBD-Volume (150 GB, 3-Replica) + BoltDB embedded; Sync-Whitelist → Catch-All `**`; retryDelay 1h → 5m; Docker-Hub-Pro-Plan aktiviert; alle App-Image-Refs auf `zot.service.consul:5000/<prefix>/...` umgestellt.
 
 ## Verwandte Seiten
 
-- [Storage NAS](../nas-storage/index.md) -- Garage S3 Backend auf Synology NAS (MinIO Legacy bis Cleanup)
+- [Storage NAS](../nas-storage/index.md) -- Garage S3 (ehemaliges ZOT-Backend)
 - [DNS-Architektur](../dns/index.md) -- DNS-Auflösung für Upstream-Registries
 - [Cluster-Neustart](../_querschnitt/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart
-
