@@ -2,6 +2,7 @@
   "name": "homelab-wiki",
   "private": true,
   "scripts": {
+    "gen:authentik": "node scripts/gen-authentik-zugriffsmatrix.mjs",
     "dev": "vitepress dev docs",
     "build": "vitepress build docs",
     "preview": "vitepress preview docs"
