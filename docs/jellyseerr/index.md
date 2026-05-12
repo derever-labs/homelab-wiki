@@ -70,6 +70,8 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 Jellyseerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
 
+Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Jellyseerr und enthält den nativen Recovery-Link. Zusätzlich rendert Jellyseerr selbst auf der "Sign in with Jellyfin"-Maske einen Forgot-Password-Link auf den Authentik-Recovery-Flow -- aktiviert via Setting `jellyfinForgotPasswordUrl` in den Jellyfin-Einstellungen. Konzept und Diagramm: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
+
 ## Request Sync Sidecar
 
 Jellyseerr hat keinen eingebauten Retry-Mechanismus: Wenn ein approved Request nicht an Sonarr/Radarr übermittelt werden kann (z.B. Service kurzzeitig nicht erreichbar), bleibt der Request im Status "Processing" hängen und wird nie wiederholt.

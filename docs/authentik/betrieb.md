@@ -141,9 +141,100 @@ Für Automation (Playwright-Tests, Login-Skripte) muss zwischen Iterationen mind
 
 ## Recovery-Flow für Benutzer
 
-User, die ihr Passwort vergessen haben, klicken auf der Login-Seite auf "Benutzername oder Passwort vergessen?". Der Recovery-Flow fragt nach E-Mail oder Username, sendet einen zeitlich begrenzten Mail-Link (Token-Expiry 30 min) und leitet nach erfolgreicher Token-Validierung in den Password-Change-Flow.
+User, die ihr Passwort vergessen haben, klicken auf der Login-Seite auf "Passwort vergessen?". Der Recovery-Flow fragt nach E-Mail oder Username, sendet einen zeitlich begrenzten Mail-Link (Token-Expiry 30 min) und leitet nach erfolgreicher Token-Validierung in den Password-Change-Flow.
 
 Die Password-Change-Stage dort hat dieselbe Password Policy wie alle anderen Password-Write-Stellen gebunden -- schwache neue Passwörter werden abgewiesen.
+
+### Recovery-Eingangspfade aus Apps
+
+Im Homelab gibt es Apps, die Authentik-Credentials prüfen, ohne dass der User die Authentik-Login-Seite überhaupt zu sehen bekommt. Damit Recovery aus solchen Apps heraus funktioniert, muss der Forgot-Password-Link explizit auf den Authentik-Recovery-Flow zeigen -- App-interne Reset-Mechanismen scheitern, weil das Passwort gar nicht in der App liegt.
+
+Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstiegs-URL bleibt deshalb über App-Updates hinweg gültig.
+
+- **Authentik selbst** -- Die Identification-Stage referenziert den Recovery-Flow direkt; das Custom-CSS macht den Link unter dem Anmelde-Button als "Passwort vergessen?" sichtbar. Quelle: [`authentik-custom-css.txt`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/authentik-custom-css.txt) im Infra-Repo
+- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Zusätzlich rendert Jellyseerr in der "Sign in with Jellyfin"-Login-Maske einen eigenen Forgot-Password-Link, sobald in den Jellyfin-Einstellungen das Feld `jellyfinForgotPasswordUrl` gesetzt ist. Das Frontend liest den Wert aus `/api/v1/settings/public` und macht daraus einen klickbaren Link
+- **Jellyfin** (`public-noauth@file`, kein ForwardAuth) -- Hier fehlt die Authentik-Login-Seite als natürliches Recovery-Sprungbrett. Der "Login Disclaimer" in der Jellyfin-Branding-Konfiguration nimmt HTML und wird unterhalb des Login-Formulars gerendert. Persistiert im Linstor-CSI-Volume `jellyfin-config`, überlebt App-Updates und Container-Restarts
+
+Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  app: { style: { border-radius: 8 } }
+  recovery: { style: { border-radius: 8; stroke: "#7c3aed" } }
+  store: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: down
+
+User: Benutzer { class: app }
+
+Apps: Login-Seiten {
+  class: container
+
+  AuthLogin: "auth.ackermannprivat.ch\nAuthentik (nativ)" {
+    class: app
+    tooltip: "Recovery-Link via Identification-Stage + Custom-CSS"
+  }
+  JSLogin: "wish.ackermannprivat.ch\nJellyseerr Sign-in" {
+    class: app
+    tooltip: "Setting jellyfinForgotPasswordUrl wird vom Frontend aus /settings/public gelesen"
+  }
+  JFLogin: "watch.ackermannprivat.ch\nJellyfin Login" {
+    class: app
+    tooltip: "LoginDisclaimer im Branding-Endpoint, persistiert im CSI-Volume"
+  }
+}
+
+FWD: "Authentik ForwardAuth\n(public-auth@file)" {
+  class: recovery
+  tooltip: "Schaltet die Authentik-Login-Seite VOR Jellyseerr -- nativer Recovery-Link greift hier zuerst"
+}
+
+Recovery: "default-recovery-flow" {
+  class: recovery
+  tooltip: "Identification + Recovery-Mail + Token + Password-Change-Stage"
+}
+
+Mail: "Recovery-Mail\nToken 30 min" {
+  class: store
+  shape: cylinder
+  tooltip: "SMTP Relay -- smtp.service.consul"
+}
+
+PwChange: "Password-Change-Stage\n(Password Policy aktiv)" { class: recovery }
+
+PG: "PostgreSQL\nUser-Hash" {
+  class: store
+  shape: cylinder
+}
+
+User -> Apps.AuthLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JSLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JFLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+
+Apps.JSLogin -> FWD: "Redirect vor App-Login" { style.stroke: "#6b7280" }
+FWD -> Recovery: "nativer Recovery-Link" { style.stroke: "#7c3aed" }
+Apps.AuthLogin -> Recovery: "Passwort vergessen?" { style.stroke: "#7c3aed" }
+Apps.JSLogin -> Recovery: "Forgot-Link (frontend-rendered)" { style.stroke: "#7c3aed"; style.stroke-dash: 3 }
+Apps.JFLogin -> Recovery: "Disclaimer-Link" { style.stroke: "#7c3aed" }
+
+Recovery -> Mail: "sendet Token-Link" { style.stroke: "#854d0e" }
+Mail -> User: "User klickt Link" { style.stroke: "#16a34a"; style.stroke-dash: 3 }
+User -> PwChange: "neues Passwort" { style.stroke: "#2563eb" }
+PwChange -> PG: "Hash schreiben" { style.stroke: "#854d0e" }
+```
+
+::: info Warum kein App-internes Forgot-Password
+Jellyfin und Jellyseerr haben jeweils eigene Reset-Mechanismen (Jellyfin Quick-Connect-Code, Jellyseerr E-Mail-Reset). Beide setzen voraus, dass das Passwort lokal in der App-DB liegt. Im Homelab ist das nicht der Fall: Jellyfin nutzt den LDAP-Outpost (Passwort in Authentik-PG), Jellyseerr nutzt "Sign in with Jellyfin" (Passwort via LDAP wieder in Authentik). Die App-internen Resets würden die Authentik-User-DB nicht ändern und beim nächsten LDAP-Bind nicht greifen -- deshalb zeigt der UI-Link direkt auf den Authentik-Recovery-Flow.
+:::
 
 ## Passwordless Login
 

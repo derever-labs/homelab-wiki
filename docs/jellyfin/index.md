@@ -107,6 +107,8 @@ Der LDAP Provider nutzt **Cached Bind + Cached Search Mode**: Der erste Login pr
 Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.
 :::
 
+Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürliche Recovery-Sprungbrett. Stattdessen rendert die Jellyfin-Login-Maske unterhalb des Anmelde-Formulars einen "Passwort vergessen?"-Link, der auf den Authentik-Recovery-Flow zeigt -- konfiguriert über den Branding-Endpoint `LoginDisclaimer` und persistiert im CSI-Volume. Konzept und Diagramm: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
+
 ## TMDb-Metadata ohne IPv6
 
 `api.themoviedb.org` antwortet dual-stack, die Homelab-VMs haben aber keine IPv6-Route nach aussen -- Jellyfins .NET-HttpClient lief dadurch via Happy-Eyeballs sporadisch in Timeouts. Frische Filme blieben beim Erstscan ohne Poster, weil der Fallback-Provider stattdessen ein Standbild aus der Video-Datei extrahierte. Die Env-Variable `DOTNET_SYSTEM_NET_DISABLEIPV6=1` im Job zwingt die Runtime strikt auf IPv4.
