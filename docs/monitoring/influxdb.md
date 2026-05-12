@@ -71,13 +71,19 @@ Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizit
 | Plugin | Quelle | Interval | Measurement |
 | :--- | :--- | :--- | :--- |
 | `inputs.snmp` | Synology NAS (SNMPv3) | 30s | `snmp.Synology.*` |
-| `inputs.prometheus` | Nomad Clients + Servers (6x) | 30s | `prometheus` |
-| `inputs.prometheus` | Linstor (`linstor.ackermannprivat.ch/metrics`) | 60s | `linstor_*` |
-| `inputs.prometheus` | DRBD Reactor (client-05/06, Port 9942) | 60s | `drbd_*` |
+| `inputs.prometheus` | Nomad Clients + Servers (6x) | 30s | `prometheus` (Fields: `nomad_*`) |
+| `inputs.prometheus` | Linstor (`linstor.ackermannprivat.ch/metrics`) | 60s | `prometheus` (Fields: `linstor_*`) |
+| `inputs.prometheus` | DRBD Reactor (client-05/06, Port 9942) | 60s | `prometheus` (Fields: `drbd_*`) |
 | `inputs.file` | LVM Thin Pool Metriken (Cron-Script) | 10s | `lvm_thinpool` |
 | `inputs.file` | Jellyfin Streams (Cron-Script) | 10s | `jellyfin_streams` |
 | `inputs.exec` | Jellyfin Library Counts | 60s | `jellyfin` |
 | `inputs.exec` | Radarr/Sonarr Queue | 60s | `arr_*` |
+
+::: info Prometheus-Plugin-Schema (metric_version=2)
+Telegraf-Inputs vom Typ `inputs.prometheus` mit `metric_version = 2` und **ohne `name_override`** schreiben die Prometheus-Metric-Namen als **Fields** in ein gemeinsames Measurement `prometheus`. Beispiel: `linstor_node_state` ist ein Field im Measurement `prometheus`, kein eigenes Measurement. Tags des Exporters bleiben als Tags erhalten (`node`, `name`, `conn_name`, …). Wer `name_override = "prometheus"` setzt, erhält dasselbe Layout. Für Alert-Queries entsprechend `FROM "prometheus" WHERE "_field" = "linstor_node_state"` (Flux) bzw. `SELECT last("linstor_node_state") FROM "prometheus"` (InfluxQL) verwenden.
+
+Zusätzlich: drbd-reactor exportiert `drbd_connection_state` als **One-Hot-Encoding** mit Tag `drbd_connection_state` in `{StandAlone, Disconnecting, Unconnected, Timeout, BrokenPipe, NetworkFailure, ProtocolError, TearDown, Connecting, Connected}`. Pro Verbindung ist genau eine Series mit Wert=1 (= aktueller State), Rest=0. Alert-Logik filtert auf Tag `= 'Connected'` und alarmiert bei Wert `< 1`.
+:::
 
 ## CheckMK als zusätzliche Quelle
 
