@@ -152,7 +152,7 @@ Im Homelab gibt es Apps, die Authentik-Credentials prüfen, ohne dass der User d
 Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstiegs-URL bleibt deshalb über App-Updates hinweg gültig.
 
 - **Authentik selbst** -- Die Identification-Stage referenziert den Recovery-Flow direkt; das Custom-CSS macht den Link unter dem Anmelde-Button als "Passwort vergessen?" sichtbar. Quelle: [`authentik-custom-css.txt`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/authentik-custom-css.txt) im Infra-Repo
-- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Zusätzlich rendert Jellyseerr in der "Sign in with Jellyfin"-Login-Maske einen eigenen Forgot-Password-Link, sobald in den Jellyfin-Einstellungen das Feld `jellyfinForgotPasswordUrl` gesetzt ist. Das Frontend liest den Wert aus `/api/v1/settings/public` und macht daraus einen klickbaren Link
+- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Auf der zweiten Hürde -- Jellyseerr's eigenem "Sign in with Jellyfin"-Login -- gibt es in Version 2.7.3 keinen sichtbaren Recovery-Link. Das Setting `jellyfinForgotPasswordUrl` existiert in der Admin-Konfiguration und wird per API persistiert, aber das Login-Frontend wertet es nicht aus (Stub-Implementation). Native OIDC-Integration ist in 2.7.3 ebenfalls nicht vorhanden. Solange beides so bleibt, wird Recovery aus Jellyseerr heraus über die vorgelagerte Authentik-Login-Seite abgedeckt
 - **Jellyfin** (`public-noauth@file`, kein ForwardAuth) -- Hier fehlt die Authentik-Login-Seite als natürliches Recovery-Sprungbrett. Der "Login Disclaimer" in der Jellyfin-Branding-Konfiguration nimmt HTML und wird unterhalb des Login-Formulars gerendert. Persistiert im Linstor-CSI-Volume `jellyfin-config`, überlebt App-Updates und Container-Restarts
 
 Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
@@ -185,7 +185,7 @@ Apps: Login-Seiten {
   }
   JSLogin: "wish.ackermannprivat.ch\nJellyseerr Sign-in" {
     class: app
-    tooltip: "Setting jellyfinForgotPasswordUrl wird vom Frontend aus /settings/public gelesen"
+    tooltip: "v2.7.3: kein nativer Recovery-Link auf der Login-Maske -- Recovery laeuft ueber die vorgelagerte Authentik-Login-Seite"
   }
   JFLogin: "watch.ackermannprivat.ch\nJellyfin Login" {
     class: app
@@ -223,7 +223,6 @@ User -> Apps.JFLogin: "ruft Login auf" { style.stroke: "#2563eb" }
 Apps.JSLogin -> FWD: "Redirect vor App-Login" { style.stroke: "#6b7280" }
 FWD -> Recovery: "nativer Recovery-Link" { style.stroke: "#7c3aed" }
 Apps.AuthLogin -> Recovery: "Passwort vergessen?" { style.stroke: "#7c3aed" }
-Apps.JSLogin -> Recovery: "Forgot-Link (frontend-rendered)" { style.stroke: "#7c3aed"; style.stroke-dash: 3 }
 Apps.JFLogin -> Recovery: "Disclaimer-Link" { style.stroke: "#7c3aed" }
 
 Recovery -> Mail: "sendet Token-Link" { style.stroke: "#854d0e" }
@@ -234,6 +233,10 @@ PwChange -> PG: "Hash schreiben" { style.stroke: "#854d0e" }
 
 ::: info Warum kein App-internes Forgot-Password
 Jellyfin und Jellyseerr haben jeweils eigene Reset-Mechanismen (Jellyfin Quick-Connect-Code, Jellyseerr E-Mail-Reset). Beide setzen voraus, dass das Passwort lokal in der App-DB liegt. Im Homelab ist das nicht der Fall: Jellyfin nutzt den LDAP-Outpost (Passwort in Authentik-PG), Jellyseerr nutzt "Sign in with Jellyfin" (Passwort via LDAP wieder in Authentik). Die App-internen Resets würden die Authentik-User-DB nicht ändern und beim nächsten LDAP-Bind nicht greifen -- deshalb zeigt der UI-Link direkt auf den Authentik-Recovery-Flow.
+:::
+
+::: warning Jellyseerr 2.7.3 -- jellyfinForgotPasswordUrl nur API-seitig
+In Jellyseerr 2.7.3 ist `jellyfinForgotPasswordUrl` zwar als Setting konfigurierbar (Frontend-Validierung verlangt URL ohne trailing slash) und wird in `/api/v1/settings/jellyfin` sowie `/api/v1/settings/public` persistiert. Die Login-Komponenten (`JellyfinLogin`, `LocalLogin`) referenzieren den Wert aber nicht und rendern keinen entsprechenden Link. Native OIDC-Integration ist ebenfalls nicht vorhanden. Bis eine spätere Version einen der beiden Pfade aktiviert, läuft der Recovery-Weg für Jellyseerr-User ausschliesslich über die vorgelagerte Authentik-Login-Seite.
 :::
 
 ## Passwordless Login
