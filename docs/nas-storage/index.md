@@ -6,6 +6,7 @@ tags:
   - storage
   - nfs
   - minio
+  - garage
   - nas
 ---
 
@@ -13,7 +14,7 @@ tags:
 
 ## Übersicht
 
-Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, MinIO S3 und Backup-Ziele.
+Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (MinIO + Garage parallel) und Backup-Ziele.
 
 | Attribut | Wert |
 |----------|------|
@@ -66,6 +67,34 @@ Neue Buckets werden über die MinIO Console angelegt. Pro App empfiehlt sich ein
 ### Linstor Remote
 
 Linstor adressiert MinIO über das Remote `nas-backup`. Die S3-Konfiguration (Endpoint, Credentials, Bucket, Region) ist im Linstor-Controller hinterlegt; das Setup-Playbook ist in [`infra/homelab-hashicorp-stack/ansible/playbooks/setup-backup-infrastructure.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/ansible/playbooks/setup-backup-infrastructure.yml) dokumentiert.
+
+::: danger MinIO End-of-Life
+Das MinIO-Repository wurde im April 2026 archiviert. Garage (siehe unten) läuft seit Mai 2026 parallel als Nachfolger; die Konsumenten werden schrittweise umgestellt, danach wird MinIO abgeschaltet.
+:::
+
+## Garage S3
+
+Garage v2.3.0 läuft als Container (`dxflrs/garage`) auf dem NAS als Drop-in-Nachfolger für MinIO. Single-Node-Setup analog zur bestehenden MinIO-Instanz, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume2/garage/{meta,data}` -- `/volume1` hält keinen aktiven Pool, der gesamte Block-Storage des NAS sitzt auf `/volume2`.
+
+| Attribut | Wert |
+| :--- | :--- |
+| **API-Endpoint** | `http://10.0.0.200:9012` |
+| **S3 Web (Static Hosting)** | `http://10.0.0.200:9013` |
+| **Admin/Metrics** | `http://10.0.0.200:9014` (Bearer-Token-Auth) |
+| **Storage** | `/volume2/garage/{meta,data}` |
+| **Config** | `/volume2/garage/garage.toml` (0600/root) |
+| **Credentials** | 1Password Vault `PRIVAT Agent`, Item `Garage NAS Homelab` |
+
+### Migration
+
+Aktuell läuft nur der Test-Bucket `garage-test` auf Garage. Bestehende MinIO-Buckets (`linstor-backups`, `litestream`, `zot-registry`, `gravel-recherche`, Harbor-Legacy) werden bei der Cutover-Phase übernommen, jeweils mit dedizierten Per-Bucket-Access-Keys.
+
+### Unterschiede zu MinIO
+
+- Keine eigene Admin-Web-UI -- Administration via `garage`-CLI im Container oder Admin-HTTP-API mit Bearer-Token
+- Kein Object Versioning, kein Object Locking, keine Bucket Policies
+- Per-Key-pro-Bucket-Permission-Modell statt globaler IAM-Policies
+- Prometheus-Metriken unter `/metrics` (Token-geschützt)
 
 ## Troubleshooting
 
