@@ -66,10 +66,11 @@ Die vollständige Konfiguration (Zot Config, S3 Storage, Redis CacheDriver, Prox
 
 ### Authentifizierung
 
-ZOT nutzt htpasswd mit zwei Usern:
+ZOT nutzt htpasswd mit drei Usern:
 
 - nomad-client -- Read-only (pull). Alle Nomad-Allokationen und der Docker Daemon nutzen diesen Account.
 - ci-push -- Read-write (pull + push). Einzig autorisierter Push-Pfad für CI/CD-Pipelines. Credentials als GitHub-Secrets hinterlegt.
+- telegraf -- Metrics-only-User (aktiv seit 2026-05-12), nur für den Prometheus-Endpoint `/metrics`. Begrenzt durch `accessControl.metrics.users = ["telegraf"]`. Plaintext-Cred via Vault `kv/data/shared/telegraf-zot.username/password`.
 
 `anonymousPolicy = []` -- kein anonymer Zugriff.
 
@@ -182,6 +183,14 @@ Ergebnis: ZOT ist zur Runtime nicht mehr vom Pi-hole und nicht mehr vom Consul-D
 ::: warning Vorfall 2026-04-23 (gefixt)
 Zuvor hatte ZOT `dns_servers = ["10.0.2.1", "10.0.2.2"]` (Pi-hole) gesetzt und `redis-zot.service.consul` zur Runtime auflösen müssen. Pi-hole kennt keine `.service.consul`-Records → ZOT crashte im Startup. Parallel hatte `redis-zot.nomad` sein Image aus `localhost:5000/library/redis:7-alpine` gezogen (also aus ZOT selbst) → zirkulärer Deadlock. Fixes: DNS auf public, Consul-Template für Redis-URL, `redis-zot` Image auf `docker.io/library/redis:7-alpine`. Details im ClickUp-Task Privat IT Generell 86c9g378x.
 :::
+
+## Monitoring
+
+Drei Schichten greifen ineinander:
+
+- **Uptime Kuma** -- pro Node je zwei HTTP-Monitore auf `/livez` und `/readyz` (also 6 Monitore für drei Instanzen). Beide Endpoints sind im ZOT-Code explizit von der htpasswd-Auth ausgenommen, daher kein Cred-Setup nötig. Down-Events feuern in den Keep-Workflow `homelab-route-zot` (siehe `nomad-jobs/monitoring/keep-workflows/`).
+- **Keep** -- `homelab-route-zot` matcht `alert.name ~ "zot|ZOT"` (Filter auf `name` statt `source`, weil Kuma `source` als Liste sendet -- Keep-Gotcha #6). Severity hart auf critical, Routing in Forum-Topic 3 (monitoring) plus VIP-1:1-Chat. Jede einzelne ZOT-Instanz ist alleinstehend kritisch, weil Image-Pulls auf dem betroffenen Client unterbrochen werden.
+- **Telegraf** -- scrapt `/metrics` mit Basic-Auth des dedizierten `telegraf`-Users (siehe Authentifizierung). 30s-Intervall, alle drei Nodes mit explizit gesetzten IPs (Telegraf läuft `count = 1` in bridge-mode -- 127.0.0.1 würde nicht den Host-Port treffen). Daten landen in InfluxDB Bucket mit Tag `source = zot`.
 
 ## Troubleshooting
 
