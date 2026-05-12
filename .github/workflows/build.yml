@@ -154,25 +154,21 @@ jobs:
             *)        echo "::warning::Webhook-Response unklar: $RESP" ;;
           esac
 
-      - name: Telegram-Notification (Erfolg oder Fehler)
-        if: always()
+      - name: Telegram-Notification (nur Fehler/Degraded)
+        if: failure() || steps.result.outputs.status == 'failed' || steps.result.outputs.status == 'degraded' || steps.webhook.outputs.container_status == 'failed' || steps.webhook.outputs.container_status == 'degraded'
         continue-on-error: true
         run: |
           STATUS="${{ job.status }}"
-          SEVERITY="info"
-          if [ "$STATUS" = "failure" ] || [ "${{ steps.result.outputs.status }}" = "failed" ]; then
+          if [ "$STATUS" = "failure" ] || [ "${{ steps.result.outputs.status }}" = "failed" ] || [ "${{ steps.webhook.outputs.container_status }}" = "failed" ]; then
             TITLE="<b>Wiki Build fehlgeschlagen</b>"
             SEVERITY="alert"
-          elif [ "${{ steps.result.outputs.status }}" = "degraded" ]; then
+          else
             TITLE="<b>Wiki Build degraded</b> (Fallback-Build)"
             SEVERITY="warning"
-          else
-            TITLE="<b>Wiki Build erfolgreich</b>"
           fi
 
-          # Fehler-Zusammenfassung nur bei Failure
           ERRORS=""
-          if [ "$SEVERITY" != "info" ] && [ -f /tmp/vitepress-build.log ]; then
+          if [ -f /tmp/vitepress-build.log ]; then
             ERRORS=$(grep -iE "(error|dead link|failed|ENOENT)" /tmp/vitepress-build.log | head -10)
           fi
 
