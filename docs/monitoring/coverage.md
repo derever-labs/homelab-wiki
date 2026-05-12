@@ -13,7 +13,7 @@ tags:
 
 # Monitoring: Coverage
 
-Diese Seite ist die **Single Source of Truth** fuer den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Prioritaet, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](index.md), Komponenten in [Monitoring: Referenz](referenz.md), Eskalation in [Monitoring: Betrieb](betrieb.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Stand: 2026-05-02.
+Diese Seite ist die **Single Source of Truth** fuer den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Prioritaet, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](index.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Stand: 2026-05-02.
 
 ::: info Single Source of Truth
 Diese Tabelle ist der Pflege-Punkt fuer Coverage-Status. Andere Agenten, die Drift erkennen oder neue Coverage einrichten, aktualisieren **diese** Seite -- nicht die Audit-Files (sind eingefroren) und nicht andere Wiki-Seiten. Offene Arbeit gehoert in den ClickUp-Master [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4). Wiki-Aenderungen erfolgen erst nach Implementation.
