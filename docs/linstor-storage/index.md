@@ -308,18 +308,77 @@ Lösung: zwei `linstor node-connection path create`-Einträge auf Cluster-Ebene,
 
 ### Aktive Resources (DClab)
 
-| Resource | Grösse | Verwendung |
-|----------|---------|------------|
-| linstor_db | 500 MiB | Controller H2 Datenbank (HA) |
-| postgres-data | 10 GiB | PostgreSQL |
-| traefik-data | 1 GiB | Traefik Proxy |
-| authentik-data | 5 GiB | Authentik SSO |
-| uptime-kuma-data | 1 GiB | Uptime Monitoring |
-| homepage-data | 500 MiB | Homepage Dashboard |
-| flame-data | 500 MiB | Flame Dashboard |
-| wikijs-data | 2 GiB | Wiki.js |
-| snipeit-data | 1 GiB | Snipe-IT Assets |
-| snipeit-db | 2 GiB | Snipe-IT Database |
+Alle Production-Volumes sind seit 2026-05-12 auf 2-Replica migriert (c02 + c03, Diskless-TieBreaker c01). `flame-data` wurde bereinigt. Aktuelle Volume-Liste via `linstor v l` oder Nomad Web-UI prüfen.
+
+### MaxOversubscriptionRatio (beide Cluster)
+
+Pool-Property auf c02/c03 (DClab) und c05/c06 (Homelab) von Default 5 auf 30 gesetzt. Verhindert, dass stark overcommittete Thin Pools neue Resource-Creates blockieren.
+
+## Schedule-Engine (Backup)
+
+Ab 2026-05-12 ersetzt die Linstor Schedule-Engine den Cron-basierten Snapshot-Ansatz auf beiden Clustern. Alte Skripte bleiben als `.disabled` für Rollback.
+
+**Homelab Schedule `backup-daily`:**
+- Zeitplan: täglich 04:00 (`0 4 * * *`)
+- Scope: alle 11 Resource Groups / 22 Resources
+- KEEP_LOCAL: 0, KEEP_REMOTE: 14
+- S3 Remote: Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
+
+```d2
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  storage: { shape: cylinder; style: { border-radius: 8 } }
+}
+
+sched: Schedule-Engine\nbackup-daily 04:00 {
+  class: node
+  tooltip: "KEEP_LOCAL=0, KEEP_REMOTE=14, On-Failure=RETRY | 11 RGs / 22 Resources"
+}
+
+drbd: DRBD Volumes\n(c05 + c06) {
+  class: storage
+  tooltip: "Alle 22 Homelab-Volumes 2-Replica, Diskless-TieBreaker c04"
+}
+
+snap: Linstor Snapshot\n(ephemeral) {
+  class: storage
+  tooltip: "Full-Snapshot, nach Shipping geloescht (KEEP_LOCAL=0)"
+}
+
+garage: Garage S3\n10.0.0.200:9012 {
+  class: storage
+  tooltip: "Bucket linstor-backups, 14 Vollbackups, Garage-Key in 1P PRIVAT Agent"
+}
+
+dms: Uptime Kuma\nDead-Man's-Switch {
+  class: node
+  tooltip: "linstor-snapshot-check.sh 05:00 + linstor-s3-backup-check.sh"
+}
+
+sched -> drbd: DRBD-Snapshot\ntriggern {style.stroke: "#854d0e"}
+drbd -> snap: Snapshot erstellen {style.stroke: "#854d0e"}
+snap -> garage: Backup-Shipping\n(S3 Upload) {style.stroke: "#16a34a"; style.bold: true}
+snap -> sched: Loeschen nach\nShipping {style.stroke-dash: 3}
+sched -> dms: Push bei Erfolg {style.stroke: "#16a34a"; style.stroke-dash: 3}
+```
+
+::: danger Garage-Bug: kein Incremental
+Linstor 1.33.1 + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
+:::
+
+## Encryption und Auto-Unlock
+
+Passphrase-File auf c05 und c06 (`/etc/linstor/passphrase`, mode 600). `linstor-auto-unlock.service` entsperrt automatisch nach Controller-Promotion. Passphrase in 1Password: "Linstore Passphrase HOME" (PRIVAT Agent Vault).
 
 ## Installation und Konfiguration
 
