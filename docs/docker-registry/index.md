@@ -165,16 +165,16 @@ Auf allen Nodes ist `localhost:5000` als Registry-Mirror konfiguriert (verwaltet
 
 | Pfad | Inhalt |
 | :--- | :--- |
-| MinIO: zot-registry/* | Alle Registry Blobs und Manifeste |
+| Garage: zot-registry/* | Alle Registry Blobs und Manifeste (Bucket On-Demand wiederbefüllbar) |
 
-**Restore:** MinIO Bucket wiederherstellen, dann Nomad Job starten.
+**Restore:** Bei Totalverlust reicht ein leerer Bucket -- der Pull-Through-Cache füllt sich on-demand neu aus den Upstream-Registries. Eine echte Wiederherstellung ist nur für eigene Pushes (`localhost:5000/library/immo-monitor` usw.) nötig.
 
 ### DNS-Abhängigkeit (v10.2, 24.04.2026)
 
 Zot läuft mit `network_mode = "host"` im Nomad Job, hat aber **explizit** `dns_servers = ["1.1.1.1", "8.8.8.8"]` gesetzt. Damit ist der ZOT-Container komplett unabhängig von internen DNS-Servern (Pi-hole). Das ist bewusst so:
 
 - Upstream-Registries (`registry-1.docker.io`, `ghcr.io`) werden direkt über Public DNS aufgelöst -- kein Hop über Pi-hole.
-- Der MinIO-S3-Endpoint ist als IP (`http://10.0.0.200:9000`) konfiguriert, keine DNS-Auflösung nötig.
+- Der Garage-S3-Endpoint ist als IP (`http://10.0.0.200:9012`) konfiguriert, keine DNS-Auflösung nötig.
 - Die Redis-URL (`redis://redis-zot...`) wird nicht mehr zur Laufzeit via Consul-DNS aufgelöst, sondern **zur Deploy-Zeit per Consul-Template** in die `config.json` gerendert (<span v-pre>`{{ range service "redis-zot" }}...{{ end }}`</span>). ZOT sieht zur Laufzeit nur eine feste IP:Port.
 
 Ergebnis: ZOT ist zur Runtime nicht mehr vom Pi-hole und nicht mehr vom Consul-DNS abhängig. Ein Ausfall einer der beiden Schichten crasht ZOT nicht mehr.
@@ -206,10 +206,11 @@ Nach einem Restart aller Nodes können Image-Pulls temporär langsam sein (Docke
 - 14.04.2026: Upstream `lscr.io` → `ghcr.io` umgestellt (Scarf-Redirect war OCI-inkompatibel)
 - 18./19.04.2026: Sanierung -- htpasswd Auth (nomad-client/ci-push), Redis cacheDriver, Retention-Policy (Whitelist + Spam-Killer), CI/CD-Pipelines auf ci-push umgestellt
 - 23.04.2026: Bootstrap-Deadlock-Fix -- `redis-zot` pullt Image direkt von `docker.io` (statt aus ZOT selbst), ZOT-DNS auf Public (1.1.1.1/8.8.8.8), Redis-URL als Consul-Template zur Deploy-Zeit. Vermeidet zirkuläre Abhängigkeit bei Kaltstart.
+- 12.05.2026: Backend von MinIO auf Garage (`http://10.0.0.200:9012`) umgestellt. Bucket-Reset statt rclone-Migration (Pull-Through-Cache füllt sich on-demand neu). Lifecycle-Rule `AbortIncompleteMultipartUpload: 7d` aktiv, damit abgebrochene Pushes nicht akkumulieren.
 
 ## Verwandte Seiten
 
-- [Storage NAS](../nas-storage/index.md) -- MinIO S3 Backend auf Synology NAS
+- [Storage NAS](../nas-storage/index.md) -- Garage S3 Backend auf Synology NAS (MinIO Legacy bis Cleanup)
 - [DNS-Architektur](../dns/index.md) -- DNS-Auflösung für Upstream-Registries
 - [Cluster-Neustart](../_querschnitt/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart
 
