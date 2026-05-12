@@ -151,6 +151,10 @@ Die Expression Policy prüft auf Gruppen-Mitgliedschaft (`admin`, `authentik Adm
 
 Zusätzlich steht die MFA-Validate-Stage auf `not_configured_action=configure` -- ein Admin ohne Device wird beim Login in den Setup-Flow gezwungen (TOTP, WebAuthn oder Static Codes).
 
+::: warning Binding nicht löschen
+Sowohl die Expression Policy als auch das PolicyBinding sind deklarativ im Blueprint [`40-flow-policies.yaml`](https://github.com/derever-labs/infra/blob/main/authentik-blueprints/40-flow-policies.yaml) verankert. Wird das Binding manuell aus der Admin-UI entfernt, läuft die MFA-Stage wieder für **alle** User -- Non-Admins ohne Device werden in den Setup-Flow gezwungen. Bei Drift: Blueprint via `nomad job run nomad-jobs/identity/authentik.nomad` erneut applien.
+:::
+
 ### Reputation Policy
 
 - **Threshold:** −3 (drei Fehlversuche in der Decay-Periode)
