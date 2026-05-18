@@ -47,13 +47,53 @@ Der Source-Filter muss eine Pipe (`|`) im Regex enthalten -- z.B. `r"checkmk|cmk
 
 `parse_mode: html` ist Pflicht. MarkdownV2 funktioniert nicht zuverlaessig mit dynamischen Werten -- Punkte, Underscores und eckige Klammern in Hostnamen oder Pfaden brechen die Telegram-Formatierung still. HTML braucht nur `<`, `>` und `&` zu escapen, was bei Monitoring-Daten selten vorkommt.
 
-Das konkrete Template steht in `nomad-jobs/monitoring/keep-workflows/homelab-route-checkmk.yaml`. Aufbau:
+`link_preview_options.is_disabled: true` ist ebenfalls Pflicht, sonst erzeugt der Keep-Link eine Preview-Karte, die das Alert-Layout zerschiesst.
 
-- **Zeile 1 -- Scan-Zeile** -- Severity-Emoji, Severity-Badge in eckigen Klammern, fett der Kurz-Titel, Trennzeichen, Status-Label.
-- **Zeile 2 -- Kontext** -- Host-Kurzname, Trennzeichen, Source-Pretty (z.B. `nana-nas · CheckMK`).
-- **Zeile 3 -- Detail** -- der eigentliche Fehlertext in `<code>`-Tags, damit lange Pfade nicht umbrechen.
-- **Zeile 4 -- Zeit** -- Trigger-Zeitpunkt der Quelle (nicht der Telegram-Empfangszeitpunkt).
-- **Zeile 5 -- Deeplink** -- Anker-Tag zur Quelle, fehlt automatisch wenn die Quelle keinen Link liefert.
+### Finales Format (2026-05-18, live-iteriert via Telegram)
+
+**Firing -- 4 Zeilen, source-agnostisch:**
+
+```
+<emoji> [<badge>] <b>title</b> -- <status_label>
+<code>host</code> · source_pretty · <i>started_at</i>
+<code>detail_short</code>
+<a href="keep_url">Im Incident-Hub oeffnen</a>
+```
+
+**Resolved -- 2 Zeilen, deutlich kuerzer:**
+
+```
+✅ [OK] <b>title</b> -- <code>host</code> · source_pretty
+<i>resolved <resolved_at> (war <duration> firing)</i>
+```
+
+**Layout-Entscheidungen** (gegen Industry-Standard abgewogen, am Mobile-Render verifiziert):
+
+- **Severity-Emoji + Badge zusammen**: Emoji ist Push-Strip-resistent (Lockscreen sieht es), Badge bleibt in Telegram-Search durchsuchbar.
+- **Host in `<code>`**: verhindert Telegram-Auto-Linkify bei FQDN-Hosts (`jellyfin.ackermannprivat.ch` waere sonst klickbar und wuerde mit dem Keep-Link konkurrieren).
+- **Detail in `<code>`**: monospace macht Werte mobil scanbar, kein Auto-Linkify auf Pfade/Werte.
+- **Ein Link, primary Keep**: User landet im Incident-Hub und sieht den eigenen Alert + andere aktuelle Incidents. Source-URL (CheckMK-Service, Grafana-Rule) ist in Keep-UI als Custom-Field verfuegbar -- kein zweiter Inline-Link noetig.
+- **Resolved als neue Nachricht**, nicht Edit der Firing-Message: PagerDuty/OpsGenie-Pattern; Edits triggern keine Push-Notification.
+- **Zeit absolut bei Firing**, relativ + absolut bei Resolved (`resolved 14:31 (war 8min firing)`).
+
+### display_*-Felder (Pflicht-Schema je Source)
+
+Jeder Source-Layer (CheckMK `webhook-keep.py`, kuenftiger Grafana-Wrapper, etc.) muss diese Felder bereitstellen -- das Template selber kennt keine Source-Spezialfaelle:
+
+- `display_severity_emoji` -- 🔴 / 🟠 / 🟡 / 🔵 / ⚪ / ✅
+- `display_severity_badge` -- `CRIT` / `HIGH` / `WARN` / `INFO` / `LOW` / `OK`
+- `display_status_label` -- `FIRING` / `RESOLVED` / `ACKED`
+- `display_title` -- Kurz-Titel (z.B. Service-Name oder Rule-Name)
+- `display_host` -- Host-Kurzname (kein FQDN-Strip noetig, `<code>` blockiert Linkify)
+- `display_source_pretty` -- z.B. `CheckMK`, `Grafana`, `Uptime Kuma`. Bei Multi-Cluster optional Praefix `Homelab` / `DCLab` (TBD pro Source-Migration)
+- `display_started_at` -- absolute Uhrzeit `HH:MM`
+- `display_detail_short` -- 1-Zeilen-Detail, Severity-Prefix entfernt
+- `display_keep_url` -- `https://keep.ackermannprivat.ch/alerts/<id>` (Pflicht)
+- `display_status` -- `firing` oder `resolved` (steuert Template-Variante)
+- `display_resolved_at` -- bei Resolved: absolute Uhrzeit
+- `display_duration_firing` -- bei Resolved: relative Dauer (z.B. `8min`, `2h`)
+
+Konkretes Workflow-Beispiel: `nomad-jobs/monitoring/keep-workflows/homelab-route-checkmk.yaml` (Pilot, wird auf v2-Format umgebaut bei Migration).
 
 ## Severity-Indikatoren
 
