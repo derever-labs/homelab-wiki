@@ -17,6 +17,15 @@ Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Gatus, Grafan
 - **Single Point of Routing** -- Alle Alerting-Quellen treffen sich auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Aenderungen an Bot oder Topics passieren in Keep, nicht in jeder Quelle.
 - **Deduplizierung** -- Wiederkehrende Alerts mit gleichem Fingerprint loesen nur eine Telegram-Nachricht aus, weitere identische werden bis zum Status-Wechsel oder Resolve unterdrueckt.
 - **Severity-Eskalation** -- Standard-Alerts gehen ueber `batch-Bot` in Forum-Topics; `critical | high | page` eskaliert zusaetzlich an `vip-Bot` in den 1:1-Chat fuer sofortige Sichtbarkeit.
+- **Incident-Management (seit 2026-05-19)** -- Alerts werden automatisch zu Incidents korreliert. Service-Topology mit 10 Hauptservices + Catch-all-Rule (per source+host, 5min-Window) gruppiert eingehende Alerts. UI-Sicht "Was brennt jetzt": `https://keep.ackermannprivat.ch/incidents?status=Open`. Lifecycle: Open -> Acknowledged -> Resolved (manuelles Ack in Keep-UI).
+
+## "Was brennt jetzt"-Dashboard
+
+[`https://keep.ackermannprivat.ch/incidents?status=Open`](https://keep.ackermannprivat.ch/incidents?status=Open) -- Faceted-Filter zeigt alle offenen Incidents mit Severity, Source, Service, Assignee. Erste Anlaufstelle bei Alarm. Aus Telegram-Notification per Klick auf den Master-Template-Link erreichbar.
+
+Service-Topology (10 Services): [`/topology`](https://keep.ackermannprivat.ch/topology) -- wiki, jellyfin, keep, postgres, vault, nomad, consul, traefik, monitoring, pihole. Bootstrap-Script: `nomad-jobs/monitoring/keep-bootstrap/`.
+
+Correlation-Rules: [`/rules`](https://keep.ackermannprivat.ch/rules) -- aktuell 1 Catch-all-Rule. Service-Topology-Correlation laeuft als Hintergrund-Processor (`KEEP_TOPOLOGY_PROCESSOR=true` Env-Var).
 
 ## Konfiguration
 

@@ -88,7 +88,7 @@ Jeder Source-Layer (CheckMK `webhook-keep.py`, kuenftiger Grafana-Wrapper, etc.)
 - `display_source_pretty` -- z.B. `CheckMK`, `Grafana`, `Uptime Kuma`. Bei Multi-Cluster optional Praefix `Homelab` / `DCLab` (TBD pro Source-Migration)
 - `display_started_at` -- absolute Uhrzeit `HH:MM`
 - `display_detail_short` -- 1-Zeilen-Detail, Severity-Prefix entfernt
-- `display_keep_url` -- `https://keep.ackermannprivat.ch/alerts/<id>` (Pflicht)
+- `display_keep_url` -- Pflicht. Format `https://keep.ackermannprivat.ch/incidents?status=Open` (Dashboard-Default) oder bei verfuegbarer Incident-ID `/incidents/<incident_id>`. Per-Alert-Deep-Link via `/alerts/feed` ist moeglich, aber URL-Encoding-anfaellig -- als Default lieber das Dashboard.
 - `display_status` -- `firing` oder `resolved` (steuert Template-Variante)
 - `display_resolved_at` -- bei Resolved: absolute Uhrzeit
 - `display_duration_firing` -- bei Resolved: relative Dauer (z.B. `8min`, `2h`)
