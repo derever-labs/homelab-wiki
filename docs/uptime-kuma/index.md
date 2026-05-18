@@ -17,7 +17,8 @@ Uptime Kuma ueberwacht alle Services, die **nicht** zur Kern-Infrastruktur gehoe
 |----------|------|
 | URL | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 | Deployment | Nomad Job `monitoring/uptime-kuma.nomad` |
-| Storage | Linstor CSI Volume `uptime-kuma-data` |
+| Persistente Daten | MariaDB `uptime_kuma` auf `10.0.2.125:3306` (Connection-Config in `/app/data/db-config.json` im Container) |
+| Storage | Linstor CSI Volume `uptime-kuma-data` (nur fuer Logs und DB-Backup-Dumps, nicht fuer Live-DB) |
 | Constraint | `vm-nomad-client-0[56]` (folgt dem Volume) |
 | Auth | `intern-auth@file` (Authentik ForwardAuth) |
 | Push-Endpoint | `/api/push/<token>` (via `intern-noauth`, ohne Auth) |
@@ -55,8 +56,19 @@ Aktuell bekannte Push-Monitore:
 
 Zusaetzlich zu den App-Monitoren fuehrt Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Pruefungen als **unabhaengige zweite Meinung**. Die kanonische Quelle der Kern-Check-Liste ist das Gatus-Nomad-Template (siehe [Gatus](../gatus/index.md)); Kuma-Monitore sind mit dem Tag `Infrastruktur` (tag_id=1) gruppiert.
 
+### Nomad / Consul / Vault Stack
+
+Server- und Client-VMs werden getrennt gemonitort -- Server-VMs (`.104/.105/.106`) sind die Control-Plane (kleine VMs auf pve00-02), Client-VMs (`.124/.125/.126`) sind die Worker-Nodes mit Linstor-CSI-Storage.
+
+- `Consul Server API 04/05/06` -- `http://10.0.2.10x:8500/v1/status/leader`
+- `Vault Server Health 04/05/06` -- `http://10.0.2.10x:8200/v1/sys/health?standbyok=true&perfstandbyok=true`
+- `Nomad Server API 04/05/06` -- `https://10.0.2.10x:4646/v1/status/leader`
+- `Nomad Client API 04/05/06` -- `https://10.0.2.12x:4646/v1/agent/health` (eingerichtet 2026-05-13, nach c04-OOM-Vorfall)
+- `Nomad Token -- vm-nomad-server-04/05/06` -- Push-Monitor vom Server-Agent
+- `Nomad Token -- vm-nomad-client-04/05/06` -- Push-Monitor vom Client-Agent
+
 ::: warning Kuma-CRUD nur per Direkt-SQL
-Kuma v2 bietet keinen Admin-API-Endpunkt fuer Monitor-Create/Update. Das UI arbeitet ueber Socket.IO mit Session-Cookie. Bulk-Aenderungen (z.B. Nachziehen wenn Gatus eine Kernliste umbaut) laufen per `sqlite3 /app/data/kuma.db` im Kuma-Container plus anschliessendem `docker restart` fuer Cache-Reload. Letzter Bulk-Insert: 2026-04-17, Backup unter `/app/data/kuma.db.bak-2026-04-17`.
+Kuma v2 bietet keinen Admin-API-Endpunkt fuer Monitor-Create/Update. Das UI arbeitet ueber Socket.IO mit Session-Cookie. Bulk-Aenderungen (z.B. Nachziehen wenn Gatus eine Kernliste umbaut) laufen per MariaDB-`INSERT`/`UPDATE` gegen `uptime_kuma` auf `10.0.2.125:3306`, anschliessend `docker restart` des Kuma-Containers fuer Cache-Reload. Vor Bulk-Aenderungen `mariadb-dump` der Tabellen `monitor`, `monitor_tag`, `tag` als Backup nach `/app/data/`. Letzter Bulk-Insert: 2026-05-13 (3 Nomad-Client-API-Monitore + Rename der Server-Monitore zur Disambiguierung).
 :::
 
 ## Alerting
