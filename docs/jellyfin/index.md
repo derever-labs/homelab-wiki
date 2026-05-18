@@ -109,6 +109,33 @@ Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für
 
 Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürliche Recovery-Sprungbrett. Stattdessen rendert die Jellyfin-Login-Maske unterhalb des Anmelde-Formulars einen "Passwort vergessen?"-Link, der auf den Authentik-Recovery-Flow zeigt -- konfiguriert über den Branding-Endpoint `LoginDisclaimer` und persistiert im CSI-Volume. Konzept und Diagramm: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
 
+## Traefik-Routing und Streaming-Bypass
+
+Vor Jellyfin laufen drei Traefik-Router nebeneinander:
+
+- **`jellyfin`** -- Default-Router fuer die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers, [Wartungsbanner](../banner/index.md) und Error-Pages.
+- **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
+- **`jellyfin-stream`** (Priority 100) -- alle binaeren oder streaming-aehnlichen Pfade. Chain bewusst kuerzer: nur `crowdsec@file` und `secure-headers@file`. **Kein `banner-inject`, kein `error-pages`, kein `force-identity-encoding`.**
+
+Hintergrund zum Stream-Router: `plugin-rewritebody` (= `banner-inject`) puffert die komplette Response bevor es sie weiterschreibt. Bei multi-GB Videos und HLS-Segmenten zerstoert das `Content-Length` und blockiert `Range`-Requests (HTTP 206 Partial Content). Clients wie **Infuse** brechen dann mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab, weil sie auf saubere Range-Antworten und korrekte `Content-Length`-Header angewiesen sind. Generelles Hintergrundwissen zum Plugin: [Wartungsbanner Betrieb](../banner/betrieb.md#streaming-und-grosse-bodies).
+
+Die Stream-Bypass-Rule deckt folgende Pfad-Familien ab (Quelle: Jellyfin-Controller plus Praxiserfahrung):
+
+- `/Videos/*` -- Direct-Stream, HLS-Master/Variant/Segments, Trickplay, eingebettete Subtitles und Attachments
+- `/Audio/*` -- Direct, Universal-Audio (Transcode-Fallback), HLS
+- `/LiveRecordings/`, `/LiveStreamFiles/` -- LiveTV
+- `/Items/<id>/Download` und `/Items/<id>/File` -- vollstaendige Datei-Direktzugriffe
+- `/Providers/Subtitles/` -- Remote-Subtitle-Download
+- `/Playback/BitrateTest` -- bis 100 MB Zufalls-Bytes fuer Bandwidth-Estimation
+- `/FallbackFont/Fonts/` -- Font-Dateien fuer Subtitle-Rendering
+- `/websocket` -- sicherheitshalber, obwohl Traefik WebSockets ueblicherweise transparent durchreicht
+
+Die Rule nutzt `PathRegexp` mit `(?i)`, weil Jellyfins ASP.NET-Routing case-insensitive matched, Traefik aber case-sensitive ist. Quelldatei: `media/jellyfin.nomad` im Repo `derever-labs/homelab-nomad-jobs`.
+
+::: info Was bleibt in der banner-inject-Chain
+Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen weiterhin durch die Default-Chain mit Banner. Plugin-rewritebody puffert auch da, ist aber bei kleinen JSON/HTML-Antworten unkritisch.
+:::
+
 ## TMDb-Metadata ohne IPv6
 
 `api.themoviedb.org` antwortet dual-stack, die Homelab-VMs haben aber keine IPv6-Route nach aussen -- Jellyfins .NET-HttpClient lief dadurch via Happy-Eyeballs sporadisch in Timeouts. Frische Filme blieben beim Erstscan ohne Poster, weil der Fallback-Provider stattdessen ein Standbild aus der Video-Datei extrahierte. Die Env-Variable `DOTNET_SYSTEM_NET_DISABLEIPV6=1` im Job zwingt die Runtime strikt auf IPv4.

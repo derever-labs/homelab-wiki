@@ -55,6 +55,22 @@ Pattern aus DCLab `messe-configurator.nomad`:
 
 Verifikation: `curl --max-time 5 https://<host>/api/sse` muss innerhalb 1 s das initial `event: ...` liefern. Hangt der Stream, puffert banner-inject noch.
 
+## Streaming und grosse Bodies
+
+Das gleiche Pattern wie bei SSE gilt fuer **alle Pfade die binaere oder mehrere-MB-grosse Antworten liefern**: Video-Streams, Audio-Streams, HLS-Segmente, Datei-Downloads, Bandwidth-Tests. `plugin-rewritebody` puffert die komplette Response damit der Body-Search-Replace moeglich wird -- bei multi-GB Videos zerstoert das `Content-Length`, blockiert `Range`-Requests (HTTP 206 Partial Content) und brichst `Transfer-Encoding: chunked`.
+
+Symptome im Client:
+
+- Infuse (Apple TV / iOS / macOS): "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes"
+- Browser-Direktplay: Spinner haengt, Video startet nie, Network-Tab zeigt einen einzelnen pending Request der nicht voranschreitet
+- Downloads brechen ohne Fehlermeldung ab oder liefern korrupte Datei
+
+Loesung wie bei SSE: **eigener Router mit `priority` ueber dem Default und einer schlanken Middleware-Kette** (nur Crowdsec + Security-Headers, kein `banner-inject`, kein `error-pages`, kein `force-identity-encoding`).
+
+Konkretes Beispiel siehe [Jellyfin Traefik-Routing und Streaming-Bypass](../jellyfin/index.md#traefik-routing-und-streaming-bypass). Die Pfad-Liste pro App ergibt sich aus der API-Doku des Backends -- bei Jellyfin sind das `/Videos/*`, `/Audio/*`, `/LiveRecordings/*`, `/LiveStreamFiles/*`, `/Items/<id>/(Download|File)`, `/Providers/Subtitles/*`, `/Playback/BitrateTest`, `/FallbackFont/Fonts/*` und `/websocket`.
+
+Verifikation: `curl --max-time 5 -I https://<host>/<stream-pfad>` muss innerhalb von 1 s einen `Content-Length`-Header (oder `Transfer-Encoding: chunked`) und idealerweise `Accept-Ranges: bytes` zurueckliefern. Wenn die Antwort verzoegert kommt oder Header fehlen, ist der Router noch durch banner-inject geleitet.
+
 ## Test ob das Banner auf einer Domain ankommt
 
 `curl -s -H "Accept-Encoding: gzip, br" https://<domain>/ | grep -c "banner.ackermannprivat.ch"` muss `>= 1` ergeben. Wenn `0`:
