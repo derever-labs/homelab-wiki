@@ -147,8 +147,10 @@ Bei 4xx/5xx ersetzt die `error-pages`-Middleware den Backend-Body durch die ngin
 Apps mit strikter `Content-Security-Policy` (`script-src 'self'`) blockieren das externe Banner-Script im Browser. Aktuelle Apps mit `secure-headers`-Chain sind nicht betroffen (kein `script-src` gesetzt). Bei zukuenftigen Apps mit eigener strenger CSP muss Traefik einen Headers-Override pro Domain bereitstellen.
 :::
 
-::: warning Streaming-Endpoints
-`plugin-rewritebody` buffert die gesamte Response im Speicher. Routen mit grossen Downloads oder SSE-Streams sollten die `*-with-banner` Chains NICHT verwenden. Standardmaessig keine bekannten Routen mit diesem Profil im Stack.
+::: danger Streaming-Endpoints brechen
+`plugin-rewritebody` v0.3.1 buffert die gesamte Response im Speicher, unabhaengig vom Content-Type. Das dokumentierte `monitoring.types`-Feld ist im offiziellen Plugin **nicht implementiert** (silent ignore). Fuer `text/event-stream` (Server-Sent Events) endet der Stream nie -> Plugin wartet ewig -> Client bekommt nichts.
+
+Im Homelab aktuell keine konkrete Route mit diesem Profil bekannt. WebSockets sind nicht betroffen (HTTP-Upgrade umgeht die Middleware-Chain). Bei Einfuehrung eines Service mit SSE-Endpoint: Pattern aus DCLab uebernehmen -- separater Traefik-Router mit Path-Match und hoeherer Prioritaet, der die Banner-Chain umgeht. Referenz-Implementierung: [`messe-configurator.nomad`](https://github.com/HSLU-DC/infra-dclab/blob/master/infra/60_hashicorp/nomad-jobs/services/messe-configurator.nomad) Router `messe-sse` (DCLab 2026-05-18, Source-Audit-Hintergrund im DCLab-Wiki).
 :::
 
 ::: tip Browser-Cache

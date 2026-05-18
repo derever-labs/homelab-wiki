@@ -43,11 +43,23 @@ Wenn eine neue App eine eigene Custom-Chain braucht: `force-identity-encoding` g
 
 Eine Route auf `intern-api` umstellen (kein Banner, keine Error-Pages) oder eine eigene Chain ohne `banner-inject` definieren. Standardfall: alle HTML-liefernden Apps sollen das Banner haben -- Ausnahmen nur fuer Webhook- oder API-only-Routen.
 
+## SSE-Endpoint pro Service
+
+Wenn ein Service eine Banner-Chain nutzt, aber einen einzelnen SSE-Pfad (`text/event-stream`) hat: nicht die ganze Chain wechseln, sondern einen **separaten Router mit Path-Match und hoeherer Prioritaet** anlegen, der `banner-inject` umgeht. `plugin-rewritebody` puffert sonst den Stream bis zum Connection-Close und der Client bekommt nichts.
+
+Pattern aus DCLab `messe-configurator.nomad`:
+
+- `traefik.http.routers.<service>-sse.rule=Host(...) && Path(/api/sse)` -- nur dieser Pfad
+- `traefik.http.routers.<service>-sse.priority=300` -- vor der Default-Chain
+- `traefik.http.routers.<service>-sse.middlewares=...` -- explizit ohne `banner-inject`
+
+Verifikation: `curl --max-time 5 https://<host>/api/sse` muss innerhalb 1 s das initial `event: ...` liefern. Hangt der Stream, puffert banner-inject noch.
+
 ## Test ob das Banner auf einer Domain ankommt
 
 `curl -s -H "Accept-Encoding: gzip, br" https://<domain>/ | grep -c "banner.ackermannprivat.ch"` muss `>= 1` ergeben. Wenn `0`:
 
-- Liefert das Backend Content-Type ausser `text/html`? Plugin filtert auf `text/html` -- API-Endpunkte sind ignoriert.
+- Liefert das Backend Content-Type ausser `text/html`? Plugin v0.3.1 ignoriert die `monitoring.types`-Konfiguration (silent ignore -- Source-Audit-Befund). Damit puffert es jeden Content-Type, ersetzt aber nur in `text/html`-Bodies erfolgreich -- bei API-Responses landet trotzdem die Buffering-Verzoegerung.
 - Hat die Route die richtige `*-with-banner` Chain im Tag?
 - Liefert Traefik tatsaechlich den Inject? Dashboard `/_/middlewares` zeigt `banner-inject@file` und die Chain.
 
