@@ -69,7 +69,7 @@ Keep uebernimmt anschliessend Source-Routing in Forum-Topics, Severity-Eskalatio
 | DRBD Disconnected | `Connected != 1` | 5min | Critical |
 | CSI Stale Mounts | `csi_mounts.stale_count > 0` | 10min | Warning |
 | CSI-Plugin-Socket weg | `csi_plugin.socket_alive == 0` | 5min | Critical |
-| Nomad Restart-Storm | `nomad_alloc_restarts.count > 5` (per Alloc) | sofort | Warning |
+| Nomad Restart-Storm | `non_negative_difference(nomad_alloc_restarts.count) > 5` in 10min (per Alloc) | 2min | Warning |
 | Nomad Reschedule-Storm | `nomad_job_health.failed_10m > 5` (per Job, Host) | 5min | Critical |
 
 **Log-basierte Alert Rules (Loki):**

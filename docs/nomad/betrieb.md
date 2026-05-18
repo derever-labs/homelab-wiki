@@ -74,6 +74,10 @@ Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart do
 
 **Restart-Counter via REST-API statt Prometheus:** Die Nomad-Prometheus-Telemetrie liefert keine verlässlichen Restart-Counter. `nomad_client_allocs_restart` existiert in aktuellen Nomad-Versionen nicht im `/v1/metrics`-Output (HashiCorp Issue #3060 ungelöst seit 2016) und `nomad_nomad_job_summary_failed` wird durch Nomad-GC zurückgesetzt -- `rate()`/`increase()`/`spread()`-Patterns liefern False-Positives. Restart- und Reschedule-Loop-Detection läuft daher über ein Cron-Bash-Script (`/usr/local/bin/nomad-job-health-metrics.sh`) auf jedem Worker, das via REST-API `/v1/node/<id>/allocations` die Felder `TaskStates.<task>.Restarts` und `ClientStatus`+`CreateTime` ausliest und als Influx-Lines (`nomad_alloc_restarts`, `nomad_job_health`) nach Telegraf schreibt. Die zwei Grafana-Alerts (`nomad-restart-storm-warn`, `nomad-failed-allocs-crit`) konsumieren diese Quelle. ACL-Policy `nomad-monitor` und Token-File auf jedem Worker; Token in 1Password als "Nomad Monitor Token". Pattern analog zur CSI-Health-Detection.
 
+::: warning Lifetime-Counter -- Alert nutzt Delta-Window
+`TaskState.Restarts` ist ein Lifetime-Counter pro Allokation und wird in Nomad nie zurückgesetzt (verifiziert im Source: keine `.Restarts = 0`-Treffer). Der `nomad-restart-storm-warn` Alert verwendet deshalb eine Delta-Query (`non_negative_difference(last("count")) > 5` über 10min mit `GROUP BY time(1m) fill(none)` und Reducer `sum`) statt direkter Schwelle auf den Counter. Sub-Route in `policies.yaml` streckt zusätzlich `repeat_interval` auf 168h (effektiv ~5d durch Alertmanager nflog-Cap), damit Trickle-Restart-Pattern nicht stündlich Telegram triggern.
+:::
+
 ## Credentials
 
 Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
