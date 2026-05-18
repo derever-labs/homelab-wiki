@@ -9,6 +9,10 @@ tags:
 
 # Wartungsbanner -- Betrieb
 
+::: danger Aktuell deaktiviert (2026-05-19)
+Banner-Injection ist in **allen** Traefik-Chains auskommentiert wegen SSE-Pufferung. Die Schritte unten setzen voraus, dass `banner-inject` wieder in der Chain aktiv ist. Re-Enable-Anleitung siehe [Wartungsbanner](index.md).
+:::
+
 ## Banner einschalten (sofort)
 
 1. [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) im Browser oeffnen

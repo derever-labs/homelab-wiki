@@ -10,6 +10,12 @@ tags:
 
 # Wartungsbanner
 
+::: danger Aktuell deaktiviert (2026-05-19)
+Die `banner-inject` Middleware ist in **allen** Traefik-Chains auskommentiert, weil `plugin-rewritebody` SSE-Streams puffert und Live-Updates bricht (siehe [Bekannte Grenzen](#bekannte-grenzen)). Pocketbase liefert weiterhin `banner.ackermannprivat.ch/banner.js` (200 OK), aber kein `<script>`-Tag wird mehr in HTML-Responses injiziert.
+
+**Re-Enable**: In [`standalone-stacks/traefik-proxy/configurations/middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml) das `# ` Prefix vor `- banner-inject` in den 5 Chains entfernen und nach `vm-traefik-01:/opt/traefik/configurations/middleware-chains.yml` deployen (Traefik File-Provider reloaded automatisch).
+:::
+
 Ein zentral pflegbarer Banner der ueber alle Apps hinter Traefik eingeblendet werden kann, ohne jede App einzeln anfassen zu muessen. Pflege erfolgt ueber das Pocketbase-Admin-UI mit Master-Schalter und optionalem Zeitfenster.
 
 ## Schnellanleitung: Wartungsfenster ankuendigen
@@ -119,7 +125,7 @@ Aktivierungslogik im Client-JS: `enabled && (start_at unset oder now >= start_at
 
 ## Banner-faehige Routen
 
-Banner ist Teil der Base-Chains in [`middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml). Jede Route die eine dieser Chains nutzt bekommt automatisch das Banner-Verhalten:
+Banner ist Teil der Base-Chains in [`middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml). Jede Route die eine dieser Chains nutzt bekommt automatisch das Banner-Verhalten (**aktuell auskommentiert, siehe Warn-Block oben**):
 
 - `intern-auth` / `intern-auth-strict`
 - `public-auth` / `public-auth-strict`
