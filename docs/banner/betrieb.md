@@ -1,104 +1,36 @@
 ---
 title: Wartungsbanner -- Betrieb
-description: Banner aktivieren, Wartungsfenster setzen, neue Apps anbinden
+description: Banner schalten und Wartungsfenster setzen (Jellyfin Custom-CSS)
 tags:
   - service
-  - traefik
+  - jellyfin
   - runbook
 ---
 
 # Wartungsbanner -- Betrieb
 
-::: danger Aktuell deaktiviert (2026-05-19)
-Banner-Injection ist in **allen** Traefik-Chains auskommentiert wegen SSE-Pufferung. Die Schritte unten setzen voraus, dass `banner-inject` wieder in der Chain aktiv ist. Re-Enable-Anleitung siehe [Wartungsbanner](index.md).
-:::
+Seit 2026-05-29 läuft der Banner nur noch für die Jellyfin-Web-UI über Jellyfins natives Custom-CSS (Mechanik: [Wartungsbanner](index.md)). Es gibt keine Traefik-Chain-Pflege, kein `force-identity-encoding` und keine SSE-/Streaming-Sonderfälle mehr -- der frühere `banner-inject`-Mechanismus ist zurückgebaut.
 
-## Banner einschalten (sofort)
+## Banner schalten
 
-1. [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) im Browser oeffnen
-2. Mit den Pocketbase-Credentials einloggen (Item `Pocketbase Banner` im PRIVAT 1P-Vault)
-3. Collection `banner_config` -> existierender Record bearbeiten
-4. `enabled` auf `true` schalten, `text` anpassen
-5. Save
+Im Pocketbase-Admin-UI ([banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/), Login via Authentik admin-Gruppe, dann Pocketbase-Credentials aus 1P `Pocketbase Banner`) den einen `banner_config`-Record bearbeiten: `enabled` auf `true`/`false`, dazu `severity` und `text`. Wirksam beim nächsten Reload der Jellyfin-Web-UI ([watch.ackermannprivat.ch](https://watch.ackermannprivat.ch)).
 
-Banner erscheint auf allen Routen mit `*-with-banner` Chain beim naechsten Page-Reload.
+## Wartungsfenster
 
-## Banner ausschalten
+`start_at`/`end_at` im selben Record setzen (UTC -- das UI zeigt Lokalzeit, persistiert aber UTC). Der Banner erscheint und verschwindet automatisch innerhalb des Fensters, solange `enabled` auf `true` steht. Die Zeitprüfung läuft server-seitig im Pocketbase-Hook.
 
-`enabled` auf `false` setzen, save. Beim naechsten Page-Reload auf den Apps verschwindet das Banner.
+## Prüfen ob der Banner ankommt
 
-## Wartungsfenster mit fester Zeit setzen
+`banner.ackermannprivat.ch/banner.css` liefert bei aktivem Banner die `body::before`-Regeln, sonst `/* maintenance banner: off */`. In der Jellyfin-Web-UI erscheint der Banner dann am oberen Rand. Native Clients (Infuse, Android-TV) zeigen ihn nicht -- Server-CSS wirkt nur im Browser.
 
-Im selben Record:
+## Weitere App anbinden
 
-- `start_at`: Beginn (z.B. heute 22:00). Banner erscheint erst ab dann.
-- `end_at`: Ende (z.B. heute 23:00). Banner verschwindet automatisch danach.
-- `enabled` muss `true` sein -- Zeitfenster wird nur ausgewertet wenn der Master-Schalter an ist.
+Aktuell nur Jellyfin. Eine andere App liesse sich nur einbinden, wenn sie ein eigenes natives Custom-CSS-Feld hat -- Jellyseerr etwa hat keines. Der frühere Traefik-weite Inject (alle Apps) ist mit dem `banner-inject`-Rückbau entfallen.
 
-Die Felder werden in UTC erwartet -- das Pocketbase-UI zeigt die lokale Zeit aber persistiert UTC. Im Zweifel pruefen.
+## Schema ändern
 
-## Eine zusaetzliche Domain mit Banner ausstatten
-
-Das Banner ist Teil der Base-Chains `intern-auth`, `public-auth`, `public-noauth` (und der Strict-Varianten). Jede Route die eine dieser Chains nutzt zeigt automatisch das Banner -- nichts zu tun pro App.
-
-Wenn eine neue App eine eigene Custom-Chain braucht: `force-identity-encoding` ganz vorne in der Liste, dann die regulaeren Middlewares, dann `banner-inject` VOR `error-pages`.
-
-## Eine Domain bewusst ohne Banner
-
-Eine Route auf `intern-api` umstellen (kein Banner, keine Error-Pages) oder eine eigene Chain ohne `banner-inject` definieren. Standardfall: alle HTML-liefernden Apps sollen das Banner haben -- Ausnahmen nur fuer Webhook- oder API-only-Routen.
-
-## SSE-Endpoint pro Service
-
-Wenn ein Service eine Banner-Chain nutzt, aber einen einzelnen SSE-Pfad (`text/event-stream`) hat: nicht die ganze Chain wechseln, sondern einen **separaten Router mit Path-Match und hoeherer Prioritaet** anlegen, der `banner-inject` umgeht. `plugin-rewritebody` puffert sonst den Stream bis zum Connection-Close und der Client bekommt nichts.
-
-Pattern aus DCLab `messe-configurator.nomad`:
-
-- `traefik.http.routers.<service>-sse.rule=Host(...) && Path(/api/sse)` -- nur dieser Pfad
-- `traefik.http.routers.<service>-sse.priority=300` -- vor der Default-Chain
-- `traefik.http.routers.<service>-sse.middlewares=...` -- explizit ohne `banner-inject`
-
-Verifikation: `curl --max-time 5 https://<host>/api/sse` muss innerhalb 1 s das initial `event: ...` liefern. Hangt der Stream, puffert banner-inject noch.
-
-## Streaming und grosse Bodies
-
-Das gleiche Pattern wie bei SSE gilt fuer **alle Pfade die binaere oder mehrere-MB-grosse Antworten liefern**: Video-Streams, Audio-Streams, HLS-Segmente, Datei-Downloads, Bandwidth-Tests. `plugin-rewritebody` puffert die komplette Response damit der Body-Search-Replace moeglich wird -- bei multi-GB Videos zerstoert das `Content-Length`, blockiert `Range`-Requests (HTTP 206 Partial Content) und brichst `Transfer-Encoding: chunked`.
-
-Symptome im Client:
-
-- Infuse (Apple TV / iOS / macOS): "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes"
-- Browser-Direktplay: Spinner haengt, Video startet nie, Network-Tab zeigt einen einzelnen pending Request der nicht voranschreitet
-- Downloads brechen ohne Fehlermeldung ab oder liefern korrupte Datei
-
-Loesung wie bei SSE: **eigener Router mit `priority` ueber dem Default und einer schlanken Middleware-Kette** (nur Crowdsec + Security-Headers, kein `banner-inject`, kein `error-pages`, kein `force-identity-encoding`).
-
-Konkretes Beispiel siehe [Jellyfin Traefik-Routing und Streaming-Bypass](../jellyfin/index.md#traefik-routing-und-streaming-bypass). Die Pfad-Liste pro App ergibt sich aus der API-Doku des Backends -- bei Jellyfin sind das `/Videos/*`, `/Audio/*`, `/LiveRecordings/*`, `/LiveStreamFiles/*`, `/Items/<id>/(Download|File)`, `/Providers/Subtitles/*`, `/Playback/BitrateTest`, `/FallbackFont/Fonts/*` und `/websocket`.
-
-Verifikation: `curl --max-time 5 -I https://<host>/<stream-pfad>` muss innerhalb von 1 s einen `Content-Length`-Header (oder `Transfer-Encoding: chunked`) und idealerweise `Accept-Ranges: bytes` zurueckliefern. Wenn die Antwort verzoegert kommt oder Header fehlen, ist der Router noch durch banner-inject geleitet.
-
-## Test ob das Banner auf einer Domain ankommt
-
-`curl -s -H "Accept-Encoding: gzip, br" https://<domain>/ | grep -c "banner.ackermannprivat.ch"` muss `>= 1` ergeben. Wenn `0`:
-
-- Liefert das Backend Content-Type ausser `text/html`? Plugin v0.3.1 ignoriert die `monitoring.types`-Konfiguration (silent ignore -- Source-Audit-Befund). Damit puffert es jeden Content-Type, ersetzt aber nur in `text/html`-Bodies erfolgreich -- bei API-Responses landet trotzdem die Buffering-Verzoegerung.
-- Hat die Route die richtige `*-with-banner` Chain im Tag?
-- Liefert Traefik tatsaechlich den Inject? Dashboard `/_/middlewares` zeigt `banner-inject@file` und die Chain.
-
-## Schemata aendern
-
-Migrationen in [`services/pocketbase.nomad`](https://github.com/derever-labs/infra/blob/main/nomad-jobs/services/pocketbase.nomad) inline als Template gerendert. Neues Feld:
-
-1. Neuen Migration-Template eintragen mit eindeutiger Timestamp-ID
-2. Job neu deployen -- beim Start fuehrt Pocketbase neue Migrations aus
-3. Hook `banner.pb.js` ggf. anpassen wenn das Feld im JS verwendet wird
+Migrationen liegen inline als Templates in [`services/pocketbase.nomad`](https://github.com/derever-labs/homelab-nomad-jobs/blob/main/services/pocketbase.nomad). Neues Feld: Migration-Template mit eindeutiger Timestamp-ID ergänzen, Job neu deployen (Pocketbase führt neue Migrations beim Start aus), die `/banner.css`- und `/banner.js`-Hooks bei Bedarf nachziehen. Admin-Passwort-Reset läuft über die Pocketbase-Superuser-CLI im Container; neues Passwort danach in 1P nachführen.
 
 ## Backup
 
-SQLite-Datei liegt im Linstor-CSI-Volume `pocketbase-data` mit Replikation `autoPlace=2`. Wenn ein VolHost ausfaellt, DRBD haelt die Replik. Punkt-in-Time-Backup laeuft ueber die allgemeine Linstor-Backup-Strategie (siehe [linstor-storage/betrieb](../linstor-storage/betrieb.md)).
-
-## Pocketbase-Admin-Passwort verloren
-
-Pocketbase erlaubt Reset ueber CLI im Container:
-
-`nomad alloc exec -task pocketbase <alloc-id> pocketbase superuser upsert <email> <new-password>`
-
-Alloc-ID via `nomad job status pocketbase`. Neues Passwort danach in 1P aktualisieren.
+Die SQLite-Datei liegt im Linstor-CSI-Volume `banner-pb-data` (DRBD autoPlace=2). Punkt-in-Zeit-Backup über die allgemeine Linstor-Strategie (siehe [linstor-storage/betrieb](../linstor-storage/betrieb.md)).
