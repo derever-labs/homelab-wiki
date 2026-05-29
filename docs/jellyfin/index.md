@@ -115,9 +115,9 @@ Vor Jellyfin laufen drei Traefik-Router nebeneinander:
 
 - **`jellyfin`** -- Default-Router fuer die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../banner/index.md) kommt nicht mehr aus dieser Chain, sondern ueber Jellyfins Custom-CSS (siehe unten).
 - **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
-- **`jellyfin-stream`** (Priority 100) -- alle binaeren oder streaming-aehnlichen Pfade. Chain bewusst kuerzer: nur `crowdsec@file` und `secure-headers@file`. **Kein `banner-inject`, kein `error-pages`, kein `force-identity-encoding`.**
+- **`jellyfin-stream`** (Priority 100) -- alle binaeren oder streaming-aehnlichen Pfade. Chain bewusst kuerzer: nur `crowdsec@file` und `secure-headers@file` -- **kein `error-pages`** (das wuerde sonst HTML in Binaer-/Range-Antworten schreiben). Historisch lief hier auch kein `banner-inject`/`force-identity-encoding`; beide sind inzwischen global zurueckgebaut.
 
-Hintergrund zum Stream-Router: `plugin-rewritebody` (= `banner-inject`) puffert die komplette Response bevor es sie weiterschreibt. Bei multi-GB Videos und HLS-Segmenten zerstoert das `Content-Length` und blockiert `Range`-Requests (HTTP 206 Partial Content). Clients wie **Infuse** brechen dann mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab, weil sie auf saubere Range-Antworten und korrekte `Content-Length`-Header angewiesen sind. Generelles Hintergrundwissen zum Plugin: [Wartungsbanner Betrieb](../banner/betrieb.md#streaming-und-grosse-bodies).
+Hintergrund zum Stream-Router: Urspruenglich war der groessere Treiber `plugin-rewritebody` (= `banner-inject`), das die komplette Response pufferte -- bei multi-GB Videos und HLS-Segmenten zerstoerte das `Content-Length` und blockierte `Range`-Requests (HTTP 206 Partial Content); Clients wie **Infuse** brachen mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab. Seit dem `banner-inject`-Rueckbau bleibt als Grund fuer den Bypass `error-pages`, das keine HTML-Fehlerseiten in Binaer-Streams schreiben darf.
 
 Die Stream-Bypass-Rule deckt folgende Pfad-Familien ab (Quelle: Jellyfin-Controller plus Praxiserfahrung):
 
@@ -132,8 +132,8 @@ Die Stream-Bypass-Rule deckt folgende Pfad-Familien ab (Quelle: Jellyfin-Control
 
 Die Rule nutzt `PathRegexp` mit `(?i)`, weil Jellyfins ASP.NET-Routing case-insensitive matched, Traefik aber case-sensitive ist. Quelldatei: `media/jellyfin.nomad` im Repo `derever-labs/homelab-nomad-jobs`.
 
-::: info Was bleibt in der banner-inject-Chain
-Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen weiterhin durch die Default-Chain mit Banner. Plugin-rewritebody puffert auch da, ist aber bei kleinen JSON/HTML-Antworten unkritisch.
+::: info Was laeuft durch die Default-Chain
+Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen durch die Default-Chain (`crowdsec`, `secure-headers`, `error-pages`). Der Wartungsbanner kommt hier nicht mehr aus der Chain, sondern ueber Jellyfins Custom-CSS (siehe naechster Abschnitt).
 :::
 
 ## Wartungsbanner via Custom-CSS
