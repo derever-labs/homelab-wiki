@@ -1,35 +1,34 @@
 ---
 title: Wartungsbanner
-description: Cross-Site Wartungsbanner ueber alle Apps hinter Traefik
+description: Wartungsbanner fuer Jellyfin ueber Jellyfins natives Custom-CSS
 tags:
   - service
-  - traefik
-  - infrastruktur
+  - jellyfin
   - nomad
 ---
 
 # Wartungsbanner
 
-::: danger Aktuell deaktiviert (2026-05-19)
-Die `banner-inject` Middleware ist in **allen** Traefik-Chains auskommentiert, weil `plugin-rewritebody` SSE-Streams puffert und Live-Updates bricht (siehe [Bekannte Grenzen](#bekannte-grenzen)). Pocketbase liefert weiterhin `banner.ackermannprivat.ch/banner.js` (200 OK), aber kein `<script>`-Tag wird mehr in HTML-Responses injiziert.
+::: info Mechanik seit 2026-05-29
+Der Banner wird ueber **Jellyfins natives Custom-CSS** eingebunden, nicht mehr ueber Traefik `plugin-rewritebody`. Jellyfin importiert per `@import` ein dynamisch aus Pocketbase gerendertes Stylesheet (`banner.ackermannprivat.ch/banner.css`); Pocketbase entscheidet server-seitig, ob und welcher Banner ausgeliefert wird.
 
-**Re-Enable**: In [`standalone-stacks/traefik-proxy/configurations/middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml) das `# ` Prefix vor `- banner-inject` in den 5 Chains entfernen und nach `vm-traefik-01:/opt/traefik/configurations/middleware-chains.yml` deployen (Traefik File-Provider reloaded automatisch).
+Die fruehere cross-App-Variante (Traefik-`banner-inject` ueber alle Apps) wurde abgeloest, weil `plugin-rewritebody` SSE-/Streaming-Responses pufferte und damit Player wie Infuse brach. Der CSS-`@import` umgeht Traefik komplett -- der Browser laedt das Stylesheet direkt.
 :::
 
-Ein zentral pflegbarer Banner der ueber alle Apps hinter Traefik eingeblendet werden kann, ohne jede App einzeln anfassen zu muessen. Pflege erfolgt ueber das Pocketbase-Admin-UI mit Master-Schalter und optionalem Zeitfenster.
+Ein zentral pflegbarer Wartungs-Banner fuer die Jellyfin-Web-UI. Gepflegt wird er weiterhin im Pocketbase-Admin-UI mit Master-Schalter, Severity und optionalem Zeitfenster -- nur der Auslieferungsweg in den Browser ist neu.
 
 ## Schnellanleitung: Wartungsfenster ankuendigen
 
 1. [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) oeffnen, durch Authentik-Login (admin-Gruppe), dann mit Pocketbase-Credentials einloggen (1P-Item `Pocketbase Banner`)
-2. Collection `banner_config` -> den einen Record anklicken (Homelab hat im Gegensatz zum DCLab keine intern/extern-Trennung)
+2. Collection `banner_config` -> den einen Record anklicken
 3. Felder editieren:
-   - `enabled` auf `true` (das ist der Master-Schalter)
+   - `enabled` auf `true` (Master-Schalter)
    - `severity` waehlen: `wartung` (orange), `info` (blau), `incident` (rot), `resolved` (gruen)
-   - `text` mit der Botschaft fuellen
-   - Optional `start_at` und `end_at` setzen, dann erscheint und verschwindet das Banner automatisch
+   - `text` mit der Botschaft fuellen (einzeilig, siehe [Bekannte Grenzen](#bekannte-grenzen))
+   - Optional `start_at` und `end_at` setzen, dann erscheint und verschwindet der Banner automatisch
 4. Save
 
-Der Banner erscheint beim naechsten Page-Reload auf allen Apps mit `*-with-banner` Chain. Zum Ausschalten `enabled` auf `false` setzen.
+Der Banner erscheint beim naechsten Page-Reload in der Jellyfin-Web-UI ([watch.ackermannprivat.ch](https://watch.ackermannprivat.ch)). Zum Ausschalten `enabled` auf `false` setzen.
 
 Detail-Runbook und Edge-Cases siehe [Betrieb](betrieb.md).
 
@@ -39,20 +38,18 @@ Detail-Runbook und Edge-Cases siehe [Betrieb](betrieb.md).
 |----------|------|
 | URL | [banner.ackermannprivat.ch](https://banner.ackermannprivat.ch) |
 | Admin-UI | [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) (Pocketbase eigene Auth) |
-| Public-Endpoint | `/banner.js` (dynamisch aus aktueller Config gerendert) |
+| Public-Endpoints | `/banner.css` (Jellyfin-`@import`), `/banner.js` (Legacy), `/api/health` -- ueber `public-noauth` Chain |
+| Konsument | Jellyfin Custom-CSS (Dashboard -> Allgemein -> Benutzerdefiniertes CSS) |
 | Storage | Linstor CSI `banner-pb-data` (SQLite, autoPlace=2) |
-| Admin-Auth | Authentik-Forward-Auth via `intern-auth` Chain (pocketbase-admin Router, Priority 10) |
-| Public-Endpoints | `/banner.js`, `/api/health` ueber `public-noauth` Chain (pocketbase-public Router, Priority 100) |
 | Deployment | Nomad Job `services/pocketbase.nomad` |
-| Image | `ghcr.io/muchobien/pocketbase` (Direct-Pull, kein ZOT-Mirror) |
-| Traefik-Plugin | `traefik/plugin-rewritebody v0.3.1` |
-| Auth Admin-UI | Pocketbase Email/Passwort (Credentials in 1P: `Pocketbase Banner`) |
+| Image | `ghcr.io/muchobien/pocketbase` |
+| Auth Admin-UI | Pocketbase Email/Passwort (1P: `Pocketbase Banner`); Admin-Router hinter Authentik (`intern-auth`) |
 
 ## Rolle im Stack
 
-Das Banner-System loest das Problem dass eine einheitliche Wartungs-Meldung ueber alle hinter Traefik laufenden Apps benoetigt wird, ohne jede App eigenen Code aenden zu muessen. Apps wissen nichts vom Banner -- Traefik injiziert ein einziges Script-Tag in jede HTML-Antwort, das Script holt die aktuelle Banner-Config und rendert ein DOM-Element. Pflege erfolgt zentral in Pocketbase.
+Anders als die alte, Traefik-weite Loesung ist der Banner jetzt bewusst auf Jellyfin begrenzt. Jellyfins Custom-CSS-Feld enthaelt dauerhaft nur eine `@import`-Zeile auf `banner.css`; die gesamte Dynamik (an/aus, Severity, Text, Zeitfenster) lebt server-seitig in Pocketbase. So muss am Jellyfin-Feld nie wieder etwas geaendert werden.
 
-Banner ist optional pro Domain: Routen die das Banner zeigen sollen verwenden eine der `*-with-banner` Middleware-Chains. Routen ohne diese Chain sehen kein Banner.
+Der `@import` steht **nach** dem bestehenden Theme-Import (Ultrachromic), damit die Banner-Regeln im Cascade gewinnen; die Layout-Verschiebung nutzt zusaetzlich `!important`. Beide koexistieren konfliktfrei -- Ultrachromic belegt weder `body::before` noch verschiebt es `.skinHeader`.
 
 ## Architektur
 
@@ -61,104 +58,63 @@ direction: right
 
 Browser: User Browser {
   style.stroke-dash: 4
-  page: "App-Seite (HTML mit injiziertem Script-Tag)" { style.border-radius: 8 }
-  banner_dom: "Banner-DOM (z-index max, fixed top)" { style.border-radius: 8 }
+  page: "Jellyfin-Web (HTML + Custom-CSS @import)" { style.border-radius: 8 }
+  banner_dom: "body::before (fixed top, z-index 1000)" { style.border-radius: 8 }
 }
 
-Traefik: "Traefik HA (10.0.2.20)" {
+JF: "Jellyfin (watch.ackermannprivat.ch)" {
   style.stroke-dash: 4
-  plugin: "plugin-rewritebody (injiziert <script src>)" { style.border-radius: 8 }
-  chain: "intern-auth-with-banner / public-{auth,noauth}-with-banner Chains" { style.border-radius: 8 }
-}
-
-Apps: "Beliebige App hinter Traefik" {
-  style.stroke-dash: 4
-  flame: flame-intra { style.border-radius: 8 }
-  jellyfin: "Jellyfin (watch)" { style.border-radius: 8 }
-  jellyseerr: "Jellyseerr (wish)" { style.border-radius: 8 }
+  branding: "Branding CustomCss: @import banner.css" { style.border-radius: 8 }
 }
 
 PB: "Pocketbase (banner.ackermannprivat.ch)" {
   style.stroke-dash: 4
-  hook: "JS-Hook /banner.js" { style.border-radius: 8 }
+  css: "GET /banner.css (server-seitig gerendert)" { style.border-radius: 8 }
   ui: "Admin-UI /_/ (Pflege)" { style.border-radius: 8 }
   db: "SQLite (Linstor CSI)" { style.border-radius: 8 }
 }
 
-Browser.page -> Traefik.chain: "1. HTML-Request"
-Traefik.chain -> Apps.flame: "2. Forward zur App"
-Apps.flame -> Traefik.chain: "3. HTML-Response"
-Traefik.chain -> Traefik.plugin: "4. Body-Rewrite vor </head>"
-Traefik.plugin -> Browser.page: "5. HTML + <script src=banner.js>"
-Browser.page -> PB.hook: "6. GET /banner.js (cross-origin)"
-PB.hook -> PB.db: "7. SELECT banner_config"
-PB.db -> PB.hook: "8. enabled, text, Zeitfenster"
-PB.hook -> Browser.page: "9. JS mit Config + Inject-Logik"
-Browser.page -> Browser.banner_dom: "10. DOM-Element rendern"
-
-Apps.jellyfin -> Traefik.chain
-Apps.jellyseerr -> Traefik.chain
+Browser.page -> JF.branding: "1. Web-UI laedt, liest CustomCss"
+JF.branding -> Browser.page: "2. @import url(banner.css)"
+Browser.page -> PB.css: "3. GET /banner.css (cross-origin)"
+PB.css -> PB.db: "4. SELECT banner_config"
+PB.db -> PB.css: "5. enabled, severity, text, Zeitfenster"
+PB.css -> Browser.page: "6. CSS (Banner-Regeln oder leer)"
+Browser.page -> Browser.banner_dom: "7. body::before rendern"
 
 PB.ui -> PB.db: "Pflege-Workflow"
 ```
 
 ## Banner-Steuerung
 
-Das Banner wird ueber das Pocketbase-Admin-UI verwaltet. Collection `banner_config` mit zwei Records (`audience: intern` und `audience: extern`). Beide Audiences unabhaengig steuerbar:
-
-- **intern** -- erscheint auf allen Routen mit `intra.*` Hostname (z.B. intra.ackermannprivat.ch). Typisch fuer technische Wartungs-Infos an Admins
-- **extern** -- erscheint auf allen anderen Routen (welcome, watch, wish, gitea, ...). Typisch fuer User-Freundliche Wartungs-Hinweise
-
-Die Audience-Wahl passiert client-seitig im Banner-JS via `location.hostname.startsWith("intra.")`. Daher muss Traefik die Chains NICHT pro Audience splitten -- eine einzige `banner-inject` Middleware reicht. Der Pocketbase-Hook liefert beide Configs inline in der gleichen `banner.js`-Response.
-
-Felder pro Record:
+Collection `banner_config` mit genau einem Record. Die Aktivierungs-Logik laeuft komplett server-seitig im Pocketbase-Hook: ist der Banner aus oder ausserhalb des Zeitfensters, liefert `/banner.css` ein leeres Stylesheet (`/* maintenance banner: off */`), sonst die Banner-Regeln.
 
 | Feld | Typ | Bedeutung |
 |------|-----|-----------|
 | `severity` | select | Farb-Preset (`wartung` orange, `info` blau, `incident` rot, `resolved` gruen). Default `wartung` |
-| `enabled` | bool | Master-Schalter. `false` = Banner aus, unabhaengig von den Zeit-Feldern |
-| `text` | string | Anzeigetext, max 500 Zeichen |
+| `enabled` | bool | Master-Schalter. `false` = Banner aus |
+| `text` | string | Anzeigetext, einzeilig, max 500 Zeichen |
 | `start_at` | datetime | Optional. Wenn gesetzt: Banner erscheint erst ab diesem Zeitpunkt |
 | `end_at` | datetime | Optional. Wenn gesetzt: Banner verschwindet automatisch nach diesem Zeitpunkt |
 
-Aktivierungslogik im Client-JS: `enabled && (start_at unset oder now >= start_at) && (end_at unset oder now <= end_at)`.
+Aktivierungslogik: `enabled && (start_at unset oder now >= start_at) && (end_at unset oder now <= end_at)`.
 
-## Banner-faehige Routen
+## CSS-Mechanik
 
-Banner ist Teil der Base-Chains in [`middleware-chains.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/standalone-stacks/traefik-proxy/configurations/middleware-chains.yml). Jede Route die eine dieser Chains nutzt bekommt automatisch das Banner-Verhalten (**aktuell auskommentiert, siehe Warn-Block oben**):
+`/banner.css` rendert ein `body::before` (fixed, oberer Rand, Hoehe 40px, `z-index` 1000) mit dem Text via CSS-`content` und der Severity-Farbe. Damit der Banner nichts verdeckt, schiebt das Stylesheet die drei top-gepinnten Jellyfin-Container um die Bannerhoehe nach unten: `.skinHeader`, `.skinBody` und `.mainDrawer`. Diese Selektoren sind gegen den React-Web-Client von **Jellyfin 10.11** verifiziert (das aeltere `mainAnimatedPages` gibt es nicht mehr).
 
-- `intern-auth` / `intern-auth-strict`
-- `public-auth` / `public-auth-strict`
-- `public-noauth`
-
-Reihenfolge in der Chain ist relevant: `force-identity-encoding` ganz vorne (sonst sieht das Plugin komprimierte Bytes), `banner-inject` VOR `error-pages` (so wird bei 4xx/5xx der Body durch die Error-Page komplett ersetzt und das Banner verschwindet automatisch auf Error-Seiten -- kein doppeltes Banner).
-
-Routen ohne Banner: `intern-api` (JSON-API-Endpoints) und `keep-webhook` (machine-to-machine ohne User-Browser).
-
-## force-identity-encoding (technische Notwendigkeit)
-
-`traefik/plugin-rewritebody v0.3.x` kennt keine Decompression. Backends die HTML komprimiert ausliefern (Jellyfin sendet brotli, viele Java/Spring-Apps gzip) werden ohne Body-Rewrite weitergeleitet -- das Banner waere unsichtbar.
-
-Loesung: Eine Headers-Middleware setzt vor `banner-inject` den Request-Header `Accept-Encoding: identity` -- das Backend antwortet dann unkomprimiert, der Regex-Replace greift, der Browser empfaengt unkomprimierte HTML (vernachlaessigbar bei HTML-Shell-Files).
-
-Diese Middleware ist Teil aller `*-with-banner` Chains. Bei stark komprimierungs-abhaengigen Routen mit grossen HTML-Bodies waere sie ein Performance-Tradeoff -- bei den aktuellen Routen vernachlaessigbar.
+Severity-Farben sind identisch zur Legacy-`/banner.js`-Variante. Quelle des Render-Hooks: [`services/pocketbase.nomad`](https://github.com/derever-labs/homelab-nomad-jobs/blob/main/services/pocketbase.nomad) (`routerAdd("GET", "/banner.css", ...)`).
 
 ## Bekannte Grenzen
 
-::: tip Error-Pages bleiben sauber
-Bei 4xx/5xx ersetzt die `error-pages`-Middleware den Backend-Body durch die nginx-error-page (Title-Format `"<status> - <text>"`). Das Banner-JS erkennt dieses Title-Pattern (`^\d{3} - `) und rendert auf Error-Seiten nicht -- so erscheint kein doppelter Wartungs-Hinweis ueber der eh schon prominenten Maintenance-Page. Plugin-rewritebody injiziert das Script-Tag dort trotzdem (technisch unvermeidbar weil das Plugin nach error-pages auf den finalen Body greift), aber das Banner-JS bricht beim Title-Check frueh ab.
+::: warning Nur Jellyfin-Web im Browser
+Der Banner zeigt sich ausschliesslich in der Jellyfin-Web-UI im Browser. Native Clients (Infuse, Android-TV-App) ignorieren Server-CSS. Andere Apps hinter Traefik sehen den Banner nicht mehr -- die fruehere cross-App-Reichweite ist mit dem Wegfall von `banner-inject` weg.
 :::
 
-::: warning Content-Security-Policy
-Apps mit strikter `Content-Security-Policy` (`script-src 'self'`) blockieren das externe Banner-Script im Browser. Aktuelle Apps mit `secure-headers`-Chain sind nicht betroffen (kein `script-src` gesetzt). Bei zukuenftigen Apps mit eigener strenger CSP muss Traefik einen Headers-Override pro Domain bereitstellen.
+::: tip Einzeiliger Text
+Weil die Layout-Offsets auf eine feste Bannerhoehe (40px) ausgelegt sind, wird der Text einzeilig dargestellt (laengerer Text wird mit Ellipsis abgeschnitten). Botschaft kurz halten.
 :::
 
-::: danger Streaming-Endpoints brechen
-`plugin-rewritebody` v0.3.1 buffert die gesamte Response im Speicher, unabhaengig vom Content-Type. Das dokumentierte `monitoring.types`-Feld ist im offiziellen Plugin **nicht implementiert** (silent ignore). Fuer `text/event-stream` (Server-Sent Events) endet der Stream nie -> Plugin wartet ewig -> Client bekommt nichts.
-
-Im Homelab aktuell keine konkrete Route mit diesem Profil bekannt. WebSockets sind nicht betroffen (HTTP-Upgrade umgeht die Middleware-Chain). Bei Einfuehrung eines Service mit SSE-Endpoint: Pattern aus DCLab uebernehmen -- separater Traefik-Router mit Path-Match und hoeherer Prioritaet, der die Banner-Chain umgeht. Referenz-Implementierung: [`messe-configurator.nomad`](https://github.com/HSLU-DC/infra-dclab/blob/master/infra/60_hashicorp/nomad-jobs/services/messe-configurator.nomad) Router `messe-sse` (DCLab 2026-05-18, Source-Audit-Hintergrund im DCLab-Wiki).
-:::
-
-::: tip Browser-Cache
-Banner-Aenderungen kommen erst beim naechsten Page-Load durch (nicht live auf bereits geladenen Seiten). Hard-Reload (Cmd+Shift+R) wenn man Aenderungen sofort sehen will. Der `banner.js`-Endpoint sendet `Cache-Control: no-cache, must-revalidate`, das HTML der App selbst kann anders gecacht sein.
+::: info Content-Security-Policy
+Weder Traefik (`secure-headers`) noch Jellyfin setzen `default-src`/`style-src` -- der cross-origin CSS-`@import` von `banner.ackermannprivat.ch` wird daher nicht blockiert. Ist Pocketbase nicht erreichbar, faellt der `@import` still aus (kein Banner), die Jellyfin-UI bleibt unbeeintraechtigt.
 :::

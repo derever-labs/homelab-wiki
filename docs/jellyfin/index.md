@@ -113,7 +113,7 @@ Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürli
 
 Vor Jellyfin laufen drei Traefik-Router nebeneinander:
 
-- **`jellyfin`** -- Default-Router fuer die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers, [Wartungsbanner](../banner/index.md) und Error-Pages.
+- **`jellyfin`** -- Default-Router fuer die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../banner/index.md) kommt nicht mehr aus dieser Chain, sondern ueber Jellyfins Custom-CSS (siehe unten).
 - **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
 - **`jellyfin-stream`** (Priority 100) -- alle binaeren oder streaming-aehnlichen Pfade. Chain bewusst kuerzer: nur `crowdsec@file` und `secure-headers@file`. **Kein `banner-inject`, kein `error-pages`, kein `force-identity-encoding`.**
 
@@ -135,6 +135,12 @@ Die Rule nutzt `PathRegexp` mit `(?i)`, weil Jellyfins ASP.NET-Routing case-inse
 ::: info Was bleibt in der banner-inject-Chain
 Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen weiterhin durch die Default-Chain mit Banner. Plugin-rewritebody puffert auch da, ist aber bei kleinen JSON/HTML-Antworten unkritisch.
 :::
+
+## Wartungsbanner via Custom-CSS
+
+Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern ueber Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile laedt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollstaendige Mechanik und Pflege: [Wartungsbanner](../banner/index.md).
+
+Damit entfaellt der urspruengliche `banner-inject`-Grund des Streaming-Bypass oben -- die `plugin-rewritebody`-Pufferung beruehrt Jellyfin nicht mehr. Der Stream-Router bleibt trotzdem sinnvoll, weil er auch `error-pages` von binaeren Pfaden fernhaelt.
 
 ## TMDb-Metadata ohne IPv6
 
