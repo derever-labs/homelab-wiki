@@ -38,8 +38,8 @@ Detail-Runbook und Edge-Cases siehe [Betrieb](betrieb.md).
 |----------|------|
 | URL | [banner.ackermannprivat.ch](https://banner.ackermannprivat.ch) |
 | Admin-UI | [banner.ackermannprivat.ch/_/](https://banner.ackermannprivat.ch/_/) (Pocketbase eigene Auth) |
-| Public-Endpoints | `/banner.css` (Jellyfin-`@import`), `/banner.js` (Legacy), `/api/health` -- ueber `public-noauth` Chain |
-| Konsument | Jellyfin Custom-CSS (Dashboard -> Allgemein -> Benutzerdefiniertes CSS) |
+| Public-Endpoints | `/banner.css` (`@import`), `/banner.js` (Legacy), `/api/health` -- ueber `public-noauth` Chain |
+| Konsumenten | Jellyfin Custom-CSS (Dashboard -> Allgemein) **+** Authentik Brand Custom-CSS (Login-Seite) |
 | Storage | Linstor CSI `banner-pb-data` (SQLite, autoPlace=2) |
 | Deployment | Nomad Job `services/pocketbase.nomad` |
 | Image | `ghcr.io/muchobien/pocketbase` |
@@ -47,7 +47,7 @@ Detail-Runbook und Edge-Cases siehe [Betrieb](betrieb.md).
 
 ## Rolle im Stack
 
-Anders als die alte, Traefik-weite Loesung ist der Banner jetzt bewusst auf Jellyfin begrenzt. Jellyfins Custom-CSS-Feld enthaelt dauerhaft nur eine `@import`-Zeile auf `banner.css`; die gesamte Dynamik (an/aus, Severity, Text, Zeitfenster) lebt server-seitig in Pocketbase. So muss am Jellyfin-Feld nie wieder etwas geaendert werden.
+Anders als die alte, Traefik-weite Loesung wird der Banner jetzt gezielt ueber die nativen Custom-CSS-Felder zweier Dienste eingebunden: **Jellyfin** (Web-UI) und **Authentik** (Login-Seite, deckt den Login zu allen Authentik-vorgelagerten Apps ab). Beide Felder enthalten dauerhaft nur eine `@import`-Zeile auf `banner.css`; die gesamte Dynamik (an/aus, Severity, Text, Zeitfenster) lebt server-seitig in Pocketbase. So muss an den Feldern nie wieder etwas geaendert werden.
 
 Der `@import` steht **nach** dem bestehenden Theme-Import (Ultrachromic), damit die Banner-Regeln im Cascade gewinnen; die Layout-Verschiebung nutzt zusaetzlich `!important`. Beide koexistieren konfliktfrei -- Ultrachromic belegt weder `body::before` noch verschiebt es `.skinHeader`.
 
@@ -107,8 +107,8 @@ Severity-Farben sind identisch zur Legacy-`/banner.js`-Variante. Quelle des Rend
 
 ## Bekannte Grenzen
 
-::: warning Nur Jellyfin-Web im Browser
-Der Banner zeigt sich ausschliesslich in der Jellyfin-Web-UI im Browser. Native Clients (Infuse, Android-TV-App) ignorieren Server-CSS. Andere Apps hinter Traefik sehen den Banner nicht mehr -- die fruehere cross-App-Reichweite ist mit dem Wegfall von `banner-inject` weg.
+::: warning Nur Web-UIs im Browser
+Der Banner zeigt sich in der Jellyfin-Web-UI und auf der Authentik-Login-Seite (dort via Brand-CSS auch in `/if/user/` und `/if/admin/`). Native Clients (Infuse, Android-TV-App) ignorieren Server-CSS. Apps, die ueber Authentik einloggen, zeigen den Banner damit beim Login -- in der App selbst aber nur Jellyfin. Die fruehere Traefik-weite cross-App-Reichweite ist mit dem Wegfall von `banner-inject` weg.
 :::
 
 ::: tip Einzeiliger Text
