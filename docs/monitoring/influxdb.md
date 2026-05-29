@@ -32,10 +32,11 @@ Sources: Quellen {
   Nomad: "Nomad (6 Nodes)\n(Prometheus)"
   Linstor: "Linstor\n(Prometheus)"
   DRBD: "DRBD Reactor\n(Prometheus)"
-  LVM: "LVM Thin Pools\n(File-Input)"
   Proxmox: "Proxmox (3 Hosts)"
 }
 
+NodeCron: "Node-Crons (Worker)\ncsi/lvm/nomad-health\n-> /var/lib/csi-metrics" { style.border-radius: 8 }
+TELHOST: "Telegraf-Host-Agent\n(je Node, lokal)" { style.border-radius: 8 }
 TEL: "Telegraf\n(Nomad Job)" { style.border-radius: 8 }
 INFLUX: "InfluxDB" { shape: cylinder }
 GRAF: Grafana { style.border-radius: 8 }
@@ -44,9 +45,10 @@ Sources.NAS -> TEL
 Sources.Nomad -> TEL
 Sources.Linstor -> TEL
 Sources.DRBD -> TEL
-Sources.LVM -> TEL
 Sources.Proxmox -> INFLUX: direkt (nativ)
 
+NodeCron -> TELHOST: File-Input (lokal, NFS-frei)
+TELHOST -> INFLUX: "Bucket telegraf\n(+ telegraf-host)"
 TEL -> INFLUX
 INFLUX -> GRAF
 ```
@@ -55,7 +57,7 @@ INFLUX -> GRAF
 
 | Bucket | Schreibt wer | Retention | Inhalt |
 | :--- | :--- | :--- | :--- |
-| `telegraf` | Telegraf (Nomad) | 90 Tage | SNMP, Nomad-Prometheus, Linstor, DRBD, LVM, Media-Stats |
+| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten | 90 Tage | SNMP, Nomad-Prometheus, Linstor, DRBD, Media-Stats; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health` |
 | `proxmox` | Proxmox VE (nativ) | 90 Tage | VM/Container CPU, RAM, Disk, Netzwerk |
 | `telegraf_1y` | InfluxDB Task | 1 Jahr | 5-Min Durchschnitte (Downsampling) |
 | `telegraf_5y` | InfluxDB Task | 5 Jahre | 1h Durchschnitte (Downsampling) |
@@ -74,7 +76,6 @@ Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizit
 | `inputs.prometheus` | Nomad Clients + Servers (6x) | 30s | `prometheus` (Fields: `nomad_*`) |
 | `inputs.prometheus` | Linstor (`linstor.ackermannprivat.ch/metrics`) | 60s | `prometheus` (Fields: `linstor_*`) |
 | `inputs.prometheus` | DRBD Reactor (client-05/06, Port 9942) | 60s | `prometheus` (Fields: `drbd_*`) |
-| `inputs.file` | LVM Thin Pool Metriken (Cron-Script) | 10s | `lvm_thinpool` |
 | `inputs.file` | Jellyfin Streams (Cron-Script) | 10s | `jellyfin_streams` |
 | `inputs.exec` | Jellyfin Library Counts | 60s | `jellyfin` |
 | `inputs.exec` | Radarr/Sonarr Queue | 60s | `arr_*` |
@@ -83,6 +84,21 @@ Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizit
 Telegraf-Inputs vom Typ `inputs.prometheus` mit `metric_version = 2` und **ohne `name_override`** schreiben die Prometheus-Metric-Namen als **Fields** in ein gemeinsames Measurement `prometheus`. Beispiel: `linstor_node_state` ist ein Field im Measurement `prometheus`, kein eigenes Measurement. Tags des Exporters bleiben als Tags erhalten (`node`, `name`, `conn_name`, …). Wer `name_override = "prometheus"` setzt, erhält dasselbe Layout. Für Alert-Queries entsprechend `FROM "prometheus" WHERE "_field" = "linstor_node_state"` (Flux) bzw. `SELECT last("linstor_node_state") FROM "prometheus"` (InfluxQL) verwenden.
 
 Zusätzlich: drbd-reactor exportiert `drbd_connection_state` als **One-Hot-Encoding** mit Tag `drbd_connection_state` in `{StandAlone, Disconnecting, Unconnected, Timeout, BrokenPipe, NetworkFailure, ProtocolError, TearDown, Connecting, Connected}`. Pro Verbindung ist genau eine Series mit Wert=1 (= aktueller State), Rest=0. Alert-Logik filtert auf Tag `= 'Connected'` und alarmiert bei Wert `< 1`.
+:::
+
+## Node-Metriken ohne NFS (Telegraf-Host-Agent)
+
+Die Node-Storage- und Job-Health-Measurements stammen **nicht** vom zentralen Telegraf-Job, sondern vom lokalen Telegraf-Host-Agent jeder Node (Ansible-Rolle `telegraf-host`, siehe [Secrets-Architektur Layer 2](../_querschnitt/secrets-architecture.md)). Drei Cron-Skripte schreiben jede Minute Line-Protocol nach dem **lokalen** Pfad `/var/lib/csi-metrics/*.influx`; der lokale Agent liest sie via `inputs.file` und routet die Measurements per zweitem `outputs.influxdb_v2` in den Bucket `telegraf` (alle übrigen Host-Metriken bleiben in `telegraf-host`).
+
+| Cron-Skript | Nodes | Measurements | Datei |
+| :--- | :--- | :--- | :--- |
+| `csi-health-metrics.sh` | client-05/06 | `csi_mounts`, `csi_plugin` | `csi_health_<host>.influx` |
+| `lvm-thinpool-metrics.sh` | client-05/06 | `lvm_thinpool` | `lvm_thinpool_<host>.influx` |
+| `nomad-job-health-metrics.sh` | client-04/05/06 | `nomad_alloc_restarts`, `nomad_job_health` | `nomad_health_<host>.influx` |
+| `csi-write-monitor.sh` | client-05/06 | `csi_write` | `csi_write_<host>.influx` (bleibt in `telegraf-host`) |
+
+::: danger NFS-Selbstreferenz vermieden (2026-05-29)
+Bis 2026-05-29 schrieben die drei Skripte nach `/nfs/docker/telegraf/metrics/` und der **zentrale** Telegraf las sie via `inputs.file`. Bei totem NAS-`nfsd` blockierten `stat` und `mv` im uninterruptiblen D-State; jede Minute starteten neue Crons, die nie endeten (~11k Prozesse, load ~12500, Node-Wedge). Der lokale Pfad plus idempotentes `mkdir -p` entkoppelt die Crons vom NFS -- ein NAS-Ausfall kann die Nodes nicht mehr lahmlegen. Routing pro Measurement steuern `namepass`/`namedrop` an den beiden `outputs.influxdb_v2` der `telegraf-host`-Konfiguration; so landet alles dashboard-stabil im gewohnten Bucket `telegraf` ohne Doppel-Write.
 :::
 
 ## CheckMK als zusätzliche Quelle

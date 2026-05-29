@@ -85,7 +85,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | synology-nas (Linstor-S3 + NFS-Mounts) | 10.0.0.200 | checkmk SNMP | live | P2 | -- | RAID/Volume/SMART/Temp covered seit 2026-05-01 (built-in Plugins). Power-Status-Change + DSM-Upgrade als Nice-to-have |
 | Garage S3 (aktiv) | 10.0.0.200:9012/9014 | Telegraf-Scrape pending | partial | P1 | `/metrics` Bearer-Token-Endpoint vorhanden, Telegraf-Input noch nicht deployt im Homelab | Memory `reference_s3_garage_minio` |
 | MinIO (Legacy bis Cleanup) | 10.0.0.200:9000 | none | missing | P3 | wird durch Garage abgeloest (Migration 2026-05-12), Rollback-Pfad bis ~Juni 2026 | -- |
-| CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot/NFS-Mount-Loss silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Memory `project_csi_health_monitoring_2026_04_30` |
+| CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Transport seit 2026-05-29 NFS-frei (lokal `/var/lib/csi-metrics` -> Telegraf-Host-Agent -> Bucket `telegraf`), kein NFS-D-State-Risiko mehr. Memory `project_csi_health_monitoring_2026_04_30` |
 | NFS-Mount-Pipeline | 5 Mounts pro Storage-Node + PBS | none | missing | P1 | Mount-Loss silent; Staleness-Pattern fehlt | indirekt ueber csi-health, aber kein dedizierter Mount-Loss-Alert |
 | iperf3-Server | PBS userspace | none | missing | P2 | -- | wofuer? wer ist Client? |
 
@@ -210,7 +210,7 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 
 ## Verfolgte Risiken (ausserhalb Monitoring-Scope)
 
-- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (csi-health, jellyfin-streams, cert, logs, docker), Garage/MinIO terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down
+- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (jellyfin-streams, cert, logs, docker), Garage/MinIO terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down. (Node-Metrik-Crons csi/lvm/nomad-health seit 2026-05-29 NFS-frei, siehe [InfluxDB & Telegraf](influxdb.md))
 - **Homelab Single-PSU pve-Hosts** (Memory `project_ups_psu_2026`) -- Konsumer-Hardware, jeder Power-Loss kann FS-Korruption verursachen. Restrisiko bleibt nach USV-Aufbau
 - **Corosync Single ring0** -- Network-Partition kann Quorum killen
 - **gatus-watchdog ist Pseudo-extern** -- sitzt auf gleicher Hardware (pve01). Externer Watchdog `pve-01-nana` in Dottikon ist die geplante Mitigation (Plattform live seit 2026-05-01; Stack-Deployment [`86c9km53e`](https://app.clickup.com/t/86c9km53e))
