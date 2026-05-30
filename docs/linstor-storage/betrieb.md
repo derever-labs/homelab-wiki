@@ -93,21 +93,21 @@ Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren,
 | flame-data | 1 GiB | Flame Dashboard |
 | flame-intra-data | 1 GiB | Flame-Intra Dashboard |
 | gitea-data | 5 GiB | Gitea Git Server |
-| influxdb-data | 30 GiB | InfluxDB Time Series DB |
-| jellyfin-config | 15 GiB | Jellyfin Media Server Config |
+| influxdb-data-r2 | 30 GiB | InfluxDB Time Series DB |
+| jellyfin-config-r2 | 30 GiB | Jellyfin Media Server Config |
 | kimai-data | 2 GiB | Kimai MariaDB |
 | loki-data | 20 GiB | Loki Log Aggregation |
 | mosquitto-data | 1 GiB | MQTT Persistence |
 | obsidian-livesync-data | 1 GiB | CouchDB |
-| paperless-data | 20 GiB | Paperless-ngx Dokumente |
-| postgres-data | 20 GiB | PostgreSQL Datenbank (zentral) |
-| sabnzbd-config | 1 GiB | SABnzbd Download Client |
-| stash-data | 10 GiB | Stash Media Organizer |
+| paperless-data-r2 | 20 GiB | Paperless-ngx Dokumente |
+| postgres-data-r2 | 20 GiB | PostgreSQL Datenbank (zentral) |
+| sabnzbd-config-r2 | 1 GiB | SABnzbd Download Client |
+| stash-data-r2 | 10 GiB | Stash Media Organizer |
 | stash-secure-data | 2 GiB | Stash-Secure Config/Cache/Metadata |
-| uptime-kuma-data | 5 GiB | Uptime Kuma Monitoring |
-| vaultwarden-data | 1 GiB | Vaultwarden Password Manager |
+| uptime-kuma-data-r2 | 5 GiB | Uptime Kuma Monitoring |
+| vaultwarden-data-r2 | 1 GiB | Vaultwarden Password Manager |
 
-Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04.
+Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04. Die -r2-Volumes wurden am 2026-05-30 via CSI-nativer Neu-Erstellung (autoPlace=2, rg-replicated) + Datenmigration aus day0-defekten Single-Replica-Volumes migriert.
 
 ::: warning linstor_db
 `linstor_db` ist ein spezielles Volume für die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geändert werden.
