@@ -26,15 +26,15 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-auth` | secure-headers → authentik-forward-auth → ipAllowList → error-pages | IP-Allowlist + Sicherheits-Header + Authentik ForwardAuth + Error Pages. Default für interne Apps |
-| `intern-auth-strict` | secure-headers → authentik-forward-auth → ipAllowList → error-pages-strict | Wie `intern-auth`, aber fängt zusätzlich 401/403 vom Backend ab (Maintenance-Page statt rohem Fehler). Für yt-dlp, special-youtube-dl, special-yt-dlp, video-grabber |
+| `intern-auth` | secure-headers → error-pages → authentik-forward-auth → intern-noauth | Sicherheits-Header + Error Pages + Authentik ForwardAuth + IP-Allowlist. Default für interne Apps. `error-pages` steht **vor** `authentik-forward-auth`, damit ein nicht erreichbarer Authentik-Outpost (leerer HTTP 500) die Wartungsseite zeigt statt eines rohen Fehlers |
+| `intern-auth-strict` | secure-headers → error-pages-strict → authentik-forward-auth → intern-noauth | Wie `intern-auth`, aber fängt zusätzlich 401/403 vom Backend ab (Maintenance-Page statt rohem Fehler). Für yt-dlp, special-youtube-dl, special-yt-dlp, video-grabber |
 
 ### Für externen Zugriff mit Authentik-Login
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `public-auth` | crowdsec → secure-headers → authentik-forward-auth → error-pages | CrowdSec + Sicherheits-Header + Authentik ForwardAuth + Error Pages |
-| `public-auth-strict` | crowdsec → secure-headers → authentik-forward-auth → error-pages-strict | Wie `public-auth`, aber mit 401/403 in Error Pages. Für externe Apps mit UI-kaputten Backend-401/403-Responses |
+| `public-auth` | crowdsec → secure-headers → error-pages → authentik-forward-auth | CrowdSec + Sicherheits-Header + Error Pages + Authentik ForwardAuth. `crowdsec` bleibt vor `error-pages`, damit Ban-Antworten (403) nicht durch die Wartungsseite ersetzt werden |
+| `public-auth-strict` | crowdsec → secure-headers → error-pages-strict → authentik-forward-auth | Wie `public-auth`, aber mit 401/403 in Error Pages. Für externe Apps mit UI-kaputten Backend-401/403-Responses |
 
 ### Ohne Login
 
