@@ -87,6 +87,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | MinIO (Legacy bis Cleanup) | 10.0.0.200:9000 | none | missing | P3 | wird durch Garage abgeloest (Migration 2026-05-12), Rollback-Pfad bis ~Juni 2026 | -- |
 | CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Transport seit 2026-05-29 NFS-frei (lokal `/var/lib/csi-metrics` -> Telegraf-Host-Agent -> Bucket `telegraf`), kein NFS-D-State-Risiko mehr. Memory `project_csi_health_monitoring_2026_04_30` |
 | NFS-Mount-Pipeline | 5 Mounts pro Storage-Node + PBS | none | missing | P1 | Mount-Loss silent; Staleness-Pattern fehlt | indirekt ueber csi-health, aber kein dedizierter Mount-Loss-Alert |
+| NFS-Server-Daemon (NAS nfsd) | 10.0.0.200:2049 | uptime + checkmk | missing | P0 | nfsd-Boot-Race: nach NAS-Reboot 0 Threads / Port 2049 `Connection refused` -> ALLE NFS-Consumer (Stash, Jellyfin, Proxmox-Storage, cert/logs/docker-Mounts) hart blockiert, kein Alert | Incident 2026-05-31 (Recovery `systemctl restart nfs-server`, threads 0->128). Fehlt: (1) Connectivity-Probe TCP 2049 + `threads>0`, (2) R/W-E2E-Canary (schreibt+liest Testdatei auf Mount, timeout-gewrappt, Hysterese `for:6-8min`). Root-Cause: `nfs-server.service` ist `oneshot/RemainAfterExit` -> 0-Thread-Start wird als `active` maskiert; kein nfsd-Boot-Hook am NAS (nur `ssh-hardening-reapply` bootup-Task). Boot-Fix + Probe in [`86ca1gq1y`](https://app.clickup.com/t/86ca1gq1y). Memory `feedback_synology_nfsd_boot_race` |
 | iperf3-Server | PBS userspace | none | missing | P2 | -- | wofuer? wer ist Client? |
 
 ## Layer 4 -- Network (Pi-hole / Traefik / Tailscale / UDM)
@@ -217,7 +218,7 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 
 ## Severity-Mapping (kompakt)
 
-- **critical** (VIP-Bot): alle P0-Items mit Cluster-weitem Blast (Vault Sealed, NFS 91%, PBS-Voll, Authentik-Server-Down, LE-Cert <14d, OpenLDAP-Bind-Fail, CrowdSec-Down, Pi-hole Double-Down, Traefik-Double-Down, Cloudflare-DDNS-Failed, UDM-ICMP-Down, Garage-Down, ZFS-DEGRADED, NVMe Critical-Warning, USV Battery-Low, ZOT-Down, NFS-Synology-95-Percent, gatus-watchdog-broken, Keep-Down, Telegraf-Tot, Alloy-Tot)
+- **critical** (VIP-Bot): alle P0-Items mit Cluster-weitem Blast (Vault Sealed, NFS 91%, PBS-Voll, Authentik-Server-Down, LE-Cert <14d, OpenLDAP-Bind-Fail, CrowdSec-Down, Pi-hole Double-Down, Traefik-Double-Down, Cloudflare-DDNS-Failed, UDM-ICMP-Down, Garage-Down, ZFS-DEGRADED, NVMe Critical-Warning, USV Battery-Low, ZOT-Down, NFS-Synology-95-Percent, NFS-Daemon-Down (nfsd threads=0 / Port 2049 refused -- cluster-weiter Blast), gatus-watchdog-broken, Keep-Down, Telegraf-Tot, Alloy-Tot)
 - **warning** (Standard-Bot): alle P1-Items (Slow-Queries, Memory-Pressure, Cardinality >80%, Cert <30d, Outpost-Disconnect, Restart-Loops, NFS-Slow, Backup-Stale, Switch-Down, Tailscale-Node-Offline, CrowdSec-Bouncer-Stale, nebula-sync-failed, certs-dumper-stale, ph_downloader-stale, sabnzbd-stalled)
 - **info** (nur Dashboard): alle P2-Items (iperf3, etcd, Redis, NAS-Firmware, Cardinality-Trend, gpu-utilization)
 
