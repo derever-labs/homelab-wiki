@@ -28,8 +28,8 @@ Bis April 2026 lief Watchtower als Update-Mechanismus. Es hat Container direkt a
 Renovate verwendet drei Custom Regex Manager, um verschiedene Image-Formate in Nomad-Dateien zu erkennen:
 
 - **Standard Docker Images:** `image = "name:tag"` -- wird direkt gegen die jeweilige Registry aufgelöst
-- **Docker Hub Mirrors:** `localhost:5000/org/image:tag` -- wird gegen Docker Hub aufgelöst
-- **GHCR Mirrors:** `localhost:5000/ghcr.io/org/image:tag` -- wird gegen GitHub Container Registry aufgelöst
+- **Docker Hub Mirrors:** `zot.service.consul:5000/org/image:tag` -- wird gegen Docker Hub aufgelöst
+- **GHCR Mirrors:** `zot.service.consul:5000/ghcr.io/org/image:tag` -- wird gegen GitHub Container Registry aufgelöst
 
 ### Auto-Merge-Regeln
 
