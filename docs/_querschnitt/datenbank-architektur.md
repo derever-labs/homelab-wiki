@@ -62,7 +62,7 @@ Backup: Backup {
   style.stroke-dash: 4
   DUMP: pg_dumpall 03:00 UTC { style.border-radius: 8 }
   NFS: NFS Backup GFS 7d/4w/3m { shape: cylinder; style.border-radius: 8 }
-  S3: MinIO linstor-backups Snapshots { shape: cylinder; style.border-radius: 8 }
+  S3: Garage linstor-backups Snapshots { shape: cylinder; style.border-radius: 8 }
 }
 
 Services.RADAR -> Database.PG
@@ -122,7 +122,7 @@ Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
 | pg_dumpall | Täglich 03:00 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/postgres/` |
 | mariadb-dump | Täglich 03:15 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/mariadb/` |
 | Linstor Snapshots | Täglich 02:00 Uhr | 7 Snapshots | Lokal auf DRBD |
-| Linstor S3 Shipping | Täglich | GFS: 7d/4w/3m | MinIO `linstor-backups` |
+| Linstor S3 Shipping | Täglich | GFS: 7d/4w/3m | Garage `linstor-backups` |
 
 ## Verwandte Seiten
 

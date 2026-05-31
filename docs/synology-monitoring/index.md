@@ -127,7 +127,7 @@ Der Benchmark ist aktuell deaktiviert.
 
 ## Verwandte Seiten
 
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, MinIO, Hardware-Details
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Hardware-Details
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Alloy, Alerting-Architektur
 - [CheckMK](../checkmk/index.md) -- Host-Level Monitoring (Agent-basiert)
 - [Hardware-Inventar](../_referenz/hardware-inventar.md#nas) -- NAS-Hardware-Spezifikationen

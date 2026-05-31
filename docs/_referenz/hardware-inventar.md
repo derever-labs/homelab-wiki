@@ -162,7 +162,7 @@ Stand: 2026-04-17
 | Eigenschaft | Wert |
 | :--- | :--- |
 | Typ | Synology (Modell unbekannt) |
-| Funktion | NFS-Exports, MinIO S3, Backup-Ziel |
+| Funktion | NFS-Exports, Garage S3, Backup-Ziel |
 | Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
 
 NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
@@ -199,6 +199,6 @@ IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwe
 ## Verwandte Seiten
 
 - [Proxmox Cluster](../proxmox/index.md) -- VM-Zuordnung und IPs der Hosts
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, MinIO, Wartung
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Wartung
 - [Netzwerk-Hardware](../netzwerk/index.md) -- Switches, Access Points, Verkabelung
 - [Netzwerk-Topologie](../netzwerk/index.md) -- Thunderbolt-Netzwerk

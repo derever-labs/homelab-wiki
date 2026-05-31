@@ -20,7 +20,7 @@ Diese Seite dokumentiert den PRIVAT-Agent-Vault -- den 1Password-Service-Account
 - Nomad Home Token, Vault Token Privat, Consul Bootstrap Token
 - SSH-Privat
 - Cloudflare DNS API
-- MinIO NAS, MinIO Peer, Synology NAS
+- Synology NAS
 - OpenAI API
 - Arr-Stack (Prowlarr, Radarr, Sonarr, SABnzbd, LazyLibrarian)
 - Monitoring-SMTP, Telegram-Bots, Uptime-Kuma

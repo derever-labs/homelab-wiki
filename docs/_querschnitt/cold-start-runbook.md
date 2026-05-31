@@ -16,7 +16,7 @@ Bei einem vollstaendigen Homelab-Cluster-Ausfall (z.B. Stromausfall, Pi-hole-Cra
 
 1. Netzwerk-Layer: Switch + Pi-hole VMs (10.0.2.1 + 10.0.2.2)
 2. DNS-Layer: Pi-hole-1 oder Pi-hole-2 muss antworten, beide ideal
-3. Storage-Layer: Synology-NAS (10.0.0.200) muss erreichbar sein, MinIO + NFS exporten
+3. Storage-Layer: Synology-NAS (10.0.0.200) muss erreichbar sein, Garage + NFS exporten
 4. Consul-Quorum: 3 Server bilden Quorum (Bootstrap-Expect)
 5. Vault-Quorum + Auto-Unseal: 3 Server, Auto-Unseal-Provider darf NICHT Consul-KV sein
 6. Nomad-Server-Quorum: 3 Server, kommen nach Vault hoch (fuer Workload-Identity)
@@ -68,7 +68,7 @@ Nach jedem Schritt vor dem naechsten:
 
 - Netzwerk: Ping zwischen Nodes, ARP-Tabelle
 - DNS: `dig @10.0.2.1 nomad.service.consul` (auch wenn Consul noch down ist, Pi-hole muss antworten)
-- Storage: `mc admin info <minio>` oder Synology-Web-UI
+- Storage: Garage S3 erreichbar (`http://10.0.0.200:9012`) oder Synology-Web-UI
 - Consul: `consul members` zeigt 3 alive
 - Vault: `vault status` zeigt sealed=false, ha_enabled=true
 - Nomad: `nomad server members` zeigt 3 alive, `nomad node status` zeigt Clients ready

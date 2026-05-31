@@ -32,7 +32,7 @@ Diese Tabelle ist der Pflege-Punkt fuer Coverage-Status. Andere Agenten, die Dri
 
 Disk-Full-Alerts unterscheiden zwei Storage-Klassen:
 
-- **Backup/NAS-Storage** (PBS-Datastore, Garage/MinIO, NFS-Backup-Mounts, Synology-Volumes): Critical 95%, optional Warning 90%. Backup-Storage darf voll laufen, kontrolliertes Erreichen ist akzeptabel
+- **Backup/NAS-Storage** (PBS-Datastore, Garage, NFS-Backup-Mounts, Synology-Volumes): Critical 95%, optional Warning 90%. Backup-Storage darf voll laufen, kontrolliertes Erreichen ist akzeptabel
 - **Live-Storage** (DRBD/Linstor-Volumes fuer Apps wie `loki-data`, `influxdb-data`, `keep-data`): Warning 75%, Critical 90%. Live-Volumes haben FS-Korruptions-Risiko bei Voll
 
 PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein akuter Incident, sondern ein P0-Item fuer Threshold-Setup + Massnahme bei Erreichen. Ableitung dieser Konvention im Memory `feedback_nas_storage_threshold_95`.
@@ -84,7 +84,6 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | pbs-backup-server (Datastore) | 10.0.2.50 | checkmk + direct | partial | P0 | Datastore 91% USED silent (95% Critical / 90% Warning); Postfix kein Relayhost konfiguriert (legacy-sendmail-Notifications silent) | Host als `cmk-agent` angelegt. Agent-Install ausstehend. df-Plugin fuer Datastores + Loki-Pattern fuer PBS-Sync/Verify-Fehler folgen [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) |
 | synology-nas (Linstor-S3 + NFS-Mounts) | 10.0.0.200 | checkmk SNMP | live | P2 | -- | RAID/Volume/SMART/Temp covered seit 2026-05-01 (built-in Plugins). Power-Status-Change + DSM-Upgrade als Nice-to-have |
 | Garage S3 (aktiv) | 10.0.0.200:9012/9014 | Telegraf-Scrape pending | partial | P1 | `/metrics` Bearer-Token-Endpoint vorhanden, Telegraf-Input noch nicht deployt im Homelab | Memory `reference_s3_garage_minio` |
-| MinIO (Legacy bis Cleanup) | 10.0.0.200:9000 | none | missing | P3 | wird durch Garage abgeloest (Migration 2026-05-12), Rollback-Pfad bis ~Juni 2026 | -- |
 | CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Transport seit 2026-05-29 NFS-frei (lokal `/var/lib/csi-metrics` -> Telegraf-Host-Agent -> Bucket `telegraf`), kein NFS-D-State-Risiko mehr. Memory `project_csi_health_monitoring_2026_04_30` |
 | NFS-Mount-Pipeline | 5 Mounts pro Storage-Node + PBS | none | missing | P1 | Mount-Loss silent; Staleness-Pattern fehlt | indirekt ueber csi-health, aber kein dedizierter Mount-Loss-Alert |
 | NFS-Server-Daemon (NAS nfsd) | 10.0.0.200:2049 | uptime + checkmk | missing | P0 | nfsd-Boot-Race: nach NAS-Reboot 0 Threads / Port 2049 `Connection refused` -> ALLE NFS-Consumer (Stash, Jellyfin, Proxmox-Storage, cert/logs/docker-Mounts) hart blockiert, kein Alert | Incident 2026-05-31 (Recovery `systemctl restart nfs-server`, threads 0->128). Fehlt: (1) Connectivity-Probe TCP 2049 + `threads>0`, (2) R/W-E2E-Canary (schreibt+liest Testdatei auf Mount, timeout-gewrappt, Hysterese `for:6-8min`). Root-Cause: `nfs-server.service` ist `oneshot/RemainAfterExit` -> 0-Thread-Start wird als `active` maskiert; kein nfsd-Boot-Hook am NAS (nur `ssh-hardening-reapply` bootup-Task). Boot-Fix + Probe in [`86ca1gq1y`](https://app.clickup.com/t/86ca1gq1y). Memory `feedback_synology_nfsd_boot_race` |
@@ -211,7 +210,7 @@ Endgeraete und Gaeste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ue
 
 ## Verfolgte Risiken (ausserhalb Monitoring-Scope)
 
-- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (jellyfin-streams, cert, logs, docker), Garage/MinIO terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down. (Node-Metrik-Crons csi/lvm/nomad-health seit 2026-05-29 NFS-frei, siehe [InfluxDB & Telegraf](influxdb.md))
+- **Single-NAS-Abhaengigkeit** -- PBS, Linstor-S3, NFS-Mounts (jellyfin-streams, cert, logs, docker), Garage terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down. (Node-Metrik-Crons csi/lvm/nomad-health seit 2026-05-29 NFS-frei, siehe [InfluxDB & Telegraf](influxdb.md))
 - **Homelab Single-PSU pve-Hosts** (Memory `project_ups_psu_2026`) -- Konsumer-Hardware, jeder Power-Loss kann FS-Korruption verursachen. Restrisiko bleibt nach USV-Aufbau
 - **Corosync Single ring0** -- Network-Partition kann Quorum killen
 - **gatus-watchdog ist Pseudo-extern** -- sitzt auf gleicher Hardware (pve01). Externer Watchdog `pve-01-nana` in Dottikon ist die geplante Mitigation (Plattform live seit 2026-05-01; Stack-Deployment [`86c9km53e`](https://app.clickup.com/t/86c9km53e))

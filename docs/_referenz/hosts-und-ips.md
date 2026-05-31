@@ -114,7 +114,7 @@ DCLab hat **keinen** externen Watchdog -- siehe Memory `feedback_no_cross_cluste
 
 | Gerät | IP | Funktion |
 | :--- | :--- | :--- |
-| Synology NAS | 10.0.0.200 | NFS-Exports, MinIO S3, Backup-Ziel |
+| Synology NAS | 10.0.0.200 | NFS-Exports, Garage S3, Backup-Ziel |
 
 ## Thunderbolt-Netzwerk
 

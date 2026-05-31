@@ -38,7 +38,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [NAS Storage](./nas-storage/) | Synology NFS-Exports und MinIO S3 |
+| [NAS Storage](./nas-storage/) | Synology NFS-Exports und Garage S3 |
 | [Linstor Storage](./linstor-storage/) | DRBD-repliziertes Block-Storage (CSI) |
 | [Backup](./backup/) | Backup-Strategie, PBS, pg_dumpall |
 

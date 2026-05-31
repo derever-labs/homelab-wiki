@@ -25,8 +25,6 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Nomad UI | `https://10.0.2.104:4646` | Job-Orchestrierung (ACL Token erforderlich, TLS) |
 | Consul UI | `http://10.0.2.104:8500` | Service Discovery und KV Store |
 | UniFi Network | `https://10.0.0.1` | Lokaler Zugang, UI.com SSO |
-| MinIO Console | `http://10.0.0.200:9001` | S3 Object Store auf NAS (Buckets, Policies, IAM) |
-| MinIO API | `http://10.0.0.200:9000` | S3-kompatible API (Linstor Backup, Terraform State) |
 
 ## Core
 

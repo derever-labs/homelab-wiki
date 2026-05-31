@@ -18,7 +18,7 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 |-------|-------------|------|------------------|
 | **Hot Storage** | Lokales SSD/ZFS | `/local-docker/` | Performance-kritische DBs (SQLite) |
 | **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
-| **Object Storage** | MinIO (S3) | NAS | Backup-Targets, Terraform State |
+| **Object Storage** | Garage (S3) | NAS | Backup-Targets, Terraform State |
 
 Details zu NFS-Exports: [NAS-Speicher](../nas-storage/index.md)
 
@@ -63,5 +63,5 @@ Peers.N06 -> Backup.NAS: sync: 60s
 
 - [Datenbank-Architektur](./datenbank-architektur.md) -- PostgreSQL Cluster, Service-Zuordnung
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall, Linstor Snapshots, PBS
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports und MinIO
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports und Garage S3
 - [Netzwerk-Topologie](../netzwerk/index.md) -- Thunderbolt-Netzwerk für Replikation

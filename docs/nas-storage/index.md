@@ -5,7 +5,6 @@ tags:
   - infrastructure
   - storage
   - nfs
-  - minio
   - garage
   - nas
 ---
@@ -14,7 +13,7 @@ tags:
 
 ## Übersicht
 
-Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (MinIO + Garage parallel) und Backup-Ziele.
+Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (Garage) und Backup-Ziele.
 
 | Attribut | Wert |
 |----------|------|
@@ -24,7 +23,7 @@ Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (
 
 ## Rolle im Stack
 
-Das NAS ist der zentrale Shared-Storage-Knoten im Cluster. Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über MinIO einen S3-kompatiblen Object Store für Backups und Terraform State.
+Das NAS ist der zentrale Shared-Storage-Knoten im Cluster. Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über Garage einen S3-kompatiblen Object Store für Backups und Terraform State.
 
 ## NFS-Exports
 
@@ -41,40 +40,9 @@ Die folgenden Pfade werden als NFS-Shares bereitgestellt und auf allen Nomad-Cli
 
 Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfiguriert.
 
-## MinIO S3
-
-Das NAS betreibt eine MinIO-Instanz auf Synology DSM als S3-kompatiblen Object Store. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik.
-
-| Attribut | Wert |
-| :--- | :--- |
-| **API-Endpoint** | `http://10.0.0.200:9000` |
-| **Console** | Siehe [Web-Interfaces](../_referenz/web-interfaces.md#management) |
-| **Credentials** | Siehe [Zugangsdaten](../_referenz/credentials.md#1password) |
-| **Replikation** | Zweite MinIO-Instanz vorbereitet (1P-Item "MinIO Peer") |
-
-### Buckets
-
-| Bucket | Zweck | Verwendet von |
-| :--- | :--- | :--- |
-| `linstor-backups` | Linstor S3 Shipping (Daily/Weekly/Monthly) | drbd_storage Cron |
-| `harbor` | Container-Registry-Daten (historisch, vor ZOT-Migration) | Harbor (legacy) |
-| `litestream` | SQLite-Replikation (Litestream Stream Backups) | Litestream-Sidecars |
-| `zot-registry` | Zot OCI Registry Storage Backend | ZOT (system job) |
-| `gravel-recherche` | Bilder + Files Directus Gravel-Bike-Recherche | Directus Gravel |
-
-Neue Buckets werden über die MinIO Console angelegt. Pro App empfiehlt sich ein dedizierter Service-Account (IAM User) mit Bucket-Policy auf nur diesen Bucket -- nicht der globale Admin-Account.
-
-### Linstor Remote
-
-Linstor adressiert MinIO über das Remote `nas-backup`. Die S3-Konfiguration (Endpoint, Credentials, Bucket, Region) ist im Linstor-Controller hinterlegt; das Setup-Playbook ist in [`infra/homelab-hashicorp-stack/ansible/playbooks/setup-backup-infrastructure.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/ansible/playbooks/setup-backup-infrastructure.yml) dokumentiert.
-
-::: danger MinIO End-of-Life
-Das MinIO-Repository wurde im April 2026 archiviert. Garage (siehe unten) läuft seit Mai 2026 parallel als Nachfolger; die Konsumenten werden schrittweise umgestellt, danach wird MinIO abgeschaltet.
-:::
-
 ## Garage S3
 
-Garage v2.3.0 läuft als Container (`dxflrs/garage`) auf dem NAS als Drop-in-Nachfolger für MinIO. Single-Node-Setup analog zur bestehenden MinIO-Instanz, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume2/garage/{meta,data}` -- `/volume1` hält keinen aktiven Pool, der gesamte Block-Storage des NAS sitzt auf `/volume2`.
+Garage v2.3.0 läuft als Container (`dxflrs/garage`) auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume2/garage/{meta,data}` -- `/volume1` hält keinen aktiven Pool, der gesamte Block-Storage des NAS sitzt auf `/volume2`. Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
 
 | Attribut | Wert |
 | :--- | :--- |
@@ -85,11 +53,20 @@ Garage v2.3.0 läuft als Container (`dxflrs/garage`) auf dem NAS als Drop-in-Nac
 | **Config** | `/volume2/garage/garage.toml` (0600/root) |
 | **Credentials** | 1Password Vault `PRIVAT Agent`, Item `Garage NAS Homelab` |
 
-### Migration
+### Buckets
 
-Aktuell läuft nur der Test-Bucket `garage-test` auf Garage. Bestehende MinIO-Buckets (`linstor-backups`, `litestream`, `zot-registry`, `gravel-recherche`, Harbor-Legacy) werden bei der Cutover-Phase übernommen, jeweils mit dedizierten Per-Bucket-Access-Keys.
+| Bucket | Zweck | Verwendet von |
+| :--- | :--- | :--- |
+| `linstor-backups` | Linstor S3 Shipping (Daily/Weekly/Monthly) | drbd_storage Cron |
+| `gravel-recherche` | Bilder + Files Directus Gravel-Bike-Recherche | Directus Gravel |
 
-### Unterschiede zu MinIO
+Jeder Bucket hat einen dedizierten Per-Bucket-Access-Key (kein globaler Admin-Account). Neue Buckets werden über die `garage`-CLI im Container angelegt.
+
+### Linstor Remote
+
+Linstor adressiert Garage über das Remote `nas-backup`. Die S3-Konfiguration (Endpoint, Credentials, Bucket, Region) ist im Linstor-Controller hinterlegt; das Setup-Playbook ist in [`infra/homelab-hashicorp-stack/ansible/playbooks/setup-backup-infrastructure.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/ansible/playbooks/setup-backup-infrastructure.yml) dokumentiert.
+
+### Eigenschaften
 
 - Keine eigene Admin-Web-UI -- Administration via `garage`-CLI im Container oder Admin-HTTP-API mit Bearer-Token
 - Kein Object Versioning, kein Object Locking, keine Bucket Policies
@@ -144,7 +121,7 @@ Die NAS-Login-Credentials liegen im 1Password Vault `PRIVAT Agent` als `NAS Priv
 
 - [Server-Hardware](../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
 - [Datenstrategie](../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
-- [Backup-Strategie](../backup/index.md) -- pg_dumpall und Linstor Snapshots auf NFS/MinIO
+- [Backup-Strategie](../backup/index.md) -- pg_dumpall und Linstor Snapshots auf NFS/Garage
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
 - [Synology NAS Monitoring](../synology-monitoring/index.md) -- Telegraf SNMP, Grafana Dashboard, Alerting

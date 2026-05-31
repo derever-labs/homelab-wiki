@@ -19,7 +19,7 @@ Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen un
 |----------|------|
 | PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
 | DRBD Snapshots | Linstor native → lokal auf DRBD -- RPO 24h, 7 Snapshots |
-| DRBD S3 Shipping | Linstor nach Garage → NAS (`linstor-backups` Bucket, Migration von MinIO 2026-05-12) -- RPO 24h, GFS: 7d/4w/3m |
+| DRBD S3 Shipping | Linstor nach Garage → NAS (`linstor-backups` Bucket) -- RPO 24h, GFS: 7d/4w/3m |
 | SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../_querschnitt/datenstrategie.md#litestream-replikation-sqlite-nicht-umgesetzt)) |
 | VM Backups | Proxmox PBS → PBS Server -- RPO 24h, 6 Monate |
 
@@ -52,7 +52,7 @@ Täglich um 02:00 Uhr werden automatisch Snapshots aller DRBD-Ressourcen erstell
 
 ### S3 Shipping nach Garage
 
-Linstor exportiert Snapshots nativ nach S3-kompatiblem Storage (Garage auf NAS :9012, Bucket `linstor-backups`). Migration von MinIO am 2026-05-12, Linstor-Remote `nas-backup` zeigt seitdem auf den Garage-Endpoint; alte MinIO-Daten bleiben für 30 Tage als Rollback-Pfad.
+Linstor exportiert Snapshots nativ nach S3-kompatiblem Storage (Garage auf NAS :9012, Bucket `linstor-backups`). Der Linstor-Remote `nas-backup` zeigt auf den Garage-Endpoint (Umstellung von MinIO am 2026-05-12).
 
 **Ablauf pro Ressource:**
 

@@ -48,8 +48,6 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 | Service | Vault | Item | Inhalt |
 | :--- | :--- | :--- | :--- |
 | UniFi | PRIVAT Agent | Ubiquiti Unifi Konto Ackermann | UI.com SSO + SSH-Passwort (UDM Pro) |
-| MinIO NAS | PRIVAT Agent | MinIO NAS | Admin-Login + Access/Secret Keys (S3 API) |
-| MinIO Peer | PRIVAT Agent | MinIO Peer | Zweite MinIO-Instanz (Replikation, vorbereitet) |
 | Directus Gravel | PRIVAT Agent | Directus Gravel | Admin-Login + Service-Keys (DB, S3, Encryption) |
 
 ## Vault Authentifizierung

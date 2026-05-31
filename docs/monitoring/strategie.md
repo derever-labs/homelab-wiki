@@ -21,7 +21,7 @@ Diese Strategie wurde am 2026-05-01 nach dem Coverage-Audit beschlossen. Ist-Sta
 
 ## 1. Executive Summary
 
-Die Empfehlung ist klar: **CheckMK bleibt das Werkzeug erster Wahl fuer alles, was klassische OS-/Hardware-/Special-Agent-Monitoring ist** (iDRAC Redfish, NAS Synology, Cisco/UniFi/OPNsense SNMP, Windows-AD, Proxmox-VE-Special-Agent, mk_smartmon, mk_zfs, mk_apt, mk_logwatch, mk_systemd). Telegraf bleibt der Pfad fuer alles **app-, container-, prometheus-metrik-getriebene** (Authentik-Outpost, Loki, Influx, Nomad, Consul, Postgres, MinIO, CSI). Loki bleibt fuer **Log-Pattern-Alerts** (acme-error, ssh-failed, vault-denied), Uptime-Kuma bleibt fuer **Push-Heartbeats und HTTP-Probes ohne Plugin-Bedarf**.
+Die Empfehlung ist klar: **CheckMK bleibt das Werkzeug erster Wahl fuer alles, was klassische OS-/Hardware-/Special-Agent-Monitoring ist** (iDRAC Redfish, NAS Synology, Cisco/UniFi/OPNsense SNMP, Windows-AD, Proxmox-VE-Special-Agent, mk_smartmon, mk_zfs, mk_apt, mk_logwatch, mk_systemd). Telegraf bleibt der Pfad fuer alles **app-, container-, prometheus-metrik-getriebene** (Authentik-Outpost, Loki, Influx, Nomad, Consul, Postgres, Garage, CSI). Loki bleibt fuer **Log-Pattern-Alerts** (acme-error, ssh-failed, vault-denied), Uptime-Kuma bleibt fuer **Push-Heartbeats und HTTP-Probes ohne Plugin-Bedarf**.
 
 **Voraussetzung Nummer eins**: vor jedem CheckMK-Welle-3-Item muss der CheckMK->Keep-Webhook-Pfad gebaut werden. Sonst feuert CheckMK weiterhin nur in den Mail-Default (DCLab: ohne MTA tot) bzw. ueber den hardcoded Telegram-Bypass (Homelab: gegen Single-Notifier-Konvention 2026-05-01). Dieser Notifier-Pfad ist in beiden Coverage-Matrizen als P0-Item dokumentiert (`CheckMK Site monitoring/homelab`). **Das ist der eigentliche Cross-Cluster-P0**, der vor Welle 3 erledigt werden muss.
 
@@ -169,7 +169,7 @@ Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begruendung. S
 | Linstor-Cluster | Homelab | L3 | partial | Telegraf + Loki | App-Metriken |
 | Linstor-Backup-Pipeline | Homelab | L3 | partial | UK + Loki | Heartbeat + Errors-Pattern |
 | pbs-backup-server Datastore | Homelab | L3 | partial | CheckMK | Linux-Standard-Agent + df-Plugin -- dazu PBS-Logs via Loki. Host live seit 2026-05-01, Agent-Install ausstehend |
-| MinIO | Homelab | L3 | missing | Telegraf | prom-Endpoint, CheckMK hat kein MinIO-Plugin out-of-box |
+| Garage S3 | Homelab | L3 | partial | Telegraf | /metrics Bearer-Token-Endpoint, Telegraf-Input pending |
 | CSI-Health-Files | Homelab | L3 | partial | Direct-Cron + Telegraf | bestehend |
 | Traefik (HA-Pair) | Homelab | L4 | partial | UK + Loki | bestehend, vm-traefik-01/02 als CheckMK-Host live seit 2026-05-01 |
 | Pi-hole HA + Unbound (lxc-dns-01/02) | Homelab | L4 | partial | CheckMK + Direct | Linux-Standard-Agent (FTL-Pattern via Loki); double-down + nebula-sync via Direct-Cron. Hosts als `cmk-agent` angelegt seit 2026-05-01 |
@@ -230,7 +230,7 @@ Die vollstaendige Item-Tabelle steht in [Monitoring: Coverage](coverage.md) -- d
 - DRBD/Linstor-Cluster
 - App-Volume-Voll
 - iot-stacks
-- MinIO
+- Garage S3
 
 ### Loki bleibt zustaendig
 
@@ -363,7 +363,7 @@ Bundle-Subtasks HSLU `86c9kmkk0` (DCLab P1) + Privat `86c9kmkkw` (Homelab P1):
 - traefik-certs-dumper File-mtime-Check -- Direct
 - CSI-Health-Files Skript-Self-Heartbeat -- Direct
 - NFS-Mount-Loss-Alert -- Direct + CheckMK (df-Plugin auf Mount)
-- MinIO Health-Endpoint-Probe -- UK + Telegraf
+- Garage Health-Endpoint-Probe -- UK + Telegraf
 - Linstor-Controller-Failover-Alert -- Telegraf
 - Tailscale Cross-Tailnet HSLU/Privat Audit -- Direct
 - Smart-Home HA-VM uptime-Probe -- UK
