@@ -16,11 +16,20 @@ Architektur-Strategie gegen Cluster-Restart-Cascade. Definiert das Selbstreferen
 das 4-Schichten-Modell der Cluster-Resilience und das erwartete Verhalten in verschiedenen
 Failure-Szenarien.
 
-::: info Architektur-Entscheidung 2026-05-17
-Diese Seite beschreibt das Ziel-Modell ("Strategie III"). Die Migration wird ueber den
-ClickUp-Master-Task [86c9uu5cu](https://app.clickup.com/t/86c9uu5cu) gesteuert. Bis die
-Migration abgeschlossen ist, gilt der Ist-Zustand (siehe Diagramm 1) als bekannte
-Architektur-Limitation.
+::: warning Status 2026-05-31: Gesamtprojekt zurueckgestellt, Referenz behalten
+Eine 3-Agenten-Challenge (31.05) hat ergeben, dass die **4-Schichten-Migration als
+Gesamtprojekt heute nicht gerechtfertigt** ist: Der Haupttrigger des einzigen Cascade-
+Vorfalls (NAS-IOPS + ZOT-auf-S3) ist seit der Linstor-Migration strukturell behoben, der
+Reststrigger (CSI-Stale-Claims) durch den taeglichen csi-gc-Job mitigiert. Umgesetzt wurde
+nur das risikoarme Mini-Bundle: **Alloy-Selbstreferenz aufgeloest** (short-form Image mit
+docker.io-Fallback) und dieser **Runbook-Split** ([cluster-restart.md](./cluster-restart.md)
+Schritt 4a/4b/4c).
+
+Die Schichten 3 (raw_exec wait-for-zot Hooks) und 4 (restart/reschedule-Massenaenderung ueber
+~60 Jobs) bleiben **zurueckgestellt** -- sie haerten gegen eine Cascade-Verstaerkung ohne
+aktiven Trigger und haben hohen Blast-Radius. Diese Seite bleibt als **Architektur-Referenz**:
+das Selbstreferenz-Prinzip und die Failure-Mode-Diagramme gelten weiter, falls ein kuenftiger
+Vorfall die Restschichten rechtfertigt. Steuerung: ClickUp [86c9uu5cu](https://app.clickup.com/t/86c9uu5cu).
 :::
 
 ## Prinzip: Selbstreferenz-Audit
