@@ -1,6 +1,6 @@
 ---
 title: Linstor Betrieb
-description: Betriebshandbuch für Linstor/DRBD -- Snapshot-Management, Troubleshooting, Volume-Verwaltung
+description: Betriebshandbuch für Linstor/DRBD -- HA-Failover, Troubleshooting, Volume-Verwaltung
 tags:
   - linstor
   - drbd
@@ -26,9 +26,8 @@ Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client
 - DRBD Reactor: Startet/stoppt den Linstor Controller automatisch bei Quorum-Änderungen
 - `nomad-csi-reeval.timer` auf client-05/client-06: Löst blockierte CSI-Evaluations nach Boot auf
 - Linstor Consul Registration Script: Registriert den aktiven Controller bei Consul
-- `linstor-auto-unlock.service`: Entsperrt Encryption-Keys nach Controller-Promotion via Passphrase-File
-- Linstor Schedule `backup-daily`: Vollbackup täglich 04:00 nach Garage S3, Full-Only auf alle 11 Resource Groups (ab 2026-05-12, ersetzt `linstor-backup.sh.disabled`)
-- Dead-Man's-Switch: `linstor-snapshot-check.sh` (05:00) + `linstor-s3-backup-check.sh` -- Push an Uptime Kuma
+- fstrim (`batch-jobs/fstrim.nomad`, sysbatch client-05/client-06, wöchentlich So 06:00): Gibt ungenutzte Blöcke an den LVM-Thin-Pool zurück (Voraussetzung seit `noatime` statt `discard`)
+- drbd-verify (`batch-jobs/drbd-verify.nomad`, periodic So 07:00): Sequenzielles `drbdadm verify` über alle replizierten Ressourcen als Bit-Rot-Schutz; Kuma-Push am Run-Ende
 
 ## Bekannte Einschränkungen
 
@@ -36,7 +35,7 @@ Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client
 - LVM Thin Pool Monitoring weicht von Linstor-Kapazitätsangaben ab -- beide Quellen prüfen
 - Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery](#split-brain-recovery))
 - Offizielles LINBIT Image (drbd.io) erfordert Registrierung -- `kvaps/linstor-csi` als Alternative
-- **Garage-Bug listObjectsV2:** Linstor 1.33.1 + Garage hat Timeout bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv bis upstream-Fix.
+- **peer-tiebreaker nie manuell setzen:** Ein manuelles `DrbdOptions/PeerDevice/peer-tiebreaker` auf einer resource-connection entzieht LINSTOR das Tiebreaker-Management (`Vote=No`). Korrektur: Property leeren und die client-04-Ressource mit `--keep-tiebreaker` neu anlegen lassen.
 - **MaxOversubscriptionRatio=30:** Auf c05/c06 gesetzt (Default 5). Stark overcommitteter Thin Pool -- bei Pool-Full-Episode können DRBD-Bitmaps korrupt werden.
 
 ## Credentials
@@ -95,7 +94,6 @@ Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren,
 | gitea-data | 5 GiB | Gitea Git Server |
 | influxdb-data-r2 | 30 GiB | InfluxDB Time Series DB |
 | jellyfin-config-r2 | 30 GiB | Jellyfin Media Server Config |
-| kimai-data | 2 GiB | Kimai MariaDB |
 | loki-data | 20 GiB | Loki Log Aggregation |
 | mosquitto-data | 1 GiB | MQTT Persistence |
 | obsidian-livesync-data | 1 GiB | CouchDB |
@@ -188,28 +186,6 @@ Bei Problemen den Timer-Status und das Journal des `nomad-csi-reeval`-Services a
 | `/etc/systemd/system/nomad-csi-reeval.service` | Oneshot Service |
 | `/etc/systemd/system/nomad-csi-reeval.timer` | Boot-Timer (60s nach Start) |
 | `/etc/nomad.d/nomad-csi-reeval.env` | Nomad Token (0600) |
-
-## Encryption und Auto-Unlock
-
-Die Linstor-Encryption-Passphrase liegt als Datei auf c05 und c06 (`/etc/linstor/passphrase`, mode 600). Der `linstor-auto-unlock.service` liest die Passphrase und entsperrt den Controller automatisch nach jeder Promotion. Der Service ist mit `Restart=on-failure` und `StartLimitBurst=5` konfiguriert und startet als Teil des `drbd-services@linstor_db.target`.
-
-Passphrase in 1Password: "Linstore Passphrase HOME" (PRIVAT Agent Vault).
-
-## Backup-Schedule und Dead-Man's-Switch
-
-Ab 2026-05-12 ersetzt die Linstor Schedule-Engine (`backup-daily`) den Cron-basierten Ansatz. Das alte Skript (`linstor-backup.sh.disabled`) bleibt als Rollback-Referenz erhalten.
-
-- **Zeitplan:** täglich 04:00 (`0 4 * * *`)
-- **Scope:** alle 11 Resource Groups / 22 Resources
-- **KEEP_LOCAL:** 0, **KEEP_REMOTE:** 7
-- **S3 Remote:** Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
-- **Garage-Key:** in 1Password PRIVAT Agent Vault
-
-Dead-Man's-Switch: `linstor-snapshot-check.sh` (05:00) und `linstor-s3-backup-check.sh` pushen an Uptime Kuma. Tokens via `.env`.
-
-::: danger Garage-Bug: kein Incremental
-Linstor 1.33.1 + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
-:::
 
 ## Backup
 
