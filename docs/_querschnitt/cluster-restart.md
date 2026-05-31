@@ -61,11 +61,29 @@ Nomad erst starten, wenn Consul stabil ist und Vault unsealed. Die Server-Nodes 
 - `nomad node status` -- alle 3 Client-Nodes als `ready`
 - Nomad UI prüfen (Port 4646) -- Cluster-Übersicht
 
-### 4. Jobs re-evaluieren
+### 4. Jobs re-evaluieren -- in der richtigen Reihenfolge
 
-Die meisten Nomad-Jobs starten automatisch, sobald die Clients verfügbar sind. Einige Jobs benötigen manuelle Aufmerksamkeit:
+Die meisten Nomad-Jobs starten automatisch, sobald die Clients verfügbar sind. Die Reihenfolge ist aber kritisch: Service-Jobs mit CSI-Volumes brauchen Linstor, und fast alle Jobs ziehen ihre Images über ZOT. Wer alle Jobs gleichzeitig anwirft (Big-Bang), riskiert eine Image-Pull-Cascade, solange ZOT noch nicht ready ist. Deshalb die drei Teilschritte 4a → 4b → 4c nacheinander, jeder verifiziert bevor der nächste folgt.
 
-- **System-Jobs** (Zot Registry, Alloy): Starten automatisch auf allen Clients
+#### 4a. Linstor/DRBD verifizieren (vor allen Service-Jobs)
+
+Service-Jobs mit CSI-Volumes (u.a. ZOT selbst) starten erst, wenn Linstor das Volume bereitstellen kann.
+
+- Linstor-Controller muss auf einem der Clients laufen
+- DRBD-Ressourcen müssen synchron sein (kein `Outdated` oder `StandAlone` Status)
+- Bei Stale-Claims nach unclean Shutdown: `nomad system gc` (siehe [Docker Registry](../docker-registry/index.md#failover-wiederanlauf))
+
+#### 4b. ZOT-Registry zuerst hochfahren
+
+ZOT ist Image-Quelle für fast alle anderen Jobs. Erst ZOT, dann warten bis es ready ist, dann den Rest.
+
+- ZOT-System-Job startet automatisch, sobald sein CSI-Volume (4a) verfügbar ist
+- Warten bis `curl -sf http://zot.service.consul:5000/readyz` 200 liefert
+- Erst dann weiter zu 4c -- nicht vorher, sonst laufen Apps in Image-Pull-Fehler
+
+#### 4c. Restliche Jobs re-evaluieren
+
+- **System-Jobs** (Alloy): Starten automatisch auf allen Clients. Alloy fällt bei ZOT-Down auf docker.io zurück (Bootstrap-Klasse), kommt also auch ohne ZOT hoch
 - **Service-Jobs** (Grafana, Loki, Jellyfin): Starten automatisch, können aber bei Vault-Problemen fehlschlagen
 - **Batch-Jobs** (Postgres Backup): Laufen erst zum nächsten geplanten Zeitpunkt
 
@@ -73,13 +91,6 @@ Die meisten Nomad-Jobs starten automatisch, sobald die Clients verfügbar sind. 
 - `nomad job status` -- Überblick über alle Jobs, keine `dead` Jobs die `running` sein sollten
 - Nomad UI: unter "Jobs" alle als `running` markierten Jobs prüfen
 - [Gatus Status-Seite](https://status.ackermannprivat.ch) -- alle Endpoints grün
-
-### 5. Linstor/DRBD prüfen
-
-Falls die Nomad-Clients DRBD-Storage verwenden (client-05 und client-06), muss der Linstor-Controller und die DRBD-Ressourcen geprüft werden:
-
-- Linstor-Controller muss auf einem der Clients laufen
-- DRBD-Ressourcen müssen synchron sein (kein `Outdated` oder `StandAlone` Status)
 
 ## Notfall-Szenario: Split Brain
 
