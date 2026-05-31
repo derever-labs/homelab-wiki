@@ -1,223 +1,66 @@
----
-title: Linstor Betrieb
-description: Betriebshandbuch für Linstor/DRBD -- Snapshot-Management, Troubleshooting, Volume-Verwaltung
-tags:
-  - linstor
-  - drbd
-  - betrieb
-  - troubleshooting
----
+# LINSTOR Storage — Betrieb
 
-# Linstor Betrieb
-
-## Übersicht
-
-Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client-06 (STANDBY), mit client-04 als disklosem Quorum-Witness. Der Controller wird durch DRBD Reactor automatisch verwaltet.
-
-## Abhängigkeiten
-
-- **DRBD Reactor** auf client-05 und client-06 -- steuert Controller-Failover
-- **Consul** -- Service Discovery für CSI Plugin (`linstor-controller.service.consul:3370`)
-- **Nomad CSI Plugin** (`system/linstor-csi.nomad`) -- ermöglicht persistente Volumes in Nomad Jobs
-- **Thunderbolt-Netzwerk** (10.99.1.0/24) -- DRBD-Replikationspfad
-
-## Automatisierung
-
-- DRBD Reactor: Startet/stoppt den Linstor Controller automatisch bei Quorum-Änderungen
-- `nomad-csi-reeval.timer` auf client-05/client-06: Löst blockierte CSI-Evaluations nach Boot auf
-- Linstor Consul Registration Script: Registriert den aktiven Controller bei Consul
-- `linstor-auto-unlock.service`: Entsperrt Encryption-Keys nach Controller-Promotion via Passphrase-File
-- Linstor Schedule `backup-daily`: Vollbackup täglich 04:00 nach Garage S3, Full-Only auf alle 11 Resource Groups (ab 2026-05-12, ersetzt `linstor-backup.sh.disabled`)
-- Dead-Man's-Switch: `linstor-snapshot-check.sh` (05:00) + `linstor-s3-backup-check.sh` -- Push an Uptime Kuma
-
-## Bekannte Einschränkungen
-
-- CSI Boot Race Condition nach Node-Reboot (mitigiert durch `nomad-csi-reeval.timer`, Details: [CSI Boot Race Condition](#csi-boot-race-condition))
-- LVM Thin Pool Monitoring weicht von Linstor-Kapazitätsangaben ab -- beide Quellen prüfen
-- Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery](#split-brain-recovery))
-- Offizielles LINBIT Image (drbd.io) erfordert Registrierung -- `kvaps/linstor-csi` als Alternative
-- **Garage-Bug listObjectsV2:** Linstor 1.33.1 + Garage hat Timeout bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv bis upstream-Fix.
-- **MaxOversubscriptionRatio=30:** Auf c05/c06 gesetzt (Default 5). Stark overcommitteter Thin Pool -- bei Pool-Full-Episode können DRBD-Bitmaps korrupt werden.
-
-## Credentials
-
-Linstor Controller benötigt keine separate Authentifizierung im internen Netzwerk. LINBIT GUI ist über Authentik ForwardAuth (`intern-auth`) geschützt -- Zugangsdaten: [Zugangsdaten](../_referenz/credentials.md).
-
-## Controller Failover
-
-### Automatischer Failover
-
-DRBD Reactor überwacht das `linstor_db` DRBD-Volume und steuert den Controller automatisch:
-
-1. DRBD Reactor erkennt Quorum-Verlust auf dem ausgefallenen Node
-2. Standby-Node erhält Quorum und wird DRBD Primary
-3. drbd-reactor mounted `/var/lib/linstor` und startet `linstor-controller`
-4. Satellites reconnecten automatisch zum neuen Controller
-5. CSI Plugin verbindet automatisch (Consul Service Discovery)
-6. Failover dauert ca. 10-15 Sekunden
-
-### Manueller Failover
-
-Manuelles Eviction über `drbd-reactorctl evict linstor_db` (ca. 20 Sekunden).
-
-### Failover-Szenarien
-
-| Szenario | Verhalten | Failover-Zeit |
-|----------|-----------|---------------|
-| Controller-Node down | Automatischer Failover zum Standby | ~10-15 Sekunden |
-| Netzwerk-Partition | Quorum entscheidet (2-von-3 Nodes) | ~10-15 Sekunden |
-| Manueller Failover | `drbd-reactorctl evict linstor_db` | ~20 Sekunden |
-| DRBD Split-Brain | Verhindert durch Quorum-Mechanismus | - |
-
-## Split-Brain Recovery
-
-Ein Split-Brain tritt auf wenn beide Nodes sich als Primary sehen. Dies wird durch den Quorum-Mechanismus (2-von-3) normalerweise verhindert.
-
-Falls es dennoch vorkommt:
-
-1. Bestimmen welcher Node die aktuelleren Daten hat
-2. Den anderen Node als Secondary degradieren und seine Daten verwerfen
-3. Verbindung wiederherstellen -- der Secondary synchronisiert automatisch vom Primary
-
-::: danger Datenverlust
-Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren, die nur auf diesem Node stattfanden. Vor der Recovery prüfen, ob relevante Daten betroffen sind.
+::: info SSOT
+Betriebshandbuch für den LINSTOR/DRBD-Storage-Cluster im Homelab.
 :::
 
-## Volume-Management
+## Cluster-Topologie
 
-### Aktive Volumes (Homelab)
+- **c04** (10.0.2.124) — diskless DRBD-Tiebreaker (Quorum-Voter, keine Daten)
+- **c05** (10.0.2.125) — diskful, COMBINED + LINSTOR-Controller (via drbd-reactor-Promoter)
+- **c06** (10.0.2.126) — diskful
+- DRBD-Replikation über Thunderbolt-Bond (10.99.1.105/106), nur c05 ↔ c06
 
-| Volume | Grösse | Verwendung |
-|--------|---------|------------|
-| **linstor_db** | 500 MiB | Linstor Controller H2 Datenbank (HA) |
-| flame-data | 1 GiB | Flame Dashboard |
-| flame-intra-data | 1 GiB | Flame-Intra Dashboard |
-| gitea-data | 5 GiB | Gitea Git Server |
-| influxdb-data-r2 | 30 GiB | InfluxDB Time Series DB |
-| jellyfin-config-r2 | 30 GiB | Jellyfin Media Server Config |
-| kimai-data | 2 GiB | Kimai MariaDB |
-| loki-data | 20 GiB | Loki Log Aggregation |
-| mosquitto-data | 1 GiB | MQTT Persistence |
-| obsidian-livesync-data | 1 GiB | CouchDB |
-| paperless-data-r2 | 20 GiB | Paperless-ngx Dokumente |
-| postgres-data-r2 | 20 GiB | PostgreSQL Datenbank (zentral) |
-| sabnzbd-config-r2 | 1 GiB | SABnzbd Download Client |
-| stash-data-r2 | 10 GiB | Stash Media Organizer |
-| stash-secure-data | 2 GiB | Stash-Secure Config/Cache/Metadata |
-| uptime-kuma-data-r2 | 5 GiB | Uptime Kuma Monitoring |
-| vaultwarden-data-r2 | 1 GiB | Vaultwarden Password Manager |
+## Volumes
 
-Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04. Die -r2-Volumes wurden am 2026-05-30 via CSI-nativer Neu-Erstellung (autoPlace=2, rg-replicated) + Datenmigration aus day0-defekten Single-Replica-Volumes migriert.
+Replizierte App-Volumes (rg-replicated, 2× UpToDate + c04 Tiebreaker):
 
-::: warning linstor_db
-`linstor_db` ist ein spezielles Volume für die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geändert werden.
-:::
+banner-pb, flame, flame-intra, gitea, keep-data, loki, mariadb-data, mosquitto,
+obsidian-livesync, pocketbase, stash-secure, zot-data
 
-### Storage Nodes
+## Quorum & Tiebreaker
 
-| Node | Disk | Pool | Kapazität |
-|------|------|------|-----------|
-| vm-nomad-client-05 | /dev/sdb | linstor_pool | 200 GB |
-| vm-nomad-client-06 | /dev/sdb | linstor_pool | 200 GB |
-
-## Monitoring
-
-### Grafana Dashboard
-
-URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
-
-| Panel | Beschreibung |
-|-------|--------------|
-| Storage Pool Auslastung | Gauge mit Gesamtauslastung (Schwellwerte: 70% gelb, 90% rot) |
-| Storage Pool Total/Frei | Absolute Werte in GB |
-| Volumes | Anzahl der Resource Definitions |
-| Volume Auslastung | Prozentuale Auslastung pro Volume |
-| Volume Allocation | Tatsächlich belegter Speicher pro Volume |
-| Node Status | Online/Offline Status aller Nodes |
-| Resource Status | Sync-Status aller Ressourcen |
-
-### LVM Thin Pool Monitoring
-
-Linstor meldet `storage_pool_capacity_free_bytes`, aber dies bildet die tatsächliche LVM-Thin-Pool-Auslastung (inkl. Snapshot-Overhead) nicht korrekt ab. Beim Thin-Pool-Overflow-Incident zeigte Linstor noch freien Platz, während LVM bei 100% war.
-
-Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert und über Telegraf nach InfluxDB geschrieben. Zusätzlich läuft ein CheckMK Local Check direkt auf dem Host (75% WARN, 85% CRIT) als Safety Net -- funktioniert auch wenn der gesamte Container-Stack ausfällt.
-
-### Wichtige Metriken
-
-| Metrik | Beschreibung |
-|--------|--------------|
-| `linstor_storage_pool_capacity_total_bytes` | Gesamtkapazität des Storage Pools |
-| `linstor_storage_pool_capacity_free_bytes` | Freier Speicher im Pool |
-| `linstor_volume_allocated_size_bytes` | Tatsächlich belegter Speicher pro Volume |
-| `linstor_volume_definition_size_bytes` | Provisionierte Grösse pro Volume |
-| `linstor_node_state` | Node Status (0=Offline, 1=Connected, 2=Online) |
-| `linstor_resource_state` | Resource Status (0=UpToDate, 1=Syncing) |
-| `linstor_resource_definition_count` | Anzahl der definierten Volumes |
-
-## LINBIT GUI
-
-::: warning Archiviert 14.04.2026
-Der `linstor-gui`-Job wurde archiviert (`system/linstor-gui.nomad.deprecated`). Grund: LINBIT publiziert `linstor-gui` nirgends öffentlich als Docker-Image, der bisher verwendete Tag `v2.4.0` liess sich nicht mehr nachvollziehen. Operations laufen über die `linstor` CLI auf den Controller-Nodes; eine GUI ist für den Betrieb nicht erforderlich. Bei Bedarf kann das Image aus dem GitHub-Repo (`LINBIT/linstor-gui`, letzter Release `v1.8.2`) selbst gebaut werden.
-:::
-
-## CSI Boot Race Condition
-
-### Problem
-
-Nach einem Node-Reboot kann es vorkommen, dass CSI-abhängige Nomad Jobs (Postgres, Vaultwarden, etc.) in `pending` hängen bleiben. Die Ursache ist eine Timing-Lücke: Die Jobs werden evaluiert bevor das Linstor CSI Plugin als "healthy" registriert ist. Nomad erstellt eine "blocked eval", die normalerweise aufgelöst wird wenn das Plugin healthy wird -- aber in manchen Fällen bleibt sie stecken (dokumentiert in GitHub Issues #8994, #13028, #11784).
-
-### Lösung: nomad-csi-reeval Timer
-
-Auf client-05 und client-06 läuft ein systemd Timer (`nomad-csi-reeval.timer`), der 60 Sekunden nach dem Boot ein poll-basiertes Script startet:
-
-1. Wartet bis die Nomad API erreichbar ist
-2. Wartet bis das CSI Plugin `linstor.csi.linbit.com` mindestens einen healthy Node hat
-3. Sucht nach blockierten Evaluations und re-evaluiert diese
-
-Das Script ist idempotent -- bei bereits laufenden Jobs passiert nichts.
-
-### Troubleshooting
-
-Bei Problemen den Timer-Status und das Journal des `nomad-csi-reeval`-Services auf den betroffenen Nodes prüfen. Blockierte Evaluations sind über die Nomad-UI unter Evaluations (Filter: Status=blocked) sichtbar.
-
-### Dateien
-
-| Datei | Beschreibung |
-|-------|--------------|
-| `/usr/local/bin/nomad-csi-reeval.sh` | Poll-basiertes Re-Evaluation Script |
-| `/etc/systemd/system/nomad-csi-reeval.service` | Oneshot Service |
-| `/etc/systemd/system/nomad-csi-reeval.timer` | Boot-Timer (60s nach Start) |
-| `/etc/nomad.d/nomad-csi-reeval.env` | Nomad Token (0600) |
-
-## Encryption und Auto-Unlock
-
-Die Linstor-Encryption-Passphrase liegt als Datei auf c05 und c06 (`/etc/linstor/passphrase`, mode 600). Der `linstor-auto-unlock.service` liest die Passphrase und entsperrt den Controller automatisch nach jeder Promotion. Der Service ist mit `Restart=on-failure` und `StartLimitBurst=5` konfiguriert und startet als Teil des `drbd-services@linstor_db.target`.
-
-Passphrase in 1Password: "Linstore Passphrase HOME" (PRIVAT Agent Vault).
-
-## Backup-Schedule und Dead-Man's-Switch
-
-Ab 2026-05-12 ersetzt die Linstor Schedule-Engine (`backup-daily`) den Cron-basierten Ansatz. Das alte Skript (`linstor-backup.sh.disabled`) bleibt als Rollback-Referenz erhalten.
-
-- **Zeitplan:** täglich 04:00 (`0 4 * * *`)
-- **Scope:** alle 11 Resource Groups / 22 Resources
-- **KEEP_LOCAL:** 0, **KEEP_REMOTE:** 7
-- **S3 Remote:** Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
-- **Garage-Key:** in 1Password PRIVAT Agent Vault
-
-Dead-Man's-Switch: `linstor-snapshot-check.sh` (05:00) und `linstor-s3-backup-check.sh` pushen an Uptime Kuma. Tokens via `.env`.
-
-::: danger Garage-Bug: kein Incremental
-Linstor 1.33.1 + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
-:::
+- `auto-add-quorum-tiebreaker=True` — LINSTOR fügt c04 automatisch als Tiebreaker hinzu
+- Bei Quorum-Verlust: `suspend-io` (Daten bleiben konsistent, IO blockiert bis Quorum zurück)
+- **NIE** `peer-tiebreaker` manuell auf resource-connections setzen — das entzieht LINSTOR
+  das Tiebreaker-Management (Ergebnis: `Vote=No`). Korrektur: Property leeren und die
+  c04-Ressource mit `--keep-tiebreaker` neu anlegen lassen.
 
 ## Backup
 
-Die allgemeine Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentation](../backup/) beschrieben.
+Die LINSTOR-Volumes werden **nicht LINSTOR-nativ** gesichert:
+
+- **Proxmox Backup Server** sichert die Storage-VMs (c05/c06) inkl. der LINSTOR-Daten-Disk
+  als Block — die Volumes sind damit abgedeckt.
+- **Applikationskonsistente Dumps** (PostgreSQL/MariaDB/InfluxDB) laufen zusätzlich nach
+  `/nfs/backup`.
+
+Die frühere LINSTOR-S3-Schicht (Snapshot → Garage, Schedule `backup-daily`, Master-Key-
+Auto-Unlock) wurde am 2026-05-31 zurückgebaut — sie war redundant zu PBS und bei grossen
+Volumes unzuverlässig. Details: [Backup-Strategie](/backup/).
+
+## fstrim & Bit-Rot-Schutz
+
+Zwei Nomad-Jobs härten den Storage auf den Consumer-NVMe (ohne Power-Loss-Protection):
+
+- **fstrim** (`batch-jobs/fstrim.nomad`, sysbatch c05/c06, wöchentlich So 06:00) — gibt
+  ungenutzte Blöcke an den LVM-Thin-Pool zurück. Voraussetzung, seit die Volumes mit
+  `noatime` statt `discard` gemountet sind.
+- **drbd-verify** (`batch-jobs/drbd-verify.nomad`, periodic So 07:00) — iteriert sequenziell
+  `drbdadm verify` über alle replizierten Ressourcen und deckt Bit-Rot (out-of-sync-Blöcke)
+  auf. Das `verify-alg` allein prüft nichts ohne periodischen Lauf.
+
+Beide senden am Run-Ende einen Kuma-Push-Heartbeat (Monitore `fstrim` / `drbd-verify`).
+
+## Häufige Operationen
+
+- **Volume-Status:** `linstor resource list -r <volume>` auf dem Controller-Node (c05)
+- **Node-Reboot (Storage-Disziplin):**
+  - **NIE** c05 + c06 gleichzeitig rebooten (2-of-2-Quorum für Daten)
+  - Reihenfolge: c06 → warten auf UpToDate → dann c05
+  - c04 kann jederzeit rebootet werden (nur Tiebreaker)
 
 ## Verwandte Seiten
 
-- [Linstor Storage](../linstor-storage/) -- Architektur, HA-Design, CSI-Integration
-- [Proxmox](../proxmox/) -- Host- und VM-Übersicht
-- [Nomad](../nomad/) -- Container-Orchestrierung mit CSI-Volumes
-- [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes
+- [LINSTOR Storage](/linstor-storage/)
+- [Referenz](/linstor-storage/referenz.md)

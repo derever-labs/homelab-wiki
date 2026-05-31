@@ -1,95 +1,59 @@
----
-title: Backup
-description: Multi-Layer Backup-Strategie mit PostgreSQL Dumps, DRBD Snapshots, S3 Shipping, Litestream und PBS
-tags:
-  - backup
-  - postgresql
-  - drbd
-  - linstor
-  - pbs
----
-
 # Backup
 
-Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen unterschiedliche Ausfallszenarien.
-
-## Übersicht
-
-| Attribut | Wert |
-|----------|------|
-| PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
-| DRBD Snapshots | Linstor native → lokal auf DRBD -- RPO 24h, 7 Snapshots |
-| DRBD S3 Shipping | Linstor nach Garage → NAS (`linstor-backups` Bucket) -- RPO 24h, GFS: 7d/4w/3m |
-| SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../_querschnitt/datenstrategie.md#litestream-replikation-sqlite-nicht-umgesetzt)) |
-| VM Backups | Proxmox PBS → PBS Server -- RPO 24h, 6 Monate |
-
-## PostgreSQL Backup
-
-### Architektur
-
-Täglich um 03:00 UTC erstellt ein Nomad Batch Job (`batch-jobs/postgres-backup.nomad`) einen vollständigen Dump aller PostgreSQL-Datenbanken via `pg_dumpall`. Der Dump wird nach NFS geschrieben und nach GFS-Schema rotiert:
-
-- `daily/` -- 7 Backups
-- `weekly/` -- 4 Backups
-- `monthly/` -- 3 Backups
-
-Nach erfolgreichem Dump wird ein Push an Uptime Kuma gesendet.
-
-### Restore-Konzept
-
-Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYYYMMDD-HHMM.sql.gz`) aus dem NFS-Backup-Verzeichnis. Einzelne Datenbanken können aus dem Dump extrahiert werden.
-
-**Vault Secrets:** `kv/data/postgres` (Passwort), `kv/data/uptime-kuma` (Push-URLs). Policies: `postgres`, `postgres-backup`.
-
-## DRBD/Linstor Snapshots
-
-### Lokale Snapshots
-
-Täglich um 02:00 Uhr werden automatisch Snapshots aller DRBD-Ressourcen erstellt.
-
-- **Script:** `/usr/local/bin/linstor-backup.sh` (auf client-05 und client-06)
-- **Cron:** Verwaltet via Ansible (`setup-backup-infrastructure.yml`)
-
-### S3 Shipping nach Garage
-
-Linstor exportiert Snapshots nativ nach S3-kompatiblem Storage (Garage auf NAS :9012, Bucket `linstor-backups`). Der Linstor-Remote `nas-backup` zeigt auf den Garage-Endpoint (Umstellung von MinIO am 2026-05-12).
-
-**Ablauf pro Ressource:**
-
-1. Lokalen Snapshot erstellen (`daily-YYYYMMDD-HHMM`)
-2. Backup auf S3/Garage exportieren
-3. Alte `daily-*` Snapshots aufräumen (behalte 7)
-4. Alte `back_*` Snapshots aufräumen (behalte 14)
-
-::: info Linstor Controller
-Das Backup-Script läuft nur auf dem Node mit aktivem Linstor Controller und entsperrt automatisch den verschlüsselten Controller via `/etc/linstor/passphrase`.
+::: info SSOT
+Diese Seite beschreibt die Backup-Strategie des Homelab-Clusters.
 :::
 
-### Restore von S3
+## Überblick
 
-Ein Restore erfolgt durch Wiederherstellen eines Snapshots vom S3-Remote `nas-backup` auf einen Ziel-Node. Es kann entweder eine neue Ressource erstellt oder eine bestehende ersetzt werden.
+Das Homelab nutzt drei sich ergänzende Backup-Ebenen:
 
-## Monitoring
+1. **Proxmox Backup Server (PBS)** — VM-Block-Level-Backups inkl. LINSTOR-Volumes, täglich
+2. **PostgreSQL/MariaDB/InfluxDB Dumps** — applikationskonsistente Logik-Dumps nach `/nfs/backup`
+3. **DRBD-Replikation** — 2× Live-Replica (Hochverfügbarkeit, kein Backup)
 
-### Uptime Kuma Push-Monitore
-
-| Monitor | Typ | Interval | Beschreibung |
-| :--- | :--- | :--- | :--- |
-| PostgreSQL Backup | Push | 93600s (26h) | pg_dump Batch Job |
-| Linstor S3 Backup | Push | 93600s (26h) | Linstor Shipping |
-| DRBD Snapshots | Push | 93600s (26h) | Lokale Snapshots |
-
-::: tip 26h Interval
-Das Interval von 26 Stunden gibt 2 Stunden Puffer, falls Backups länger dauern als üblich.
+::: tip Warum keine separate LINSTOR-Volume-Sicherung?
+PBS sichert die Storage-VMs (c05/c06) inklusive der LINSTOR-Daten-Disk als Block — die
+LINSTOR-Volumes sind damit bereits abgedeckt. Eine zusätzliche LINSTOR-S3-Schicht
+(Snapshot → Garage) war redundant und wurde am 2026-05-31 zurückgebaut.
 :::
 
-### Backup Monitor Script
+## Ebene 1: Proxmox Backup Server
 
-`/usr/local/bin/linstor-backup-monitor.sh` (auf client-05) prüft um 06:00 Uhr, ob Backups in den letzten 25 Stunden erstellt wurden, und meldet via Uptime Kuma Push.
+- **Was:** Ganze VMs (Block-Level inkl. LINSTOR-Volumes)
+- **Wohin:** PBS auf 10.0.2.50, Datastore `homeserver` (NFS auf NAS `10.0.0.200`)
+- **Wann:** Täglich 02:00 (Job „all 1")
+- **Ausnahmen:** VMs 102, 104, 200, 99999
+
+## Ebene 2: Applikations-Dumps
+
+- **Was:** PostgreSQL (`pg_dumpall`), MariaDB (`mariadb-dump`), InfluxDB (`influx backup`)
+- **Wohin:** `/nfs/backup/` (NFS auf NAS)
+- **Wann:** PostgreSQL 03:00, MariaDB 03:15, InfluxDB 03:30
+- **Warum:** Applikationskonsistent (vs. Block-Level-Crash-Konsistenz von PBS)
+
+## Ebene 3: DRBD-Replikation
+
+- **Was:** Synchrone Block-Replikation c05 ↔ c06
+- **Wie:** 2× `UpToDate` pro Volume (c04 diskless Tiebreaker)
+- **Zweck:** Hochverfügbarkeit (kein Backup im eigentlichen Sinn)
+
+## Bewusste Architektur-Grenzen
+
+::: warning Kein Off-Site / 3-2-1 unvollständig
+Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.200`.
+Das NAS ist damit ein Single Point of Failure, und es gibt keine geografische
+Off-Site-Kopie. Das ist eine **bewusste Entscheidung** (kein volles 3-2-1) — das NAS
+hat eine eigene Backup-Strategie. Homelab- und DCLab-Backups bleiben strikt getrennt
+(keine Cross-Cluster-Sicherung).
+:::
+
+::: warning Multi-Node-Restore nicht verifiziert
+Ein gleichzeitiger PBS-Restore beider Storage-VMs (c05 + c06) wurde nicht durchgespielt.
+Das DRBD-Split-Brain-Handling nach einem solchen Restore wäre manuell aufzulösen.
+:::
 
 ## Verwandte Seiten
 
-- [Backup Referenz](./referenz.md) -- PBS-Details, Retention Policy, Datastore
-- [Linstor Storage](../linstor-storage/) -- DRBD-Storage und Snapshot-Mechanismus
-- [Monitoring](../monitoring/) -- Uptime Kuma Push-Monitore für Backup-Status
-- [Datenbanken](../_referenz/datenbanken.md) -- PostgreSQL Shared Cluster und Service-Zuordnung
+- [LINSTOR Storage](/linstor-storage/)
+- [Proxmox Backup Server](/proxmox/pbs)
