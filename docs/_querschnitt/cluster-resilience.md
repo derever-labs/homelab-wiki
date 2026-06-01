@@ -49,7 +49,7 @@ Konkret unterscheidet die Architektur drei Komponenten-Klassen:
 - **Selbstreferenz** (Anti-Pattern) -- ein Mechanismus der X absichert nutzt X als
   Abhängigkeit. Wird konsequent vermieden.
 
-## Diagramm 1: Selbstreferenz-Audit (Stand 2026-05-17)
+## Diagramm 1: Selbstreferenz-Audit (Stand 2026-05-31, nach Mini-Bundle)
 
 Welche Komponenten sind eigenständig startbar, welche hängen heute an ZOT?
 
@@ -83,17 +83,17 @@ Bootstrap_Clean: "Bootstrap-Klasse clean (kein ZOT im Pfad)" {
   keep: "Keep\nImage: us-central1-docker.pkg.dev/keephq"
   kuma: "Uptime-Kuma\nImage: louislam/uptime-kuma:2\n(via daemon.json mirror-fallback)"
   csi: "Linstor-CSI\nImage: quay.io/piraeusdatastore"
+  alloy: "Alloy (Monitoring)\ngrafana/alloy:v1.13.1\n(short-form, mirror-fallback, seit 31.05)"
   zot_img.class: clean
   keep.class: clean
   kuma.class: clean
   csi.class: clean
+  alloy.class: clean
 }
 
-Anti_Pattern: "Anti-Pattern (haengt an ZOT)" {
-  alloy: "Alloy (Monitoring)\nzot.service.consul/grafana/alloy\nKommt nicht hoch wenn ZOT weg"
-  helper: "wait-for-postgres prestart-Helper\n4 Jobs: zot.service.consul/library/alpine\nMechanismus selbst von ZOT abhaengig"
+Anti_Pattern: "Anti-Pattern (haengt an ZOT, zurueckgestellt)" {
+  helper: "wait-for-postgres prestart-Helper\nzot.service.consul/library/alpine\nMechanismus selbst von ZOT abhaengig"
   latest: "7 Jobs mit force_pull=true + :latest\nzot.service.consul/.../<image>:latest\nImmer Pull bei Restart"
-  alloy.class: antipattern
   helper.class: antipattern
   latest.class: antipattern
 }
@@ -105,24 +105,30 @@ ZOT_Service: "ZOT-Service\nzot.service.consul:5000" {
 Upstream.ghcr -> Bootstrap_Clean.zot_img
 Upstream.gcp -> Bootstrap_Clean.keep
 Upstream.dockerio -> Bootstrap_Clean.kuma: "via mirror-fallback"
+Upstream.dockerio -> Bootstrap_Clean.alloy: "via mirror-fallback"
 Upstream.quay -> Bootstrap_Clean.csi
 
 Bootstrap_Clean.zot_img -> ZOT_Service
 
-ZOT_Service -> Anti_Pattern.alloy: "Image-Pull"
 ZOT_Service -> Anti_Pattern.helper: "Image-Pull"
 ZOT_Service -> Anti_Pattern.latest: "Image-Pull (force)"
 ```
 
-::: warning Drei Anti-Pattern-Gruppen identifiziert
-- **Alloy** (System-Job, Monitoring-Agent) -- ZOT-Down kann nicht monitored werden wenn ZOT
-  selbst die Image-Quelle ist
-- **wait-for-postgres** Helper in immoscraper, immoscraper-weekly, immo-monitor,
-  special-yt-dlp -- nutzt `zot.service.consul/library/alpine` als Image
-- **7 Jobs** mit `force_pull=true` auf `zot.service.consul/.../<image>:latest`
-  (immoscraper-Familie + meshcmd + stash-jellyfin-proxy + video-grabber + special-yt-dlp)
+::: tip Alloy-Selbstreferenz aufgeloest (31.05.2026)
+- **Alloy** (System-Job, Monitoring-Agent) -- **gefixt**: Image von explizitem
+  `zot.service.consul`-Ref auf short-form `grafana/alloy:v1.13.1` umgestellt. Nutzt jetzt
+  den ZOT-registry-mirror als Cache, faellt bei ZOT-Down auf docker.io zurueck. Verifiziert
+  live auf c04/c05/c06 (3/3 running, 0 Restarts).
+:::
 
-Schicht 2 (siehe unten) adressiert diese Gruppen. Migrations-Track: ClickUp 86c9uu5cu.
+::: warning Zwei Anti-Pattern-Gruppen verbleiben (zurueckgestellt)
+- **wait-for-postgres** Helper in mehreren Jobs -- nutzt `zot.service.consul/library/alpine`
+  als Image. Optionaler Folge-Schritt (Helper-Image auf docker.io direkt pinnen)
+- **7 Jobs** mit `force_pull=true` auf `zot.service.consul/.../<image>:latest`
+  (immoscraper-Familie + meshcmd + stash-jellyfin-proxy + video-grabber + special-yt-dlp).
+  3 davon sind Eigen-Builds ohne Upstream-Alternative -- kein sauberer Hebel
+
+Beide bleiben nach der Challenge (31.05) zurueckgestellt. Track: ClickUp 86c9uu5cu.
 :::
 
 ## Diagramm 2: 4-Schichten-Modell
