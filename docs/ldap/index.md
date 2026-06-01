@@ -126,7 +126,6 @@ Der Nomad Job `databases/open-ldap.nomad` (`osixia/openldap`, Port 389) läuft n
 
 - Authentik nutzt OpenLDAP **nicht** mehr als Source -- User leben in der Authentik-PostgreSQL
 - Jellyfin bindet gegen den LDAP Outpost (`authentik-ldap.service.consul:3389`), nicht gegen OpenLDAP
-- Guacamole hat zwar die `auth-ldap`-Extension geladen, aber keine `LDAP_HOSTNAME`-Konfiguration -- die effektive Authentifizierung läuft über `intern-auth@file` (ForwardAuth)
 
 ## Verwandte Seiten
 

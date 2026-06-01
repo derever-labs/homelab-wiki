@@ -23,7 +23,7 @@ Die folgende Tabelle nennt pro Verzeichnis repräsentative Jobs; die vollständi
 | infrastructure/ | SMTP Relay, Zot Registry, GitHub Runner, Nebula Sync |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, Keep, iperf3-to-influxdb |
-| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, PocketBase, Directus-Gravel, Immo-Monitor, Immoscraper, Telegram-Relay |
+| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, PocketBase, Directus-Gravel, Immo-Monitor, Immoscraper, Telegram-Relay |
 | system/ | Alloy (Log-Collector), Linstor CSI |
 | volumes/ | CSI-Volume-Definitionen (HCL) |
 
@@ -79,7 +79,7 @@ Alle stateless Service-Jobs sollten eine `update`-Stanza mit `auto_revert = true
 - `max_parallel = 1`, `auto_revert = true`
 - `min_healthy_time = 30s`, `healthy_deadline = 5m`, `progress_deadline = 10m`
 
-### Java/Langsame Apps (Metabase, Guacamole)
+### Java/Langsame Apps (Metabase)
 
 Längere `min_healthy_time` weil Java-Apps mehr Startzeit brauchen:
 

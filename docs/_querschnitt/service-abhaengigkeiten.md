@@ -70,7 +70,6 @@ Prod: Productivity {
   VW: Vaultwarden { style.border-radius: 8 }
   PL: Paperless { style.border-radius: 8 }
   TD: Tandoor { style.border-radius: 8 }
-  GUA: Guacamole { style.border-radius: 8 }
   CD: ChangeDetection { style.border-radius: 8 }
   OBS: Obsidian LiveSync { style.border-radius: 8 }
   NOTIF: Notifiarr { style.border-radius: 8 }
