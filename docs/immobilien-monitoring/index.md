@@ -397,59 +397,6 @@ Die Nachricht enthält pro Portal: Anzahl neue Listings, Detail-Scrapes, Deaktiv
 
 ## CI/CD Pipeline
 
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-classes: {
-  node: { style: { border-radius: 8 } }
-}
-
-direction: right
-
-Push: git push main {
-  class: node
-}
-GHA: GitHub Actions {
-  class: node
-  tooltip: "build-immoscraper.yml | Trigger bei Änderungen in scraper/"
-}
-Runner: Self-Hosted Runner {
-  class: node
-  tooltip: "Nomad Job github-runner | Docker Socket + ZOT Zugang"
-}
-Build: Docker Multi-Stage Build {
-  class: node
-  tooltip: "node (Alpine) | TypeScript Compile + Production Deps"
-}
-ZOT: ZOT Registry {
-  class: node
-  tooltip: "localhost:5000/library/immoscraper:latest"
-}
-Nomad: Nomad Periodic Job {
-  class: node
-  tooltip: "force_pull=true | Nächster Cron-Trigger holt neues Image"
-}
-
-Push -> GHA: "Änderungen in scraper/" {
-  style.stroke: "#2563eb"
-}
-GHA -> Runner: "runs-on: self-hosted" {
-  style.stroke: "#2563eb"
-}
-Runner -> Build -> ZOT: "docker build + push" {
-  style.stroke: "#2563eb"
-}
-ZOT -> Nomad: "Nächster Scan-Lauf" {
-  style.stroke: "#6b7280"
-  style.stroke-dash: 3
-}
-```
-
 Der GitHub Actions Runner läuft als Nomad Service-Job mit Docker-Socket-Mount und Host-Netzwerk (ZOT auf `localhost:5000` direkt erreichbar). Das Dockerfile nutzt einen Multi-Stage Build: TypeScript wird in der Build-Stage kompiliert, das Production-Image enthält nur Runtime-Dependencies.
 
 Der Workflow triggert bei Änderungen in `services/n8n-workflows/scraper/` oder bei manuellem Dispatch.

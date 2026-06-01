@@ -19,6 +19,7 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 | :--- | :--- | :--- | :--- |
 | 53 | TCP/UDP | DNS (Pi-hole) | lxc-dns-01, lxc-dns-02 |
 | 2049 | TCP | NFS | Synology NAS |
+| 6556 | TCP | CheckMK Agent | Auf jedem überwachten Host |
 | 8006 | TCP | Proxmox Web-UI | Auf jedem Proxmox-Node |
 | 8007 | TCP | PBS Web-UI | Proxmox Backup Server |
 | 8443 | TCP | PDM Web-UI | Proxmox Datacenter Manager |

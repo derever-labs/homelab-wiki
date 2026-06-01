@@ -20,10 +20,6 @@ CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es übe
 | Auth | CheckMK-eigene Benutzerverwaltung |
 | Storage | Lokaler ZFS auf Proxmox Node |
 
-## Rolle im Stack
-
-Im Gegensatz zu Grafana/Loki (Metriken und Logs) und Gatus (Endpoint-Verfügbarkeit) fokussiert CheckMK auf den Zustand der Hosts selbst -- Hardwaremetriken (CPU, RAM, Disk, Netzwerk) und Systemdienste auf allen Infrastruktur-Nodes.
-
 ## Was wird überwacht
 
 CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
@@ -45,7 +41,7 @@ Der Docker-Plugin auf den Nomad Client-Nodes übergibt Container-Checks als Pigg
 
 ## Agent-Deployment
 
-Der CheckMK Agent läuft auf jedem überwachten Host und kommuniziert über TCP Port 6556. Der Agent wird als Paket (`check-mk-agent`) installiert und meldet bei Abfrage durch den CheckMK Server die aktuellen Systemmetriken.
+Der CheckMK Agent läuft auf jedem überwachten Host und kommuniziert über TCP Port 6556 (siehe [Ports und Dienste](../_referenz/ports-und-dienste.md)). Der Agent wird als Paket (`check-mk-agent`) installiert und meldet bei Abfrage durch den CheckMK Server die aktuellen Systemmetriken.
 
 Die Installation erfolgt über Ansible:
 - **Standard-Agent:** `playbooks/checkmk-agent-deploy.yml`

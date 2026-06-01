@@ -36,35 +36,6 @@ Für die aktuelle Strategie siehe [Datenbank-Architektur](./datenbank-architektu
 
 Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanzen zu replizieren. Zwei MinIO-Peers auf Node-05/06 (verbunden über Thunderbolt) hätten als schnelle Replicas gedient, mit dem NAS-MinIO als Langzeit-Backup.
 
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: down
-
-SVC: Service mit SQLite { style.border-radius: 8 }
-
-Peers: Peer Replicas (Thunderbolt) {
-  style.stroke-dash: 4
-  N05: Node-05 MinIO { style.border-radius: 8 }
-  N06: Node-06 MinIO { style.border-radius: 8 }
-}
-
-Backup: Langzeit-Backup {
-  style.stroke-dash: 4
-  NAS: "NAS MinIO (Retention: 7 Tage)" { shape: cylinder; style.border-radius: 8 }
-}
-
-SVC -> Peers.N05: Litestream sync: 5s
-SVC -> Peers.N06: Litestream sync: 5s
-Peers.N05 <-> Peers.N06: Thunderbolt ~11 Gbps { tooltip: "10.99.1.0/24" }
-Peers.N05 -> Backup.NAS: sync: 60s
-Peers.N06 -> Backup.NAS: sync: 60s
-```
-
 ## Verwandte Seiten
 
 - [Datenbank-Architektur](./datenbank-architektur.md) -- PostgreSQL Cluster, Service-Zuordnung
