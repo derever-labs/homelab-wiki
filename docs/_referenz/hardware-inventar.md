@@ -76,19 +76,19 @@ udmpro -> internet
 
 ## Server-Übersicht
 
-Detaillierte VM-Zuordnung und IP-Adressen: [Proxmox Cluster](../proxmox/index.md)
+Detaillierte VM-Zuordnung: [Proxmox Cluster](../proxmox/index.md). IP-Adressen: [Hosts und IPs](./hosts-und-ips.md).
 
-| Server | Rolle | IP | CPU (Kerne) | RAM | Storage | Modell |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **pve00** | Quorum / VM Host | 10.0.2.40 | 4 | 16 GB DDR4-3200 | 512 GB NVMe | Minisforum DeskMini |
-| **pve01** | Main Compute Node | 10.0.2.41 | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
-| **pve02** | Main Compute Node | 10.0.2.42 | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
+| Server | Rolle | CPU (Kerne) | RAM | Storage | Modell |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **pve00** | Quorum / VM Host | 4 | 16 GB DDR4-3200 | 512 GB NVMe | Minisforum DeskMini |
+| **pve01** | Main Compute Node | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
+| **pve02** | Main Compute Node | 14 (6P+8E, 20 Threads) | 96 GB DDR5-4800 | 2× 4 TB NVMe | Minisforum MS-01 |
 
 ### pve00 -- Quorum Node
 
 Kleinster Node im Cluster. Dient primär als Quorum-Geber für die Proxmox-Cluster-Mitgliedschaft und hostet den leichtesten Nomad Server/Client.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- DeskMini Series (Board DNBOE) |
 | Seriennummer | YY047LU10PCCMPE00322 |
@@ -98,20 +98,11 @@ Kleinster Node im Cluster. Dient primär als Quorum-Geber für die Proxmox-Clust
 | NICs | Intel I226-V 2.5G, Intel CNVi Wi-Fi |
 | VMs | vm-nomad-server-04, vm-nomad-client-04 |
 
-#### Firmware-Stand pve00
-
-Stand: 2026-04-17
-
-- BIOS: DNB20 V0.07 -- 2024-07-31
-- NVMe HighRel 512GB: SN14665
-- Proxmox: pve-manager/9.1.7
-- Kernel: 6.17.13-2-pve
-
 ### pve01 -- Main Compute Node
 
 Einer der beiden leistungsstarken Nodes. Mit pve02 über Thunderbolt verbunden.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
 | Seriennummer | MD126US129QQMQG00027 |
@@ -119,24 +110,15 @@ Einer der beiden leistungsstarken Nodes. Mit pve02 über Thunderbolt verbunden.
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| Thunderbolt IP | 10.99.1.1 |
 | VMs | vm-proxy-dns-01, checkmk, datacenter-manager, vm-nomad-server-05, vm-nomad-client-05 |
 
-#### Firmware-Stand pve01
-
-Stand: 2026-04-17
-
-- BIOS: 1.26 -- 2024-10-14
-- NVMe Kingston FURY Renegade (nvme0n1): EIFK31.7
-- NVMe Kingston FURY Renegade (nvme1n1): EIFK31.7
-- Proxmox: pve-manager/9.1.7
-- Kernel: 6.17.13-2-pve
+Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
 ### pve02 -- Main Compute Node
 
 Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
 | Seriennummer | MF146VS129EDMHA00010 |
@@ -144,24 +126,15 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| Thunderbolt IP | 10.99.1.2 |
 | VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06 |
 
-#### Firmware-Stand pve02
-
-Stand: 2026-04-17
-
-- BIOS: 1.26 -- 2024-10-14
-- NVMe Kingston FURY Renegade (nvme0n1): EIFK31.7
-- NVMe Kingston FURY Renegade (nvme1n1): EIFK31.7
-- Proxmox: pve-manager/9.1.7
-- Kernel: 6.17.13-2-pve
+Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
 ## NAS
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 | :--- | :--- |
-| Typ | Synology (Modell unbekannt) |
+| Typ | Synology DS2419+ |
 | Funktion | NFS-Exports, Garage S3, Backup-Ziel |
 | Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
 
@@ -200,5 +173,4 @@ IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwe
 
 - [Proxmox Cluster](../proxmox/index.md) -- VM-Zuordnung und IPs der Hosts
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Wartung
-- [Netzwerk-Hardware](../netzwerk/index.md) -- Switches, Access Points, Verkabelung
-- [Netzwerk-Topologie](../netzwerk/index.md) -- Thunderbolt-Netzwerk
+- [Netzwerk](../netzwerk/index.md) -- Switches, Access Points, Thunderbolt-Topologie

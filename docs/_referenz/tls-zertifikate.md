@@ -28,14 +28,14 @@ Zertifikate, die von mehreren Services benötigt werden, liegen auf dem NFS-Shar
 | :--- | :--- | :--- |
 | `/nfs/cert` | Read-only | Geteilte Zertifikate für Services |
 
-## HashiCorp Stack -- TLS deaktiviert
+## HashiCorp Stack -- TLS
 
-Die interne Kommunikation zwischen Consul, Nomad und Vault ist bewusst ohne TLS konfiguriert. Dies ist eine Homelab-Entscheidung, die das Risiko von Zertifikats-Expiry eliminiert. Consul Gossip Encryption schützt den Cluster-Traffic trotzdem.
+Bei Consul und Vault ist die interne Kommunikation bewusst ohne TLS konfiguriert. Dies ist eine Homelab-Entscheidung, die das Risiko von Zertifikats-Expiry eliminiert. Consul Gossip Encryption schützt den Cluster-Traffic trotzdem. Nomad nutzt selbstsignierte Zertifikate; CLI und Skripte verbinden sich mit `NOMAD_SKIP_VERIFY=true`.
 
 | Komponente | TLS | Schutz |
 | :--- | :--- | :--- |
 | Consul | Deaktiviert | Gossip Encryption (symmetrischer Key) |
-| Nomad | Deaktiviert | ACLs aktiv |
+| Nomad | Aktiv (selbstsigniert, `NOMAD_SKIP_VERIFY=true` bei CLI) | ACLs aktiv |
 | Vault | Deaktiviert | Audit Logging, ACLs |
 
 ## Verwandte Seiten

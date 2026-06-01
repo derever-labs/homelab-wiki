@@ -14,7 +14,7 @@ Diese Dokumentation beschreibt die verfügbaren Middleware Chains für Traefik u
 
 ## Übersicht
 
-Alle Services werden über Traefik (VIP 10.0.2.20, vm-traefik-01/02) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
+Alle Services werden über Traefik ([Hosts und IPs](../_referenz/hosts-und-ips.md)) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
 
 ::: info Migration von OAuth2-Proxy/Keycloak auf Authentik
 Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie alle OAuth2-Callback-Routen wurden im Rahmen der Keycloak-Abschaltung entfernt. Alle Services nutzen neu die unten dokumentierten Authentik-Chains.
@@ -41,12 +41,16 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 | Chain | Komponenten | Beschreibung |
 |-------|-------------|--------------|
 | `public-noauth` | crowdsec → secure-headers → error-pages | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
-| `intern-noauth` | ipAllowList → compress | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
+| `intern-noauth` | ipAllowList | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
 | `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen, keine Error Pages (Backends liefern eigene JSON-Errors) |
 
 ### Sonderfall: Authentik Login-Route
 
 Die Authentik-Route selbst verwendet keine der obigen Chains, sondern direkt: `login-ratelimit@file,crowdsec@file,secure-headers@file`. Eine IP-Allowlist ist hier nicht möglich, da externe Clients nach dem ForwardAuth-Redirect auf die Authentik-Login-Seite weitergeleitet werden. Details: [Authentik Integration](../authentik/index.md#integration-mit-traefik).
+
+### Sonderfall: Alerting Webhooks (keep-webhook)
+
+Die `keep-webhook`-Chain (`intern-noauth → keep-webhook-headers`) injiziert ein synthetisches Service-Account-Header-Paar. Alert-Quellen (Grafana, Kuma, Gatus) können keinen Authentik-Login durchlaufen, Keep prüft im OAUTH2PROXY-Modus aber `x-forwarded-email` auf jedem Request. Kein Banner-Inject, da die Webhook-Calls Machine-to-Machine ohne User-Browser sind.
 
 ### Legacy (entfernt)
 
@@ -78,24 +82,37 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die 
 ### Authentik ForwardAuth
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+}
+
 direction: right
 
-User: User
-Traefik: Traefik
-chain: Middleware Chain
-ipcheck: ipAllowList (intern) oder CrowdSec (public)
-fwdauth: authentik-forward-auth
-authentik: Authentik { tooltip: "ForwardAuth /outpost.goauthentik.io/..." }
-compress: compress
-Backend: Backend
+User: User { class: node }
+Traefik: Traefik { class: node }
+chain: Middleware Chain { class: node }
+ipcheck: ipAllowList (intern) oder CrowdSec (public) { class: node }
+fwdauth: authentik-forward-auth { class: node }
+authentik: Authentik { class: node; tooltip: "ForwardAuth /outpost.goauthentik.io/..." }
+Backend: Backend { class: node }
 
 User -> Traefik
 Traefik -> chain
 chain -> ipcheck
 ipcheck -> fwdauth
 fwdauth -> authentik: { style.stroke-dash: 5 }
-fwdauth -> compress
-compress -> Backend
+fwdauth -> Backend
 ```
 
 ### Authentik-Callback
@@ -103,12 +120,6 @@ compress -> Backend
 Die Authentik-Callback-Routen sind in `auth-routes.yml` mit Priority 1000 definiert, damit sie vor anderen Routen matchen. Siehe `standalone-stacks/traefik-proxy/configurations/auth-routes.yml`.
 
 ## Middlewares
-
-### compress
-
-Aktiviert HTTP-Komprimierung mit den Encoding-Präferenzen `br` (Brotli), `zstd`, `gzip`. Bilder und PDFs sind ausgenommen. Ist in allen Chains (ausser `intern-api`) enthalten.
-
-Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
 
 ### error-pages
 
@@ -139,7 +150,7 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die 
 
 ### login-ratelimit
 
-Rate-Limiting für Login-Endpunkte (Authentik). Aktuelle Werte: 50 req/min, Burst 100 (temporär erhöht für Testphase; ursprünglich 10 req/min, Burst 20). Definiert in `middlewares.yml`.
+Rate-Limiting für Login-Endpunkte (Authentik). Definiert in `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
 
 ### ipAllowList
 
@@ -169,32 +180,33 @@ Alle Konfigurationsdateien liegen im Git unter `standalone-stacks/traefik-proxy/
 
 | Datei | Inhalt |
 |-------|--------|
-| `middlewares.yml` | Middleware-Definitionen (ipAllowList, compress, error-pages etc.) |
+| `middlewares.yml` | Middleware-Definitionen (ipAllowList, error-pages, login-ratelimit etc.) |
 | `middleware-chains.yml` | Chain-Definitionen (intern-auth, public-auth etc.) |
 | `tls-options.yml` | TLS-Mindestversion, Cipher Suites |
 | `servers-transports.yml` | `insecureSkipVerify` für interne Backends |
 | `auth-routes.yml` | Authentik-Callback-Routen |
 | `services-external.yml` | Routen für externe/interne File-Provider-Services |
-| `tcp-meeting.yml` | TCP Passthrough |
 
 ## Failover-Test
 
 Getestete Szenarien (G2-Test bestanden):
 
 **Failover (MASTER ausgefallen):**
-- Keepalived auf vm-traefik-01 stoppen
-- Erwartetes Verhalten: VIP wechselt innerhalb ~4s auf vm-traefik-02
-- Prüfen: `ip addr show` auf vm-traefik-02 zeigt 10.0.2.20; Services über VIP erreichbar
+- Keepalived auf dem MASTER-Node stoppen
+- Erwartetes Verhalten: VIP wechselt innerhalb ~4s auf den Backup-Node
+- Prüfen: VIP liegt auf dem Backup-Node; Services über VIP erreichbar
 
 **Failback (MASTER wieder verfügbar):**
-- Keepalived auf vm-traefik-01 starten
-- Erwartetes Verhalten: VIP wechselt zurück auf vm-traefik-01 (Priorität 150 > 100)
-- Prüfen: `ip addr show` auf vm-traefik-01 zeigt 10.0.2.20; Services weiterhin erreichbar
+- Keepalived auf dem MASTER-Node starten
+- Erwartetes Verhalten: VIP wechselt zurück auf den MASTER-Node (höhere Priorität)
+- Prüfen: VIP liegt wieder auf dem MASTER-Node; Services weiterhin erreichbar
 
 **Split-Brain-Check nach Deployment:**
-- Nach dem Ansible-Deploy: `ip addr show` auf beiden Nodes prüfen
-- Nur ein Node darf 10.0.2.20 zeigen
-- Falls beide die VIP halten: VRRP-Auth-Konfiguration und Keepalived-Status prüfen (`systemctl status keepalived`)
+- Nach dem Ansible-Deploy: VIP-Zuordnung auf beiden Nodes prüfen
+- Nur ein Node darf die VIP halten
+- Falls beide die VIP halten: VRRP-Auth-Konfiguration und Keepalived-Status prüfen
+
+Node-Namen und konkrete IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
 ## Verwandte Seiten
 

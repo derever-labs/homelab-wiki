@@ -15,38 +15,15 @@ Fünf Komponenten bilden die automatisierte Content-Akquisition-Pipeline: vier p
 
 ## Übersicht
 
-**reddit-downloader**
-
 | Attribut | Wert |
 |----------|------|
-| Deployment | Nomad Job `batch-jobs/reddit_downloader.nomad` (Periodic Batch) |
-| Schedule | Täglich 02:00 UTC (03:00 CH) |
-| Stash-Integration | Ja (Scan + Generate) |
-| Benachrichtigung | Telegram Ergebnis-Report |
+| reddit-downloader | Nomad Job `batch-jobs/reddit_downloader.nomad` (Periodic Batch) |
+| ph-downloader | Nomad Job `batch-jobs/ph_downloader.nomad` (Periodic Batch) |
+| phdler-telegram-bot | Nomad Job `services/phdler-telegram-bot.nomad` (Service, headless) |
+| reddit_gallery_dl | Nomad Job `batch-jobs/reddit_gallery_dl.nomad` (Periodic Batch) |
+| reddit_gallery_dl_backfill | Nomad Job `batch-jobs/reddit_gallery_dl_backfill.nomad` (Periodic Batch) |
 
-**ph-downloader**
-
-| Attribut | Wert |
-|----------|------|
-| Deployment | Nomad Job `batch-jobs/ph_downloader.nomad` (Periodic Batch) |
-| Schedule | Täglich 02:30 UTC (03:30 CH) |
-| Stash-Integration | Ja (Scan + Generate) |
-| Benachrichtigung | Telegram (auto-delete nach 30 min) |
-
-**phdler-telegram-bot**
-
-| Attribut | Wert |
-|----------|------|
-| Deployment | Nomad Job `services/phdler-telegram-bot.nomad` (Service, headless) |
-| Schedule | Dauerhaft laufend |
-| Funktion | Steuert ph-downloader via Telegram-Befehle |
-
-Zusätzlich laufen zwei gallery-dl-basierte Batch Jobs:
-
-| Attribut | Wert |
-|----------|------|
-| reddit_gallery_dl | `batch-jobs/reddit_gallery_dl.nomad` -- Täglich, lädt Reddit-Galerien via gallery-dl |
-| reddit_gallery_dl_backfill | `batch-jobs/reddit_gallery_dl_backfill.nomad` -- Backfill-Variante für historische Inhalte |
+Die beiden gallery-dl-Jobs laden Reddit-Galerien via gallery-dl; `reddit_gallery_dl_backfill` ist die Backfill-Variante für historische Inhalte.
 
 ## Workflow
 
@@ -109,41 +86,32 @@ Batch.PH -> Notify.TGAPI
 
 Läuft täglich um 03:00 Uhr (CH) und nutzt [BDFR](https://github.com/aliparlakci/bulk-downloader-for-reddit) (Bulk Downloader for Reddit), um gespeicherte Posts des konfigurierten Reddit-Accounts herunterzuladen.
 
-**Ablauf:**
+**Ablauf:** Gespeicherte Posts via BDFR (Reddit OAuth) herunterladen, dedupliziert -> bei neuen Downloads Stash-Scan + Generate -> Telegram-Ergebnis-Report. Details siehe Job-Datei.
 
-1. BDFR installieren und mit Reddit OAuth-Credentials authentifizieren
-2. Gespeicherte Posts herunterladen (dedupliziert, sortiert nach `new`)
-3. Redgifs-Module ist deaktiviert (429 Rate-Limit-Probleme)
-4. Bei neuen Downloads: Stash Library Scan und Generate triggern
-5. Ergebnis-Report über Telegram senden
-
-**Retry-Logik:** Bis zu 3 Versuche mit 10 Minuten Pause zwischen den Versuchen bei Rate-Limit-Problemen.
+Das Redgifs-Modul ist wegen 429-Rate-Limits deaktiviert. Bei Rate-Limit-Problemen bis zu 3 Versuche mit 10 Minuten Pause.
 
 **Vault Secrets:**
 
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/reddit` | `client_secret`, `user_token` |
-| `kv/data/telegram` | `bot_token`, `chat_id` |
-| `kv/data/stash` | `api_key` |
+| `kv/data/shared/stash` | `api_key` |
+
+Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service (eigener Bot Token in Vault), der downloader liest selbst kein Telegram-Secret.
 
 ### ph-downloader
 
 Läuft täglich um 03:30 Uhr (CH), 30 Minuten nach dem reddit-downloader, um Ressourcenkonflikte zu vermeiden. Nutzt `phdler.py` (ein Python-Script im NFS-Volume) zusammen mit `yt-dlp` für den Download.
 
-**Ablauf:**
-
-1. Abhängigkeiten installieren (`yt-dlp`, `requests`, `beautifulsoup4`)
-2. `phdler.py start` ausführen (liest Download-Liste aus SQLite-Datenbank)
-3. Stash Library Scan und Generate triggern
-4. Ergebnis-Report über Telegram senden (wird nach 30 Minuten automatisch gelöscht)
+**Ablauf:** Download via `phdler.py` (Liste aus SQLite-Datenbank) -> Stash-Scan + Generate -> Telegram-Ergebnis-Report. Details siehe Job-Datei.
 
 **Vault Secrets:**
 
 | Pfad | Keys |
 | :--- | :--- |
-| `kv/data/telegram` | `bot_token`, `chat_id` |
-| `kv/data/stash` | `api_key` |
+| `kv/data/shared/stash` | `api_key` |
+
+Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service, der downloader liest selbst kein Telegram-Secret.
 
 ### phdler-telegram-bot
 
@@ -166,9 +134,7 @@ Ein dauerhaft laufender Service ohne Web-UI, der Telegram-Nachrichten per Long P
 - Python-Script wird als Nomad Template inline im Job definiert
 - Polling-Intervall: 3 Sekunden
 
-::: warning Sicherheit
-Der Telegram Bot Token ist aktuell direkt im Nomad Job Template hinterlegt, nicht in Vault. Nur Nachrichten von der konfigurierten `TELEGRAM_CHAT_ID` werden verarbeitet.
-:::
+Der Bot Token kommt aus Vault (`kv/data/shared/telegram`). Nur Nachrichten von der konfigurierten `TELEGRAM_CHAT_ID` werden verarbeitet.
 
 ## Konfiguration
 
@@ -180,12 +146,7 @@ Alle drei Komponenten haben eine negative Affinität für `vm-nomad-client-04` (
 
 ### Timing
 
-Die Batch Jobs laufen gestaffelt, um gleichzeitigen NFS-Zugriff und CPU-Last zu minimieren:
-
-1. **03:00 CH:** reddit-downloader startet
-2. **03:30 CH:** ph-downloader startet (nach reddit-downloader)
-
-`prohibit_overlap = true` bei beiden Jobs verhindert, dass eine neue Ausführung startet, während die vorherige noch läuft.
+Die Batch Jobs laufen gestaffelt (reddit-downloader 03:00 CH, ph-downloader 03:30 CH), um gleichzeitigen NFS-Zugriff und CPU-Last zu minimieren. `prohibit_overlap = true` bei beiden Jobs verhindert, dass eine neue Ausführung startet, während die vorherige noch läuft.
 
 ## Verwandte Seiten
 

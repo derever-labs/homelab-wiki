@@ -18,9 +18,9 @@ Immo Monitor ist eine SvelteKit-App, die Mietinserate aus dem Homegate-Scraper v
 |----------|------|
 | URL | [immo.ackermannprivat.ch](https://immo.ackermannprivat.ch) |
 | Deployment | Nomad Job `services/immo-monitor.nomad` |
-| Datenbank | PostgreSQL `immo` (User `immo`) |
-| Auth | `intern-auth@file` (intern, Authentik + IP-Allowlist) + `public-auth@file` (extern, Authentik + CrowdSec) |
-| Zugriff | Gruppen `admin` und `family` |
+| Storage | PostgreSQL `immo` -- siehe [Datenbanken](../_referenz/datenbanken.md) |
+| Auth | `intern-auth@file` (intern, Authentik + IP-Allowlist) + `public-auth@file` (extern, Authentik + CrowdSec), Gruppen `admin` und `family` |
+| Secrets | `kv/data/immo-monitor` |
 
 ## Rolle im Stack
 
@@ -108,7 +108,7 @@ Zwei unabhängige Datenquellen werden nebeneinander geführt:
 - Die `project_listing`-Junction verknüpft Inserate mit Neubauprojekten (z.B. alle Mattenpark-Inserate zeigen auf project_id 1 und 45).
 
 ::: warning Kein automatisches Status-Tracking
-Wenn ein Homegate-Listing inaktiv wird, bleibt der verknüpfte `project_unit.status` auf `available`. Die Ground Truth muss über Projekt-Websites oder den melon.rent-API-Scraper (geplant) nachgezogen werden.
+Wenn ein Homegate-Listing inaktiv wird, bleibt der verknüpfte `project_unit.status` auf `available`. Die Ground Truth muss über Projekt-Websites nachgezogen werden.
 :::
 
 ### Unit-Status-Workflow
@@ -138,6 +138,51 @@ Mehrstufige Projekte werden als Parent + Kinder modelliert. Beispiele:
 - Furter Areal Im Holzpark: Parent + Etappen 1-3 (bestand), Etappe 4 MFH (bezogen Sept 2024), Etappe 5 (Baugesuch Jan 2026)
 
 Die Detail-Seite zeigt Kinder-Projekte als klickbare Verknüpfung.
+
+## Firmen- und Personen-Sektion
+
+Die Routes `/firmen`, `/firmen/[id]`, `/personen` und `/personen/[id]` derselben App bilden beteiligte Firmen und Personen ab, bidirektional mit Projekten verknüpft. Auslöser war die Tiefenrecherche zum Furter-Areal in Dottikon: Die textuellen `developer`/`architect`/`general_contractor`-Felder pro Projekt skalieren nicht, weil eine Firma in mehreren Projekten auftaucht (und als Freitext mehrfach mit Tippfehlern existieren würde) und eine Person mehrere Firmen-Mandate hat. Der eigentliche Recherche-Wert ist die Netzwerk-Analyse -- wer sitzt mit wem im VR. Beispiel: Alexander Furter Renold ist gleichzeitig Partner bei ffbk und VR-Präsident bei Furter Immotrade; Schäfer Holzbautechnik AG ist Holzbauer auf allen Furter-Projekten, hat aber auch eigene Projekte (Museum Setz, Fussgängerbrücke Dottikon, Kita la maison). Mit `company`- und `person`-Entitäten lassen sich diese Beziehungen sauber abbilden und auf eigenen Detailseiten visualisieren.
+
+### Relationen-Datenmodell
+
+Sieben Tabellen in `src/lib/server/db/schema.ts` ergänzen das Listing-/Projekt-Schema:
+
+- **`company`** -- Stammdaten einer Firma (Name, Slug, UID, Kategorie, Adresse, Gründungsjahr, optionale `parent_company_id`).
+- **`company_source`** -- Quellen-URLs pro Firma (Moneyhouse, Zefix, eigene Website, Presse).
+- **`person`** -- Personen mit Name, Slug, Beschreibung. Keine privaten Daten -- nur Handelsregister-Öffentlichkeit.
+- **`person_company`** -- Rolle einer Person in einer Firma mit optionalem Zeitraum (`start_year`, `end_year`, `active`).
+- **`project_company`** -- Rolle einer Firma in einem Projekt (z.B. `architect`, `holzbau`).
+- **`project_person`** -- Direkte Personen-Referenz pro Projekt, falls die Person nicht über eine Firma im Projekt steckt.
+- **`project_photo`** -- Projekt-Fotos ohne Umweg über `listing_photo`, kategorisiert nach `etappe`, `typologie` und `category` (exterior, interior, floorplan, site, rendering, historical); wird von einem HTTP-Downloader mit Wayback-Fallback parallel zur DB-Migration befüllt.
+
+Zusätzlich bekommt `project` das Feld `estimated_total_cost_chf` für die Bausummen-Recherche.
+
+::: info Freitext mit Konstanten-Liste
+`company.category`, `person_company.role` und `project_company.role` sind `text`-Felder mit einer kuratierten Wertetabelle in `src/lib/constants/roles.ts`. Neue Werte können ohne Migration hinzugefügt werden; unbekannte Werte werden mit einem Default-Badge gerendert, damit sie im UI sichtbar bleiben.
+:::
+
+### Firmen- und Personen-Routes
+
+- **`/firmen`** -- Grid aller Firmen mit aggregierter Projekt- und Personen-Zahl, sortiert nach den meisten Projekten. Filter-Chips werden dynamisch aus den verwendeten `category`-Werten generiert und wie Kategorie-Badges eingefärbt.
+- **`/firmen/[id]`** -- Firmen-Detail: Steckbrief, Beschreibung, Research-Notizen, Projekte nach Rolle gruppiert, Personen mit Rollen und Zeiträumen, Quellen. Für die zentralen Firmen (`furter-immotrade-ag`, `schaefer-holzbautechnik-ag`, `schaefer-generalunternehmung-ag`) wird zusätzlich ein D2-Verflechtungsdiagramm eingeblendet.
+- **`/personen`** und **`/personen/[id]`** -- analoge Struktur; die Detail-Seite zeigt alle Mandate (Firmen + Rollen, aktive zuerst) und direkt verknüpfte Projekte.
+- **`/projekte/[id]`** -- eine "Beteiligte"-Box zwischen Header und Unit-Tabelle gruppiert Firmen nach Rolle (verlinkt auf `/firmen/[id]`) und Personen (auf `/personen/[id]`). Die textuellen Fallback-Felder `project.developer` etc. bleiben im Sidebar-Steckbrief, falls ein Projekt noch keine Relation hat.
+
+### Netzwerk-Diagramme
+
+Fünf D2-Diagramme in `src/lib/diagrams/` werden statisch zu SVG gerendert (`static/diagrams/`) und als `<img src="/diagrams/..."/>` eingebunden -- das vermeidet Client-side-Rendering und zusätzliche Laufzeit-Abhängigkeiten:
+
+- **`furter-netzwerk.d2`** -- die komplette Furter-/ffbk-Gruppe mit Baar-Cluster, verbindenden Personen und Revisoren.
+- **`schaefer-netzwerk.d2`** -- Schäfer-Gruppe (Holzbautechnik + Generalunternehmung + Zimmerei Aarau) mit VR und Geschäftsleitung.
+- **`furter-schaefer-verflechtung.d2`** -- der zentrale Graph zur Frage, wie Schäfer und Furter zusammenhängen: Furter Immotrade ist Grundeigentümerin, Schäfer ist Mieter und bevorzugter Holzbauer; Auslöser war die Übergabe von Severin Furter 2013 (gesundheitliche Gründe), 2015 Umfirmierung Furter Systembau zu Schäfer Generalunternehmung (selbe UID CHE-109.389.986).
+- **`furter-timeline.d2`** -- Zeitstrahl 1905 bis 2026 mit den vier Generationen Emil, Josef, Severin, Alexander und den wichtigsten Firmengründungen/Umfirmierungen.
+- **`furter-holzpark-etappen.d2`** -- Etappen-Übersicht der Wohnsiedlung Im Holzpark (Gebäude A/B/C/D + Silo + Etappe 4 MFH).
+
+Gerendert wird mit der d2 CLI; das Repo-Script `scripts/build-diagrams.sh` rendert alle `.d2`-Files aus `src/lib/diagrams/` nach `static/diagrams/`.
+
+### Seeds und Research-Scraper
+
+Idempotente Seed-Scripts unter `scripts/seed/` befüllen Firmen, Personen, Verknüpfungen und Projekt-Fotos; Details im Repo-README. Der Research-Scraper `scripts/research/scrape.ts` nutzt Playwright mit Browser-User-Agent statt curl+grep, weil Quellen wie ffbk.ch oder archive.org JS-gerendert sind.
 
 ## Karte: Grid-Clustering
 
@@ -187,20 +232,12 @@ Für Projekt-Units aus der `project_unit`-Tabelle greift zusätzlich `project.ma
 
 ## Datenbank
 
-Die App nutzt eine eigene PostgreSQL-Datenbank (`postgres.service.consul:5432/immo`, User `immo`).
-
-Der DB-User `immo` hat aktuell volle Rechte auf die Datenbank.
-
-## Vault Secrets
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/immo-monitor` | `db_password` |
+Die App nutzt eine eigene PostgreSQL-Datenbank `immo`, in der der DB-User `immo` volle Rechte hat. Verbindungsdaten, User und Vault-Pfad sind kanonisch in [Datenbanken](../_referenz/datenbanken.md) hinterlegt.
 
 ## Verwandte Seiten
 
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Scraper und Datenbank-Schema
-- [NAS Storage](../nas-storage/index.md) -- NFS-Share fuer Photo-Archiv
+- [NAS Storage](../nas-storage/index.md) -- NFS-Share für Photo-Archiv
 - [n8n](../n8n/index.md) -- Shared PostgreSQL-Datenbank
 - [Metabase](../metabase/index.md) -- Alternatives BI-Dashboard
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung

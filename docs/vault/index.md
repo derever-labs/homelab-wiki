@@ -17,11 +17,10 @@ Vault ist das zentrale Secrets Management. Alle Passwörter, Tokens und API-Keys
 | Attribut | Wert |
 |----------|------|
 | Deployment | Ansible + Systemd (3-Node Raft Cluster) |
-| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 
-Vault ist das zentrale Secrets Management. Alle Passwörter, Tokens und API-Keys werden hier gespeichert und versioniert. Kein Service im Cluster speichert Secrets lokal -- alles kommt aus Vault. Nomad Jobs authentifizieren sich über Workload Identity (JWT) und erhalten Secrets zur Laufzeit, ohne dass statische Tokens in Job-Definitionen stehen.
+Kein Service im Cluster speichert Secrets lokal -- alles kommt aus Vault. Nomad Jobs authentifizieren sich über Workload Identity (JWT) und erhalten Secrets zur Laufzeit, ohne dass statische Tokens in Job-Definitionen stehen.
 
 ::: danger Kritischer Service
 Bei Vault-Ausfall können laufende Dienste keine Secrets mehr erneuern und neue Jobs nicht starten (Workload Identity schlägt fehl). Vault benötigt mindestens 2 von 3 Servern für Quorum.
@@ -202,3 +201,4 @@ Secrets für einen Nomad-Job liegen immer unter `kv/<job_id>`. Der Job `postgres
 - [Vault Betrieb](betrieb.md) -- Unseal, Secret-Verwaltung, Troubleshooting
 - [Nomad](../nomad/) -- Workload Scheduler mit Vault-Integration
 - [Consul](../consul/) -- Service Discovery im selben Cluster
+- [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Adressen der Vault-Nodes

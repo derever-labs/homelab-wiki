@@ -34,7 +34,7 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | 1G-Switch-Kammerli | 10.0.0.181 | Zugangsswitch Kämmerli |
 | POE-Switch-Keller | 10.0.0.184 | PoE Switch Keller |
 | USW-Flex-Mini-Dani | 10.0.0.185 | Mini Switch Dani |
-| USW-Flex-Mini-Gaeste | 10.0.0.186 | Mini Switch Gäste |
+| USW-Flex-Mini-Gäste | 10.0.0.186 | Mini Switch Gäste |
 | AP-U6-PRO-Nina | 10.0.0.191 | Access Point Wi-Fi 6 |
 | AP-AC-LR-Dani | 10.0.0.192 | Access Point Wi-Fi 5 |
 | AP-AC-LR-Gaste | 10.0.0.193 | Access Point Wi-Fi 5 |
@@ -48,8 +48,8 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | Node | IP | Rolle | CPU / RAM |
 | :--- | :--- | :--- | :--- |
 | pve00 | 10.0.2.40 | Quorum / VM Host | 4 CPU / 16 GB |
-| pve01 | 10.0.2.41 | Main Compute Node | 16 CPU / 64 GB |
-| pve02 | 10.0.2.42 | Main Compute Node | 16 CPU / 64 GB |
+| pve01 | 10.0.2.41 | Main Compute Node | 14 CPU (20 Threads) / 96 GB |
+| pve02 | 10.0.2.42 | Main Compute Node | 14 CPU (20 Threads) / 96 GB |
 
 ## Externe Plattformen
 
@@ -64,7 +64,7 @@ DNS via Pi-hole-Override (lxc-dns-01/02 → `100.81.116.122`). In PDM (`pdm.acke
 
 Cross-Site-VPN ist heute Tailscale, Endzustand ist Unifi SD-WAN sobald Public-IP an Nana-Seite verfügbar.
 
-DCLab hat **keinen** externen Watchdog -- siehe Memory `feedback_no_cross_cluster_coupling`.
+DCLab hat **keinen** externen Watchdog.
 :::
 
 ## Infrastruktur
@@ -79,13 +79,6 @@ DCLab hat **keinen** externen Watchdog -- siehe Memory `feedback_no_cross_cluste
 | checkmk | 10.0.2.150 | 2000 | pve01 | Monitoring System |
 | pbs-backup-server | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
 | datacenter-manager | 10.0.2.60 | 99998 | pve01 | Management Tools |
-
-### Stillgelegte VMs (Parallelbetrieb)
-
-| VM | IP | VM-ID | Host | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| vm-proxy-dns-01 | 10.0.2.3 | 4001 | pve01 | IP verschoben, wird stillgelegt |
-| vm-vpn-dns-01 | 10.0.2.4 | 4002 | pve02 | IP verschoben, wird stillgelegt |
 
 ## Nomad Server
 

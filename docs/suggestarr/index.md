@@ -10,9 +10,9 @@ tags:
 
 # SuggestArr
 
-## Übersicht
-
 SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisierte Film-/Serien-Empfehlungen über Jellyseerr.
+
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
@@ -23,9 +23,15 @@ SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisier
 
 ## Rolle im Stack
 
-SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisierte Film-/Serien-Empfehlungen. Die Empfehlungen werden als **Pending Requests** in Jellyseerr erstellt -- ein Admin muss sie manuell genehmigen, bevor Radarr/Sonarr den Download starten.
+Die Empfehlungen werden als **Pending Requests** in Jellyseerr erstellt -- ein Admin muss sie manuell genehmigen, bevor Radarr/Sonarr den Download starten.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 JF: Jellyfin { style.border-radius: 8 }
@@ -46,12 +52,12 @@ JS -> ARR: Genehmigt
 
 ### Externe Services
 
-| Service | Adresse | Zweck |
-| :--- | :--- | :--- |
-| Jellyfin | `jellyfin.service.consul:8096` | Watch-History lesen |
-| Jellyseerr | `jellyseerr.service.consul:5055` | Requests erstellen |
-| Ollama | `ollama.service.consul:11434` | LLM (gemma4:e2b) |
-| TMDB | `api.themoviedb.org` | Film-/Serien-Metadaten |
+| Service | Zweck |
+| :--- | :--- |
+| `jellyfin.service.consul` | Watch-History lesen |
+| `jellyseerr.service.consul` | Requests erstellen |
+| `ollama.service.consul` | LLM-Empfehlungen |
+| `api.themoviedb.org` | Film-/Serien-Metadaten |
 
 ### Jellyseerr-Integration
 
@@ -63,20 +69,7 @@ SuggestArr nutzt einen **dedizierten lokalen User** `suggestarr@local` in Jellys
 
 ### LLM
 
-- **Modell:** gemma4:e2b (kleinstes Gemma 4 Modell)
-- **Provider:** Ollama (lokal im Cluster)
-- **API:** OpenAI-kompatibel (`/v1/chat/completions`)
-- Beta-Feature "Advanced Suggestion Algorithm" aktiviert
-
-### Filter
-
-- Genre-Ausschluss: Horror
-- Rating-Quelle: TMDB
-- Bereits heruntergeladene und angefragte Titel werden ausgeschlossen
-
-### Cron
-
-- Automatische Empfehlungen: **Sonntags 06:00 Uhr**
+Ollama-API (`/v1/chat/completions`), lokal im Cluster, OpenAI-kompatibel.
 
 ## Betrieb
 

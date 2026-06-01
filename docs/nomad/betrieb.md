@@ -27,16 +27,16 @@ Alle drei Server sind gleichwertig als API-Endpunkt nutzbar. ACLs sind aktiv -- 
 
 **Preemption** ist seit 01.04.2026 für Service- und Batch-Jobs aktiv. Nomad kann niedrigprioritäre Allocations verdrängen, um höherprioritären Jobs Platz zu schaffen. Das Mindest-Prioritätsdelta beträgt 10 Punkte (Priorität 100 kann Priorität 90 oder tiefer verdrängen). Verdrängte Jobs werden automatisch rescheduled, sofern eine `reschedule`-Stanza konfiguriert ist.
 
-**Smart Shutdown (v10.2, Refactor 2026-04-23/24)** -- der Drain wird nicht mehr ueber die Nomad-Client-Option `drain_on_shutdown` getriggert, sondern explizit ueber einen `ExecStop`-Drop-in auf `nomad.service` mit einem `systemctl is-system-running`-Guard. Unterschied:
+**Smart Shutdown (v10.2, Refactor 2026-04-23/24)** -- der Drain wird nicht mehr über die Nomad-Client-Option `drain_on_shutdown` getriggert, sondern explizit über einen `ExecStop`-Drop-in auf `nomad.service` mit einem `systemctl is-system-running`-Guard. Unterschied:
 
-- **Bei Reboot / Halt / Shutdown** (`systemctl reboot`) laesst der Guard den Shutdown-Pfad durch, `ExecStop` triggert in Reihenfolge: `nomad node drain -enable -self -yes -deadline 5m -ignore-system`, dann `drbd-reactorctl evict --delay 30 linstor_db` (nur wenn ein UpToDate-Peer existiert, Split-Brain-Schutz), dann Mount-Wait-Loop fuer LINSTOR-CSI-Volumes.
+- **Bei Reboot / Halt / Shutdown** (`systemctl reboot`) lässt der Guard den Shutdown-Pfad durch, `ExecStop` triggert in Reihenfolge: `nomad node drain -enable -self -yes -deadline 5m -ignore-system`, dann `drbd-reactorctl evict --delay 30 linstor_db` (nur wenn ein UpToDate-Peer existiert, Split-Brain-Schutz), dann Mount-Wait-Loop für LINSTOR-CSI-Volumes.
 - **Bei systemctl restart nomad** (Config-Reload, Ansible-Run) wird der Guard abgewiesen (Zustand `running`) und der Node draint NICHT. Tasks bleiben auf dem Node, Nomad-Agent zyklt in unter 10 Sekunden.
 
-Historische Falsche Pfade: v10.0 hatte `leave_on_interrupt`/`leave_on_terminate` + `KillSignal=SIGINT` versucht -- funktioniert nicht, weil `drain_on_shutdown` dominiert. v10.1 hatte eine eigene `nomad-shutdown-drain.service` mit `Conflicts=shutdown.target` -- beim Live-Reboot-Test auf client-04 (2026-04-24) hat der ExecStop dort nicht gefeuert (bekanntes systemd-Timing-Issue mit `DefaultDependencies=no`). v10.2 nutzt stattdessen einen Drop-in `/etc/systemd/system/nomad.service.d/20-shutdown-drain.conf` mit `ExecStop=` direkt auf `nomad.service` -- das feuert zuverlaessig im Stop-Lifecycle.
+Historische falsche Pfade: v10.0 hatte `leave_on_interrupt`/`leave_on_terminate` + `KillSignal=SIGINT` versucht -- funktioniert nicht, weil `drain_on_shutdown` dominiert. v10.1 hatte eine eigene `nomad-shutdown-drain.service` mit `Conflicts=shutdown.target` -- beim Live-Reboot-Test auf client-04 (2026-04-24) hat der ExecStop dort nicht gefeuert (bekanntes systemd-Timing-Issue mit `DefaultDependencies=no`). v10.2 nutzt stattdessen einen Drop-in `/etc/systemd/system/nomad.service.d/20-shutdown-drain.conf` mit `ExecStop=` direkt auf `nomad.service` -- das feuert zuverlässig im Stop-Lifecycle.
 
-Zusaetzlich: `nomad-boot-enable.service` hat `EnvironmentFile=-/etc/nomad-boot-enable/token.env` (graceful bei fehlendem Token) und bewusst KEIN `PartOf=nomad.service` (sonst wuerde jeder apt-daily-upgrade-Trigger die Unit erneut aufrufen -- das war der Vorfall vom 22.04.2026). `/var/lib/nomad/drain-manual` dient als Sentinel-File: solange es existiert, ueberspringt `nomad-boot-enable` das Re-Enable beim Boot (Admin-Drain bleibt ueber Reboot hinweg erhalten).
+Zusätzlich: `nomad-boot-enable.service` hat `EnvironmentFile=-/etc/nomad-boot-enable/token.env` (graceful bei fehlendem Token) und bewusst KEIN `PartOf=nomad.service` (sonst würde jeder apt-daily-upgrade-Trigger die Unit erneut aufrufen -- das war der Vorfall vom 22.04.2026). `/var/lib/nomad/drain-manual` dient als Sentinel-File: solange es existiert, überspringt `nomad-boot-enable` das Re-Enable beim Boot (Admin-Drain bleibt über Reboot hinweg erhalten).
 
-Ausgerollt via `scripts/install_smart_shutdown_v10_2.sh` im Homelab-Infra-Repo. Auf allen Nodes ausserdem `needrestart`-Blacklist fuer `nomad.service` (`/etc/needrestart/conf.d/nomad.conf`), damit apt-daily-upgrade Nomad nicht per daemon-reexec restartet.
+Ausgerollt via `scripts/install_smart_shutdown.sh` im Homelab-Infra-Repo. Auf allen Nodes ausserdem `needrestart`-Blacklist für `nomad.service` (`/etc/needrestart/conf.d/nomad.conf`), damit apt-daily-upgrade Nomad nicht per daemon-reexec restartet.
 
 **Restart/Reschedule Policies** sind auf allen CSI-Jobs konfiguriert:
 - `restart` -- lokaler Neustart des Tasks bei Crashes (3 Versuche in 5 Minuten)
@@ -83,3 +83,12 @@ Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart do
 Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
 
 Für den regulären Betrieb wird ein ACL-Token mit der Policy `operator` benötigt (erlaubt Jobs deployen, Logs lesen, Allocs verwalten).
+
+## Verwandte Seiten
+
+- [Nomad Übersicht](./index.md) -- Architektur und Komponenten des Clusters
+- [Nomad Referenz](./referenz.md) -- Nodes, Ports und Konfigurationsdetails
+- [Nomad Timeouts](./timeouts.md) -- Timeout-Parameter für Deploys und Pulls
+- [Linstor Betrieb](../linstor-storage/betrieb.md) -- CSI-Storage, Boot-Race und Failover
+- [Consul](../consul/index.md) -- Service Discovery und Health Checks
+- [Vault](../vault/index.md) -- Secret-Injection für Jobs

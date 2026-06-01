@@ -16,11 +16,16 @@ Konsolidierte Übersicht aller periodischen Nomad Jobs. Die Job-Dateien liegen i
 
 ```d2
 direction: right
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
 t01: 01:00 { style.border-radius: 8 }
 t03: 03:00 { style.border-radius: 8 }
 t0330: 03:30 { style.border-radius: 8 }
-t04: 04:00 { style.border-radius: 8 }
 t05: 05:00 { style.border-radius: 8 }
 t06: 06:00 { style.border-radius: 8 }
 
@@ -60,7 +65,7 @@ t0145 -> Backup.cs
 t02 -> Backup.vb
 t03 -> Backup.pb
 t0330 -> Backup.ib
-t04 -> Neustart.rj
+t05 -> Neustart.rj
 t05 -> Neustart.rv
 t05 -> Bereinigung.dc
 t06 -> Container.cr
@@ -84,10 +89,10 @@ t06 -> Container.cr
 | Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
 |:----|:----|:---------|:------|:----------------|:---------------|
 | `daily_container_restart` | sysbatch | Täglich 06:00 | Jellyfin via `nomad job restart` neustarten | Alle Nodes | raw_exec, Priorität 100 |
-| `daily_restart_jellyfin` | batch | Täglich 04:00 | Jellyfin via Nomad HTTP API neustarten | Nur `vm-nomad-client-05` | exec, `curl POST /v1/job/jellyfin/restart` |
+| `daily_restart_jellyfin` | batch | Täglich 05:00 | Jellyfin via `nomad job restart` neustarten, wenn keine aktiven Streams laufen | `vm-nomad-client-0[1-4]` (regexp) | raw_exec, prüft aktive Streams per curl vor dem Restart |
 
 ::: info Jellyfin-Neustart: mehrere Jobs aktiv
-`daily_container_restart` (06:00, raw_exec) und `daily_restart_jellyfin` (04:00, HTTP API) starten beide Jellyfin täglich neu. Zusätzlich startet `daily_reboot` um 04:00 alle Nodes neu, was Jellyfin ebenfalls betrifft.
+`daily_container_restart` (06:00) und `daily_restart_jellyfin` (05:00) starten beide Jellyfin täglich neu. Letzterer prüft zuvor, ob aktive Streams laufen.
 :::
 
 ### Backup
@@ -114,23 +119,7 @@ Watchtower wurde am 2026-04-14 vollständig zurückgebaut. Renovate erstellt Pul
 
 ## Reihenfolge und Abhängigkeiten
 
-Die Jobs laufen unabhängig voneinander, aber die zeitliche Staffelung ist bewusst gewählt:
-
-1. **01:00** -- `docker_prune`: Bereinigt Docker-Ressourcen
-1. **01:30** -- `nomad-snapshot`: Nomad Raft Snapshot
-1. **01:45** -- `consul-snapshot`: Consul Raft Snapshot
-1. **02:00** -- `vault-backup`: Vault Raft Snapshot
-2. **03:00** -- `postgres-backup`: Datenbank-Backup
-3. **03:30** -- `influxdb-backup`: Metriken-Backup (nach PostgreSQL)
-4. **04:00** -- `daily_restart_jellyfin`: Jellyfin-Neustart
-4. **05:00** -- `renovate`: Docker-Image-Updates via PRs
-5. **05:00** -- `daily_cleanup`: System-Bereinigung
-6. **06:00** -- `daily_container_restart`: Jellyfin-Neustart (Duplikat, konsolidieren)
-
-## Konsolidierungspotenzial
-
-- **Jellyfin-Neustarts:** Zwei Jobs starten Jellyfin neu (`daily_container_restart`, `daily_restart_jellyfin`). Einer davon würde genügen.
-- **Docker Prune:** Läuft sowohl in `docker_prune` als auch in `daily_cleanup`. Könnte in einem Job zusammengefasst werden.
+Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewusst gewählt: zuerst Bereinigung, dann Snapshots, danach Datenbanken, anschliessend Neustarts und zuletzt Updates. Die konkreten Zeiten stehen in den Tabellen oben und im Zeitplan-Diagramm.
 
 ## Verwandte Seiten
 

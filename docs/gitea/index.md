@@ -17,37 +17,46 @@ Gitea ist der zentrale Git-Server für private und interne Repositories. Er erg�
 | Attribut | Wert |
 |----------|------|
 | URL | [gitea.ackermannprivat.ch](https://gitea.ackermannprivat.ch) |
-| SSH | `ssh://git@gitea:2222` (Port 2222) |
 | Deployment | Nomad Job `services/gitea.nomad` |
 | Storage | Linstor CSI (`gitea-data`, 5 GiB replicated) |
-| Datenbank | PostgreSQL `gitea` (Shared Cluster via `postgres.service.consul`) |
 | Auth | Authentik OIDC + `intern-auth@file` |
-
-## Rolle im Stack
-
-Gitea ist der zentrale Git-Server für private und interne Repositories. Er ergänzt GitHub für Repos, die ausschliesslich intern bleiben sollen (z.B. Konfigurationen, Automatisierungen). Über den integrierten SSH-Server (Port 2222) kann direkt mit Git gearbeitet werden, ohne den Webzugang zu nutzen.
+| Secrets | Vault `kv/data/gitea` (`postgres_password`) |
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+}
 
 Clients: {
   style.stroke-dash: 4
-  GIT: "Git CLI\n(SSH Port 2222)"
-  WEB: Browser
+  GIT: "Git CLI\n(SSH Port 2222)" { class: node }
+  WEB: Browser { class: node }
 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
   tooltip: 10.0.2.20
-  R1: "Router: gitea.*\nintern-auth"
+  R1: "Router: gitea.*\nintern-auth" { class: node }
 }
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  GT: "Gitea\n(Port 3003)"
-  PG: "PostgreSQL 16\n(postgres.service.consul)" { shape: cylinder }
+  GT: "Gitea\n(Port 3003)" { class: node }
+  PG: "PostgreSQL\n(postgres.service.consul)" { shape: cylinder }
 }
 
 Storage: {
@@ -56,27 +65,15 @@ Storage: {
 }
 
 Clients.WEB -> Traefik.R1: HTTPS
-Traefik.R1 -> Nomad.GT
+Traefik.R1 -> Nomad.GT: HTTP
 Clients.GIT -> Nomad.GT: SSH
-Nomad.GT -> Nomad.PG
-Nomad.GT -> Storage.CSI
+Nomad.GT -> Nomad.PG: SQL
+Nomad.GT -> Storage.CSI: Mount
 ```
 
 ## Konfiguration
 
-### Storage
-
-Gitea verwendet ein Linstor CSI Volume (`gitea-data`, 5 GiB, replicated) anstatt NFS. Das Volume wird unter `/data` im Container gemountet und enthält Repositories, Konfiguration und Logs.
-
-### Datenbank
-
-PostgreSQL-Datenbank `gitea` auf dem Shared Cluster, Zugriff über Consul DNS (`postgres.service.consul:5432`). Ein Prestart-Task wartet auf PostgreSQL-Verfügbarkeit bevor Gitea startet.
-
-### Vault Secrets
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/gitea` | `postgres_password` |
+Das Linstor CSI Volume wird unter `/data` gemountet (Repositories, Konfiguration, Logs). Ein Prestart-Task wartet auf PostgreSQL-Verfügbarkeit, bevor Gitea startet.
 
 ### SSH
 
@@ -92,17 +89,7 @@ Es gibt im offiziellen Image keinen offiziellen Schalter (env-Variable, Flag), u
 
 ### Sicherheit
 
-- Registrierung ist deaktiviert (`DISABLE_REGISTRATION=true`)
-- Anmeldung erforderlich zum Browsen (`REQUIRE_SIGNIN_VIEW=true`)
-- OpenID Sign-in und Sign-up deaktiviert
-
-## Abhängigkeiten
-
-- **PostgreSQL** -- Shared Cluster (`postgres.service.consul`)
-- **Traefik** -- HTTPS-Routing und Middleware
-- **Linstor** -- CSI Volume für Daten-Persistenz
-- **Authentik** -- OIDC-Provider (konfiguriert in Gitea UI)
-- **Consul** -- Service Discovery und DNS
+Registrierung ist deaktiviert, Anmeldung zum Browsen erforderlich, OpenID Sign-in und Sign-up deaktiviert. Konkrete Konfiguration im Nomad Job `services/gitea.nomad`.
 
 ## SSH über ProxyJump
 
@@ -110,17 +97,7 @@ Gitea läuft als Nomad Job und kann zwischen `vm-nomad-client-05` und `vm-nomad-
 
 **Lösung:** ProxyJump über einen Nomad Server. Die Server-VMs sind fix und haben Zugang zum Cluster-Netzwerk mit Consul DNS. Über den Proxy wird `gitea.service.consul` zur Laufzeit aufgelöst.
 
-`~/.ssh/config` Eintrag:
-
-```
-Host gitea
-  HostName gitea.service.consul
-  User git
-  Port 2222
-  ProxyJump vm-nomad-server-04
-```
-
-Danach funktioniert `git clone gitea:sam/<repo>.git` unabhängig davon, auf welchem Client Gitea gerade läuft.
+In `~/.ssh/config` einen Eintrag mit `HostName gitea.service.consul`, `Port 2222` und `ProxyJump vm-nomad-server-04` anlegen. Danach funktioniert `git clone gitea:sam/<repo>.git` unabhängig davon, auf welchem Client Gitea gerade läuft.
 
 ::: info ProxyJump-Host
 `vm-nomad-server-04` ist der bevorzugte Jump-Host (fest konfiguriert, immer erreichbar). Alternativ sind `vm-nomad-server-05` und `-06` gleichwertig.

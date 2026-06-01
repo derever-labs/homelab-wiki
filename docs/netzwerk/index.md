@@ -11,14 +11,13 @@ tags:
 
 # Netzwerk
 
-| Attribut | Wert |
-|----------|------|
-| Deployment | UDM Pro (integriert) + UniFi Switches + APs |
-| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
+Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch. Diese Seite ist die kanonische Quelle für Topologie, Segmente und das Hardware-Inventar; Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/).
 
 ## Übersicht
 
-Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch.
+| Attribut | Wert |
+|----------|------|
+| Deployment | UDM Pro (integriert) + UniFi Switches + APs |
 
 
 ## Netzwerk-Diagramm
@@ -56,6 +55,8 @@ MGMT: "Management (native) 10.0.0.0/22" {
   PBS: pbs-backup-server { tooltip: "10.0.2.50"; style.border-radius: 8 }
   CMK: checkmk { tooltip: "10.0.2.150"; style.border-radius: 8 }
   DCM: datacenter-manager { tooltip: "10.0.2.60"; style.border-radius: 8 }
+  NAS: Synology NAS { tooltip: "10.0.0.200"; style.border-radius: 8 }
+  HA: Home Assistant { tooltip: "10.0.0.100"; style.border-radius: 8 }
 }
 
 DEV: Device Network VLAN 10 {
@@ -75,8 +76,7 @@ RACK: Rack Network VLAN 100 {
 
 IOT: IoT Network VLAN 200 {
   style.stroke-dash: 4
-  NAS: Synology NAS { tooltip: "10.0.0.200"; style.border-radius: 8 }
-  HA: Home Assistant { style.border-radius: 8 }
+  IOTGW: Gateway { tooltip: "10.0.200.1"; style.border-radius: 8 }
   ZIG: Zigbee Node { style.border-radius: 8 }
 }
 
@@ -101,23 +101,45 @@ TB.TB01 <-> TB.TB02: ~20 Gbps DRBD + Migration
 TS.TAIL -> Core.UDMPRO: VPN Overlay { style.stroke-dash: 5 }
 ```
 
-## VLAN-Diagramm
+## Physische Topologie
+
+Verkabelung von Gateway, Aggregation-Switch, Zugangs-Switches und Access Points. Modelle und Standorte: [Hardware-Inventar](../_referenz/hardware-inventar.md#unifi-netzwerk-hardware).
 
 ```d2
-direction: right
+direction: down
 
-UDMPRO: UDM Pro { tooltip: "10.0.0.1"; style.border-radius: 8 }
-MGMT: "Management (native) 10.0.0.0/22" { style.border-radius: 8 }
-DEV: "Device Network VLAN 10 10.0.10.0/24" { style.border-radius: 8 }
-GUEST: "Guest Network VLAN 30 10.0.30.0/24" { style.border-radius: 8 }
-RACK: "Rack Network VLAN 100 10.0.100.0/24" { style.border-radius: 8 }
-IOT: "IoT Network VLAN 200 10.0.200.0/24" { style.border-radius: 8 }
+ISP: ISP-Router { tooltip: "WAN-Uplink"; style.border-radius: 8 }
+UDM: UDM Pro { tooltip: "Gateway + Controller"; style.border-radius: 8 }
+AGG: "10G-Switch-Rack (USL8A)" { style.border-radius: 8 }
+SW_KELLER: "POE-Switch-Keller (US-8-60W)" { style.border-radius: 8 }
+SW_KAMMERLI: "1G-Switch-Kämmerli (US-24)" { style.border-radius: 8 }
+SW_24_2: "US-24 (unnamed)" { style.border-radius: 8 }
+SW_150W: "US-8-150W (unnamed)" { style.border-radius: 8 }
+FLEX_DANI: Flex Mini Dani { style.border-radius: 8 }
+FLEX_GAESTE: Flex Mini Gäste { style.border-radius: 8 }
+AP_WERKSTADT: "AP-AC-LR Werkstadt" { style.border-radius: 8 }
+AP_DANI: "AP-AC-LR Dani" { style.border-radius: 8 }
+AP_GASTE: "AP-AC-LR Gäste" { style.border-radius: 8 }
+AP_KOFFER: "AP-AC-LR Koffer" { style.border-radius: 8 }
+AP_GARAGE: "AP-AC-LR Garage" { style.border-radius: 8 }
+AP_NINA: "AP-U6-Pro Nina" { style.border-radius: 8 }
+AP_KUCHE: "AP-U6-Pro Küche" { style.border-radius: 8 }
 
-UDMPRO -- MGMT
-UDMPRO -- DEV
-UDMPRO -- GUEST
-UDMPRO -- RACK
-UDMPRO -- IOT
+ISP -> UDM: "SFP+ (eth9)"
+UDM -> AGG: 10G
+AGG -> SW_KELLER
+AGG -> SW_KAMMERLI
+AGG -> SW_24_2
+AGG -> SW_150W
+SW_KAMMERLI -> FLEX_DANI
+SW_KAMMERLI -> FLEX_GAESTE
+SW_KELLER -> AP_WERKSTADT
+SW_KELLER -> AP_GARAGE
+SW_KAMMERLI -> AP_DANI
+SW_KAMMERLI -> AP_GASTE
+SW_KAMMERLI -> AP_KOFFER
+SW_150W -> AP_NINA
+SW_150W -> AP_KUCHE
 ```
 
 ## Netzwerk-Segmente
@@ -135,13 +157,7 @@ UDMPRO -- IOT
 
 ## DNS
 
-| Rolle | IP | Host | Beschreibung |
-|-------|-----|------|-------------|
-| Primärer DNS | 10.0.2.1 | lxc-dns-01 | Pi-hole v6 + Unbound + Consul DNS |
-| Sekundärer DNS | 10.0.2.2 | lxc-dns-02 | Pi-hole v6 + Unbound + Consul DNS |
-| Traefik VIP | 10.0.2.20 | Keepalived | Reverse Proxy HA (vm-traefik-01/02) |
-
-Vollständige DNS-Architektur: [DNS](../dns/)
+Zwei redundante DNS-Knoten (Pi-hole + Unbound + Consul DNS) bedienen das Netz; der Reverse Proxy ist über eine Keepalived-VIP hochverfügbar. IPs und Hosts: [Hosts und IPs](../_referenz/hosts-und-ips.md). Vollständige DNS-Architektur: [DNS](../dns/)
 
 ## Thunderbolt-Netzwerk
 
@@ -167,51 +183,18 @@ Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik (Ke
 
 Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 
-## Hardware
+## Hardware-Inventar
 
-### Router
+Das physische Inventar (Aggregation-Switch USL8A, PoE- und Flex-Mini-Switches, AC-LR- und U6-Pro-Access-Points) ist in der physischen Topologie oben verortet. Modelle, Portzahlen, PoE-Budgets und Standorte sind kanonisch im [Hardware-Inventar](../_referenz/hardware-inventar.md#unifi-netzwerk-hardware) geführt; IP-Adressen aller Geräte in [Hosts und IPs](../_referenz/hosts-und-ips.md#unifi-netzwerk).
 
-| Eigenschaft | Wert |
-|-------------|------|
+### Router und WAN
+
+| Attribut | Wert |
+|----------|------|
 | Modell | UniFi Dream Machine Pro (UDMPRO) |
 | WAN | SFP+ (eth9) via ISP-Router, öffentliche IP dynamisch |
 | LAN-Ports | 8x RJ45 1G, 1x RJ45 WAN (nicht verbunden), 1x SFP+ WAN (aktiv), 1x SFP+ LAN |
-| Controller | Integriert (UniFi Network) |
-| URL | `https://10.0.0.1` |
-
-### Switches
-
-| Switch | Modell | Ports | PoE | Standort |
-|--------|--------|-------|-----|----------|
-| 10G-Switch-Rack | USL8A (Aggregation) | 8x SFP+ | - | Rack |
-| POE-Switch-Keller | US-8-60W | 8 | 60W | Keller |
-| 1G-Switch-Kammerli | US-24 | 24 | - | Kämmerli |
-| US-24 | US-24 | 24 | - | unbekannt |
-| US-8-150W | US-8-150W | 8 | 150W | unbekannt |
-| USW-Flex-Mini-Dani | USW Flex Mini | 5 | - | Zimmer Dani |
-| USW-Flex-Mini-Gaeste | USW Flex Mini | 5 | - | Gästezimmer |
-
-### Access Points
-
-| AP | Modell | Standort | Band | PoE |
-|----|--------|----------|------|-----|
-| AP-AC-LR-Werkstadt | UAP-AC-LR | Werkstatt | 2.4+5 GHz | ja |
-| AP-AC-LR-Dani | UAP-AC-LR | Zimmer Dani | 2.4+5 GHz | ja |
-| AP-AC-LR-Gaste | UAP-AC-LR | Gästezimmer | 2.4+5 GHz | ja |
-| AP-AC-LR-Koffer | UAP-AC-LR | Kofferraum(?) | 2.4+5 GHz | ja |
-| AP-AC-LR-Garage | UAP-AC-LR | Garage | 2.4+5 GHz | ja |
-| AP-U6-PRO-Nina | UAP-U6-Pro | Zimmer Nina | 2.4+5 GHz | ja |
-| AP-U6-PRO-Kuche | UAP-U6-Pro | Küche | 2.4+5 GHz | ja |
-
-### VLAN-Konfiguration
-
-| VLAN ID | Name | Subnetz | Gateway | Beschreibung |
-|---------|------|---------|---------|--------------|
-| native | Management | 10.0.0.0/22 | 10.0.0.1 | VMs, Proxmox, Services |
-| 10 | Device Network | 10.0.10.0/24 | 10.0.10.1 | Endgeräte |
-| 30 | Guest Network | 10.0.30.0/24 | 10.0.30.1 | Gäste-WLAN |
-| 100 | Rack Network | 10.0.100.0/24 | 10.0.100.1 | Rack-Infrastruktur |
-| 200 | IoT Network | 10.0.200.0/24 | 10.0.200.1 | Home Assistant, Zigbee, NAS |
+| Controller | Integriert (UniFi Network), Spezifika: [UniFi](../unifi/) |
 
 ### Verkabelung
 
@@ -222,7 +205,7 @@ Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
 
 ## Verwandte Seiten
 
-- [UniFi](../unifi/) -- Controller, Geräte, WLAN, Firewall-Konfiguration
+- [UniFi](../unifi/) -- Controller, WLAN, Firewall-Konfiguration
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS
 - [Traefik](../traefik/) -- Reverse Proxy und Middleware Chains

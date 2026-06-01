@@ -17,16 +17,20 @@ Jellyseerr ist die User-facing Oberfläche für Medienwünsche. Familie und Gäs
 |----------|------|
 | URL | [wish.ackermannprivat.ch](https://wish.ackermannprivat.ch) |
 | Deployment | Nomad Job `media/jellyseerr.nomad` |
-| Datenbank | PostgreSQL `jellyseerr` (Shared Cluster) |
 | Storage | NFS `/nfs/docker/jellyseerr/config/` |
 | Auth | `public-auth@file` |
-| Consul Service | `jellyseerr` |
 
 ## Rolle im Stack
 
-Jellyseerr ist die User-facing Oberfläche für Medienwünsche. Familie und Gäste können darüber Filme und Serien anfordern, ohne direkt mit Sonarr oder Radarr arbeiten zu müssen. Jellyseerr leitet Anfragen automatisch an die zuständigen Arr-Services weiter, die den Download und die Organisation übernehmen.
+Jellyseerr leitet Anfragen automatisch an die zuständigen Arr-Services weiter, die den Download und die Organisation übernehmen.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 USER: "User (wish.ackermannprivat.ch)" { style.border-radius: 8 }
@@ -50,13 +54,7 @@ JS -> PG
 
 ### Datenbank
 
-Jellyseerr nutzt die shared PostgreSQL-Instanz über Consul DNS (`postgres.service.consul:5432`). Ein Prestart-Task wartet auf die Verfügbarkeit von PostgreSQL bevor der Hauptcontainer startet.
-
-### Storage-Pfade
-
-| Mount | Pfad im Container | Pfad auf Host |
-| :--- | :--- | :--- |
-| Config | `/app/config` | `/nfs/docker/jellyseerr/config` |
+Jellyseerr nutzt die Datenbank `jellyseerr` der shared PostgreSQL-Instanz über Consul DNS (`postgres.service.consul:5432`). Ein Prestart-Task wartet auf die Verfügbarkeit von PostgreSQL bevor der Hauptcontainer startet. Details zur Cluster-Zuordnung: [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md).
 
 ### Netzwerk
 
@@ -70,20 +68,13 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 Jellyseerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
 
-Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Jellyseerr und enthält den nativen Recovery-Link. Zusätzlich rendert Jellyseerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt in 2.7.3 und in Seerr 3.x. Details: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
+Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Jellyseerr und enthält den nativen Recovery-Link. Zusätzlich rendert Jellyseerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt in der aktuell eingesetzten Jellyseerr-Version sowie in der Seerr-Nachfolgerversion. Details: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
 
 ## Request Sync Sidecar
 
 Jellyseerr hat keinen eingebauten Retry-Mechanismus: Wenn ein approved Request nicht an Sonarr/Radarr übermittelt werden kann (z.B. Service kurzzeitig nicht erreichbar), bleibt der Request im Status "Processing" hängen und wird nie wiederholt.
 
-Der Sidecar-Task `request-sync` prüft alle 6 Stunden die Jellyseerr-Datenbank auf hängende Requests und ruft für jeden den Jellyseerr `/retry`-Endpoint auf. Dadurch nutzt Jellyseerr seine eigene Logik für Qualitätsprofile, Tags, Root-Folder usw. beim Anlegen in Sonarr/Radarr.
-
-| Attribut | Wert |
-| :--- | :--- |
-| **Task** | `request-sync` (Sidecar im Jellyseerr Job) |
-| **Intervall** | 6 Stunden (konfigurierbar via `SYNC_INTERVAL_HOURS`) |
-| **Script** | `nomad-jobs/media/scripts/jellyseerr-request-sync.py` |
-| **Ressourcen** | Siehe Nomad-Job `media/jellyseerr.nomad` |
+Der Sidecar-Task `request-sync` (definiert im Job `media/jellyseerr.nomad`, Script `media/scripts/jellyseerr-request-sync.py`) prüft alle 6 Stunden (konfigurierbar via `SYNC_INTERVAL_HOURS`) die Jellyseerr-Datenbank auf hängende Requests und ruft für jeden den Jellyseerr `/retry`-Endpoint auf. Dadurch nutzt Jellyseerr seine eigene Logik für Qualitätsprofile, Tags, Root-Folder usw. beim Anlegen in Sonarr/Radarr.
 
 Der Sidecar kommuniziert ausschliesslich mit der Jellyseerr API (`/api/v1/request/{id}/retry`). Jellyseerr entscheidet selbst ob ein Film/Serie in Sonarr/Radarr hinzugefügt oder nur der Status aktualisiert werden muss.
 
@@ -91,22 +82,16 @@ Der Sidecar kommuniziert ausschliesslich mit der Jellyseerr API (`/api/v1/reques
 
 Jellyseerr verbindet sich intern über Consul DNS zu allen Diensten:
 
-| Service | Adresse | Konfiguriert in |
-| :--- | :--- | :--- |
-| Sonarr | `sonarr.service.consul:8989` | `settings.json` |
-| Radarr | `radarr.service.consul:7878` | `settings.json` |
-| Jellyfin | `jellyfin.service.consul:8096` | `settings.json` |
-| PostgreSQL | `postgres.service.consul:5432` | Nomad Job (env) |
+| Service | Adresse |
+| :--- | :--- |
+| Sonarr | `sonarr.service.consul:8989` |
+| Radarr | `radarr.service.consul:7878` |
+| Jellyfin | `jellyfin.service.consul:8096` |
+| PostgreSQL | `postgres.service.consul:5432` |
 
 ::: warning Keine externen URLs verwenden
 Jellyseerr darf nicht über externe URLs (`*.ackermannprivat.ch`) mit Sonarr/Radarr/Jellyfin kommunizieren. Die Verbindung über Traefik ist aus dem Cluster heraus unzuverlässig und führt zu stillen Sync-Ausfällen.
 :::
-
-## Abhängigkeiten
-
-- [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr für die Mediensuche
-- [Jellyfin](../jellyfin/index.md) -- Prüft Verfügbarkeit bereits vorhandener Medien
-- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 
 ## Verwandte Seiten
 

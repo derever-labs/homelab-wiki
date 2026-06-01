@@ -18,16 +18,30 @@ Dreistufiges Monitoring des Synology NAS: SNMP-Metriken via Telegraf, lokaler Co
 | Attribut | Wert |
 |----------|------|
 | Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `synology-nas-health`) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job Telegraf SNMP (`monitoring/telegraf.nomad`) |
-| Alerting | Grafana Unified Alerting via Telegram |
+| Deployment | Nomad Task `telegraf` im Job `influxdb` (`monitoring/influx.nomad`) |
 
 ## Rolle im Stack
 
-Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. Deshalb wird es auf drei Ebenen überwacht: Telegraf sammelt Hardware-Metriken via SNMP (remote) und System-Metriken via lokalem Container, Grafana visualisiert alles in einem dedizierten Dashboard mit 21 Panels, und 10 Alert Rules benachrichtigen via Telegram bei Problemen. Ergänzend überwacht [CheckMK](../checkmk/index.md) den Host-Level-Status.
+Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. Deshalb wird es auf drei Ebenen überwacht: Telegraf sammelt Hardware-Metriken via SNMP (remote) und System-Metriken via lokalem Container, Grafana visualisiert alles in einem dedizierten Dashboard mit 21 Panels, und 4 Alert Rules benachrichtigen via Telegram bei Problemen. Ergänzend überwacht [CheckMK](../checkmk/index.md) den Host-Level-Status.
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+}
+
 direction: right
 
 NAS: Synology NAS
@@ -51,29 +65,11 @@ Das Monitoring nutzt zwei Telegraf-Instanzen, die unterschiedliche Metriken samm
 
 ### SNMP (remote, via bestehender Telegraf Nomad Job)
 
-Der zentrale Telegraf Nomad Job fragt das NAS via SNMPv3 (authPriv) ab. Die Telegraf-Config wird in Git verwaltet (`nomad-jobs/monitoring/telegraf/telegraf.conf`) und via NFS bereitgestellt.
-
-**Measurements:**
-
-- `snmp.Synology.disk` -- Disk-Status, Temperatur, Bad Sectors, Remaining Life
-- `snmp.Synology.raid` -- RAID-Status, Free Size
-- `snmp.Synology.storageio` -- I/O-Durchsatz und -Latenz pro Disk (storageIOLA)
-- `snmp.Synology.smart` -- SMART-Attribute (Reallocated, Pending, PowerOn Hours)
-- `snmp.Synology.spaceio` -- Volume-I/O und Cache-Load
-- `snmp.Synology.services` -- NFS, CIFS, HTTP Connections
-- `snmp.Synology.network` -- Netzwerk-Interface-Durchsatz (ifHCInOctets/ifHCOutOctets via IF-MIB)
-- `snmp.Synology` -- Uptime, System-Temperatur, Volume-Kapazität
+Der zentrale Telegraf Nomad Job fragt das NAS via SNMPv3 (authPriv) ab und schreibt die Measurements `snmp.Synology.*` (Disk, RAID, Storage-I/O, SMART, Volume-I/O, Services, Netzwerk, System). Die Telegraf-Config wird in Git verwaltet (`nomad-jobs/monitoring/telegraf/telegraf.conf`) und via NFS bereitgestellt -- dort stehen die einzelnen Measurements und Felder.
 
 ### Telegraf lokal (Docker Container auf NAS)
 
-Ein separater Telegraf-Container läuft direkt auf dem NAS und sammelt Metriken, die via SNMP nicht zugänglich sind.
-
-**Measurements:**
-
-- `diskio` -- I/O Await pro Disk (aus `/proc/diskstats`)
-- `nas_background_jobs` -- Status von Hintergrundprozessen (RAID Rebuild, Scrub, S.M.A.R.T. Tests)
-- `nfs_server_threads` -- Anzahl aktiver NFS-Server-Threads
-- `cpu`, `mem`, `system`, `net` -- Standard-System-Metriken
+Ein separater Telegraf-Container läuft direkt auf dem NAS und sammelt Metriken, die via SNMP nicht zugänglich sind: `diskio` (I/O Await aus `/proc/diskstats`), `nas_background_jobs` (RAID Rebuild, Scrub, S.M.A.R.T. Tests), `nfs_server_threads` sowie die Standard-Plugins `cpu`, `mem`, `system`, `net`.
 
 ::: warning Privilegierter Container
 Der lokale Telegraf-Container läuft als `--privileged` mit `/proc:/host/proc:ro`, da er `/proc/diskstats` direkt lesen muss.
@@ -87,43 +83,26 @@ Container Manager und NFS müssen nach einem NAS-Reboot manuell gestartet werden
 
 Das Dashboard `synology-nas-health` ist in drei Zonen aufgebaut, nach dem Prinzip "Alarm, Kontext, Detail":
 
-**Zone A -- Status-Bar (8 Stat-Panels):**
-RAID-Status, Volume belegt, Bad Sectors, IO Wait, Hintergrund-Jobs, System-Temperatur, Uptime, SSD Remaining Life
-
-**Zone B -- Performance (7 Timeseries):**
-Disk Latenz (Await), Disk Utilization %, Throughput R+W, CPU, RAM, Load + Background Jobs, Netzwerk + Service Connections
-
-**Zone C -- Detail (4 Panels + collapsed Benchmark Row):**
-SMART Health Table, Disk-Temperatur, SSD Cache I/O, Volume Trend. RAID Benchmark Panels in collapsed Row (pausiert bis Bay 6 Disk ersetzt).
+- **Zone A -- Alarm:** Status-Bar mit 8 Stat-Panels (RAID, Volume, Bad Sectors, IO Wait, Hintergrund-Jobs, System-Temperatur, Uptime, SSD Remaining Life)
+- **Zone B -- Kontext:** Performance-Timeseries (Disk Latenz, Throughput, CPU, RAM, Load, Netzwerk und Service Connections)
+- **Zone C -- Detail:** Disk Health und Kapazität (SMART Health Table, Disk-Utilization, Disk-Temperatur, SSD Cache I/O, Volume Trend) sowie eine collapsed RAID-Benchmark-Row
 
 Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisioning bereitgestellt (read-only).
 
 ## Alerting
 
-10 Alert Rules in Grafana Unified Alerting, alle via Telegram:
+4 Synology Alert Rules in Grafana Unified Alerting, alle via Telegram:
 
 | Rule | Bedingung | For | Schwere |
 | :--- | :--- | :--- | :--- |
-| RAID Status | Status != Normal | sofort | Critical |
-| Bad Sectors | > 0 | sofort | Warning |
-| Disk Health | diskStatus != 1 | sofort | Critical |
-| Await | > 50 ms | 5 min | Warning |
-| Await | > 500 ms | 2 min | Critical |
-| IO Wait | > 30% | 10 min | Warning |
-| IO Wait | > 60% | 5 min | Critical |
-| Temperatur | > 45 C | 5 min | Warning |
-| Temperatur | > 55 C | sofort | Critical |
-| Volume | > 90% belegt | sofort | Warning |
-
-::: info
-RAID-Degraded und Bad-Sector Alerts feuern aktuell korrekt (eine Disk in Bay 6 ist degraded mit 1 Bad Sector).
-:::
+| RAID Degraded/Crashed | raidStatus != Normal | 2 min | Critical |
+| Volume belegt | > 98% | 5 min | Warning |
+| Disk Temperatur | > 55 C | 5 min | Warning |
+| SMART Reallocated Sectors | > 0 | 5 min | Warning |
 
 ## RAID Benchmark
 
 Ein optionales fio-Script auf dem NAS misst die RAID-Performance (Sequential Read und Random 4K Read) und schreibt die Ergebnisse direkt an InfluxDB. Die Ergebnisse erscheinen in zwei dedizierten Dashboard-Panels.
-
-Der Benchmark ist aktuell deaktiviert.
 
 ## Verwandte Seiten
 

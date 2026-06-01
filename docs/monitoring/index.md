@@ -9,13 +9,18 @@ tags:
 
 # Monitoring Stack
 
+Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung der Service-Verfügbarkeit. Er bündelt mehrere Dienste für Metriken, Logs, Verfügbarkeit und Alert-Routing.
+
 ## Übersicht
 
-Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung der Service-Verfügbarkeit.
+| Attribut | Wert |
+| :--- | :--- |
+| Deployment | `monitoring/`-Nomad-Jobs + `system/alloy.nomad` (System-Job) + Ansible (Alloy systemd) |
+| Storage | InfluxDB (Metriken), Loki (Logs), PostgreSQL (Grafana-Backend) |
+| Auth | Authentik ForwardAuth, Gruppe `admin` |
+| Hosts/IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
-- **Nomad Jobs** -- `monitoring/`, `system/alloy.nomad`
-- **Deployment** -- Mehrere Nomad Jobs + Ansible (Alloy systemd)
-- **IPs** -- [Hosts und IPs](../_referenz/hosts-und-ips.md)
+### Dienste
 
 | Service | Zweck | URL |
 | :--- | :--- | :--- |
@@ -51,12 +56,12 @@ Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `gith
 :::
 
 ### Alerting (Unified Alerting)
-Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-basierte Alert-Rules ausgewertet werden. Der Versand an Telegram laeuft seither nicht mehr direkt aus Grafana, sondern ueber den zentralen Hub [Keep](keep.md).
+Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-basierte Alert-Rules ausgewertet werden. Der Versand an Telegram läuft seither nicht mehr direkt aus Grafana, sondern über den zentralen Hub [Keep](keep.md).
 
 **Contact Point:** Webhook auf `https://keep.ackermannprivat.ch/alerts/event/grafana`
 **Notification Policy:** Alle Alerts -> Keep, Group-Wait 30s, Repeat 4h
 
-Keep uebernimmt anschliessend Source-Routing in Forum-Topics, Severity-Eskalation an den VIP-Bot und Deduplizierung. Details siehe [Keep](keep.md).
+Keep übernimmt anschliessend Source-Routing in Forum-Topics, Severity-Eskalation an den VIP-Bot und Deduplizierung. Details siehe [Keep](keep.md).
 
 **Metrik-basierte Alert Rules (InfluxDB):**
 
@@ -217,7 +222,7 @@ bot_vip -> vip_chat
 ```
 
 ::: info Routing-Logik
-**Source -> Topic** wird vom Keep-Workflow per Source-Regex bestimmt (`homelab-route-monitoring|security|cicd|backup|downloader|immo`). **Severity -> Bot** laeuft als `if`-Condition innerhalb desselben Workflows. Standard-Alerts gehen ueber den batch-Bot in den passenden Forum-Topic, `critical|high|page` eskaliert zusaetzlich an den vip-Bot in den 1:1-Chat.
+**Source -> Topic** wird vom Keep-Workflow per Source-Regex bestimmt (`homelab-route-monitoring|security|cicd|backup|downloader|immo`). **Severity -> Bot** läuft als `if`-Condition innerhalb desselben Workflows. Standard-Alerts gehen über den batch-Bot in den passenden Forum-Topic, `critical|high|page` eskaliert zusätzlich an den vip-Bot in den 1:1-Chat.
 :::
 
 ### Admin-Zugang zur Grafana-HTTP-API
@@ -242,14 +247,14 @@ Silences werden über die Alertmanager-API gesetzt, nicht über die UI -- so ble
 Silences müssen einen ClickUp-Task referenzieren und eine Laufzeit (14--30 Tage) haben. Ohne Laufzeit-Limit verlieren sich Silences im Noise. Wenn ein Silence ausläuft bevor die Ursache gefixt ist, erzeugt der erneute Alert den Druck, den Fix zu priorisieren.
 :::
 
-## Verfuegbarkeits-Monitoring (Gatus + Uptime Kuma)
+## Verfügbarkeits-Monitoring (Gatus + Uptime Kuma)
 
-Das Homelab hat **zwei** Verfuegbarkeits-Monitore, bewusst mit Aufgabenteilung statt Ueberlappung:
+Das Homelab hat **zwei** Verfügbarkeits-Monitore, bewusst mit Aufgabenteilung statt Überlappung:
 
 - **Gatus** -- Nur Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher). Jeder Endpoint alarmiert sofort via `custom`-Provider → `telegram-relay` → Topic `monitoring`. Details: [Gatus](../gatus/index.md).
-- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore fuer Batch-Jobs. Single-Notifier "Keep" mit Default Enabled, Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
+- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore für Batch-Jobs. Single-Notifier "Keep" mit Default Enabled, Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
 
-Die Kern-Infra wird zusaetzlich als zweite Meinung in Kuma dupliziert -- faellt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt. Beide Tools schicken via Keep, nicht direkt an Telegram.
+Die Kern-Infra wird zusätzlich als zweite Meinung in Kuma dupliziert -- fällt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt. Beide Tools schicken via Keep, nicht direkt an Telegram.
 
 ## Backup-Monitoring
 
@@ -266,8 +271,24 @@ Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und
 ```d2
 direction: right
 
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
+
 Sources: Infrastruktur-Quellen {
-  style.stroke-dash: 4
+  class: container
   Containers: "Nomad Container\n(3 Client-Nodes)"
   Servers: "HashiCorp VMs\n(Server + Client)"
   Traefik: "Traefik VMs (2x)"
@@ -277,7 +298,7 @@ Sources: Infrastruktur-Quellen {
 }
 
 Collectors: Collector-Layer {
-  style.stroke-dash: 4
+  class: container
   Alloy: "Grafana Alloy\n(System-Job + systemd)"
   Telegraf: "Telegraf\n(Nomad Job)"
   CMK: "CheckMK Agent"
@@ -286,7 +307,7 @@ Collectors: Collector-Layer {
 }
 
 Storage: Storage-Layer {
-  style.stroke-dash: 4
+  class: container
   Loki: "Loki\n(Log-Storage)"
   Influx: "InfluxDB\n(Metriken)"
   CheckMK: "CheckMK\n(Host-Status)"
@@ -325,40 +346,22 @@ Storage.CheckMK -> GRAF
 
 ### Grafana Alloy (Log-Collector)
 
-Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki weiter. Je nach Deployment-Art gibt es drei Varianten:
+Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki weiter. Es gibt drei Deployment-Arten:
 
-#### Variante 1: Nomad System-Job (Container-Logs)
-- **Nomad Job:** `system/alloy.nomad` (System-Job, läuft auf jedem Client-Node)
-- **Docker-Socket:** `/var/run/docker.sock` (read-only) für Container-Discovery
-- **Labels:** Extrahiert `nomad_task` aus Container-Name, `nomad_alloc_id` aus Docker-Labels
-- **External Label:** `node` (Hostname des Client-Nodes)
-- **Syslog-Receiver:** Port 1514 (TCP+UDP, statisch) für externe Quellen (NAS, Router)
+- **Nomad System-Job** (`system/alloy.nomad`) auf jedem Client-Node -- Container-Logs via Docker-Socket plus Syslog-Receiver auf Port 1514 für NAS und Router.
+- **Ansible-Rolle `alloy`** (systemd) auf Server-/Client-Nodes, Proxmox und Infra-VMs -- systemd-Journal plus optionale Datei-Targets.
+- **Standalone-Config (traefik-ha)** auf den Traefik-VMs -- Docker-Compose-Logs mit Source-Label `docker-compose`.
 
-#### Variante 2: Ansible-Rolle `alloy` (systemd-Service)
-- **Rolle:** `ansible/roles/alloy/`
-- **Config-Template:** `config.alloy.j2` (River-Syntax)
-- **Quellen:** systemd-Journal + optionale Datei-Targets
-- **Loki-Endpoint:** `loki.service.consul:3100` (via Consul DNS)
-
-| Playbook | Hosts | Source-Label | Besonderheiten |
-| :--- | :--- | :--- | :--- |
-| `deploy-alloy.yml` | Server- & Client-Nodes | `journal` / `nomad-client` | Client-Nodes: Linstor-Logs als File-Target |
-| `deploy-alloy-proxmox.yml` | pve00, pve01, pve02 | `proxmox` | `www-data`-Gruppe für pveproxy-Logs |
-| `deploy-alloy-infra.yml` | CheckMK, PBS, PDM, lxc-dns-01/02, Traefik, Zigbee | je nach Host | CheckMK: Core/Web/Notify-Logs |
-
-#### Variante 3: Systemd-Service (vm-traefik-01/02)
-- **Config:** Ansible-Rolle `alloy`
-- **Quelle:** systemd-Journal + optionale Datei-Targets (Traefik Access Logs)
-- **DNS:** Pi-hole-Resolver für Consul-Auflösung (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md))
+Deployment-Details, Playbook-Tabelle, Label-Schema und Log-Query-Beispiele sind in [Grafana Alloy](./alloy.md) gepflegt. Die folgende Tabelle ist die SSOT für die Zuordnung Host -> Methode -> Source-Label.
 
 ### Übersicht aller Log-Quellen
 
 | Host / Gruppe | Methode | Source-Label |
 | :--- | :--- | :--- |
-| vm-nomad-client-04/05/06 | Nomad System-Job | `docker` |
+| vm-nomad-client-04/05/06 | Nomad System-Job | -- (Container via `nomad_task`) |
 | vm-nomad-server-04/05/06 | Ansible (systemd) | `journal` |
 | vm-nomad-client-04/05/06 | Ansible (systemd) | `nomad-client` |
-| vm-traefik-01/02 | Ansible (systemd) | `traefik` |
+| vm-traefik-01/02 | Standalone-Config (traefik-ha) | `docker-compose` |
 | pve00, pve01, pve02 | Ansible (systemd) | `proxmox` |
 | CheckMK | Ansible (systemd) | `checkmk` |
 | PBS | Ansible (systemd) | `pbs` |
@@ -382,16 +385,7 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 | Traefik (Core) | `WARN` | `traefik.yml.j2` |
 | Traefik (Access) | aktiv (JSON, stdout) | Filter: `statusCodes: 400-599` + `minDuration: 2s` + `retryAttempts`; Rotation via Docker-Log-Driver |
 
-### Log-Abfrage in Grafana
-- Datasource: **Loki** (uid: `loki-logs`)
-- Beispiel-Queries:
-  - `{nomad_task="grafana"}` — Alle Grafana-Logs
-  - `{node="vm-nomad-client-05"}` — Alle Logs von client-05
-  - `{nomad_task="prowlarr"} |= "error"` — Prowlarr-Fehler
-  - `{source="proxmox"}` — Alle Proxmox-Host-Logs
-  - `{source="checkmk"}` — CheckMK-Logs
-  - `{source="syslog"}` — Syslog-Quellen (NAS, Router)
-  - `{job="journal"} |= "error"` — Journal-Fehler aller Infra-VMs
+LogQL-Beispiele für die Loki-Datasource (uid: `loki-logs`) sind in [Grafana Alloy](./alloy.md#logql-beispiele) gepflegt.
 
 ## Wartung
 ### Grafana Dashboards

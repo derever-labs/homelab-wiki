@@ -8,15 +8,6 @@ tags:
 
 # Vault - Betrieb
 
-## Übersicht
-
-Der Vault-Cluster besteht aus drei Nodes und bildet das zentrale Secret-Management des Homelabs.
-
-- Drei-Node Raft Cluster auf vm-nomad-server-04, vm-nomad-server-05 und vm-nomad-server-06
-- KV v2 Secret Engine für versionierte Secrets
-- Workload Identity (JWT) für Nomad-Jobs -- ermöglicht tokenlose Secret-Injection
-- Audit Logging aktiv -- alle Zugriffe werden protokolliert
-
 ## Abhängigkeiten
 
 Vault ist von folgenden Komponenten abhängig, um korrekt zu funktionieren:
@@ -29,11 +20,11 @@ Vault ist von folgenden Komponenten abhängig, um korrekt zu funktionieren:
 
 ### Auto-Unseal
 
-Vault startet nach einem Neustart versiegelt. Der Systemd Service `vault-unseal.service` läuft auf jedem Node und liest Unseal Keys aus `/root/vault-keys.json`. Er entsiegelt Vault automatisch innerhalb weniger Sekunden nach dem Systemstart -- ohne manuellen Eingriff.
+Vault startet nach einem Neustart versiegelt. Der Systemd Service `vault-unseal.service` läuft auf jedem Node und liest die Unseal Keys aus `/etc/vault.d/unseal-keys` (eine Key pro Zeile, mode 0600, bei Bootstrap manuell angelegt). Er entsiegelt Vault automatisch innerhalb weniger Sekunden nach dem Systemstart -- ohne manuellen Eingriff.
 
 ### Audit Log Rotation
 
-Die Audit Logs werden via logrotate verwaltet: tägliche Rotation, 30 Tage Aufbewahrung, komprimiert. Ältere Logs werden automatisch gelöscht.
+Die Audit Logs werden via logrotate verwaltet; ältere Logs werden automatisch gelöscht. Details zu Format und Rotation: [Vault Referenz](referenz.md).
 
 ### Raft Snapshots
 

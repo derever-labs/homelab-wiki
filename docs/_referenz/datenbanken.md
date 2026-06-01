@@ -23,9 +23,9 @@ Alle folgenden Services nutzen `postgres.service.consul:5432` mit eigenen Datenb
 | Radarr | `radarr_main`, `radarr_log` | `radarr` | `kv/data/radarr` | `media/radarr.nomad` |
 | Sonarr | `sonarr_main`, `sonarr_log` | `sonarr` | `kv/data/sonarr` | `media/sonarr.nomad` |
 | Prowlarr | `prowlarr_main`, `prowlarr_log` | `prowlarr` | `kv/data/prowlarr` | `media/prowlarr.nomad` |
-| Jellyseerr | via `DB_HOST` | - | `kv/data/jellyseerr` | `media/jellyseerr.nomad` |
+| Jellyseerr | `jellyseerr` | `jellyseerr` | `kv/data/jellyseerr` | `media/jellyseerr.nomad` |
 | JellyStat | via Vault | via Vault | `kv/data/jellystat` | `media/jellystat.nomad` |
-| Vaultwarden | `vaultwarden` | `vaultwarden` | (Inline in Job) | `services/vaultwarden.nomad` |
+| Vaultwarden | `vaultwarden` | `vaultwarden` | `kv/data/vaultwarden` | `services/vaultwarden.nomad` |
 | Paperless | via Vault | via Vault | `kv/data/paperless` | `services/paperless-simple.nomad` |
 | Gitea | via Vault | via Vault | `kv/data/gitea` | `services/gitea.nomad` |
 | Tandoor | `djangodb` | `djangouser` | `kv/data/tandoor` | `services/tandoor.nomad` |
@@ -34,6 +34,10 @@ Alle folgenden Services nutzen `postgres.service.consul:5432` mit eigenen Datenb
 | Metabase | via Vault | via Vault | `kv/data/metabase` | `services/metabase.nomad` |
 | Grafana | `grafana` | `grafana` | `kv/data/grafana` (`db_password`) | `monitoring/grafana.nomad` |
 | Directus Gravel | `gravel_recherche` | `directus_gravel` | `kv/data/directus-gravel` | `services/directus-gravel.nomad` |
+| Authentik | `authentik` | `authentik` | `kv/data/authentik` | `identity/authentik.nomad` |
+| Keep | `keep` | `keep` | `kv/data/shared/postgres` (`keep_password`) | `monitoring/keep.nomad` |
+| immo-monitor | `immo` | `immo` | `kv/data/immo-monitor` | `services/immo-monitor.nomad` |
+| immoscraper | `immo` | `immo` | `kv/data/immoscraper` | `services/immoscraper.nomad` |
 
 ## Shared MariaDB Cluster
 
@@ -41,7 +45,6 @@ Services die einen MySQL-/MariaDB-Backend benötigen, nutzen `mariadb.service.co
 
 | Service | Datenbank | DB-User | Vault-Pfad | Nomad Job |
 | :--- | :--- | :--- | :--- | :--- |
-| Kimai | `kimai` | `kimai` | `kv/data/shared/mariadb` (`kimai_password`) | `services/kimai.nomad` |
 | Uptime Kuma | `uptime_kuma` | `uptime_kuma` | `kv/data/shared/mariadb` (`uptime_kuma_password`) | `monitoring/uptime-kuma.nomad` |
 
 ## Sidecar-Datenbanken
@@ -58,14 +61,12 @@ Services die nicht mit den Shared-Clustern kompatibel sind.
 | :--- | :--- | :--- |
 | Jellyfin | SQLite auf NFS | `media/jellyfin.nomad` |
 | AudioBookShelf | SQLite auf NFS | `media/audiobookshelf.nomad` |
-| Gatus | Dateibasiert | `monitoring/gatus.nomad` |
+| Gatus | In-Memory (stateless) | `monitoring/gatus.nomad` |
 
 ## PostgreSQL Cluster Details
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Version** | PostgreSQL 16 (Alpine) |
-| **Image** | `localhost:5000/postgres:16-alpine` |
 | **Nomad Job** | `databases/postgres-drbd.nomad` |
 | **Consul Service** | `postgres.service.consul:5432` |
 | **Storage** | Linstor CSI Volume `postgres-data` |
@@ -77,8 +78,6 @@ Services die nicht mit den Shared-Clustern kompatibel sind.
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Version** | MariaDB 11.4 (LTS bis 2027) |
-| **Image** | `localhost:5000/library/mariadb:11.4` |
 | **Nomad Job** | `databases/mariadb-drbd.nomad` |
 | **Consul Service** | `mariadb.service.consul:3306` |
 | **Storage** | Linstor CSI Volume `mariadb-data` (rg-replicated) |

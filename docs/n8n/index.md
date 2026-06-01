@@ -9,9 +9,9 @@ tags:
 
 # n8n
 
-## Übersicht
-
 n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
+
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
@@ -19,12 +19,9 @@ n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-I
 | Deployment | Nomad Job `services/n8n.nomad` |
 | Datenbank | PostgreSQL `n8n` (User: `n8n`) |
 | Storage | Ephemeral (Binary Data in PostgreSQL) |
-| Auth | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität) |
-| Netzwerk | Intern (`intern-noauth@file`) |
+| Auth | n8n Built-in (kein OAuth, wegen Webhook-Kompatibilität); UI hinter Middleware `intern-auth@file` (IP-Allowlist plus Authentik ForwardAuth) |
 
 ## Rolle im Stack
-
-n8n ist die zentrale Workflow-Automation-Plattform für Datenverarbeitung, API-Integrationen und Scraping-Workflows.
 
 Aktive Workflows:
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md)
@@ -39,22 +36,17 @@ Aktive Workflows:
 
 ## Netzwerk und Webhooks
 
-Die n8n-UI ist nur intern erreichbar (`intern-noauth@file`). Webhooks sind **einzeln freigeschaltet** via separatem Traefik-Router:
+Die n8n-UI ist nur intern erreichbar (`intern-auth@file`). Webhooks sind **einzeln freigeschaltet** via separatem Traefik-Router:
 
 | Webhook | Extern | Zweck |
 | :--- | :--- | :--- |
 | `/webhook/arbeit-start` | Ja | [Zeiterfassung](../zeiterfassung/index.md): Timer starten |
 | `/webhook/arbeit-stop` | Ja | [Zeiterfassung](../zeiterfassung/index.md): Timer stoppen |
 | `/webhook/git-commit` | Ja | [Zeiterfassung](../zeiterfassung/index.md): Git-Commit Tracking |
+| `/webhook/tieffurt-30min` | Ja | [Immobilien-Monitoring](../immobilien-monitoring/index.md): Tieffurt-Scan alle 30 Minuten |
 | Alle anderen `/webhook/*` | Nein | Hinter IP-Whitelist |
 
-Neue Webhooks müssen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
-
-## Vault Secrets
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/n8n` | `db_password`, `encryption_key` |
+Zu jedem freigeschalteten Pfad ist der parallele `/webhook-test/*`-Testpfad ebenfalls extern erreichbar. Neue Webhooks müssen explizit in der Traefik-Rule im Nomad Job freigeschaltet werden (siehe `services/n8n.nomad`).
 
 ## Verwandte Seiten
 

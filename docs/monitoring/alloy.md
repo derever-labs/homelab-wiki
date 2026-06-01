@@ -16,7 +16,7 @@ Grafana Alloy ist der zentrale Log-Collector im Homelab. Er sammelt Logs aus Doc
 
 | Variante | Ziel-Hosts | Deployment | Quellen |
 | :--- | :--- | :--- | :--- |
-| **Nomad System-Job** | vm-nomad-client-04/05/06 | `system/alloy.nomad` | Docker-Container-Logs + Syslog-Receiver |
+| **Nomad System-Job** | vm-nomad-client-04/05/06 | `system/alloy.nomad` | Docker-Container-Logs + systemd-Journal + Syslog-Receiver |
 | **Ansible Rolle `alloy`** | Server-, Client-Nodes, Proxmox, Infra-VMs | `playbooks/deploy-alloy.yml` u.a. | systemd-Journal + optionale Logfiles |
 | **Ansible Rolle `alloy` (Traefik-VMs)** | vm-traefik-01/02 | Separate Ansible-Konfiguration | Docker-Compose-Logs + Syslog-Receiver |
 
@@ -31,10 +31,9 @@ Der System-Job `system/alloy.nomad` läuft auf jedem Nomad Client-Node und samme
 - Docker-Container-Discovery via `discovery.docker`
 - Nomad-Labels aus Container-Namen extrahieren: `nomad_task` (aus Container-Name), `nomad_alloc_id` (aus Docker-Label)
 - Nicht-Nomad-Container werden gefiltert (Drop-Regel: kein `alloc_id`-Label)
+- systemd-Journal-Collection via `loki.source.journal` (Source-Label `journal`)
 - Syslog-Receiver auf Port 1514 (TCP + UDP) für NAS und Router
 - Health-Check via `/-/ready` (Port 12345)
-
-**Ressourcen:** Siehe Nomad Job `nomad-jobs/system/alloy.nomad`
 
 **Job-Datei:** `nomad-jobs/system/alloy.nomad`
 
@@ -90,7 +89,8 @@ Die Labels sind so gewählt, dass sie einerseits eindeutige Identifikation ermö
 | `nomad_alloc_id` | `a1b2c3d4-...` | Relabel aus Docker-Label | Eindeutige Alloc-ID |
 | `container` | `grafana-a1b2c3d4-...` | Relabel aus Container-Name | Vollständiger Container-Name |
 | `unit` | `consul.service` | Journal-Relabel | Systemd-Unit |
-| `level` | `err`, `warning` | Journal-Relabel | Log-Severity |
+| `level` | `err`, `warning` | Journal-Relabel (Ansible-Variante, `__journal_priority_keyword`) | Log-Severity |
+| `priority` | `3`, `4` | Journal-Relabel (Nomad System-Job, `__journal_priority`) | Log-Severity (numerisch) |
 | `job` | `syslog`, `vault-audit` | Statisches Label | Log-Kategorie |
 | `host` | `nas`, `unifi` | Syslog-Relabel | Absender-Hostname bei Syslog |
 

@@ -17,9 +17,11 @@ Self-hosted GitHub Actions Runner für alle Repos der Organisation [derever-labs
 | Attribut | Wert |
 |----------|------|
 | Deployment | Nomad Job `infrastructure/github-runner.nomad` |
-| Scope | Organisation: `derever-labs` (alle Repos) |
-| Labels | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
-| Auth | Classic PAT (permanent) aus Vault (`kv/data/github-runner`) |
+| Auth | Classic PAT (permanent) aus Vault -- Details: [Referenz](./referenz.md#kv-secret-pat) |
+
+## Rolle im Stack
+
+Der Runner ist die Bootstrap-Schicht der CD-Pipeline: die Brücke zwischen GitHub und dem Nomad-Cluster. Er führt alle CI/CD-Workflows der Organisation aus -- Wiki-Builds, Container-Builds und Deployments -- und holt sich zur Laufzeit über die Vault Workload Identity sowohl seinen PAT als auch kurzlebige Nomad-Tokens für Deploys. Weil er den Deploy-Workflow selbst ausführt, steht er auf der Blocklist der CD-Pipeline und wird manuell deployed.
 
 ## Architektur
 
@@ -107,13 +109,9 @@ Der Job hat eine Constraint auf `vm-nomad-client-05` und `vm-nomad-client-06`. A
 
 Der Container nutzt `network_mode = "host"`, damit `localhost:5000` direkt auflösbar ist.
 
-## Vault Secrets
+## Runner Group
 
-| Pfad | Key | Beschreibung |
-| :--- | :--- | :--- |
-| `kv/data/github-runner` | `access_token` | Classic PAT (permanent, Scopes: repo, workflow, admin:org) |
-
-Das PAT wird über Vault-Integration als Umgebungsvariable `ACCESS_TOKEN` injiziert. Der Runner nutzt es zur Registrierung bei der Organisation `derever-labs`.
+Das PAT wird über die Vault-Integration als Umgebungsvariable injiziert; der Runner registriert sich damit bei der Organisation `derever-labs`. Vault-Pfad und Key siehe [Referenz](./referenz.md#kv-secret-pat).
 
 ::: info Runner Group
 Die Default Runner Group der Organisation hat `allows_public_repositories=true`, damit auch das öffentliche Repo `homelab-wiki` den Runner nutzen kann. Ohne diese Einstellung bleiben Jobs von public Repos in der Queue hängen.
@@ -127,39 +125,12 @@ Der Runner bedient alle Repos der Organisation `derever-labs`:
 - **homelab-nomad-jobs** -- Container-Builds (z.B. Immoscraper) + ZOT Push
 - **immo-monitor** -- SvelteKit Build + Deploy
 
-## Deploy-Pattern: Nomad Alloc-Stop Refresh
+## Deploy-Pattern
 
-Für Repos mit eigenem Container-Image (aktuell `immo-monitor`) hat sich folgendes Deploy-Muster als zuverlässig erwiesen: Build -> ZOT Push -> laufende Allocs per API stoppen -> Nomad reschedult automatisch und pullt das neue Image. Kein `nomad job run` nötig, kein Token-Wrangling für Job-Definitionen.
-
-Das Muster eignet sich für Nomad-Jobs, bei denen der Job-Spec stabil ist und sich nur das Image-Tag ändert (`:latest` + `force_pull = true`). Der Workflow lebt im Repo unter `.github/workflows/deploy.yml` und wird als Referenz-Beispiel für zukünftige Service-Repos gepflegt.
-
-::: warning Nomad API-Port: HTTPS 4646
-Die Nomad HTTP API läuft auf **Port 4646 mit HTTPS** (TLS aktiviert). Port 4647 ist der RPC-Port für cluster-interne mTLS-Kommunikation und ist für GitHub Runner **nicht** direkt nutzbar. Ein `curl http://...:4646` schlägt fehl, weil der Server ausschliesslich TLS akzeptiert. Der Runner verwendet `curl -sk` (self-signed CA) und den vollen URL `https://10.0.2.104:4646`.
-:::
-
-::: warning Restart per alloc-stop, nicht /v1/job/:id/restart
-Der Endpoint `POST /v1/job/:id/restart` erwartet einen JSON-Body und gibt ohne diesen HTTP 400 zurück -- das ist in der Nomad-Doku unklar dokumentiert. Der Workflow verwendet stattdessen `POST /v1/allocation/:id/stop` für jede laufende Alloc. Nomad reschedult automatisch und der Docker-Task mit `force_pull = true` holt das frische Image aus ZOT.
-:::
-
-Die benötigten Schritte:
-
-1. **Allocations holen** -- `GET /v1/job/<job-name>/allocations`, filtern auf `ClientStatus == "running"` (Python Inline-Parser reicht)
-2. **Jede Alloc stoppen** -- `POST /v1/allocation/<id>/stop` (leerer Body)
-3. **Fertig** -- Nomad stellt innerhalb von Sekunden neue Allocs aus ZOT bereit
-
-### NOMAD_TOKEN Secret
-
-Für das ältere Alloc-Stop-Deploy-Pattern (aktuell: `immo-monitor`) braucht der Workflow ein gültiges Nomad Management Token. Dieses liegt in 1Password unter `PRIVAT Agent / Nomad Home / password` und ist im GitHub Repository als Secret `NOMAD_TOKEN` hinterlegt. Bei der Rotation des Tokens muss das Repo-Secret manuell nachgezogen werden.
-
-Für die neue `deploy-nomad-jobs.yml`-Pipeline wird kein statisches Repo-Secret mehr benötigt: Der Runner holt sich über die Vault Nomad Secret Engine zur Laufzeit einen kurzlebigen Nomad-Client-Token (TTL 30 min). Dieser wird am Workflow-Ende sofort revoked. Details zur CD-Pipeline: [Referenz](./referenz.md#cd-pipeline-vault-nomad-secret-engine).
-
-::: info `force_pull = true` im Nomad Job
-Im Job-Spec (`immo-monitor.nomad`) muss der Docker-Task `force_pull = true` haben, sonst verwendet Nomad beim Reschedule das bereits gecachte Image und ignoriert den neuen Push. Ohne diese Option läuft der Deploy erfolgreich durch, deployt aber den alten Stand.
-:::
+Zwei Deploy-Muster laufen über den Runner: die zentrale `deploy-nomad-jobs.yml`-Pipeline mit kurzlebigem Nomad-Token aus der Vault Nomad Secret Engine, und für Repos mit eigenem Container-Image (z.B. `immo-monitor`) ein Alloc-Stop-Refresh -- Build, ZOT Push, laufende Allocs per API stoppen, Nomad reschedult und pullt das neue Image. Pipelines und Token-Fluss: [Referenz](./referenz.md#cd-pipeline-vault-nomad-secret-engine). Operative Deploy- und Recovery-Schritte: [Betrieb](./betrieb.md).
 
 ## Verwandte Seiten
 
 - [Wiki](../vitepress-wiki/index.md) -- CI/CD Pipeline und Deployment-Ablauf
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-Nodes (Placement)
-- [HashiCorp Stack](../nomad/index.md) -- Vault-Integration für Secrets
-- [Nomad Architektur](../nomad/index.md) -- Job-Übersicht
+- [HashiCorp Stack](../nomad/index.md) -- Vault-Integration und Nomad-Job-Übersicht

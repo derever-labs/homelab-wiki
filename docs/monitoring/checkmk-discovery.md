@@ -125,10 +125,8 @@ Bei Approach an die 750er-Grenze:
 3. Bloat-Klasse via Pattern-Rule ausschliessen, **nicht** durch Host-Löschen
 4. Wenn alles relevant ist: Edition-Upgrade auf CCE-Premium nötig (kein Free-Tier-Pfad mehr)
 
-## 4. Verwandte Doku
+## Verwandte Seiten
 
 - [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
 - [Monitoring: Coverage](coverage.md) -- Item-SSOT mit allen Coverage-Klassen
 - [Monitoring: Keep](keep.md) -- Severity-Mapping CheckMK → Keep
-
-Memory-Pointer: `feedback_checkmk_dcd_piggyback_cleanup` (DCD-Container-Bloat -- separates Phänomen), `feedback_checkmk_synology_snmp_builtin` (Built-in `synology_*` statt `agent_synology_prism`), `feedback_nas_storage_threshold_95` (95%-Volume-Schwelle), `project_checkmk_strategy_2026_05_01`.

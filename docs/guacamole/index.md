@@ -23,32 +23,57 @@ Guacamole ist ein clientloser Remote-Desktop-Gateway. Über den Browser können 
 
 ## Rolle im Stack
 
-Guacamole ist ein clientloser Remote-Desktop-Gateway. Über den Browser können RDP-, VNC- und SSH-Verbindungen zu internen Maschinen aufgebaut werden, ohne einen lokalen Client zu installieren. Besonders nützlich für den Zugriff auf Proxmox-VMs und physische Server von unterwegs.
+Besonders nützlich für den Zugriff auf Proxmox-VMs und physische Server von unterwegs.
 
 ## Architektur
 
 Das verwendete Image (`oznu/guacamole`) ist ein All-in-One-Container, der sowohl den Guacamole-Webserver als auch den guacd-Proxy-Daemon enthält.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
 direction: right
 
-USER: Browser
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+}
 
-Traefik: Traefik (10.0.2.20) {
+USER: Browser {
+  class: node
+}
+
+Traefik: Traefik (vm-traefik-01) {
   style.stroke-dash: 4
   R1: Router: remote.* (intern-auth)
 }
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  GUAC: Guacamole (Web + guacd)
+  GUAC: Guacamole (Web + guacd) {
+    class: node
+  }
 }
 
 Targets: Interne Ziele {
   style.stroke-dash: 4
-  RDP: Windows VMs (RDP)
-  VNC: Linux VMs (VNC)
-  SSH: Server (SSH)
+  RDP: Windows VMs (RDP) {
+    class: node
+  }
+  VNC: Linux VMs (VNC) {
+    class: node
+  }
+  SSH: Server (SSH) {
+    class: node
+  }
 }
 
 USER -> Traefik.R1: HTTPS
@@ -66,12 +91,12 @@ Konfiguration (Verbindungen, Benutzer) liegt auf NFS unter `/nfs/docker/guacamol
 
 ### Authentifizierung
 
-Die Authentik-Extension ist aktiviert und ermöglicht die Anmeldung via Authentik ForwardAuth. Zusätzlich schützt Traefik den Zugang mit der `intern-auth` Middleware (Authentik ForwardAuth).
+Traefik schützt den Zugang mit der `intern-auth`-Middleware (Authentik ForwardAuth). Guacamole selbst sieht nur den bereits authentifizierten User.
 
 ## Abhängigkeiten
 
-- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
-- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
+- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware (`intern-auth`)
+- **Authentik** -- ForwardAuth-Provider
 - **NFS** -- Konfigurationspersistenz
 
 ::: info auth-ldap Extension ungenutzt

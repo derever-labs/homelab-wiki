@@ -1,5 +1,5 @@
 ---
-title: 10GbE Netzwerk Optimierung
+title: Netzwerk Performance und Tuning
 description: Performance-Tuning für VirtIO und Thunderbolt
 tags:
   - platform
@@ -7,7 +7,7 @@ tags:
   - performance
 ---
 
-# Netzwerk Performance & Tuning
+# Netzwerk Performance und Tuning
 
 Analyse und durchgeführte Optimierungen für die 10GbE- und Thunderbolt-Verbindungen.
 
@@ -15,40 +15,40 @@ Analyse und durchgeführte Optimierungen für die 10GbE- und Thunderbolt-Verbind
 
 ### Proxmox Hosts
 
-| Host | Interface | Link Speed | Status |
-|------|-----------|------------|--------|
-| pve00 | enp5s0 | 1 Gbps | Nur 1Gbps verfügbar |
-| pve01 | enp2s0 | 10 Gbps | Aktiv |
-| pve02 | enp2s0 | 10 Gbps | Aktiv |
+| Host | Interface | Link Speed |
+|------|-----------|------------|
+| pve00 | enp5s0 | 1 Gbps (Hardware-Limit) |
+| pve01 | enp2s0 | 10 Gbps |
+| pve02 | enp2s0 | 10 Gbps |
 
-### Thunderbolt Netzwerk (pve01 <-> pve02)
+### Thunderbolt Netzwerk (pve01 ↔ pve02)
 
-| Komponente | MTU | Offloading | Status |
-|------------|-----|------------|--------|
-| bond-tb (active-backup) | 9000 | TSO/GSO/GRO off | Aktiv |
-| vmbr-tb (Bridge) | 9000 | TSO/GSO/GRO off | Aktiv |
-| thunderbolt0/1 (Slaves) | 9000 | - | Slave im Bond |
+| Komponente | MTU | Offloading |
+|------------|-----|------------|
+| bond-tb (active-backup) | 9000 | TSO/GSO/GRO off |
+| vmbr-tb (Bridge) | 9000 | TSO/GSO/GRO off |
+| thunderbolt0/1 (Slaves im Bond) | 9000 | - |
 
 ## Benchmark-Ergebnisse
 
 ### 10GbE (vmbr0, enp2s0)
 
-| Route | Bandbreite | Retransmits | Status |
-|-------|------------|-------------|--------|
-| pve02 -> pve01 (Host-to-Host) | ~9.4 Gbps | ~1,500 | Optimal |
-| client-06 -> client-05 (VM-to-VM) | ~9.2 Gbps | ~15,000 | Akzeptabel |
+| Route | Bandbreite | Retransmits |
+|-------|------------|-------------|
+| pve02 -> pve01 (Host-to-Host) | ~9.4 Gbps | ~1,500 |
+| client-06 -> client-05 (VM-to-VM) | ~9.2 Gbps | ~15,000 |
 
 *Gemessen: 26.12.2025*
 
 ### Thunderbolt (vmbr-tb, bond-tb active-backup)
 
-| Route | Streams | Bandbreite | Retransmits | Status |
-|-------|---------|------------|-------------|--------|
-| pve01 -> pve02 (Host-to-Host) | 1 | **14.9 Gbps** | 22 | Peak |
-| pve01 -> pve02 (Host-to-Host) | 4 | 12.0 Gbps | 29 | Optimal |
-| pve01 -> pve02 (Host-to-Host) | 8 | 12.1 Gbps | 34 | Optimal |
-| client-05 -> client-06 (VM-to-VM) | 4 | 12.2 Gbps | 294 | Gut |
-| client-05 -> client-06 (VM-to-VM) | 8 | 11.0 Gbps | 109 | Gut |
+| Route | Streams | Bandbreite | Retransmits |
+|-------|---------|------------|-------------|
+| pve01 -> pve02 (Host-to-Host) | 1 | **14.9 Gbps** | 22 |
+| pve01 -> pve02 (Host-to-Host) | 4 | 12.0 Gbps | 29 |
+| pve01 -> pve02 (Host-to-Host) | 8 | 12.1 Gbps | 34 |
+| client-05 -> client-06 (VM-to-VM) | 4 | 12.2 Gbps | 294 |
+| client-05 -> client-06 (VM-to-VM) | 8 | 11.0 Gbps | 109 |
 
 Der Single-Stream-Durchsatz (14.9 Gbps) ist deutlich höher als Multi-Stream (~12 Gbps). Das ist relevant, weil typische Workloads wie DRBD-Replikation und Live-Migration primär Single-Stream sind — dort wird also die volle Leistung genutzt.
 
@@ -104,9 +104,6 @@ Seit 22.02.2026 werden beide TB-Interfaces in einem Bond aggregiert. Löst das P
 ## Hinweise
 
 - Host-to-Host Performance ist besser als VM-to-VM, was bei VirtIO normal ist.
-- Für kritische Anwendungen (DRBD-Replikation, Live-Migration) wird der Thunderbolt-Pfad (10.99.1.x) bevorzugt — dort sind ~15 Gbps Single-Stream verfügbar.
-- Die Proxmox Migration ist auf das Thunderbolt-Netzwerk konfiguriert (10.99.1.0/24).
-- Ein Wechsel auf `balance-rr` Bonding könnte die Multi-Stream-Bandbreite verdoppeln, birgt aber Risiken für DRBD durch TCP-Reordering.
 
 ## Verwandte Seiten
 

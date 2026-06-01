@@ -9,7 +9,7 @@ tags:
 
 # Audiobookshelf
 
-Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediathek liegt auf dem gleichen NFS-Share wie die Jellyfin-Bibliothek, wird aber eigenständig verwaltet. Im Gegensatz zu Jellyfin bietet Audiobookshelf spezialisierte Features wie Kapitel-Navigation, Lesezeichen und Fortschrittsverfolgung über mehrere Geräte.
+Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediathek liegt auf dem gleichen NFS-Share wie die Jellyfin-Bibliothek, wird aber eigenständig verwaltet. Im Gegensatz zu Jellyfin bietet Audiobookshelf spezialisierte Features wie Kapitel-Navigation, Lesezeichen und Fortschrittsverfolgung über mehrere Geräte. Das Dual-Router-Setup (intern ohne Auth-Redirect, extern mit Authentik ForwardAuth) ermöglicht den mobilen Apps im Heimnetz eine nahtlose Nutzung ohne Login-Weiterleitung.
 
 ## Übersicht
 
@@ -19,16 +19,17 @@ Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediat
 | Deployment | Nomad Job `media/audiobookshelf.nomad` |
 | Storage | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
 | Mediathek | NFS `/nfs/jellyfin/media/books/` |
-| Auth | Intern: `intern-api@file` / Extern: `public-auth@file` |
-| Consul Service | `audiobookshelf` |
-
-## Rolle im Stack
-
-Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediathek liegt auf dem gleichen NFS-Share wie die Jellyfin-Bibliothek (`/nfs/jellyfin/media/books/`), wird aber eigenständig verwaltet. Im Gegensatz zu Jellyfin bietet Audiobookshelf spezialisierte Features wie Kapitel-Navigation, Lesezeichen und Fortschrittsverfolgung über mehrere Geräte.
+| Auth | Intern: `intern-noauth@file` / Extern: `public-auth@file` |
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 Client: Clients {
@@ -37,10 +38,10 @@ Client: Clients {
   WEB: Web-UI { style.border-radius: 8 }
 }
 
-Traefik: "Traefik (10.0.2.20)" {
+Traefik: Traefik {
   style.stroke-dash: 4
   tooltip: "10.0.2.20"
-  INT: "Router: intern intern-api" { style.border-radius: 8 }
+  INT: "Router: intern intern-noauth" { style.border-radius: 8 }
   EXT: "Router: extern public-auth" { style.border-radius: 8 }
 }
 
@@ -63,24 +64,6 @@ Traefik.EXT -> Nomad.ABS
 Nomad.ABS -> NFS.CFG
 Nomad.ABS -> NFS.BOOKS
 ```
-
-## Konfiguration
-
-### Storage-Pfade
-
-| Mount | Pfad im Container | NFS-Pfad |
-| :--- | :--- | :--- |
-| Config | `/config` | `/nfs/docker/audiobookshelf/config` |
-| Metadata | `/metadata` | `/nfs/docker/audiobookshelf/metadata` |
-| Hörbücher | `/audiobooks` | `/nfs/jellyfin/media/books` |
-
-### Traefik Routing
-
-Audiobookshelf nutzt ein Dual-Router-Setup: Intern ohne Auth (nur IP-Whitelist), extern mit Authentik ForwardAuth. Das ist wichtig, damit die mobilen Apps im Heimnetz ohne Auth-Redirect funktionieren.
-
-::: info Ressourcen
-Siehe Nomad Job `media/audiobookshelf.nomad`.
-:::
 
 ## Verwandte Seiten
 

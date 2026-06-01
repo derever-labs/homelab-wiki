@@ -16,42 +16,42 @@ Architektur-Strategie gegen Cluster-Restart-Cascade. Definiert das Selbstreferen
 das 4-Schichten-Modell der Cluster-Resilience und das erwartete Verhalten in verschiedenen
 Failure-Szenarien.
 
-::: warning Status 2026-05-31: Gesamtprojekt zurueckgestellt, Referenz behalten
+::: warning Status 2026-05-31: Gesamtprojekt zurückgestellt, Referenz behalten
 Eine 3-Agenten-Challenge (31.05) hat ergeben, dass die **4-Schichten-Migration als
 Gesamtprojekt heute nicht gerechtfertigt** ist: Der Haupttrigger des einzigen Cascade-
 Vorfalls (NAS-IOPS + ZOT-auf-S3) ist seit der Linstor-Migration strukturell behoben, der
-Reststrigger (CSI-Stale-Claims) durch den taeglichen csi-gc-Job mitigiert. Umgesetzt wurde
-nur das risikoarme Mini-Bundle: **Alloy-Selbstreferenz aufgeloest** (short-form Image mit
+Resttrigger (CSI-Stale-Claims) durch den täglichen csi-gc-Job mitigiert. Umgesetzt wurde
+nur das risikoarme Mini-Bundle: **Alloy-Selbstreferenz aufgelöst** (short-form Image mit
 docker.io-Fallback) und dieser **Runbook-Split** ([cluster-restart.md](./cluster-restart.md)
 Schritt 4a/4b/4c).
 
-Die Schichten 3 (raw_exec wait-for-zot Hooks) und 4 (restart/reschedule-Massenaenderung ueber
-~60 Jobs) bleiben **zurueckgestellt** -- sie haerten gegen eine Cascade-Verstaerkung ohne
+Die Schichten 3 (raw_exec wait-for-zot Hooks) und 4 (restart/reschedule-Massenänderung über
+~60 Jobs) bleiben **zurückgestellt** -- sie härten gegen eine Cascade-Verstärkung ohne
 aktiven Trigger und haben hohen Blast-Radius. Diese Seite bleibt als **Architektur-Referenz**:
-das Selbstreferenz-Prinzip und die Failure-Mode-Diagramme gelten weiter, falls ein kuenftiger
+das Selbstreferenz-Prinzip und die Failure-Mode-Diagramme gelten weiter, falls ein künftiger
 Vorfall die Restschichten rechtfertigt. Steuerung: ClickUp [86c9uu5cu](https://app.clickup.com/t/86c9uu5cu).
 :::
 
 ## Prinzip: Selbstreferenz-Audit
 
-Jeder Mechanismus, der eine Komponente X absichert, darf nicht selbst von X abhaengen. Wer
-gegen ZOT-Outage schuetzt, darf kein ZOT-Image nutzen. Wer Postgres-Verfuegbarkeit prueft,
-darf nicht warten muessen bis Postgres erreichbar ist. Verletzung dieses Prinzips fuehrt zu
-Cascade-Failures, bei denen die Schutz-Mechanismen mit dem zu schuetzenden System sterben.
+Jeder Mechanismus, der eine Komponente X absichert, darf nicht selbst von X abhängen. Wer
+gegen ZOT-Outage schützt, darf kein ZOT-Image nutzen. Wer Postgres-Verfügbarkeit prüft,
+darf nicht warten müssen bis Postgres erreichbar ist. Verletzung dieses Prinzips führt zu
+Cascade-Failures, bei denen die Schutz-Mechanismen mit dem zu schützenden System sterben.
 
 Konkret unterscheidet die Architektur drei Komponenten-Klassen:
 
-- **Bootstrap-Klasse** -- haengt nicht an ZOT, sondern zieht Images direkt von Upstream-
-  Registries oder laeuft komplett ohne Container (systemd, raw_exec). Muss ohne Cluster-
-  Services startfaehig sein.
+- **Bootstrap-Klasse** -- hängt nicht an ZOT, sondern zieht Images direkt von Upstream-
+  Registries oder läuft komplett ohne Container (systemd, raw_exec). Muss ohne Cluster-
+  Services startfähig sein.
 - **Service-Klasse** -- darf ZOT als Image-Quelle nutzen, ist aber durch die 4 Schichten
   unten gegen ZOT-Outage entkoppelt.
 - **Selbstreferenz** (Anti-Pattern) -- ein Mechanismus der X absichert nutzt X als
-  Abhaengigkeit. Wird konsequent vermieden.
+  Abhängigkeit. Wird konsequent vermieden.
 
 ## Diagramm 1: Selbstreferenz-Audit (Stand 2026-05-17)
 
-Welche Komponenten sind eigenstaendig startbar, welche haengen heute an ZOT?
+Welche Komponenten sind eigenständig startbar, welche hängen heute an ZOT?
 
 ```d2
 direction: down
@@ -122,7 +122,7 @@ ZOT_Service -> Anti_Pattern.latest: "Image-Pull (force)"
 - **7 Jobs** mit `force_pull=true` auf `zot.service.consul/.../<image>:latest`
   (immoscraper-Familie + meshcmd + stash-jellyfin-proxy + video-grabber + special-yt-dlp)
 
-Aufloesung erfolgt ueber Schicht 2 (siehe unten) im Migrations-Track 86c9uu5cu.
+Schicht 2 (siehe unten) adressiert diese Gruppen. Migrations-Track: ClickUp 86c9uu5cu.
 :::
 
 ## Diagramm 2: 4-Schichten-Modell
@@ -186,16 +186,12 @@ S3 -> S4: "bei Timeout / echtem Bug"
 
 ### Wie die Schichten ineinandergreifen
 
-- **Schicht 1** ist der erste Daemmwall. In den meisten Cluster-Restart-Faellen ist das Image
-  lokal cached, kein Pull-Versuch noetig, kein ZOT-Bedarf
-- **Schicht 2** entfernt strukturelle Abhaengigkeiten. Monitoring und Bootstrap-Helper
-  ueberleben ZOT-Down weil sie nicht von ZOT pullen
-- **Schicht 3** ist die Sicherheitsleine fuer Cases die Schicht 1 verfehlt (neues Image,
-  GC'd Image, neuer Job). Apps schlafen im prestart-Loop statt sofort zu kippen. Hartes
-  Timeout 300s sorgt fuer sichtbaren Failure statt silent-hang
-- **Schicht 4** raeumt Restart/Reschedule sauber auf. Bei dauerhaftem Problem wird der
-  Failure sichtbar (mode=fail + Reschedule-Backoff + Disconnect-Block) statt im unsichtbaren
-  delay-Loop zu versanden
+Die Schichten sind nacheinander gestaffelt: Schicht 1 (Cache) fängt die Mehrheit ab, Schicht
+2 (Bootstrap-Class) entfernt strukturelle ZOT-Abhängigkeiten, Schicht 3 (Wait-Layer) ist die
+Sicherheitsleine für nicht-cached Fälle, Schicht 4 (Failure-Mode) räumt auf. Entscheidend
+und nicht im Diagramm ablesbar: Das harte 300s-Timeout in Schicht 3 erzwingt einen sichtbaren
+Failure statt silent-hang, und mode=fail in Schicht 4 macht dauerhafte Probleme sichtbar statt
+sie im delay-Loop zu verstecken.
 
 ## Diagramm 3: Cluster-Restart -- Ist-Verhalten
 
@@ -278,17 +274,16 @@ t9_wait -> t11
 t10_alloy -> t11
 ```
 
-### Was sich aendert
+### Was sich ändert
 
-- Runbook splittet "Jobs re-evaluieren" in Linstor → ZOT → Rest (siehe
-  [cluster-restart.md](./cluster-restart.md))
-- Cache (Schicht 1) deckt Mehrheit der Apps ab ohne Pull-Versuch
-- Prestart-Wait (Schicht 3) faengt den Rest sauber ab
-- Alloy laeuft via Bootstrap-Class autonom hoch -- Monitoring sieht alles ab Sekunde 0
+Statt Big-Bang splittet das Runbook die Startreihenfolge in Linstor → ZOT → Rest (siehe
+[cluster-restart.md](./cluster-restart.md)); Cache (Schicht 1) und Prestart-Wait (Schicht 3)
+fangen die Apps ab, und Alloy läuft via Bootstrap-Class autonom hoch, sodass Monitoring ab
+Sekunde 0 sieht.
 
-## Diagramm 5: ZOT-Outage waehrend Betrieb
+## Diagramm 5: ZOT-Outage während Betrieb
 
-ZOT crasht waehrend Apps laufen. Vergleich Ist vs Ziel.
+ZOT crasht während Apps laufen. Vergleich Ist vs Ziel.
 
 ```d2
 direction: right
@@ -326,11 +321,9 @@ Neu: "Ziel-Modell" {
 }
 ```
 
-::: tip Kernunterschied
-Heute ist `force_pull=true` der Bottleneck, nicht der ZOT-Crash selbst. Im Ziel-Modell ist
-Schicht 1 (force_pull=false + Cache) der Hauptdaemmwall, Schicht 3 (prestart-wait) faengt
-den Rest.
-:::
+Kernunterschied: Heute ist `force_pull=true` der Bottleneck, nicht der ZOT-Crash selbst. Im
+Ziel-Modell ist Schicht 1 (force_pull=false + Cache) der Hauptdämmwall, Schicht 3
+(prestart-wait) fängt den Rest.
 
 ## Diagramm 6: Node-Ausfall
 
@@ -372,10 +365,8 @@ Neu_n: "Ziel-Modell" {
 }
 ```
 
-::: tip Kernunterschied
-`mode=delay` blockiert den Node-Wechsel; `mode=fail` ermoeglicht sauberes Failover. Der
-`disconnect`-Block faengt kurze Netzausfaelle ab ohne unnoetig zu reschedulen.
-:::
+Kernunterschied: `mode=delay` blockiert den Node-Wechsel; `mode=fail` ermöglicht sauberes
+Failover. Der `disconnect`-Block fängt kurze Netzausfälle ab ohne unnötig zu reschedulen.
 
 ## Diagramm 7: App-Bug beim Start
 
@@ -411,100 +402,49 @@ Neu_b: "Ziel-Modell" {
 }
 ```
 
-::: tip Kernunterschied
-Heute ist App-Bug **versteckt** (alloc bleibt "running" im delay-Loop), im Ziel-Modell wird
-er **sichtbar** (alloc geht in failed, Reschedule mit exponential backoff, Alert).
-:::
+Kernunterschied: Heute ist App-Bug **versteckt** (alloc bleibt "running" im delay-Loop), im
+Ziel-Modell wird er **sichtbar** (alloc geht in failed, Reschedule mit exponential backoff,
+Alert).
 
-## Profile fuer restart / reschedule / disconnect
+## Profile für restart / reschedule / disconnect
 
-Zwei Standard-Profile abhaengig von der Komponenten-Klasse:
+Zwei Standard-Profile abhängig von der Komponenten-Klasse:
 
 ### Service-Klasse (Standard-Apps)
 
-```hcl
-restart {
-  attempts = 3
-  interval = "10m"
-  delay    = "20s"
-  mode     = "fail"
-}
-
-reschedule {
-  unlimited      = true
-  delay          = "30s"
-  delay_function = "exponential"
-  max_delay      = "30m"
-}
-
-disconnect {
-  lost_after = "3m"
-  replace    = true
-  reconcile  = "best_score"
-}
-```
+- `restart` -- attempts 3, interval 10m, delay 20s, mode `fail`
+- `reschedule` -- unlimited, delay 30s, delay_function `exponential`, max_delay 30m
+- `disconnect` -- lost_after 3m, replace true, reconcile `best_score`
 
 ### Bootstrap-Klasse (ZOT, Linstor-CSI, Alloy)
 
-```hcl
-restart {
-  attempts = 5
-  interval = "20m"
-  delay    = "30s"
-  mode     = "fail"
-}
+- `restart` -- attempts 5, interval 20m, delay 30s, mode `fail`
+- `reschedule` -- attempts 5, interval 2h, delay 1m, delay_function `exponential`, max_delay 20m
 
-reschedule {
-  attempts       = 5
-  interval       = "2h"
-  delay          = "1m"
-  delay_function = "exponential"
-  max_delay      = "20m"
-}
-```
-
-Begruendung: Bootstrap-Komponenten haben laengere Startup-Zeiten (CSI-Mount, BoltDB-Init).
+Begründung: Bootstrap-Komponenten haben längere Startup-Zeiten (CSI-Mount, BoltDB-Init).
 Festes `reschedule.attempts=5` (statt `unlimited=true`) erzwingt Operator-Alert bei
 wiederholten Fails, weil Bootstrap-Down den ganzen Stack blockiert.
 
 ## Wait-Layer-Pattern (Schicht 3)
 
-Image-freier Prestart-Hook fuer Apps die ZOT als Image-Quelle nutzen:
-
-```hcl
-task "wait-for-zot" {
-  lifecycle {
-    hook    = "prestart"
-    sidecar = false
-  }
-  driver = "raw_exec"
-  config {
-    command = "/usr/bin/curl"
-    args = [
-      "-sf",
-      "--retry", "60",
-      "--retry-delay", "5",
-      "--retry-connrefused",
-      "--max-time", "300",
-      "http://zot.service.consul:5000/v2/"
-    ]
-  }
-}
-```
+Image-freier Prestart-Hook (`raw_exec` + `curl`) für Apps die ZOT als Image-Quelle nutzen.
+Referenz-Implementierung: Task `wait-for-zot` in `nomad-jobs/infrastructure/github-runner.nomad`.
+Der Hook pollt `http://zot.service.consul:5000/v2/` mit `--retry 60 --retry-delay 5
+--retry-connrefused --max-time 300`.
 
 Eigenschaften:
 
 - Kein Container, kein Image-Pull, kein ZOT-Bezug -- `/usr/bin/curl` ist OS-Paket
 - `--retry 60 --retry-delay 5` erlaubt bis 5 Minuten auf ZOT zu warten
 - `--max-time 300` ist hartes Timeout -- Exit-Code != 0 = sichtbarer Failure statt
-  silent-hang. Restart-Counter zaehlt, Alert greift
+  silent-hang. Restart-Counter zählt, Alert greift
 - Funktioniert weil `raw_exec` cluster-weit enabled ist und `curl` auf allen Workern liegt
 
 ## Verwandte Seiten
 
 - [Docker Registry (ZOT)](../docker-registry/index.md) -- aktueller ZOT-Stand
-- [Cluster-Restart-Runbook](./cluster-restart.md) -- konkrete Schritt-fuer-Schritt-Anleitung
+- [Cluster-Restart-Runbook](./cluster-restart.md) -- konkrete Schritt-für-Schritt-Anleitung
 - [Cold-Start-Runbook](./cold-start-runbook.md) -- Disaster-Recovery-Reihenfolge
-- [Service-Abhaengigkeiten](./service-abhaengigkeiten.md) -- Service-Dependency-Mapping
-- [Postmortem 2026-05-12](../postmortems/2026-05-12-zot-nas-cascade.md) -- Ausloeser fuer
+- [Service-Abhängigkeiten](./service-abhaengigkeiten.md) -- Service-Dependency-Mapping
+- [Postmortem 2026-05-12](../postmortems/2026-05-12-zot-nas-cascade.md) -- Auslöser für
   diese Strategie

@@ -11,7 +11,7 @@ tags:
 
 ## Auth Methods
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Auth Method | `jwt-nomad` |
 | JWKS URL | `https://nomad.service.consul:4646/.well-known/jwks.json` |
@@ -24,7 +24,6 @@ Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JW
 | Policy | Beschreibung |
 |--------|--------------|
 | `nomad-workload` | Erlaubt Nomad-Tasks Secrets unter `kv/data/<job_id>` zu lesen |
-| `operator` | Jobs deployen, Logs lesen, Allocs verwalten (Nomad-seitig) |
 
 Die `nomad-workload` Policy (nicht zu verwechseln mit der JWT-Rolle `nomad-workloads`) stellt sicher, dass jeder Job nur seine eigenen Secrets lesen kann. Der Pfad wird aus der Job-ID abgeleitet: `kv/<job_id>`.
 
@@ -43,7 +42,7 @@ Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste
 
 Alle Vault-Zugriffe werden protokolliert.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Log-Datei | `/opt/vault/audit/vault-audit.log` |
 | Rotation | Logrotate (30 Tage, komprimiert) |
@@ -57,17 +56,12 @@ Das Audit Log erfasst jeden API-Aufruf an Vault, einschliesslich Auth-Versuche, 
 |------|------------|
 | `/opt/vault` | Vault Daten |
 | `/opt/vault/audit/vault-audit.log` | Audit Log |
-| `/root/vault-keys.json` | Auto-Unseal Keys (chmod 600) |
+| `/etc/vault.d/unseal-keys` | Auto-Unseal Keys (chmod 600, manuell angelegt) |
+| `/root/vault-keys.json` | Vault-Init-Output (Root-Token + Shamir-Keys) |
 
 ## Vault Service Discovery
 
-Nomad verbindet sich zu Vault über Consul DNS statt einer hardcodierten IP:
-
-```
-address = "http://vault.service.consul:8200"
-```
-
-Vault registriert sich automatisch bei Consul mit Tags (`active` für den Leader, `standby` für Follower). Standby-Nodes leiten Requests per HTTP 307 an den aktiven Leader weiter. Dadurch ist die Verbindung resilient -- bei einem Leader-Wechsel löst Consul DNS automatisch den neuen Leader auf.
+Nomad verbindet sich zu Vault über Consul DNS statt einer hardcodierten IP (`http://vault.service.consul:8200`). Vault registriert sich automatisch bei Consul mit Tags (`active` für den Leader, `standby` für Follower). Standby-Nodes leiten Requests per HTTP 307 an den aktiven Leader weiter. Dadurch ist die Verbindung resilient -- bei einem Leader-Wechsel löst Consul DNS automatisch den neuen Leader auf.
 
 ::: info
 `vault.service.consul` gibt alle Vault-Nodes zurück (active + standby). Falls nur der Leader gewünscht ist: `active.vault.service.consul`.

@@ -10,17 +10,17 @@ tags:
 
 # Stash
 
-## Übersicht
-
 Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet automatisches Tagging, Metadaten-Management, Szenen-Erkennung und eine durchsuchbare Mediathek. Es laufen zwei getrennte Instanzen mit identischer Storage-Strategie (Linstor CSI für Config/Cache/Metadaten, NFS für Medien-Daten).
 
-**stash** (Haupt-Instanz, Priorität 80):
+## Übersicht
+
+**stash** (Haupt-Instanz, Priorität 95):
 
 | Attribut | Wert |
 |----------|------|
 | URL | [s.ackermannprivat.ch](https://s.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `media/stash.nomad` |
-| Config-Storage | Linstor CSI Volume (`stash-data`) |
+| Config-Storage | Linstor CSI Volume (`stash-data-r2`) |
 | Media-Storage | NFS (shared mit Downloadern) |
 | Auth | Authentik ForwardAuth (`intern-auth`) |
 
@@ -34,9 +34,23 @@ Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet
 | Media-Storage | NFS (separates Verzeichnis) |
 | Auth | Authentik ForwardAuth (`intern-auth`) |
 
+## Rolle im Stack
+
+Stash ist der zentrale Media Organizer für heruntergeladene Inhalte. Die Batch Jobs ([Content Pipeline](../content-pipeline/index.md)) laden neue Medien herunter und triggern anschliessend über die Stash GraphQL-API automatisch einen Library Scan und die Generierung von Vorschaubildern, Sprites und Thumbnails.
+
+### Zwei Instanzen -- warum?
+
+Die Haupt-Instanz (`stash`) verwaltet die primäre Mediathek und wird von den Batch Jobs automatisch aktualisiert. Die Instanz `stash-secure` ist eine separate Installation mit eigenem Storage, die keine automatische Integration mit den Downloadern hat. Beide Instanzen teilen sich das gleiche Docker-Image, sind aber vollständig voneinander isoliert.
+
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: down
 
 Clients: Zugriff {
@@ -59,7 +73,7 @@ Nomad: Nomad Cluster {
 
 Storage: Storage {
   style.stroke-dash: 4
-  LCSI: "Linstor CSI stash-data" { shape: cylinder }
+  LCSI: "Linstor CSI stash-data-r2" { shape: cylinder }
   LCSI2: "Linstor CSI stash-secure-data" { shape: cylinder }
   NFS1: "NFS /nfs/.../data" { shape: cylinder }
   NFS2: "NFS /nfs/.../secure" { shape: cylinder }
@@ -83,35 +97,15 @@ Batch.PH -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
 Batch.RD -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
 ```
 
-## Rolle im Stack
-
-Stash ist der zentrale Media Organizer für heruntergeladene Inhalte. Die Batch Jobs ([Content Pipeline](../content-pipeline/index.md)) laden neue Medien herunter und triggern anschliessend über die Stash GraphQL-API automatisch einen Library Scan und die Generierung von Vorschaubildern, Sprites und Thumbnails.
-
-### Zwei Instanzen -- warum?
-
-Die Haupt-Instanz (`stash`) verwaltet die primäre Mediathek und wird von den Batch Jobs automatisch aktualisiert. Die Instanz `stash-secure` ist eine separate Installation mit eigenem Storage, die keine automatische Integration mit den Downloadern hat. Beide Instanzen teilen sich das gleiche Docker-Image, sind aber vollständig voneinander isoliert.
-
 ## Konfiguration
-
-### Ressourcen
-
-Die Haupt-Instanz hat deutlich höhere Ressourcen, da sie für Metadaten-Generierung (Previews, Sprites, Perceptual Hashes) rechenintensiv arbeitet. Die konkreten Werte sind in den Nomad-Jobs `media/stash.nomad` und `media/stash-secure.nomad` definiert.
 
 ### Priorität und Preemption
 
-Die Haupt-Instanz läuft mit Nomad-Priorität **80**, bewusst unter Jellyfin (95) und stash-secure (95). Grund: alle drei Services teilen sich den Constraint auf die Linstor-Storage-Nodes (`vm-nomad-client-05/06`). Fällt eine der beiden Nodes aus, müssen alle drei auf der verbleibenden Node laufen. Durch die niedrigere Priorität wird `stash` bei Ressourcen-Knappheit von Nomad zuerst preempted -- Jellyfin als User-facing Streaming-Service und `stash-secure` mit persönlichem Material behalten Vorrang.
+Beide Instanzen laufen mit Nomad-Priorität **95** (kritischer Service), gleich wie Jellyfin. Hintergrund: alle teilen sich den Constraint auf die Linstor-Storage-Nodes (`vm-nomad-client-05/06`). Fällt eine der beiden Nodes aus, müssen die Services auf der verbleibenden Node zusammenlaufen. Die hohe Priorität schützt sie davor, von niedriger priorisierten Jobs bei Ressourcen-Knappheit verdrängt zu werden.
 
-### Hardware-Beschleunigung
-
-Die Haupt-Instanz bindet die Intel Iris Xe iGPU (`/dev/dri/renderD128`, `/dev/dri/card1`) ein und teilt sie mit Jellyfin -- Linux DRM erlaubt concurrent access. In der Stash-Konfiguration ist `transcodeHardwareAcceleration` aktiv.
-
-::: warning Gültigkeitsbereich
-Die HW-Beschleunigung wirkt in Stash ausschliesslich bei **Live-Transcoding**, also wenn die UI im Browser ein Video abspielen will, dessen Format nicht nativ vom Browser unterstützt wird (z.B. H.265 zu H.264). **Metadata-Generierung** (Preview-Clips, Sprites, Thumbnails, perceptual Hashes) läuft architekturbedingt immer auf der CPU und profitiert nicht von der iGPU. Entsprechend bleibt das CPU-Budget der Haupt-Instanz der limitierende Faktor für die Preview-Generation nach Batch-Downloads (Details: Nomad-Job `media/stash.nomad`).
+::: warning Metadata-Generierung läuft auf CPU
+Die Metadata-Generierung (Preview-Clips, Sprites, Thumbnails, perceptual Hashes) läuft architekturbedingt immer auf der CPU. Damit bleibt das CPU-Budget der Haupt-Instanz der limitierende Faktor für die Preview-Generierung nach Batch-Downloads (Details: Nomad-Job `media/stash.nomad`).
 :::
-
-### Linstor CSI Volumes
-
-Beide Instanzen nutzen Linstor CSI Volumes für Konfiguration, Cache und Metadaten (`stash-data` bzw. `stash-secure-data`). Das erfordert, dass die Jobs auf einem Linstor Storage Node (`vm-nomad-client-05/06`) laufen. Die Medien-Daten liegen weiterhin auf NFS. Siehe [Linstor](../linstor-storage/index.md) für Details zum CSI-Setup.
 
 ### Stash API
 
@@ -127,6 +121,10 @@ Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizi
 | Pfad | Keys |
 | :--- | :--- |
 | `kv/data/stash` | `api_key` |
+
+## stash-jellyfin-proxy
+
+Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, sodass die Jellyfin-App auf dem Apple TV die Stash-Mediathek durchsuchen und abspielen kann. Er ist stateless, läuft fest auf `vm-nomad-client-06` (statischer Port 8098) und ist ausschliesslich über Tailscale erreichbar -- kein Traefik-Router, kein Internet-Zugang. Deployment: Nomad Job `media/stash-jellyfin-proxy.nomad`, Secrets in Vault (`kv/data/stash-jellyfin-proxy`).
 
 ## Verwandte Seiten
 

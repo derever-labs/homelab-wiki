@@ -69,14 +69,14 @@ Diese Seite ist bewusst der Ort, an dem die Privat-Defaults gepflegt werden -- z
 
 - **Default-Liste ändern** -- Diesen Abschnitt und den Verweis in `config/AGENT.md` (`Session Hygiene`) konsistent aktualisieren
 - **Trigger verschärfen oder lockern** -- Formulierung der Trigger-Schwelle hier und in `config/AGENT.md` nachziehen
-- **Claude-Label einführen** -- Sobald ein entsprechendes Custom Field im Privat-Workspace existiert: Field-ID und Option-ID hier dokumentieren und die Regel in `config/AGENT.md` (`ClickUp (HSLU Workspace)`) um den Privat-Workspace erweitern
-- **Dynamische Liste-Wahl** -- Optional möglich: Claude könnte über `clickup_get_lists` den Space-Baum laden und die Zielliste per Scope-Matching finden. Aktuell wird bewusst die statische Default-Liste verwendet, um Overhead und Fehlklassifikation zu vermeiden
+
+Im Privat-Workspace gibt es kein `Claude`-Custom-Field; Tasks laufen daher ohne Label. Die Default-Liste wird bewusst statisch geführt (keine dynamische Scope-basierte Liste-Wahl), um Overhead und Fehlklassifikation zu vermeiden.
 
 ::: tip Cross-Workspace
 Für Aufgaben, die sowohl HSLU- als auch Homelab-Infrastruktur berühren, entscheidet der hauptsächliche Arbeitskontext. Im Zweifel fragt Claude vor der Anlage.
 :::
 
-::: info Verwandte Seiten
+## Verwandte Seiten
+
 - [Claude Code Config-Sync](./claude-code-sync.md) -- Geteilte Config zwischen beiden macOS-Accounts
 - [ClickUp Multi-Instance](./clickup-multi-instance.md) -- Zwei ClickUp-Instanzen gleichzeitig auf macOS
-:::

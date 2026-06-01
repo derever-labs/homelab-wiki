@@ -1,5 +1,5 @@
 ---
-title: Referenz
+title: Claude Code – Referenz
 description: MCP-Server, Skills und ClickUp-Integration im Homelab
 tags:
   - claude-code
@@ -36,11 +36,7 @@ Skills liegen im `agents/skills/`-Verzeichnis und sind per Symlink als `~/.claud
 | `ics` | ICS-Kalender-Export aus unstrukturiertem Text |
 | `wiki-update` | Systematische Revision von Homelab- und IT-Wiki |
 
-## ClickUp-Workspaces
+## Verwandte Seiten
 
-- **clickup-hslu** -- Workspace HSLU DC, Default für HSLU-Repos unter `github/HSLU_DC/`
-- **clickup-privat** -- Workspace Familie Ackermann, Default für private Repos und Homelab-Arbeit
-
-Die Workspace-Wahl orientiert sich am Current Working Directory: Repos unter `github/HSLU_DC/` landen in HSLU, sonst in Privat.
-
-Details zur IT-Task-Liste und zum Tracking-Workflow liegen unter [Claude Task-Tracking](../_querschnitt/claude-task-tracking.md).
+- [Claude Task-Tracking](../_querschnitt/claude-task-tracking.md) -- Workspace-Routing, Listen-IDs, Tracking-Workflow
+- [Secrets im Homelab](../secrets/index.md)

@@ -31,8 +31,10 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Nomad](./nomad/) | Container- und Job-Orchestrierung |
 | [Consul](./consul/) | Service Discovery und Health Checks |
 | [Traefik](./traefik/) | Reverse Proxy, SSL-Terminierung |
-| [DNS](./dns/) | Pi-hole v6, Unbound, Consul-Forwarding |
+| [DNS](./dns/) | Pi-hole, Unbound, Consul-Forwarding |
 | [Netzwerk](./netzwerk/) | VLANs, Subnets, Routing |
+| [UniFi](./unifi/) | Netzwerk-Hardware, Access Points, VLAN-Segmentierung |
+| [USV](./ups/) | Unterbrechungsfreie Stromversorgung, NUT Server |
 
 ## Storage und Backup
 
@@ -42,10 +44,11 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Linstor Storage](./linstor-storage/) | DRBD-repliziertes Block-Storage (CSI) |
 | [Backup](./backup/) | Backup-Strategie, PBS, pg_dumpall |
 
-## Core Services
+## Kerndienste
 
 | Thema | Beschreibung |
 | :--- | :--- |
+| [Authentik](./authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
 | [LDAP im Homelab](./ldap/) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
 | [Docker Registry](./docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
@@ -64,7 +67,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Stash](./stash/) | Media Organizer |
 | [AudioBookShelf](./audiobookshelf/) | Hörbücher und E-Books |
 | [Video Download](./video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./media-tools/) | Handbrake, Janitorr, Maintainerr |
+| [Media Tools](./media-tools/) | Handbrake, Janitorr, Maintainerr, Notifiarr |
 
 ## Monitoring
 
@@ -88,7 +91,6 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Tandoor](./tandoor/) | Rezeptverwaltung |
 | [ChangeDetection](./changedetection/) | Website-Änderungsüberwachung |
 | [Obsidian LiveSync](./obsidian-livesync/) | Obsidian Synchronisation |
-| [Notifiarr](./notifiarr/) | Benachrichtigungsservice |
 | [Metabase](./metabase/) | Business Intelligence |
 | [Zeiterfassung](./zeiterfassung/) | solidtime und Kimai |
 | [Immobilien-Monitoring](./immobilien-monitoring/) | Immobilien-Überwachung |

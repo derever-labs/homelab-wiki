@@ -1,56 +1,28 @@
 ---
-title: Utility Tools
-description: Czkawka (Duplikat-Finder) und MeshCommander (Intel AMT Management)
+title: MeshCommander
+description: MeshCommander (Intel AMT Out-of-Band-Management)
 tags:
   - service
-  - productivity
   - nomad
   - utilities
 ---
 
-# Utility Tools
+# MeshCommander
 
-Diese Seite dokumentiert kleinere Utility-Services, die keinen eigenen umfangreichen Eintrag rechtfertigen.
+MeshCommander ist ein Web-basiertes Management-Tool für Intel AMT/vPro-fähige Hardware. Es ermöglicht Remote-KVM (Tastatur, Video, Maus), Power-Management und BIOS-Zugriff über den Browser -- unabhängig vom Betriebssystem-Zustand des Zielrechners.
 
-## Czkawka
-
-| Attribut | Wert |
-|----------|------|
-| URL | [double.ackermannprivat.ch](https://double.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `services/czkawka.nomad` |
-| Storage | NFS `/nfs/docker/czkawka/config` |
-| Auth | `intern-auth@file` |
-
-### Rolle im Stack
-
-Czkawka ist ein Duplikat-Finder mit Web-UI. Er scannt NFS-Verzeichnisse nach doppelten Dateien, leeren Ordnern, temporären Dateien und ähnlichen Mustern. Besonders nützlich zur Bereinigung der Jellyfin-Medienbibliothek und Log-Verzeichnisse.
-
-### Konfiguration
-
-Der Container hat Lesezugriff auf mehrere NFS-Verzeichnisse:
-
-- `/nfs/logs/` -- Log-Dateien
-- `/nfs/jellyfin/` -- Medienbibliothek
-- `/nfs/logs/meta_logs/meta/logs/logs/data/` -- Stash-Daten
-
-::: warning Hoher Ressourcenbedarf
-Czkawka benötigt erhebliche Ressourcen beim Scannen grosser Verzeichnisse (Limits: Siehe Nomad-Job). Scans sollten nicht während anderer ressourcenintensiver Aufgaben laufen.
-:::
-
----
-
-## MeshCommander
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
 | URL | [mesh.ackermannprivat.ch](https://mesh.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/meshcmd.nomad` |
 | Storage | Keine (stateless) |
-| Auth | `intern-auth@file` |
+| Auth | `intern-auth@file` (Authentik ForwardAuth via Traefik) |
 
 ### Rolle im Stack
 
-MeshCommander ist ein Web-basiertes Management-Tool für Intel AMT/vPro-fähige Hardware. Es ermöglicht Remote-KVM (Tastatur, Video, Maus), Power-Management und BIOS-Zugriff über den Browser -- unabhängig vom Betriebssystem-Zustand des Zielrechners.
+Für Out-of-Band-Management AMT-fähiger Hardware: Zugriff auf Power-State und BIOS auch dann, wenn das Betriebssystem nicht erreichbar ist.
 
 ### Konfiguration
 
@@ -60,13 +32,7 @@ MeshCommander ist vollständig stateless -- es werden keine Daten persistiert. D
 MeshCommander hat die höchste Nomad-Priority (100), da es für Out-of-Band-Management kritischer Infrastruktur benötigt wird. Auch bei Ressourcenknappheit im Cluster bleibt der Service verfügbar.
 :::
 
-## Abhängigkeiten (beide Services)
-
-- **Traefik** -- HTTPS-Routing und Authentik ForwardAuth Middleware
-- **Authentik** -- ForwardAuth-Provider (über `intern-auth`)
-
 ## Verwandte Seiten
 
-- [Jellyfin](../jellyfin/index.md) -- Czkawka scannt die Medienbibliothek
 - [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
 - [Proxmox Cluster](../proxmox/index.md) -- MeshCommander verwaltet AMT-fähige Hardware

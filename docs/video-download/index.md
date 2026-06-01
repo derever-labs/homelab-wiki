@@ -12,69 +12,14 @@ tags:
 
 ## Übersicht
 
-Vier Web-UIs für den manuellen Download von Videos. Jedes Tool hat einen spezifischen Zweck und Ziel-Storage. Alle sind über Traefik mit Authentik ForwardAuth (`intern-auth`) erreichbar.
-
-**youtube-dl** (Allgemein, Ziel: Jellyfin Media):
+Vier Web-UIs für den manuellen Download von Videos. Jedes Tool hat einen spezifischen Zweck und Ziel-Storage. Alle sind über Traefik mit Authentik ForwardAuth (`intern-auth-strict`) erreichbar. URLs siehe [Web-Interfaces](../_referenz/web-interfaces.md), die Deployment-Pfade verweisen auf die Nomad Jobs unter `media/`.
 
 | Attribut | Wert |
 |----------|------|
-| URL | [download.ackermannprivat.ch](https://download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `media/youtube-dl.nomad` |
-
-**special-youtube-dl** (Spezial-Inhalte, Ziel: Stash Media):
-
-| Attribut | Wert |
-|----------|------|
-| URL | [s-download.ackermannprivat.ch](https://s-download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `media/special-youtube-dl.nomad` |
-
-**special-yt-dlp** (yt-dlp Web UI, Ziel: Stash Media):
-
-| Attribut | Wert |
-|----------|------|
-| URL | [s2-download.ackermannprivat.ch](https://s2-download.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `media/special-yt-dlp.nomad` |
-
-**video-grabber** (Frontend für special-yt-dlp):
-
-| Attribut | Wert |
-|----------|------|
-| URL | [grab.ackermannprivat.ch](https://grab.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `media/video-grabber.nomad` |
-
-## Zweck der einzelnen Tools
-
-### youtube-dl (Allgemein)
-
-Die Standard-Instanz für allgemeine Video-Downloads. Downloads landen direkt im Jellyfin-Media-Verzeichnis und sind somit sofort in der Mediathek verfügbar.
-
-- **Output:** `/nfs/jellyfin/media/web` (Audio, Video, Subscriptions)
-- **Config:** `/nfs/docker/youtube-dl/config`
-- **Use Case:** YouTube-Videos, Podcasts, allgemeine Web-Videos für Jellyfin
-
-### special-youtube-dl (Spezial-Inhalte)
-
-Separate Instanz mit dem gleichen Image wie youtube-dl, aber mit anderem Ziel-Storage. Downloads landen im Stash-Datenverzeichnis.
-
-- **Output:** Stash-Datenverzeichnis (NFS)
-- **Config:** `/nfs/docker/special-youtube-dl/config`
-- **Use Case:** Spezielle Inhalte, die in Stash statt Jellyfin verwaltet werden
-
-### special-yt-dlp (yt-dlp Web UI)
-
-Alternatives Frontend basierend auf `yt-dlp` statt `youtube-dl`. Nutzt einen statischen Port (3033), da video-grabber sich über Consul DNS damit verbindet.
-
-- **Output:** Stash-Datenverzeichnis (NFS)
-- **Config:** `/nfs/docker/special-yt-dlp/config`
-- **Use Case:** Spezielle Inhalte, Plattformen die `yt-dlp` besser unterstützt als `youtube-dl`
-
-### video-grabber (Frontend für special-yt-dlp)
-
-Ein schlankes URL-basiertes Frontend, das Downloads an die special-yt-dlp API weiterleitet. Hat keinen eigenen Storage -- alles wird über die API an `special-yt-dlp` delegiert.
-
-- **Output:** Kein eigener Storage (nutzt special-yt-dlp Backend)
-- **Backend:** `http://special-yt-dlp.service.consul:3033/api/v1` (via Consul DNS)
-- **Use Case:** Schnelles Einfügen einer URL zum Download, ohne die volle yt-dlp-UI öffnen zu müssen
+| Tool youtube-dl | URL download.ackermannprivat.ch, Ziel Jellyfin Media (`/nfs/jellyfin/media/web`), für allgemeine Web-Videos und Podcasts, Job `media/youtube-dl.nomad` |
+| Tool special-youtube-dl | URL s-download.ackermannprivat.ch, Ziel Stash-Datenverzeichnis (NFS), für Inhalte die in Stash statt Jellyfin verwaltet werden, Job `media/special-youtube-dl.nomad` |
+| Tool special-yt-dlp | URL s2-download.ackermannprivat.ch, Ziel Stash-Datenverzeichnis (NFS), `yt-dlp`-basiert für Plattformen die yt-dlp besser unterstützt, Job `media/special-yt-dlp.nomad` |
+| Tool video-grabber | URL grab.ackermannprivat.ch, kein eigener Storage (delegiert an special-yt-dlp Backend), schlankes URL-Frontend, Job `media/video-grabber.nomad` |
 
 ## Architektur
 

@@ -16,22 +16,30 @@ Filebrowser läuft als Nomad System Job -- eine Instanz pro Node -- und dient al
 
 | Attribut | Wert |
 |----------|------|
-| Deployment | Nomad Job `infrastructure/filebrowser.nomad` (System Job) |
+| Deployment | Nomad System Job `filebrowser` |
 | Auth | `intern-auth@file` (Authentik ForwardAuth) |
-| Zugriff | Read-only auf gesamtes lokales Dateisystem |
 | URLs | Siehe [Web-Interfaces](../_referenz/web-interfaces.md) (pro Node) |
+
+## Rolle im Stack
+
+Filebrowser dient als Debugging- und Inspektions-Tool für die Nomad Nodes. Typische Anwendungsfälle:
+
+- NFS-Mounts prüfen (unter `/nfs/`)
+- Container-Volumes inspizieren
+- Log-Dateien einsehen
+- DRBD-Volumes auf den Storage Nodes überprüfen
 
 ## Architektur
 
-Filebrowser läuft als **System Job** -- das heisst eine Instanz pro Nomad Client Node. Jede Instanz hat eine eigene URL basierend auf dem Hostnamen des Nodes.
-
-| Node | URL |
-| :--- | :--- |
-| vm-nomad-client-04 | `https://files-vm-nomad-client-04.ackermannprivat.ch` |
-| vm-nomad-client-05 | `https://files-vm-nomad-client-05.ackermannprivat.ch` |
-| vm-nomad-client-06 | `https://files-vm-nomad-client-06.ackermannprivat.ch` |
+Pro Nomad Client Node läuft eine eigene Instanz; die URL folgt dem Schema `files-<hostname>.ackermannprivat.ch`.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 User: Admin User
@@ -53,15 +61,6 @@ FB04 -> FS04
 FB05 -> FS05
 FB06 -> FS06
 ```
-
-## Einsatzzweck
-
-Filebrowser dient als Debugging- und Inspektions-Tool für die Nomad Nodes. Typische Anwendungsfälle:
-
-- NFS-Mounts prüfen (unter `/nfs/`)
-- Container-Volumes inspizieren
-- Log-Dateien einsehen
-- DRBD-Volumes auf den Storage Nodes überprüfen
 
 ## Mount-Pfade
 

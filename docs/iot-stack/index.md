@@ -10,23 +10,34 @@ tags:
 
 # IoT Stack
 
-Zigbee2MQTT verbindet Zigbee-Geräte über einen USB-Koordinator mit dem MQTT-Protokoll. Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und per Device-Passthrough in den Container durchgereicht.
+Zigbee2MQTT verbindet Zigbee-Geräte über einen USB-Koordinator mit dem MQTT-Protokoll.
 
 ## Übersicht
 
-- **URL:** [zigbee.ackermannprivat.ch](https://zigbee.ackermannprivat.ch)
-- **Deployment:** Nomad Job `services/zigbee2mqtt.nomad`
-- **Node:** `vm-nomad-client-06` (Hard Constraint -- USB Dongle angeschlossen)
-- **USB Dongle:** Sonoff Zigbee 3.0 USB Dongle Plus (ZStack3x0, CP210x)
-- **MQTT Broker:** Mosquitto (separater Nomad Job, siehe [IoT Referenz](./referenz.md))
-- **Storage:** NFS `/nfs/docker/zigbee2mqtt/data`
-- **Auth:** `intern-auth@file` (Authentik ForwardAuth)
+| Attribut | Wert |
+|---|---|
+| URL | [zigbee.ackermannprivat.ch](https://zigbee.ackermannprivat.ch) |
+| Deployment | Nomad Job `services/zigbee2mqtt.nomad` |
+| Node | `vm-nomad-client-06` (Hard Constraint -- USB Dongle angeschlossen) |
+| USB Dongle | Sonoff Zigbee 3.0 USB Dongle Plus (ZStack3x0, CP210x) |
+| MQTT Broker | Mosquitto (separater Nomad Job, siehe [IoT Referenz](./referenz.md)) |
+| Storage | NFS `/nfs/docker/zigbee2mqtt/data` |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) |
+| Secrets | Vault `kv/zigbee2mqtt` (MQTT-Credentials) |
+
+## Rolle im Stack
+
+Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und wird per Device-Passthrough in den Container durchgereicht. Mosquitto läuft als separater Nomad Job (siehe [IoT Referenz](./referenz.md)). Home Assistant (VM auf Proxmox) subscribt auf die MQTT-Topics und integriert die Zigbee-Geräte in die Hausautomation.
 
 ## Architektur
 
-Zigbee2MQTT verbindet Zigbee-Geräte über einen USB-Koordinator mit dem MQTT-Protokoll. Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und wird per Device-Passthrough in den Container durchgereicht. Mosquitto läuft als separater Nomad Job (siehe [IoT Referenz](./referenz.md)). Home Assistant (VM auf Proxmox) subscribt auf die MQTT-Topics und integriert die Zigbee-Geräte in die Hausautomation.
-
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 ZD: "Zigbee-Geräte (Sensoren, Schalter)" { style.border-radius: 8 }
@@ -59,7 +70,6 @@ Kanal 25 ist konfiguriert, um Interferenzen mit dem 2.4-GHz-WLAN zu vermeiden.
 
 ### Storage
 
-- **Daten + Config:** `/app/data` im Container, auf Host `/nfs/docker/zigbee2mqtt/data` (NFS)
 - **udev (read-only):** `/run/udev` im Container, auf Host `/run/udev` -- für USB-Adapter-Erkennung
 
 ## Wartung

@@ -8,13 +8,9 @@ tags:
 
 # Consul - Betrieb
 
-## Übersicht
-
-Der Consul-Cluster besteht aus drei Servern und drei Clients, die auf denselben VMs wie Nomad und Vault betrieben werden. Die Server (vm-nomad-server-04, -05, -06) bilden einen Raft-Cluster und sind verantwortlich für Konsens, KV Store und Catalog. Die Clients (vm-nomad-client-04, -05, -06) laufen auf den Worker-Nodes und melden lokal gestartete Services beim Cluster an.
-
 ## Abhängigkeiten
 
-Der Cluster erfordert folgende Voraussetzungen für den Normalbetrieb:
+Details zur Topologie (Server, Clients, VM-Namen): [Consul Übersicht](./index.md). Der Cluster erfordert folgende Voraussetzungen für den Normalbetrieb:
 
 - **Raft-Quorum:** Mindestens 2 der 3 Server müssen erreichbar sein. Bei Ausfall von 2 Servern gleichzeitig verliert der Cluster seinen Leader und ist nicht mehr schreibfähig.
 - **Netzwerk-Konnektivität:** Alle 6 Nodes müssen sich gegenseitig über den Serf-Gossip-Port (8301) erreichen können. Unterbrochene Konnektivität führt dazu, dass Nodes als "failed" markiert werden.

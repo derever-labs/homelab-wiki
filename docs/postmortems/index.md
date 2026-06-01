@@ -8,8 +8,13 @@ tags:
 
 # Post-Mortems
 
-Strukturierte Nachschau bei Incidents > 2h Dauer oder Multi-Node-Impact. Schreibgrundsaetze + Pflicht-Felder im [Template](../_querschnitt/incident-template.md).
+Strukturierte Nachschau bei Incidents > 2h Dauer oder Multi-Node-Impact. Schreibgrundsätze + Pflicht-Felder im [Template](../_querschnitt/incident-template.md).
 
-## Eintraege
+## Einträge
 
-- [2026-05-12 ZOT/Redis NAS-Cascade](2026-05-12-zot-nas-cascade.md) -- NAS-Garage-Crash loest Image-Pull-Storm in 17 Apps aus, Recovery via Linstor-CSI-Migration
+- [2026-05-12 ZOT/Redis NAS-Cascade](2026-05-12-zot-nas-cascade.md) -- NAS-Garage-Crash löst Image-Pull-Storm in 17 Apps aus, Recovery via Linstor-CSI-Migration
+
+## Verwandte Seiten
+
+- [Incident-Template](../_querschnitt/incident-template.md)
+- [Linstor Storage](../linstor-storage/index.md) -- DRBD/Linstor-Cluster (Kontext zum ZOT-NAS-Cascade)

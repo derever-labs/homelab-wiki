@@ -25,7 +25,7 @@ Diese Seite deckt Rolle, Architektur und Komponenten ab. Details zu Flows, Polic
 
 ## Rolle im Stack
 
-Authentik ist der zentrale Identity Provider des Homelabs. Er ersetzt die frühere Kombination aus Keycloak und oauth2-proxy. Alle Services, die eine Authentifizierung benötigen, delegieren diese entweder via ForwardAuth (Traefik-Integration) oder über OIDC (native App-Integration) an Authentik.
+Er ersetzt die frühere Kombination aus Keycloak und oauth2-proxy.
 
 Neben dem reinen Login übernimmt Authentik im Homelab auch Passwort-Recovery per Mail, Multi-Faktor-Erzwingung für Admin-Accounts, Passwordless-Login mit Passkeys und einen dedizierten LDAP-Kanal für Jellyfin.
 
@@ -85,7 +85,7 @@ Authentik: Authentik (Nomad Job) {
   }
   LDAP_OUT: LDAP Outpost {
     class: node
-    tooltip: "LDAPS Port 636 fuer Jellyfin-Authentifizierung"
+    tooltip: "LDAP Port 3389 / LDAPS Port 6636 fuer Jellyfin-Authentifizierung"
   }
 }
 
@@ -173,12 +173,12 @@ Authentik.WRK -> TG: Security Alerts {
 
 Der Nomad Job `authentik` läuft als einzelne Gruppe mit vier Tasks auf `vm-nomad-client-05` oder `vm-nomad-client-06` (Affinity auf client-06).
 
-| Task | Image | Zweck |
-| :--- | :--- | :--- |
-| `server` | `ghcr.io/goauthentik/server` | Hauptprozess, API, Login-Flows, Event-Pipeline |
-| `worker` | `ghcr.io/goauthentik/server` | Background-Tasks (Zertifikate, E-Mail, Events) |
-| `proxy` | `ghcr.io/goauthentik/proxy` | Proxy Outpost für Traefik ForwardAuth |
-| `ldap` | `ghcr.io/goauthentik/ldap` | LDAP Outpost für Jellyfin |
+| Task | Zweck |
+| :--- | :--- |
+| `server` | Hauptprozess, API, Login-Flows, Event-Pipeline |
+| `worker` | Background-Tasks (Zertifikate, E-Mail, Events) |
+| `proxy` | Proxy Outpost für Traefik ForwardAuth |
+| `ldap` | LDAP Outpost für Jellyfin |
 
 Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bzw. Jellyfin einen stabilen Endpoint haben. Ressourcen, Constraints und Env-Vars stehen direkt im Nomad-Job.
 

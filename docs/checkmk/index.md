@@ -7,7 +7,7 @@ tags:
   - infrastructure
 ---
 
-# CheckMK Monitoring
+# CheckMK
 
 CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es überwacht Hardwaremetriken und Systemdienste auf allen Infrastruktur-Nodes und ergänzt damit Grafana/Loki (Metriken/Logs) und Gatus (Endpoint-Verfügbarkeit).
 
@@ -19,11 +19,10 @@ CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es übe
 | Deployment | Eigenständige VM (ID: 2000) auf pve01 |
 | Auth | CheckMK-eigene Benutzerverwaltung |
 | Storage | Lokaler ZFS auf Proxmox Node |
-| Host-Abdeckung | Alle Infrastruktur-Nodes + Nomad-Container via Docker Piggyback |
 
 ## Rolle im Stack
 
-CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es überwacht Hardwaremetriken (CPU, RAM, Disk, Netzwerk) und Systemdienste auf allen Infrastruktur-Nodes. Im Gegensatz zu Grafana/Loki (Metriken und Logs) und Gatus (Endpoint-Verfügbarkeit) fokussiert CheckMK auf den Zustand der Hosts selbst.
+Im Gegensatz zu Grafana/Loki (Metriken und Logs) und Gatus (Endpoint-Verfügbarkeit) fokussiert CheckMK auf den Zustand der Hosts selbst -- Hardwaremetriken (CPU, RAM, Disk, Netzwerk) und Systemdienste auf allen Infrastruktur-Nodes.
 
 ## Was wird überwacht
 
@@ -35,14 +34,13 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
 - **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS2419+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
 - **Home Assistant:** Verfügbarkeit und Systemzustand
-- **Proxmox Special Agent:** In Einrichtung -- tiefere Proxmox-Integration via API (nicht nur Agent)
 - **Nomad-Container:** Alle laufenden Allocs via Docker Piggyback-Mechanismus auf den Client-Nodes
 - **Netzwerk:** Erreichbarkeit kritischer Endpunkte
 
-Zusätzlich nutzt CheckMK Auto-Discovery, um neue Services und Checks auf bereits registrierten Hosts automatisch zu erkennen.
+Auf bereits registrierten Hosts erkennt CheckMK neue Services und Checks per Auto-Discovery automatisch.
 
 ::: info Nomad-Container via Docker Piggyback
-Der Docker-Plugin auf den Nomad Client-Nodes übergibt Container-Checks als Piggyback-Daten an CheckMK. Jeder laufende Nomad-Alloc erscheint dadurch als eigener Host in CheckMK. Dies erklärt die hohe Host-Anzahl von ~100.
+Der Docker-Plugin auf den Nomad Client-Nodes übergibt Container-Checks als Piggyback-Daten an CheckMK. Jeder laufende Nomad-Alloc erscheint dadurch als eigener Host in CheckMK. Dies erklärt die hohe Host-Anzahl.
 :::
 
 ## Agent-Deployment
@@ -65,23 +63,19 @@ Die Skripte liegen unter `homelab-hashicorp-stack/ansible/files/` und werden nac
 
 ### Synology als SNMP-Host
 
-Beide Synology-NAS sind SNMP-only-Hosts (User `checkmk`, authPriv MD5/CBC-DES). CheckMK fragt die Synology Built-in-Plugins ab und liefert Hardware-Health (Disks/Cache/M.2, RAID, Fans, Power), Filesystem-Auslastung der `/volume*`-Hauptmounts, CPU- und RAM-Last sowie Network-Interface-Throughput. Disk-IO wird auf RAID-Aggregate-Ebene gemessen. SMART-Detail-Counter sind nicht via SNMP, dafür DSM Resource Monitor.
+Beide Synology-NAS sind SNMP-only-Hosts (SNMPv3-Credentials siehe [Credentials](../_referenz/credentials.md)). CheckMK fragt die Synology Built-in-Plugins ab und liefert Hardware-Health (Disks/Cache/M.2, RAID, Fans, Power), Filesystem-Auslastung der `/volume*`-Hauptmounts, CPU- und RAM-Last sowie Network-Interface-Throughput. Disk-IO wird auf RAID-Aggregate-Ebene gemessen. SMART-Detail-Counter sind nicht via SNMP, dafür DSM Resource Monitor.
 
-Generische SNMP-Sub-Devices (per-Disk-IO, hr_fs für System-Mounts, Container-Submounts unter `/volume*/@`) sind via `ignored_services`-Rule unterdrückt, weil sie das Free-Tier-Limit sprengen würden ohne neuen Erkenntniswert.
+Generische SNMP-Sub-Devices sind via `ignored_services`-Rule aus der Discovery ausgeschlossen, damit das Free-Tier-Limit nicht durch Bloat erreicht wird -- die Discovery-Policy ist kanonisch in [CheckMK Discovery](../monitoring/checkmk-discovery.md) dokumentiert.
 
 ::: info Tailscale-Vorbedingung für Dottikon Nana
-Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscale erreichbar (192.168.2.0/23 wird von `pve-01-nana` als Subnet-Route angeboten). Damit CheckMK darauf pollen kann, läuft auf der CheckMK-VM ein Tailscale-Client mit Tag `tag:homelab` und `--accept-routes`.
+Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscale erreichbar (Subnet-Route via `pve-01-nana`, siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Damit CheckMK darauf pollen kann, läuft auf der CheckMK-VM ein Tailscale-Client mit Tag `tag:homelab` und `--accept-routes`.
 :::
-
-### Proxmox Special Agent (in Einrichtung)
-
-Der Proxmox Special Agent ersetzt die reine Agent-Überwachung durch eine API-basierte Integration. Er liefert detailliertere Informationen über VMs, Storage und Cluster-Status direkt aus der Proxmox-API.
 
 ## Alarmierung
 
 CheckMK benachrichtigt über zwei Kanäle:
 
-- **E-Mail:** Über den zentralen [SMTP Relay](../smtp-relay/index.md) (smtp.service.consul:25)
+- **E-Mail:** Über den zentralen [SMTP Relay](../smtp-relay/index.md)
 - **Gotify:** Push-Benachrichtigungen auf mobile Geräte
 
 Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden Warnungen (WARN) und kritische Zustände (CRIT) sofort gemeldet. Für geplante Wartungsfenster können Downtimes gesetzt werden.

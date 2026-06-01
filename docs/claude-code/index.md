@@ -11,6 +11,14 @@ tags:
 
 Claude Code wird im Homelab für Infrastruktur-Arbeit, Scraper-Pflege und Wiki-Revisionen eingesetzt. Die gemeinsame Team-Konfiguration liegt im DCLab-Repo `HSLU_DC/agents` -- für Homelab-Nutzung kommt ein zweiter 1Password-Service-Account und eigene private Skills dazu.
 
+## Übersicht
+
+| Attribut | Wert |
+| --- | --- |
+| Deployment | CLI-Tool, Konfiguration via `~/.claude/` |
+| Team-Konfiguration | DCLab-Repo `HSLU_DC/agents` |
+| Secrets | 1Password Privat-Vault (zusätzlicher Service-Account) |
+
 ## Beziehung zum DCLab-Setup
 
 Das `agents`-Repo definiert die Team-Konvention (AGENT.md, Hooks, Secrets-Konzept, Wiki-Richtlinien). Das Tooling ist dual-account-fähig: derselbe Script-Satz kann den DC-Vault und den Privat-Vault laden, gesteuert über Flags oder separate Cache-Files.
@@ -25,7 +33,7 @@ Die konzeptionelle Secrets-Architektur (drei Stufen, `op run`-Masking, Path-Deny
 
 Für Homelab-Arbeit braucht Claude zusätzlich zum DCLab-Service-Account einen zweiten 1Password-Service-Account mit Read-Zugriff auf den privaten Vault. `load-secrets.sh` lädt beide Tokens separat und cached sie in `/tmp/op-token-dc` und `/tmp/op-token-privat`. Der SessionStart-Hook meldet, welche Accounts geladen sind.
 
-## Weiterführend
+## Verwandte Seiten
 
 - [Referenz](referenz.md) -- MCP-Server, Skills und ClickUp-Integration im Homelab
 - [Secrets im Homelab](../secrets/index.md) -- PRIVAT-Agent-Vault-Struktur

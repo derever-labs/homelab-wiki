@@ -1,6 +1,6 @@
 ---
 title: UniFi
-description: UniFi-Netzwerkinfrastruktur mit UDM Pro, Access Points, Switches und VLAN-Segmentierung
+description: UniFi-Controller-Spezifika -- UDM Pro, WAN-Anbindung, WLAN und Firewall
 tags:
   - netzwerk
   - unifi
@@ -11,140 +11,18 @@ tags:
 
 # UniFi
 
+Das UniFi Dream Machine Pro ist das zentrale Gateway und verwaltet das gesamte Netzwerk -- Routing, Switching, WLAN und Firewall. Der Controller läuft integriert auf dem UDM Pro. Diese Seite beschreibt die Controller-Spezifika; das kanonische Topologie-, Segment- und Hardware-Inventar führt [Netzwerk](../netzwerk/).
+
+## Übersicht
+
 | Attribut | Wert |
 |----------|------|
 | URL | `https://10.0.0.1` (Controller Web-UI, intern) |
 | Deployment | UDM Pro integriert |
-| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 
-Das UniFi Dream Machine Pro ist das zentrale Gateway und verwaltet das gesamte Netzwerk -- Routing, Switching, WLAN und Firewall. Der Controller läuft integriert auf dem UDM Pro. Fünf VLAN-Segmente trennen Management, Endgeräte, Gäste, Rack-Infrastruktur und IoT voneinander.
-
-## Architektur
-
-### Physische Topologie
-
-```d2
-direction: down
-
-ISP: ISP-Router { tooltip: "192.168.1.x"; style.border-radius: 8 }
-UDM: UDM Pro { tooltip: "UDMPRO / FW 5.0.16"; style.border-radius: 8 }
-AGG: "10G-Switch-Rack (USL8A)" { style.border-radius: 8 }
-SW_KELLER: "POE-Switch-Keller (US-8-60W)" { style.border-radius: 8 }
-SW_KAMMERLI: "1G-Switch-Kämmerli (US-24)" { style.border-radius: 8 }
-SW_24_2: "US-24 (unnamed)" { style.border-radius: 8 }
-SW_150W: "US-8-150W (unnamed)" { style.border-radius: 8 }
-FLEX_DANI: Flex Mini Dani { style.border-radius: 8 }
-FLEX_GAESTE: Flex Mini Gäste { style.border-radius: 8 }
-AP_WERKSTADT: "AP-AC-LR Werkstadt" { style.border-radius: 8 }
-AP_DANI: "AP-AC-LR Dani" { style.border-radius: 8 }
-AP_GASTE: "AP-AC-LR Gäste" { style.border-radius: 8 }
-AP_KOFFER: "AP-AC-LR Koffer" { style.border-radius: 8 }
-AP_GARAGE: "AP-AC-LR Garage" { style.border-radius: 8 }
-AP_NINA: "AP-U6-Pro Nina" { style.border-radius: 8 }
-AP_KUCHE: "AP-U6-Pro Küche" { style.border-radius: 8 }
-
-ISP -> UDM: "SFP+ (eth9)"
-UDM -> AGG: 10G
-AGG -> SW_KELLER
-AGG -> SW_KAMMERLI
-AGG -> SW_24_2
-AGG -> SW_150W
-SW_KAMMERLI -> FLEX_DANI
-SW_KAMMERLI -> FLEX_GAESTE
-SW_KELLER -> AP_WERKSTADT
-SW_KELLER -> AP_GARAGE
-SW_KAMMERLI -> AP_DANI
-SW_KAMMERLI -> AP_GASTE
-SW_KAMMERLI -> AP_KOFFER
-SW_150W -> AP_NINA
-SW_150W -> AP_KUCHE
-```
-
-### Logische Topologie / VLANs
-
-```d2
-direction: down
-
-UDM: UDM Pro Gateway { style.border-radius: 8 }
-
-MGMT: "Management Network 10.0.0.0/22 native" {
-  style.stroke-dash: 4
-  GW_MGMT: Gateway { tooltip: "10.0.0.1"; style.border-radius: 8 }
-  NAS: Synology NAS { tooltip: "10.0.0.200"; style.border-radius: 8 }
-  APs: "Access Points (Trunk)" { style.border-radius: 8 }
-  SWITCHES: Switches { style.border-radius: 8 }
-}
-
-DEVICE: "Device Network 10.0.10.0/24 VLAN 10" {
-  style.stroke-dash: 4
-  GW_DEV: Gateway { tooltip: "10.0.10.1"; style.border-radius: 8 }
-  CLIENTS: "Endgeräte (SSID: AirPort)" { style.border-radius: 8 }
-}
-
-GUEST: "Guest Network 10.0.30.0/24 VLAN 30" {
-  style.stroke-dash: 4
-  GW_GUEST: Gateway { tooltip: "10.0.30.1"; style.border-radius: 8 }
-  GUESTS: "Gast-Clients (SSID: Airport-Guest)" { style.border-radius: 8 }
-}
-
-RACK: "Rack Network 10.0.100.0/24 VLAN 100" {
-  style.stroke-dash: 4
-  GW_RACK: Gateway { tooltip: "10.0.100.1"; style.border-radius: 8 }
-  SERVERS: "Proxmox, Nomad, Consul, Vault" { style.border-radius: 8 }
-}
-
-IOT: "IoT Network 10.0.200.0/24 VLAN 200" {
-  style.stroke-dash: 4
-  GW_IOT: Gateway { tooltip: "10.0.200.1"; style.border-radius: 8 }
-  IOT_DEV: "IoT-Geräte (SSID: AirPort-IoT)" { style.border-radius: 8 }
-}
-
-UDM -- MGMT
-UDM -- DEVICE
-UDM -- GUEST
-UDM -- RACK
-UDM -- IOT
-```
-
-## Geräte
-
-### Access Points
-
-Aktuelle Firmware-Versionen sind in der UniFi-Console unter Devices einsehbar.
-
-| Name | Modell | Standort |
-|------|--------|----------|
-| AP-AC-LR-Werkstadt | UAP-AC-LR | Werkstadt |
-| AP-AC-LR-Dani | UAP-AC-LR | Dani |
-| AP-AC-LR-Gaste | UAP-AC-LR | Gäste |
-| AP-AC-LR-Koffer | UAP-AC-LR | Koffer |
-| AP-AC-LR-Garage | UAP-AC-LR | Garage |
-| AP-U6-PRO-Nina | UAP-U6-Pro | Nina |
-| AP-U6-PRO-Kuche | UAP-U6-Pro | Küche |
-
-### Switches
-
-| Name | Modell | Standort |
-|------|--------|----------|
-| 10G-Switch-Rack | USL8A (Aggregation) | Rack |
-| POE-Switch-Keller | US-8-60W | Keller |
-| 1G-Switch-Kammerli | US-24 | Kämmerli |
-| (unnamed) | US-24 | -- |
-| (unnamed) | US-8-150W | -- |
-| USW-Flex-Mini-Dani | Flex Mini | Dani |
-| USW-Flex-Mini-Gaeste | Flex Mini | Gäste |
-
-## Netzwerk-Segmente
-
-| Segment | Subnetz | VLAN | Gateway | Zweck |
-|---------|---------|------|---------|-------|
-| Management | 10.0.0.0/22 | native | 10.0.0.1 | NAS, APs, Switches, Netzwerk-Infrastruktur |
-| Device | 10.0.10.0/24 | 10 | 10.0.10.1 | Endgeräte (Laptops, Phones, Tablets) |
-| Guest | 10.0.30.0/24 | 30 | 10.0.30.1 | Gast-WLAN, isoliert |
-| Rack | 10.0.100.0/24 | 100 | 10.0.100.1 | Server-Infrastruktur (Proxmox, Nomad, Vault) |
-| IoT | 10.0.200.0/24 | 200 | 10.0.200.1 | IoT-Geräte, eingeschränkter Zugriff |
+Das UDM Pro verbindet WAN-Uplink, alle Switches und Access Points und routet zwischen fünf VLAN-Segmenten (Management, Endgeräte, Gäste, Rack-Infrastruktur, IoT). Physische und logische Topologie, die VLAN-Segment-Tabelle mit Subnetzen und Gateways sowie das Switch- und Access-Point-Inventar sind kanonisch unter [Netzwerk](../netzwerk/) geführt. Welche SSID auf welchem VLAN liegt, steht in der [UniFi Referenz](./referenz.md#wlan-konfiguration).
 
 ::: info
 Die kanonische Quelle für alle IP-Adressen ist die [Hosts und IPs](../_referenz/hosts-und-ips.md) Referenzseite. Die kanonische Quelle für Port-Forwards und Firewall-Regeln ist die [Ports und Dienste](../_referenz/ports-und-dienste.md) Referenzseite.

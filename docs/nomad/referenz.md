@@ -13,16 +13,19 @@ tags:
 
 Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichnisse gruppiert.
 
+Die folgende Tabelle nennt pro Verzeichnis repräsentative Jobs; die vollständige Liste ist im Repo unter `nomad-jobs/`.
+
 | Verzeichnis | Inhalt |
 |-------------|--------|
-| batch-jobs/ | Renovate, Docker Prune, Daily Cleanup/Reboot/Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup |
-| databases/ | PostgreSQL (DRBD), DbGate, OpenLDAP (Legacy) |
-| infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
-| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, iperf3-to-influxdb |
-| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
-| system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI |
-| test/ | Linstor Volume Test |
+| batch-jobs/ | Renovate, Docker Prune, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup, MariaDB Backup, InfluxDB Backup, Vault Backup, Consul/Nomad Snapshot, DRBD Verify, CSI GC, fstrim |
+| databases/ | PostgreSQL (DRBD), MariaDB (DRBD), DbGate, OpenLDAP (Legacy) |
+| identity/ | Authentik (Identity Provider) |
+| infrastructure/ | SMTP Relay, Zot Registry, GitHub Runner, Nebula Sync |
+| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, Keep, iperf3-to-influxdb |
+| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, PocketBase, Directus-Gravel, Immo-Monitor, Immoscraper, Telegram-Relay |
+| system/ | Alloy (Log-Collector), Linstor CSI |
+| volumes/ | CSI-Volume-Definitionen (HCL) |
 
 ## Job-Konfigurationsmuster
 

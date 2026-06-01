@@ -26,6 +26,8 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Consul UI | `http://10.0.2.104:8500` | Service Discovery und KV Store |
 | UniFi Network | `https://10.0.0.1` | Lokaler Zugang, UI.com SSO |
 
+IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
+
 ## Core
 
 | Service | URL | Beschreibung |
@@ -49,16 +51,20 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | AudioBookShelf | `https://audio.ackermannprivat.ch` | Hörbücher |
 | LazyLibrarian | `https://lazylibrarian.ackermannprivat.ch` | E-Book Management |
 | Stash | `https://s.ackermannprivat.ch` | Media Organizer |
+| Stash Secure | `https://secure.ackermannprivat.ch` | Separate Stash-Instanz (Authentik ForwardAuth) |
 | JellyStat | `https://jellystat.ackermannprivat.ch` | Jellyfin Statistiken |
+| Suggestarr | `https://suggest.ackermannprivat.ch` | Film/Serien-Empfehlungen aus Watch-History |
 | YouTube-DL | `https://download.ackermannprivat.ch` | Video Download |
 | Video-Grabber | `https://grab.ackermannprivat.ch` | Video Download Frontend |
-| Handbrake | `https://handbrake.ackermannprivat.ch` | Video Transcoding |
+| Stash-Download | `https://s-download.ackermannprivat.ch` | Video-Download für Stash |
+| Stash-Download 2 | `https://s2-download.ackermannprivat.ch` | Zweiter Video-Download für Stash |
 
 ## Monitoring
 
 | Service | URL | Beschreibung |
 | :--- | :--- | :--- |
 | Grafana | `https://graf.ackermannprivat.ch` | Dashboards und Metriken |
+| Keep | `https://keep.ackermannprivat.ch` | Alert-Aggregation und Routing |
 | Uptime Kuma | `https://uptime.ackermannprivat.ch` | Availability Monitoring |
 | Gatus | `https://status.ackermannprivat.ch` | Status Page (öffentlich) |
 | CheckMK | `https://monitoring.ackermannprivat.ch` | Infrastructure Monitoring |
@@ -73,16 +79,16 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Vaultwarden | `https://p.ackermannprivat.ch` | Passwort Manager |
 | Tandoor | `https://tandoor.ackermannprivat.ch` | Rezepte |
 | solidtime | `https://time.ackermannprivat.ch` | Zeiterfassung |
-| Kimai | `https://kimai.ackermannprivat.ch` | Zeiterfassung Backup |
 | n8n | `https://n8n.ackermannprivat.ch` | Workflow Automation |
 | Guacamole | `https://remote.ackermannprivat.ch` | Remote Desktop Gateway |
 | ChangeDetection | `https://change.ackermannprivat.ch` | Website-Änderungsüberwachung |
 | Obsidian LiveSync | `https://obsidian-sync.ackermannprivat.ch` | Obsidian Synchronisation |
 | Notifiarr | `https://notifiarr.ackermannprivat.ch` | Benachrichtigungsservice |
 | Metabase | `https://metabase.ackermannprivat.ch` | Business Intelligence |
-| Czkawka | `https://double.ackermannprivat.ch` | Duplikat-Finder |
 | MeshCommander | `https://mesh.ackermannprivat.ch` | Intel AMT Management |
 | Directus Gravel | `https://gravel.ackermannprivat.ch` | Gravel-Bike-Recherche-CMS (intern, Authentik) |
+| immo-monitor | `https://immo.ackermannprivat.ch` | Immobilien-Monitoring |
+| Banner (Pocketbase) | `https://banner.ackermannprivat.ch` | Banner-Config-Backend und Admin-UI |
 
 ## AI / LLM
 
@@ -90,7 +96,6 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | :--- | :--- | :--- |
 | Ollama | `https://ollama.ackermannprivat.ch` | LLM Backend |
 | Open-WebUI | `https://chat.ackermannprivat.ch` | LLM Chat Interface |
-| HolLama | `https://hollama.ackermannprivat.ch` | Alternative LLM UI |
 
 ## Dashboards
 

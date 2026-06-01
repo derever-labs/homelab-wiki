@@ -10,29 +10,44 @@ tags:
 
 # VitePress Wiki
 
-## Übersicht
-
 Das Homelab-Wiki wird mit VitePress gebaut und via Nomad als statische Seite serviert, mit automatischem Deployment über GitHub Webhooks.
+
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
 | URL | [wiki.ackermannprivat.ch](https://wiki.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/vitepress-wiki.nomad` |
 | Auth | Authentik ForwardAuth (`intern-auth@file`) |
-| Auto-Update | GitHub Webhook (sofort) + git pull alle 5 Min (Fallback) |
+
+## Rolle im Stack
+
+Das VitePress Wiki ist die zentrale Dokumentations-Plattform des Homelabs. Es wird bei jedem Push auf `main` automatisch via Self-Hosted Runner gebaut und per Webhook neu deployt.
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
-Push: git push main
-GHA: "GitHub Actions\n(Self-Hosted Runner)"
-WH: "Webhook\n(Port 9001)"
-Sync: git-sync Sidecar
-Dist: dist/
-Serve: "serve\n(Port 4173)"
-Traefik: "Traefik\n(wiki.ackermannprivat.ch)"
+classes: {
+  node: {
+    style: { border-radius: 8 }
+  }
+}
+
+Push: git push main { class: node }
+GHA: "GitHub Actions\n(Self-Hosted Runner)" { class: node }
+WH: "Webhook\n(Port 9001)" { class: node }
+Sync: webhook Sidecar { class: node }
+Dist: dist/ { class: node }
+Serve: "serve\n(Port 4173)" { class: node }
+Traefik: "Traefik\n(wiki.ackermannprivat.ch)" { class: node }
 
 Push -> GHA
 GHA -> GHA: Build-Validierung
@@ -47,18 +62,18 @@ Serve -> Traefik
 
 | Task | Lifecycle | Funktion |
 |------|-----------|----------|
-| **git-clone-and-build** | Prestart | Klont Repo, `npm ci`, `vitepress build docs` |
-| **git-sync** | Sidecar | Webhook-Empfänger + 5-Min-Polling + atomarer Rebuild |
+| **build** | Prestart | Klont Repo, `npm ci`, `vitepress build docs` |
+| **webhook** | Sidecar | Webhook-Empfänger + atomarer Rebuild |
 | **vitepress** | Main | Serviert statische Dateien via `serve` auf Port 4173 |
 
 ### Webhook-Mechanismus
 
-Der git-sync Sidecar betreibt einen BusyBox httpd auf Port 9001 mit CGI-Script:
+Der webhook Sidecar betreibt einen BusyBox httpd auf Port 9001 mit CGI-Script:
 - **Endpoint:** `/_webhook/cgi-bin/pull?token=<token>`
 - **Token:** Aus Vault (`kv/vitepress-wiki/webhook_token`)
 - **Lock:** `flock` verhindert parallele Builds
 - **Atomarer Swap:** Build in `dist-build/`, bei Erfolg Rename zu `dist/`
-- **Status:** `/_webhook/status.json` zeigt `ready`/`building`/`failed` + Commit + Timestamp
+- **Status:** `/_webhook/status.json` zeigt `ready`/`degraded`/`failed` + Commit + Timestamp
 
 ### Build-Status-Anzeige
 
@@ -66,10 +81,10 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 
 ## GitHub Actions Workflow
 
-| Eigenschaft | Wert |
-|-------------|------|
+| Attribut | Wert |
+|----------|------|
 | **Trigger** | Push auf `main` |
-| **Runner** | Self-hosted (`homelab-runner-0`) |
+| **Runner** | Self-hosted (`homelab-runner-<n>`) |
 | **Node** | Siehe Nomad-Job |
 
 ### Ablauf
@@ -82,15 +97,7 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 
 ## GitHub Runner
 
-| Attribut | Wert |
-|----------|------|
-| **Nomad Job** | `infrastructure/github-runner.nomad` |
-| **Image** | Siehe Nomad-Job |
-| **Name** | `homelab-runner-0` |
-| **Labels** | `self-hosted`, `homelab`, `docker`, `linux`, `x64` |
-| **Scope** | Organisation `derever-labs` (alle Repos) |
-| **Auth** | Classic PAT (permanent) aus Vault (`kv/github-runner`) |
-| **Netzwerk** | Host-Modus (für ZOT Registry localhost:5000) |
+Der Build läuft auf dem org-weiten Self-Hosted Runner (`derever-labs`). Details: [GitHub Runner](../github-runner/index.md).
 
 ## VitePress-Konfiguration
 
@@ -112,7 +119,8 @@ Die NavBar zeigt einen Timestamp ("Stand: DD.MM. HH:MM") der alle 10 Sekunden vo
 
 ## Lokale Entwicklung
 
-Für die lokale Entwicklung wird `npm ci` im Wiki-Verzeichnis ausgeführt, danach `npm run dev` für den Dev-Server (Port 5173) oder `npm run build` für einen Produktions-Build.
+- `npm ci` im Wiki-Verzeichnis
+- `npm run dev` für den Dev-Server (Port 5173) oder `npm run build` für einen Produktions-Build
 
 ## Richtlinien
 

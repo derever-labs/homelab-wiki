@@ -1,5 +1,5 @@
 ---
-title: Kontrolliertes Herunterfahren
+title: Kontrolliertes Herunterfahren (Nomad und Linstor)
 description: Smart Shutdown für Nomad-Clients mit Linstor/DRBD Storage
 tags:
   - runbook
@@ -8,7 +8,7 @@ tags:
   - shutdown
 ---
 
-# Kontrolliertes Herunterfahren (Nomad & Linstor)
+# Kontrolliertes Herunterfahren (Nomad und Linstor)
 
 Dieses Runbook beschreibt den unterbrechungsfreien Shutdown-Prozess für Nomad-Clients mit Linstor/DRBD Storage.
 
@@ -16,7 +16,7 @@ Dieses Runbook beschreibt den unterbrechungsfreien Shutdown-Prozess für Nomad-C
 
 Beim Standard-Shutdown beendet systemd Dienste oft parallel. Wenn der Nomad-Agent oder das Netzwerk beendet werden, bevor die Storage-Volumes (DRBD/Linstor) ausgehängt sind, entstehen "Stale Locks" und Filesystem-Fehler (Read-Only). Das betrifft insbesondere die Client-Nodes 05 und 06, auf denen Linstor CSI Volumes für PostgreSQL, Grafana und Loki gemountet sind.
 
-## Ablauf (v10.2)
+## Ablauf
 
 ```d2
 direction: down
@@ -39,16 +39,13 @@ G -> F: "running (skip -- systemctl restart)"
 C -> D -> E -> F -> H -> I -> J -> K
 ```
 
-## Lösung (Version v10.2, Refactor 2026-04-23/24)
+## Lösung
 
 Die Shutdown-Orchestrierung läuft **nicht mehr** über eine separate `nomad-shutdown-drain.service` Unit (v9/v10.1 Design), sondern als `ExecStop`-Drop-in direkt auf `nomad.service`. Grund: Das separate-Unit-Design mit `Conflicts=shutdown.target` hat beim echten Reboot-Test auf client-04 nicht gefeuert (bekanntes systemd-Timing-Issue mit `DefaultDependencies=no`).
 
 ### 1. `nomad.service` Drop-in (`20-shutdown-drain.conf`)
 
-Ergänzt `ExecStop=/usr/local/bin/nomad-smart-shutdown.sh stop`. Feuert zuverlässig bei jedem Nomad-Stop (restart, stop, reboot, halt, shutdown). Der Guard im Skript entscheidet per `systemctl is-system-running`:
-
-- `stopping` / `shutdown` / `maintenance` → vollständige Drain-+-Evict-+-Mount-Wait-Sequenz
-- `running` → Skip (unterdrückt unerwünschtes Drain bei `systemctl restart nomad` für Config-Reload)
+Ergänzt `ExecStop=/usr/local/bin/nomad-smart-shutdown.sh stop`. Feuert zuverlässig bei jedem Nomad-Stop (restart, stop, reboot, halt, shutdown). Der Guard im Skript entscheidet per `systemctl is-system-running` (siehe Diagramm oben): Der Skip bei `running` unterdrückt unerwünschtes Drain bei `systemctl restart nomad` für Config-Reload.
 
 Das Skript drain-t via `nomad node drain -enable -self -yes -deadline 5m -ignore-system`. System-Jobs (ZOT, Alloy, CSI-Plugin, filebrowser) laufen bis zum tatsächlichen Nomad-Stop weiter, damit Unmounts sauber gehen.
 
@@ -82,14 +79,9 @@ Primärer Pfad: Ansible-Rolle `roles/nomad/tasks/smart_shutdown.yml` im `homelab
 - `nomad.service.d-20-shutdown-drain.conf` -- der ExecStop-Drop-in
 - `needrestart-nomad.conf` -- die apt-Schutz-Config
 
-Zusätzlich als manuelle Fallback-Installer: `scripts/install_smart_shutdown_v10_1.sh` (Haupt-Skript + client.hcl-Patch) und `scripts/install_smart_shutdown_v10_2.sh` (ExecStop-Drop-in-Patch).
-
 ## Logs prüfen
 
-```
-sudo tail -30 /var/log/nomad-shutdown.log
-sudo journalctl -u nomad.service --boot=-1 | grep nomad-smart-shutdown
-```
+Log unter `/var/log/nomad-shutdown.log` prüfen (`sudo tail -30 /var/log/nomad-shutdown.log`) oder via `sudo journalctl -u nomad.service --boot=-1 | grep nomad-smart-shutdown`.
 
 Beim echten Reboot sollte folgende Sequenz im Log erscheinen:
 
@@ -115,13 +107,11 @@ SKIP: system-state='running' -- not a shutdown/reboot, skipping drain/evict.
 
 Wenn ein Node für Wartung (Kernel-Upgrade, Hardware-Tausch) gedraint werden soll und der Drain über einen Reboot hinweg erhalten bleiben muss:
 
-```bash
-sudo touch /var/lib/nomad/drain-manual
-nomad node drain -enable -self -yes
-# ... Wartung, ggf. Reboots ...
-sudo rm /var/lib/nomad/drain-manual
-nomad node eligibility -enable -self
-```
+1. Sentinel-Datei setzen: `sudo touch /var/lib/nomad/drain-manual`
+2. Node drainen: `nomad node drain -enable -self -yes`
+3. Wartung durchführen (ggf. mehrere Reboots)
+4. Sentinel-Datei entfernen: `sudo rm /var/lib/nomad/drain-manual`
+5. Eligibility wiederherstellen: `nomad node eligibility -enable -self`
 
 Solange die Sentinel-Datei existiert, setzt `nomad-boot-enable.service` die Eligibility nicht automatisch zurück.
 

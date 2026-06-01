@@ -18,6 +18,13 @@ Dieses Diagramm zeigt, welche Services von welchen Infrastruktur-Komponenten und
 ```d2
 direction: down
 
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
 Core: Core Infrastructure {
   style.stroke-dash: 4
   TRAEFIK: Traefik { style.border-radius: 8 }
@@ -25,7 +32,7 @@ Core: Core Infrastructure {
   CONSUL: Consul { style.border-radius: 8 }
   VAULT: Vault { style.border-radius: 8 }
   AUTHENTIK: Authentik { style.border-radius: 8 }
-  PG: PostgreSQL 16 { shape: cylinder; style.border-radius: 8 }
+  PG: PostgreSQL { shape: cylinder; style.border-radius: 8 }
   SMTP: SMTP Relay { style.border-radius: 8 }
   NFS: Synology NAS { shape: cylinder; style.border-radius: 8 }
 }
@@ -154,27 +161,22 @@ Alle Services hinter `intern-auth@file` oder `public-auth@file` benötigen Authe
 
 ### Media-Pipeline
 
-```
-Prowlarr (Indexer) --> Sonarr/Radarr (Management)
-                              |
-                        SABnzbd (Download)
-                              |
-                        Jellyfin (Playback)
-                              |
-                   Jellyseerr (Requests) <-- Benutzer
-```
+Der Fluss eines Inhalts vom Request bis zur Wiedergabe:
+
+1. Benutzer stellt eine Anfrage in Jellyseerr (Requests).
+2. Prowlarr (Indexer) liefert die Quellen an Sonarr/Radarr (Management).
+3. Sonarr/Radarr beauftragen SABnzbd mit dem Download.
+4. Jellyfin stellt den fertigen Inhalt zur Wiedergabe bereit.
 
 Janitorr und Maintainerr automatisieren die Bereinigung (Janitorr löscht, Maintainerr verwaltet Sammlungen).
 
 ### Monitoring-Pipeline
 
-```
-Alle Container --> Alloy (Log-Collector) --> Loki (Log-Storage)
-                                                    |
-                                              Grafana (Dashboards)
-                                                    |
-                                              InfluxDB (Metriken)
-```
+Der Fluss von Logs und Metriken bis zur Visualisierung:
+
+1. Alle Container senden ihre Logs an Alloy (Log-Collector).
+2. Alloy schreibt die Logs in Loki (Log-Storage).
+3. Grafana (Dashboards) visualisiert Logs aus Loki und Metriken aus InfluxDB.
 
 Uptime Kuma und Gatus überwachen Service-Verfügbarkeit unabhängig.
 

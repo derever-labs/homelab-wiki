@@ -10,17 +10,14 @@ tags:
 
 # Consul
 
-Consul stellt Service Discovery und DNS für alle Nomad-Services bereit. Jeder Container registriert sich automatisch als Consul Service und ist danach über `<service>.service.consul` erreichbar.
+Consul ist die Service-Discovery- und DNS-Schicht des Nomad-Clusters.
 
 ## Übersicht
 
 | Attribut | Wert |
 |----------|------|
-| Server | 3 (vm-nomad-server-04/05/06) |
-| Clients | 3 (vm-nomad-client-04/05/06) |
 | URL | `http://10.0.2.104:8500` |
 | Deployment | Ansible + Systemd |
-| IPs | Siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
 ## Rolle im Stack
 
@@ -123,12 +120,7 @@ DNS -> srv: DNS Query (.consul) {
 }
 ```
 
-Consul läuft auf denselben VMs wie Nomad und Vault:
-
-- **Server** auf den drei Server-VMs: bilden den Raft-Cluster für Konsens und KV Store
-- **Clients** auf den drei Worker-VMs: melden lokale Services und führen Health Checks aus
-
-Jeder Nomad-Client führt auch einen Consul-Client aus. Wenn Nomad einen Container startet, registriert der lokale Consul-Agent diesen Service automatisch im Cluster.
+Consul läuft auf denselben VMs wie Nomad und Vault: drei Server bilden den Raft-Cluster für Konsens und KV Store, drei Clients auf den Worker-Nodes melden lokale Services und führen Health Checks aus. Startet Nomad einen Container, registriert der lokale Consul-Agent diesen Service automatisch im Cluster.
 
 ## Service Discovery
 
@@ -144,9 +136,7 @@ Der typische Fluss:
 
 ## DNS-Integration
 
-Consul stellt einen DNS-Server auf Port 8600 bereit. Über diesen können Services nach dem Schema `<service>.service.consul` aufgelöst werden. Pi-hole (lxc-dns-01, lxc-dns-02) leitet alle DNS-Anfragen für die Domain `.consul` an die drei Consul Server weiter (IPs: [Hosts und IPs](../_referenz/hosts-und-ips.md)), sodass alle Geräte im Netzwerk Consul-Dienste über DNS erreichen können.
-
-Vollständige DNS-Dokumentation: [DNS-Architektur](../dns/)
+Consul DNS läuft auf Port 8600 und löst Services nach dem Schema `<service>.service.consul` auf; Pi-hole leitet `.consul`-Anfragen dorthin weiter (Details: [Consul Referenz](./referenz.md), [DNS-Architektur](../dns/)).
 
 ## KV Store
 
@@ -165,13 +155,7 @@ Der Consul KV Store ist kein Secrets-Store. Sensible Daten gehören in [Vault](.
 | TLS | Deaktiviert (Homelab-Entscheidung) |
 | Connect (Service Mesh) | Deaktiviert |
 
-**Gossip Encryption:** Gesamter Gossip-Traffic zwischen Consul Nodes ist verschlüsselt (symmetrischer Key, auf allen Nodes identisch).
-
-**ACLs:** Deaktiviert -- alle Consul-Operationen funktionieren ohne Token. Bei Bedarf kann ACL mit `default_policy = "allow"` aktiviert werden.
-
-**TLS deaktiviert:** Kein Expiry-Risiko durch Zertifikate. Gossip Encryption schützt den Cluster-Traffic trotzdem.
-
-**Connect deaktiviert:** Consul Connect (Service Mesh mit mTLS zwischen Services) ist nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery ohne Sidecar-Proxies.
+Gossip Encryption verschlüsselt den gesamten Cluster-Traffic mit einem symmetrischen, auf allen Nodes identischen Key. Consul Connect (Service Mesh mit mTLS und Sidecar-Proxies) ist bewusst nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery. Begründung zu deaktiviertem TLS und ACLs: [Consul Betrieb](./betrieb.md).
 
 ## Verwandte Seiten
 

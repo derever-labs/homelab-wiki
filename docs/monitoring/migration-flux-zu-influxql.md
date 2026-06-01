@@ -1,5 +1,5 @@
 ---
-title: Migration Flux → InfluxQL
+title: Migration Flux → InfluxQL (2026-04)
 description: Retrospektive der Grafana-Dashboard-Migration von Flux-Queries auf InfluxQL als Reaktion auf InfluxDB 3.x und die parallele Entdeckung von Wiki/Realität-Drifts
 tags:
   - monitoring
@@ -88,10 +88,10 @@ Die Dashboard-Verteilung ist Teil dieser Migration umgebaut worden. Vorher lag e
 - **File-provisioned Dashboards werden beim Provider-Entfernen gelöscht.** Das war der Gotcha beim Umbau von NFS auf API-Push: Die Dashboards mussten nach dem Provider-Entfernen erneut per API gepusht werden, damit sie als reguläre DB-Einträge und nicht mehr als "provisioned" in der Grafana-Datenbank stehen.
 - **InfluxQL arithmetische Operationen zwischen Aggregaten** (`SELECT last(a) - last(b) FROM m`) sind in der Praxis mächtiger als erwartet. Mehrere vermeintliche HART-Panels liessen sich damit als einzelne Query realisieren.
 
-## Referenzen
+## Verwandte Seiten
 
-- Monitoring Stack Übersicht: [monitoring/index.md](./index.md)
-- InfluxDB-Details: [monitoring/influxdb.md](./influxdb.md)
-- GitHub Runner + CD-Pipelines: [github-runner/referenz.md](../github-runner/referenz.md)
-- Betroffene Repo-Pfade: `nomad-jobs/monitoring/grafana-dashboards/`, `nomad-jobs/monitoring/grafana.nomad`, `nomad-jobs/monitoring/influxdb-tasks/`
-- Follow-up Source-Fixes: UPS/NUT, Telegraf prometheus-Input, Proxmox-Collector, raid_benchmark -- alle in ClickUp erfasst
+- [Monitoring-Stack Übersicht](./index.md) -- Gesamtarchitektur des Monitoring-Stacks
+- [InfluxDB-Details](./influxdb.md) -- Datasource, Buckets, Downsampling-Tasks
+- [GitHub Runner Referenz](../github-runner/referenz.md) -- CD-Pipelines inkl. Dashboard-Deployment
+
+Betroffene Repo-Pfade: `nomad-jobs/monitoring/grafana-dashboards/`, `nomad-jobs/monitoring/grafana.nomad`, `nomad-jobs/monitoring/influxdb-tasks/`. Follow-up Source-Fixes (UPS/NUT, Telegraf prometheus-Input, Proxmox-Collector, raid_benchmark) sind in ClickUp erfasst.

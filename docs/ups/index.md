@@ -12,23 +12,25 @@ tags:
 
 # USV (APC)
 
-## Übersicht
+Die APC USV versorgt das gesamte Homelab (Proxmox-Hosts, Netzwerk, NAS) bei Stromausfall mit Batteriestrom. NUT (Network UPS Tools) kommuniziert per SNMP mit der NMC-Karte der USV und koordiniert den geordneten Shutdown aller Hosts bei kritischem Batteriestand. Parallel sammelt Telegraf die USV-Metriken für das Grafana-Dashboard.
 
-Die APC USV versorgt das gesamte Homelab bei Stromausfall und koordiniert via NUT den geordneten Shutdown aller Hosts.
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
-| Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (UID: `ups-apc-dashboard`) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | NUT Server (systemd auf PVE-Host) + Telegraf `inputs.upsd` (Nomad) |
-| Alerting | Grafana Unified Alerting + direkte Telegram-Benachrichtigung via NUT |
-
-## Rolle im Stack
-
-Die APC USV versorgt das gesamte Homelab (Proxmox-Hosts, Netzwerk, NAS) bei Stromausfall mit Batteriestrom. NUT (Network UPS Tools) kommuniziert per SNMP mit der NMC-Karte der USV und koordiniert den geordneten Shutdown aller Hosts bei kritischem Batteriestand. Parallel sammelt Telegraf die USV-Metriken via NUT-Protokoll für das Grafana-Dashboard.
+| URL | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (Dashboard-UID `ups-apc-dashboard`) |
+| Deployment | NUT Server (systemd auf PVE-Host) + Telegraf (Nomad) |
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
 direction: right
 
 USV: "APC USV" { style.border-radius: 8 }
@@ -117,13 +119,10 @@ onbatt -> lowbatt -> slaves -> master
 
 ## NUT-Konfiguration
 
-NUT ist direkt auf den Proxmox-Hosts installiert (kein Container):
+NUT ist direkt auf den Proxmox-Hosts installiert (kein Container), Konfiguration in `/etc/nut/`:
 
 - **Master-Host:** `nut` + `nut-snmp` Pakete, Treiber `snmp-ups`, Mode `netserver`
 - **Slave-Hosts:** `nut-client` Paket, Mode `netclient`
-- **Konfigurationsdateien:** `/etc/nut/` auf den jeweiligen Hosts
-
-Der NUT-Server kommuniziert per SNMP mit der APC NMC-Karte und stellt die USV-Daten auf Port 3493 (NUT-Protokoll) bereit.
 
 ::: info NMC-Treiber
 Je nach NMC-Modell wird `snmp-ups` (ältere NMC) oder `netxml-ups` (neuere NMC AP9631/AP9641, HTTP/XML) verwendet.
@@ -133,7 +132,7 @@ Je nach NMC-Modell wird `snmp-ups` (ältere NMC) oder `netxml-ups` (neuere NMC A
 
 ### Telegraf
 
-Der bestehende Telegraf Nomad Job sammelt USV-Metriken via `inputs.upsd`-Plugin direkt vom NUT-Server. Keine OID-Konfiguration nötig -- NUT normalisiert die SNMP-Werte.
+Der bestehende Telegraf Nomad Job sammelt USV-Metriken via `inputs.upsd`-Plugin direkt vom NUT-Server. Keine OID-Konfiguration nötig -- NUT normalisiert die SNMP-Werte. Dieser Input ist in der NFS-gemounteten Telegraf-Konfiguration definiert (nicht in der versionierten `telegraf.conf` im Repo).
 
 **Measurements:**
 

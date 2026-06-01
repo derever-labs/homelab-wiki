@@ -15,8 +15,8 @@ tags:
 
 Das Homelab verwendet zwei zentrale Datenbank-Cluster auf DRBD-replizierten Volumes:
 
-- **PostgreSQL 16** für Services mit PostgreSQL-Backend (Standard für die meisten Apps)
-- **MariaDB 11.4** für Services die zwingend MySQL/MariaDB benötigen (Kimai, Uptime Kuma)
+- **PostgreSQL Shared Cluster** für Services mit PostgreSQL-Backend (Standard für die meisten Apps)
+- **MariaDB Cluster** für Services die zwingend MySQL/MariaDB benötigen (Uptime Kuma)
 
 Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432` bzw. `mariadb.service.consul:3306`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken (z.B. Obsidian LiveSync mit CouchDB).
 
@@ -26,6 +26,12 @@ Dieser Ansatz minimiert den Betriebsaufwand: zwei Cluster mit je einem Backup-Jo
 
 ```d2
 direction: down
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
 Services: Services (Nomad) {
   style.stroke-dash: 4
@@ -46,7 +52,7 @@ Services: Services (Nomad) {
 
 Database: PostgreSQL Shared Cluster {
   style.stroke-dash: 4
-  PG: PostgreSQL 16 {
+  PG: PostgreSQL {
     shape: cylinder
     tooltip: postgres.service.consul:5432
     style.border-radius: 8
@@ -87,10 +93,16 @@ Storage.DRBD -> Backup.S3
 
 ## DRBD-Replikation
 
-Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das über DRBD zwischen den Nomad-Clients auf pve01 und pve02 repliziert wird. Die Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit rund 20 Gbps Bandbreite.
+Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das über DRBD zwischen den Nomad-Clients auf pve01 und pve02 repliziert wird. Die Replikation läuft über das dedizierte Thunderbolt-Netzwerk, dessen hohe Bandbreite die synchrone Block-Replikation ohne spürbare Schreiblatenz ermöglicht. Adressen und Bandbreite: [Hosts und IPs](../_referenz/hosts-und-ips.md#thunderbolt-netzwerk).
 
 ```d2
 direction: right
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
 pve01: pve01 vm-nomad-client-05 {
   style.stroke-dash: 4
@@ -109,9 +121,9 @@ Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welche
 
 ## MariaDB Cluster
 
-MariaDB 11.4 (LTS) folgt dem gleichen Storage-Pattern wie PostgreSQL: Single-Instance auf DRBD-replizierter Linstor-CSI-Volume, Failover via Nomad-Reschedule auf zweite Storage-Node. Die Performance-Konfiguration ist auf DRBD-Storage abgestimmt: `innodb_flush_log_at_trx_commit=2`, `innodb_doublewrite=OFF` (DRBD garantiert atomare Block-Writes auf Block-Ebene), und InnoDB-Buffering ist auf O_DIRECT-Äquivalent gesetzt.
+MariaDB folgt dem gleichen Storage-Pattern wie PostgreSQL: Single-Instance auf DRBD-replizierter Linstor-CSI-Volume, Failover via Nomad-Reschedule auf zweite Storage-Node. Die Performance-Konfiguration ist auf DRBD-Storage abgestimmt, weil DRBD bereits atomare Block-Writes garantiert und damit doppelte Schreibsicherung auf Datenbankebene überflüssig macht. Die konkreten Tuning-Parameter sind unter [Datenbanken](../_referenz/datenbanken.md) dokumentiert.
 
-Neue Datenbanken und User werden über den idempotenten `mariadb-setup`-Batch-Job angelegt -- analog zum `postgres-setup`-Pattern. Service-Passwörter liegen unter `kv/data/shared/mariadb` (z.B. `kimai_password`, `uptime_kuma_password`).
+Neue Datenbanken und User werden über den idempotenten `mariadb-setup`-Batch-Job angelegt. Service-Passwörter liegen unter `kv/data/shared/mariadb` (z.B. `uptime_kuma_password`).
 
 ## Backup
 

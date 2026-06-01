@@ -18,12 +18,12 @@ LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen
 
 | Attribut | Wert |
 |----------|------|
-| Identity Store | [Authentik](../authentik/index.md) -- PostgreSQL-Backend (`postgres.service.consul`) |
-| LDAP-Bind-Interface | [Authentik LDAP Outpost](../authentik/referenz.md#ldap-authentication-flow) |
-| Consul Service (Outpost) | `authentik-ldap.service.consul:3389` |
-| Base DN (Outpost) | `DC=ldap,DC=ackermannprivat,DC=ch` |
-| Aktive Consumer | [Jellyfin](../jellyfin/index.md) (LDAP-Plugin) |
-| Deprecation | [OpenLDAP](#openldap-legacy) (kein aktiver Consumer) |
+| Deployment | Nomad Job `identity/authentik.nomad`, Task `ldap` |
+| Storage | [Authentik](../authentik/index.md) -- PostgreSQL-Backend (`postgres.service.consul`) |
+
+## Rolle im Stack
+
+LDAP ist im Homelab ein Kompatibilitäts-Shim: Authentik ist der einzige Identity Store (User, Gruppen, Policies in PostgreSQL). Der LDAP Outpost übersetzt eingehende Bind-Requests von Services ohne OAuth-Support in Authentik-Flow-Calls. OIDC- und ForwardAuth-Services berühren LDAP nicht. OpenLDAP läuft noch als inaktiver Legacy-Job ohne Consumer.
 
 ## Architektur
 
@@ -118,13 +118,7 @@ Vollständige Flow-Dokumentation inklusive Stages, Cache-Verhalten und Sequenz-D
 
 ## Wie Services authentifizieren
 
-Im Homelab gibt es genau **drei** Authentifizierungswege, und nur einer davon nutzt LDAP:
-
-1. **OIDC (bevorzugt)** -- native Services wie Grafana, Gitea, Proxmox holen Tokens direkt von Authentik. Kein LDAP involviert
-2. **ForwardAuth** -- klassische Web-UIs ohne OIDC-Support laufen über Traefik-Middleware-Chains und den Authentik Proxy Outpost. Kein LDAP involviert
-3. **LDAP Bind** -- Services ohne OIDC/OAuth-Support (aktuell nur Jellyfin) binden direkt gegen den LDAP Outpost. Der Outpost macht intern den Flow-Execute gegen Authentik
-
-Details zu Middleware-Chains und Routing: [Traefik Referenz](../traefik/referenz.md).
+Im Homelab nutzt nur ein Service LDAP: [Jellyfin](../jellyfin/index.md) bindet via LDAP-Plugin gegen den Outpost (`authentik-ldap.service.consul:3389`, Base DN `DC=ldap,DC=ackermannprivat,DC=ch`). OIDC- und ForwardAuth-Services verwenden kein LDAP -- Details zu allen drei Authentifizierungswegen: [Authentik](../authentik/index.md).
 
 ## OpenLDAP (Legacy)
 

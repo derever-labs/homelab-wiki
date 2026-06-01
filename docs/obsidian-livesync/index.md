@@ -10,9 +10,9 @@ tags:
 
 # Obsidian LiveSync
 
-## Übersicht
-
 Obsidian LiveSync ersetzt den kostenpflichtigen Obsidian Sync Service durch eine selbstgehostete CouchDB-basierte Alternative.
+
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
@@ -23,33 +23,44 @@ Obsidian LiveSync ersetzt den kostenpflichtigen Obsidian Sync Service durch eine
 
 ## Rolle im Stack
 
-Obsidian LiveSync ersetzt den kostenpflichtigen Obsidian Sync Service durch eine selbstgehostete Alternative. Ein CouchDB-Server synchronisiert Obsidian-Vaults in Echtzeit zwischen mehreren Geräten (Desktop, Mobile). Die Synchronisation läuft über das CouchDB-Replikationsprotokoll.
+Ein CouchDB-Server synchronisiert Obsidian-Vaults in Echtzeit zwischen mehreren Geräten (Desktop, Mobile). Die Synchronisation läuft über das CouchDB-Replikationsprotokoll.
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+}
+
 direction: right
 
 Clients: {
   style.stroke-dash: 4
-  MAC: "Obsidian\n(macOS)"
-  IOS: "Obsidian\n(iOS)"
+  MAC: "Obsidian\n(macOS)" { class: node }
+  IOS: "Obsidian\n(iOS)" { class: node }
 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
   tooltip: 10.0.2.20
-  R1: "Router: obsidian-sync.*\nintern-noauth + CORS"
+  R1: "Router: obsidian-sync.*\nintern-noauth + CORS" { class: node }
 }
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  CDB: "CouchDB\n(Port 5984)"
+  CDB: "CouchDB\n(Port 5984)" { class: node }
 }
 
 Storage: {
   style.stroke-dash: 4
-  LINSTOR: "Linstor CSI\nobsidian-livesync-data" { shape: cylinder }
+  LINSTOR: "Linstor CSI\nobsidian-livesync-data" { shape: cylinder; class: node }
 }
 
 Clients.MAC -> Traefik.R1: HTTPS + Basic Auth
@@ -68,11 +79,9 @@ Der Job ist auf `vm-nomad-client-05` / `vm-nomad-client-06` eingeschränkt (Cons
 
 ### CORS
 
-Für die Kommunikation zwischen Obsidian-Clients und CouchDB sind spezielle CORS-Header nötig. Diese werden über eine Traefik-Middleware (`obsidian-cors`) konfiguriert:
+Für die Kommunikation zwischen Obsidian-Clients und CouchDB sind spezielle CORS-Header nötig. Diese werden über die Traefik-Middleware `obsidian-cors` gesetzt. Erlaubte Origins sind die Obsidian-App-Schemes `app://obsidian.md`, `capacitor://localhost` und `http://localhost`; die übrigen Werte (Methoden, Credentials) stehen in `services/obsidian-livesync.nomad`.
 
-- Erlaubte Origins: `app://obsidian.md`, `capacitor://localhost`, `http://localhost`
-- Erlaubte Methoden: GET, PUT, POST, HEAD, DELETE
-- Credentials: Erlaubt
+Doppelte Absicherung: Traefik schützt den Zugang mit `intern-noauth@file` (IP-Whitelist), CouchDB authentifiziert zusätzlich mit Basic Auth (Benutzer `obsidian`).
 
 ### Vault Secrets
 
@@ -80,18 +89,9 @@ Für die Kommunikation zwischen Obsidian-Clients und CouchDB sind spezielle CORS
 | :--- | :--- |
 | `kv/data/obsidian-livesync` | `couchdb_password` |
 
-### Authentifizierung
-
-Doppelte Absicherung: Traefik schützt den Zugang mit `intern-noauth@file` (IP-Whitelist). CouchDB selbst authentifiziert zusätzlich mit Basic Auth (Benutzer `obsidian`).
-
 ::: warning Nur interner Zugriff
 Der Service ist bewusst nur intern erreichbar (`intern-noauth@file`). Obsidian-Clients müssen sich im lokalen Netzwerk oder über VPN befinden.
 :::
-
-## Abhängigkeiten
-
-- **Traefik** -- HTTPS-Routing, CORS-Middleware und IP-Whitelist
-- **Linstor CSI** -- Replizierter Block-Storage für CouchDB-Daten
 
 ## Verwandte Seiten
 

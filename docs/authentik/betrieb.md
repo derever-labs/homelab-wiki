@@ -11,7 +11,7 @@ tags:
 
 Konzepte und Rollback-Strategien für den laufenden Betrieb. Architektur und Referenzdaten stehen in [Authentik (Übersicht)](./index.md) und [Authentik Referenz](./referenz.md).
 
-Diese Seite enthält bewusst keine CLI-Befehle oder Deployment-Anleitungen -- das Operative übernimmt die Automation. Hier werden die Konzepte erklärt, die hinter den einzelnen Operations stehen.
+Diese Seite erklärt die Konzepte hinter den einzelnen Operations -- das Operative übernimmt die Automation. Inline-Code für unverzichtbare Befehle ist erlaubt, isolierte Deployment-Anleitungen gehören ins Repo.
 
 ## Übersicht
 
@@ -21,7 +21,7 @@ Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (serv
 
 - **PostgreSQL** (`postgres.service.consul`) -- primärer Datenspeicher, muss vor Authentik starten
 - **Vault** (`kv/data/authentik`, `kv/data/authentik-outpost`) -- Secret-Store für alle Schlüssel und Tokens
-- **Traefik** (VIP 10.0.2.20) -- Routing und ForwardAuth; Authentik benötigt Traefik für OIDC Discovery
+- **Traefik** ([VIP](../_referenz/hosts-und-ips.md)) -- Routing und ForwardAuth; Authentik benötigt Traefik für OIDC Discovery
 - **SMTP Relay** (`smtp.service.consul`) -- für Recovery-Mails und Alerting-Fallback
 
 ## Automatisierung
@@ -33,27 +33,15 @@ Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (serv
 
 ## Blueprint-Workflow
 
-Authentik-Gruppen und Group-Bindings liegen deklarativ im Repo unter `authentik-blueprints/`. Änderungen folgen dem PR-Review-Prozess:
+Authentik-Gruppen und Group-Bindings liegen deklarativ im Repo unter `authentik-blueprints/`. Der Blueprint-Ansatz ist bewusst gewählt: Änderungen sind reviewbar (PR + CODEOWNERS), nachvollziehbar und atomar -- kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT. Drift wird vom Audit-Job erkannt, aber nicht automatisch korrigiert, damit eine fehlerhafte Binding nicht selbsttätig zurückkehrt.
 
-1. Feature-Branch für die gewünschte Tier-Änderung oder neue App
-2. YAML-File editieren (10/20/30-yamls, je nach Tier)
-3. Lokal validieren mit `ak blueprint validate` in einem Temp-Container
-4. PR gegen `main`, CODEOWNERS-Approval
-5. Merge
-6. Apply: `nomad job run nomad-jobs/identity/authentik.nomad` -- der Worker-Task liest die YAMLs via HCL2 `file()`, schreibt sie ins Container-Volume, der Authentik-Reconciler picked sie auf
-
-Kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT -- Apply ist atomar und manuell ausgelöst. Drift wird vom Audit-Job erkannt, aber nicht automatisch korrigiert.
-
-Rollback-Reihenfolge: `git revert <commit>` → Push → `nomad job run`. Der Reconciler setzt die Bindings auf den vorherigen Stand zurück.
-
-Tier-Zuordnung und App-Liste: [Authentik Referenz](./referenz.md#tier-mapping-stand-2026-04-14).
+Beim Rollback (`git revert` → Push → Apply) setzt der Reconciler die Bindings auf den vorherigen Stand zurück. Den vollständigen Änderungs-Workflow (Branch, Validierung, Apply-Mechanik) und die Tier-Zuordnung beschreibt die [Blueprint-Quelle](./referenz.md#blueprint-quelle) in der Referenz.
 
 ## Bekannte Einschränkungen
 
-- **Cache-Delay:** Änderungen an Flows und Policies werden erst nach bis zu 10 Minuten auf allen Workern wirksam (Cache-Timeout 600s)
 - **Outpost-Cache:** Nach einem Redeployment ist der LDAP-Bind-Cache leer -- der erste Login pro User durchläuft den vollen Flow
-- **Kein Redis mehr:** Ab Authentik 2025.10 läuft alles über PostgreSQL; Autovacuum-Tuning ist deshalb kritisch
-- **Login-Rate-Limit:** Playwright-Tests und Login-Skripte müssen mindestens 1 Minute zwischen Iterationen warten
+- **Cache-Delay:** Änderungen an Flows und Policies werden erst nach bis zu 10 Minuten auf allen Workern wirksam (siehe Performance-Konzept)
+- **Login-Rate-Limit:** Automation muss zwischen Iterationen warten (siehe Schutzmechanismen gegen Brute-Force)
 
 ## Credentials
 
@@ -122,22 +110,9 @@ Jeder Einsatz des Breakglass-Accounts sollte protokolliert werden (wann, warum).
 
 ## Alerting-Kette
 
-Sicherheitsrelevante Events fliessen aus Authentik über einen Relay-Service auf den VIP-Telegram-Chat. Die Ebenen:
+Sicherheitsrelevante Events fliessen aus Authentik über einen Relay-Service auf den Telegram-Chat. Der Relay-Umweg ist bewusst: Authentik speichert Webhook-URLs im Klartext in der Datenbank. Ein DB-Dump würde den Bot-Token kompromittieren, deshalb lebt der Token nur im Relay-Container (aus Vault) und nicht in der Authentik-DB.
 
-1. **Authentik Event Matcher** -- sechs Policies filtern die Events (`login_failed`, `policy_exception`, `suspicious_request`, `password_set`, `configuration_error`, plus einen LDAP-spezifischen Matcher)
-2. **Notification Rule** -- bündelt die Matcher unter einer Regel mit Severity `alert`, Empfänger-Gruppe `authentik Admins`
-3. **Transport** -- `telegram-critical` zeigt auf den [Telegram-Relay](../monitoring/telegram-bots.md), ein kleiner Nomad-Service mit HTTP-Endpoint `POST /notify`
-4. **Property Mapping** -- die Webhook-Body-Expression extrahiert `source` aus dem Event-Kontext und baut einen formatierten Text (z.B. `[Authentik/alert/LDAP] Failed bind for user xxx`)
-5. **Telegram-Relay** -- persistiert den Bot-Token nur im Container (aus Vault), forwardet an die Telegram-Bot-API
-6. **VIP-Chat** -- landet auf dem Handy, hoffentlich nie häufig
-
-Der Relay-Umweg ist bewusst: Authentik speichert Webhook-URLs im Klartext in der Datenbank. Ein DB-Dump würde den Bot-Token kompromittieren. Der Relay kapselt das.
-
-## Login-Ratelimit
-
-Die Authentik-Login-Seite hängt hinter der Traefik-Middleware `login-ratelimit@file`. Zu viele aufeinanderfolgende Login-Versuche von einer IP führen zu HTTP 429 "Too Many Requests". Das greift bevor Authentik die Reputation Policy evaluiert und ist eine zusätzliche Schicht gegen automatisierte Brute-Force.
-
-Für Automation (Playwright-Tests, Login-Skripte) muss zwischen Iterationen mindestens eine Minute gewartet werden, sonst wird der Test selbst vom Ratelimit gestoppt.
+Die Event-Matcher, die Notification Rule und die Transport-Konfiguration der Pipeline stehen in der [Referenz](./referenz.md#alerting-und-events).
 
 ## Recovery-Flow für Benutzer
 
@@ -152,7 +127,7 @@ Im Homelab gibt es Apps, die Authentik-Credentials prüfen, ohne dass der User d
 Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstiegs-URL bleibt deshalb über App-Updates hinweg gültig.
 
 - **Authentik selbst** -- Die Identification-Stage referenziert den Recovery-Flow direkt; das Custom-CSS macht den Link unter dem Anmelde-Button als "Passwort vergessen?" sichtbar. Quelle: [`authentik-custom-css.txt`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/authentik-custom-css.txt) im Infra-Repo
-- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Auf der zweiten Hürde -- Jellyseerr's eigenem "Sign in with Jellyfin"-Login -- rendert die `JellyfinLogin`-Komponente einen Forgot-Link, sobald sowohl `jellyfinForgotPasswordUrl` (Settings → Jellyfin → Forgot Password URL) als auch `externalHostname` (Settings → Jellyfin → External URL) gesetzt sind. Beide URLs ohne trailing slash; URL-Validierung ist in beiden Feldern aktiv. Render-Wrapper im Source: `{baseUrl && (<a href={...jellyfinForgotPasswordUrl}>...)}`. Native OIDC-Integration ist in Jellyseerr 2.7.3 nicht vorhanden (PR #1505 closed), in Seerr 3.x ebenfalls nicht
+- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Auf der zweiten Hürde -- Jellyseerr's eigenem "Sign in with Jellyfin"-Login -- rendert die `JellyfinLogin`-Komponente einen Forgot-Link nur unter einer Bedingung (siehe Warning-Box unten zu `externalHostname`)
 - **Jellyfin** (`public-noauth@file`, kein ForwardAuth) -- Hier fehlt die Authentik-Login-Seite als natürliches Recovery-Sprungbrett. Der "Login Disclaimer" in der Jellyfin-Branding-Konfiguration nimmt HTML und wird unterhalb des Login-Formulars gerendert. Persistiert im Linstor-CSI-Volume `jellyfin-config`, überlebt App-Updates und Container-Restarts
 
 Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
@@ -237,11 +212,9 @@ Jellyfin und Jellyseerr haben jeweils eigene Reset-Mechanismen (Jellyfin Quick-C
 :::
 
 ::: warning Jellyseerr Forgot-Link braucht externalHostname
-`jellyfinForgotPasswordUrl` allein reicht nicht -- die `JellyfinLogin`-Komponente rendert den Link in einem `{baseUrl && (...)}`-Wrapper, mit `baseUrl = settings.jellyfinExternalHost || settings.jellyfinHost`. Im Backend heisst das Feld `externalHostname` (Settings → Jellyfin → External URL). Bleibt `externalHostname` leer (Default in vielen Setups), wird der gesamte `<a>` nicht gerendert -- auch wenn `jellyfinForgotPasswordUrl` korrekt gesetzt ist. Im Homelab sind deshalb beide Felder gesetzt: `externalHostname = "https://watch.ackermannprivat.ch"` und `jellyfinForgotPasswordUrl = "https://auth.ackermannprivat.ch/if/flow/default-recovery-flow"`. URL-Validierung beider Felder verbietet trailing slash.
-:::
+`jellyfinForgotPasswordUrl` allein reicht nicht -- die `JellyfinLogin`-Komponente rendert den Link in einem `{baseUrl && (...)}`-Wrapper, mit `baseUrl = settings.jellyfinExternalHost || settings.jellyfinHost`. Im Backend heisst das Feld `externalHostname` (Settings → Jellyfin → External URL). Bleibt `externalHostname` leer (Default in vielen Setups), wird der gesamte `&lt;a&gt;` nicht gerendert -- auch wenn `jellyfinForgotPasswordUrl` korrekt gesetzt ist. Im Homelab sind deshalb beide Felder gesetzt: `externalHostname = "https://watch.ackermannprivat.ch"` und `jellyfinForgotPasswordUrl = "https://auth.ackermannprivat.ch/if/flow/default-recovery-flow"`. URL-Validierung beider Felder verbietet trailing slash.
 
-::: info OIDC fehlt
-Sowohl Jellyseerr 2.7.3 als auch Seerr 3.x haben keinen OIDC-Support. PR fallenbagel/jellyseerr#1505 (`feat/oidc-login`) ist closed mit merge conflict; das von Authelia dokumentierte Setup setzt einen Development-Build (`tag:preview-OIDC`) voraus. Eine native OIDC-Integration via Authentik ist daher aktuell nicht möglich -- die Doppel-Login-Hürde (Authentik-Forward-Auth + Jellyseerr-Login) bleibt. Recovery funktioniert dank der oben beschriebenen Settings trotzdem auf beiden Stufen.
+OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR fallenbagel/jellyseerr#1505 closed), die Doppel-Login-Hürde (ForwardAuth + Jellyseerr-Login) bleibt. Recovery funktioniert dank der beschriebenen Settings trotzdem auf beiden Stufen.
 :::
 
 ## Passwordless Login
@@ -254,11 +227,7 @@ User registrieren Passkeys selbstständig über das User-Portal unter "Settings 
 
 ## Session-Verhalten
 
-Nach dem Login gilt:
-
-- **Standard-Session:** 1 Tag -- danach muss neu eingeloggt werden
-- **Remember-Me-Session:** 14 Tage, wenn die Checkbox auf der Login-Seite gesetzt war
-- **Terminate Other Sessions:** ein neuer Login beendet automatisch alle anderen Sessions des gleichen Users
+Die Login-Stage erzwingt eine fixe Session-Dauer ohne "Angemeldet bleiben"-Checkbox; zusätzlich beendet jeder Neulogin alle anderen Sessions desselben Users (`terminate_other_sessions`). Die konkreten Werte stehen in der [Referenz](./referenz.md#stages).
 
 Das ist ein Kompromiss zwischen Bequemlichkeit und Sicherheit. Im Lockout-Fall kann ein gestohlenes Session-Cookie immerhin nicht parallel genutzt werden, weil der echte User beim nächsten Login die fremde Session abschiesst.
 
@@ -271,12 +240,9 @@ Authentik ist CPU-bound bei Flow-Execution. Im Homelab sind folgende Hebel gedre
 - **Autovacuum aggressiver** für die Session- und Cache-Tabellen, damit Bloat nicht die Response-Zeit hochtreibt
 - **Cache-Timeouts 600s** für Flows und Policies -- Änderungen an Flows brauchen bis zu 10 Minuten, um auf allen Workern aktiv zu werden
 - **GeoIP deaktiviert** -- spart Startup-Zeit und Event-Overhead
+- **Kein Redis** -- seit der Redis-Abschaffung laufen Cache, Sessions, WebSockets und Task-Queue über PostgreSQL. Das spart einen Service, erhöht aber die DB-Last -- darum das aggressive Autovacuum-Tuning oben
 
 Die konkreten Zahlen (CPU, RAM, Worker-Counts) stehen im Nomad-Job -- nicht im Wiki, weil sie sich ändern.
-
-::: info Kein Redis seit Authentik 2025.10
-Authentik hat Redis in Version 2025.10 vollständig entfernt. Cache, Sessions, WebSockets und Task-Queue laufen über PostgreSQL. Das spart einen Service, erhöht aber die Last auf der Datenbank -- Autovacuum-Tuning ist deshalb wichtig.
-:::
 
 ## Outpost-Token-Rotation
 
@@ -303,17 +269,11 @@ Authentik ist mit mehreren Schichten gegen Brute-Force-Angriffe geschützt. Die 
 
 CrowdSec und die Reputation Policy ergänzen sich: CrowdSec reagiert auf bekannte Angreifer-IPs (proaktiv), die Reputation Policy auf tatsächliche Fehlversuche (reaktiv). Eine tiefere Integration (z.B. CrowdSec-Parser für Authentik-Events) ist im Homelab nicht nötig -- die Reputation Policy deckt den reaktiven Fall ab, CrowdSec den proaktiven.
 
+Betrieblich relevant: Automation (Playwright-Tests, Login-Skripte) muss zwischen Iterationen mindestens eine Minute warten, sonst stoppt das `login-ratelimit` den Test selbst mit HTTP 429.
+
 ## Bootstrap (Ersteinrichtung)
 
-::: info Reihenfolge bei Erstdeploy
-1. Vault-Secrets anlegen (`kv/authentik`: `secret_key`, `db_password`)
-2. PostgreSQL-Datenbank und User erstellen
-3. Nur Server und Worker deployen (Outpost-Tasks auskommentieren)
-4. In der Authentik-UI: Outposts erstellen und Tokens kopieren
-5. Tokens in Vault schreiben (`kv/authentik-outpost`: `proxy_token`, `ldap_token`)
-6. Job erneut deployen -- alle vier Tasks starten
-7. Hardening nachziehen: MFA für Admins, Password Policy, Reputation Policy, Passwordless-Flow, Telegram-Alerting (Reihenfolge wichtig -- siehe Recovery-Layer oben, damit das Bootstrap nicht in einen Lockout läuft)
-:::
+Die Schritt-für-Schritt-Reihenfolge des Erstdeploys (Vault-Secrets, PostgreSQL-Anlage, Outpost-Token-Bootstrap) ist im Repo unter `authentik-blueprints/README.md` dokumentiert. Architektur-relevant ist nur eine Regel: Das Hardening (MFA-Zwang, Password Policy, Reputation Policy, Passwordless-Flow) wird erst **nach** dem ersten erfolgreichen Login nachgezogen -- sonst läuft das Bootstrap in einen Lockout, bevor ein Recovery-Pfad existiert. Die Absicherung gegen genau diesen Fall beschreiben die [Recovery-Layer](#recovery-layer-safety-net) oben.
 
 ## Verwandte Seiten
 

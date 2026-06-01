@@ -17,14 +17,15 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 
 | Verzeichnis | Jobs |
 | :--- | :--- |
-| batch-jobs/ | Renovate, Docker Prune, PostgreSQL Backup, Daily Cleanup, Daily Reboot, Daily Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader |
-| databases/ | PostgreSQL (DRBD), DbGate, OpenLDAP (Legacy) |
-| infrastructure/ | SMTP Relay, Filebrowser, Zot Registry, GitHub Runner |
-| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Handbrake, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus |
-| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, HolLama, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Czkawka, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, Kimai, n8n, MeshCommander, PHDler Telegram Bot, Swissbau Viewer |
-| system/ | Alloy (Log-Collector), Linstor CSI, Linstor GUI |
-| test/ | Linstor Volume Test |
+| batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, fstrim, DNS Performance, Authentik Audit, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Downloader, Reddit Gallery DL, Reddit Gallery DL Backfill, PH Downloader |
+| databases/ | PostgreSQL (DRBD), MariaDB (DRBD), MariaDB Setup, DbGate, OpenLDAP (Legacy) |
+| identity/ | Authentik |
+| infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner |
+| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Stash-Jellyfin-Proxy, Suggestarr, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, Keep, iperf3-to-InfluxDB |
+| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly |
+| system/ | Alloy (Log-Collector), Linstor CSI |
+| volumes/ | CSI-Volume-Spezifikationen (.hcl) |
 
 ## Abhängigkeiten
 
@@ -49,7 +50,9 @@ Alle Nomad Jobs setzen folgende Infrastruktur voraus:
 
 | Datei | Ersetzt durch | Grund |
 | :--- | :--- | :--- |
-| `services/paperless-workload.nomad` | `services/paperless-simple.nomad` | Vereinfachtes Single-Container-Deployment |
+| `services/paperless-workload.nomad.deprecated` | `services/paperless-simple.nomad` | Vereinfachtes Single-Container-Deployment |
+| `media/handbrake.nomad.deprecated` | -- | Transkodierung nicht mehr aktiv betrieben |
+| `system/linstor-gui.nomad.deprecated` | -- | Linstor-Verwaltung erfolgt per CLI |
 
 ## Verwandte Seiten
 

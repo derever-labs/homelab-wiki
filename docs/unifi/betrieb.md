@@ -11,13 +11,13 @@ tags:
 
 ## Übersicht
 
-Der UDM Pro ist das zentrale Gateway des Homelabs und steuert Routing, Switching, WLAN und Firewall für alle VLAN-Segmente. Der integrierte UniFi Network Controller ist über `https://10.0.0.1` erreichbar.
+Der UDM Pro ist das zentrale Gateway des Homelabs und steuert Routing, Switching, WLAN und Firewall für alle VLAN-Segmente. Architektur und Konfigurationsreferenz: [UniFi](./index.md).
 
 ## Abhängigkeiten
 
 - Keine externen Service-Abhängigkeiten -- der UDM Pro ist die Basis-Infrastruktur
-- Traefik (VIP 10.0.2.20) benötigt die Port-Forwards 80/443 auf dem UDM Pro
-- Pi-hole DNS-LXCs (10.0.2.1 / 10.0.2.2) sind im Management-Netzwerk des UDM Pro
+- Traefik VIP -- die Port-Forwards 80/443 auf dem UDM Pro zeigen hierauf, siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)
+- Pi-hole DNS-LXCs liegen im Management-Netzwerk des UDM Pro
 
 ## Automatisierung
 
@@ -31,19 +31,13 @@ Keine automatisierten Deployments. Konfiguration erfolgt manuell über den integ
 - IPS konfiguriert aber deaktiviert
 - Keine Inter-VLAN-Blocking-Regeln als Baseline
 
-## Credentials
+## Zugang und SSH
 
-Zugangsdaten für Web-UI und SSH: [Zugangsdaten](../_referenz/credentials.md). SSH-Verbindungsdetails: [SSH-Zugang](../_referenz/ssh-zugang.md).
-
-## SSH-Zugang
-
-SSH ist auf dem UDM Pro aktiv und erfordert Passwort-Authentifizierung (keyboard-interactive). Der Zugang ist auf dem internen Netzwerk beschränkt.
+SSH ist auf dem UDM Pro aktiv und erfordert Passwort-Authentifizierung (keyboard-interactive). Der Zugang ist auf das interne Netzwerk beschränkt. Zugangsdaten und Verbindungsdetails: [Zugangsdaten](../_referenz/credentials.md) und [SSH-Zugang](../_referenz/ssh-zugang.md).
 
 ::: warning Passwort-Auth aktiv
 SSH läuft derzeit mit Passwort-Authentifizierung.
 :::
-
-Zugangsdaten und Verbindungsdetails: [Zugangsdaten](./../_referenz/credentials.md) und [SSH-Zugang](./../_referenz/ssh-zugang.md).
 
 ## Web-Interface
 
@@ -53,9 +47,7 @@ Login-Methoden:
 - **UI.com SSO** -- Ubiquiti-Konto mit Passkey und 2FA (primäre Methode)
 - **Lokaler Admin** -- Fallback, Zugangsdaten in 1Password (Vault "PRIVAT Agent")
 
-::: info Remote Access
-Remote Access via UI.com ist aktiviert. Der Traffic wird über Ubiquiti-Server geroutet (Direct Remote Connection ist deaktiviert).
-:::
+Remote Access via UI.com ist aktiviert; der Traffic wird über Ubiquiti-Server geroutet. Die zugehörigen Einstellungen: [UniFi Referenz](./referenz.md).
 
 ## Backup und Restore
 
@@ -70,21 +62,17 @@ Empfohlene Reihenfolge, um Inkompatibilitäten zu vermeiden:
 3. **Access Points** -- danach, da APs re-adopted werden können wenn die Protokoll-Version wechselt
 4. **Switches** -- zuletzt, da Switch-Firmware-Änderungen seltener breaking changes haben
 
-::: tip LTS-Firmware erwägen
-Kein Gerät läuft aktuell auf LTS-Firmware (Long Term Support). Für Geräte die stabil laufen sollen, ist LTS gegenüber dem regulären Kanal vorzuziehen.
-:::
-
-Aktuelle Firmware-Versionen im Überblick: In der UniFi-Console unter Devices einsehbar -- nicht hier duplizieren, da sie sich häufig ändern.
+Aktuelle Firmware-Versionen sind in der UniFi-Console unter Devices einsehbar -- nicht hier duplizieren, da sie sich häufig ändern.
 
 ## Monitoring-Integration
 
-Syslog-Integration ist nicht aktiv. Sobald konfiguriert, können Firewall-Events, DHCP-Leases und Authentifizierungsversuche in Grafana visualisiert werden.
+Syslog ist nicht konfiguriert.
 
 ## Verwandte Seiten
 
 - [Netzwerk](../netzwerk/) -- VLAN-Übersicht und Netzwerk-Architektur
 - [Synology NAS](../nas-storage/) -- NAS-Zugriff und Storage-Konfiguration
-- [Jellyfin](../jellyfin/) -- Streaming-Service, aktuell unverschlüsselt exponiert
+- [Jellyfin](../jellyfin/) -- Media-Streaming-Service
 - [Traefik](../traefik/) -- Reverse Proxy für sichere externe Dienst-Exposition
-- [Zugangsdaten](./../_referenz/credentials.md) -- Kanonische Quelle für alle Zugangsdaten
-- [SSH-Zugang](./../_referenz/ssh-zugang.md) -- SSH-Zugangsdaten und -Konfiguration
+- [Zugangsdaten](../_referenz/credentials.md) -- Kanonische Quelle für alle Zugangsdaten
+- [SSH-Zugang](../_referenz/ssh-zugang.md) -- SSH-Zugangsdaten und -Konfiguration

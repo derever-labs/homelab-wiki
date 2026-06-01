@@ -8,15 +8,6 @@ tags:
 
 # Consul - Referenz
 
-## Ports
-
-- **8500** -- HTTP API und Web-UI
-- **8600** -- DNS (UDP + TCP)
-- **8300** -- Server RPC (Raft-Kommunikation zwischen Servern)
-- **8301** -- Serf LAN (Gossip innerhalb des Datacenters)
-- **8302** -- Serf WAN (Gossip über Datacenter-Grenzen; im Homelab nicht aktiv)
-- **8502** -- gRPC (für Connect/Envoy; im Homelab nicht genutzt)
-
 ## Konfigurationspfade
 
 - `/etc/consul.d/` -- Konfigurationsdateien (verwaltet via Ansible)
@@ -24,7 +15,7 @@ tags:
 
 ## Autopilot
 
-Consul Autopilot läuft mit Standardkonfiguration. Der Parameter `cleanup_dead_servers = true` sorgt dafür, dass ausgefallene Server automatisch aus dem Raft-Cluster entfernt werden, sobald ein Ersatz-Node verfügbar ist. Manuelle Eingriffe sind in der Regel nicht nötig.
+`cleanup_dead_servers = true` ist aktiv; Verhalten und manuelle Eingriffe: [Consul Betrieb](./betrieb.md).
 
 ## DNS-Forwarding
 
@@ -34,13 +25,12 @@ Vollständige DNS-Dokumentation: [DNS-Architektur](../dns/)
 
 ## Consul Catalog Provider
 
-Traefik nutzt den Consul Catalog Provider für automatisches Service-Routing. Sobald Nomad einen Container startet und in Consul registriert, erkennt Traefik den neuen Service und konfiguriert die Route -- ohne manuellen Eingriff. Die Traefik-Labels im Nomad-Job steuern Hostname, Middlewares und TLS.
-
-Traefik-Dokumentation: [Traefik](../traefik/)
+Traefik nutzt den Consul Catalog Provider für automatisches Service-Routing; Tags-Schema und Routing-Details: [Traefik](../traefik/).
 
 ## Verwandte Seiten
 
 - [Consul Übersicht](./index.md) -- Architektur, Service Discovery, KV Store
 - [Consul Betrieb](./betrieb.md) -- Betriebskonzepte und bekannte Einschränkungen
+- [Ports und Dienste](../_referenz/ports-und-dienste.md) -- Vollständige Port-Übersicht (HashiCorp Stack)
 - [DNS-Architektur](../dns/) -- Vollständige DNS-Kette
 - [Traefik](../traefik/) -- Consul Catalog Integration

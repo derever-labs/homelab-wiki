@@ -15,11 +15,13 @@ Zwei redundante Pi-hole v6 LXC-Container (lxc-dns-01/02) bilden die DNS-Infrastr
 
 | Attribut | Wert |
 |----------|------|
-| Primärer DNS | 10.0.2.1 (lxc-dns-01) |
-| Sekundärer DNS | 10.0.2.2 (lxc-dns-02) |
 | Deployment | Bare-metal in LXC (Terraform + Ansible) |
-| Sync | Nebula-Sync (Nomad-Job, Full Teleporter, täglich 04:00) |
+| Sync | Nebula-Sync (Nomad Service-Job mit integriertem Cron) |
 | IPs | Siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) |
+
+## Rolle im Stack
+
+DNS ist die Basis-Dependency für alle Netzwerk-Clients und Nomad-Services. Die Kette läuft DHCP -> Pi-hole -> Unbound bzw. Consul: Clients erhalten beide Pi-hole-LXCs als Resolver, Pi-hole leitet `.consul`-Anfragen an den Consul-Cluster (Service Discovery für alle Nomad-Container) und alle übrigen Anfragen an Unbound weiter.
 
 ## DNS-Kette
 
@@ -60,7 +62,7 @@ pihole: Pi-hole v6 (DNS-Eingang) {
   PH1 <-> PH2: Nebula-Sync (taeglich 04:00) {
     style.stroke: "#6b7280"
     style.stroke-dash: 3
-    tooltip: "Full Teleporter Sync, Nomad Batch-Job"
+    tooltip: "Full Teleporter Sync, Nomad Service-Job mit internem Cron"
   }
 }
 
@@ -132,7 +134,7 @@ Unbound -> Root: Rekursive Aufloesung {
 
 Pi-hole v6 mit eingebettetem dnsmasq (FTL) übernimmt DNS-Eingangs-Router und Ad-Blocker in einem.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Port | **53** (direkt) |
 | Web-UI | Port 80 (`/admin`) |
@@ -140,27 +142,29 @@ Pi-hole v6 mit eingebettetem dnsmasq (FTL) übernimmt DNS-Eingangs-Router und Ad
 | Config | `/etc/pihole/pihole.toml` |
 | Custom dnsmasq | `/etc/dnsmasq.d/` (aktiviert via `etc_dnsmasq_d = true`) |
 
-**Wildcard-DNS-Records** (in `/etc/dnsmasq.d/05-custom-dns.conf`):
+**Wildcard-DNS-Records** (via Ansible-Rolle `ansible/roles/pihole/`):
 
-| Record | Ziel-IP |
-|--------|---------|
-| `*.ackermannprivat.ch` (Wildcard) | 10.0.2.20 (Traefik VIP) |
-| `*.ackermann.systems` (Wildcard) | 10.0.2.20 (Traefik VIP) |
+| Record | Ziel |
+|--------|------|
+| `*.ackermannprivat.ch` (Wildcard) | Traefik VIP |
+| `*.ackermann.systems` (Wildcard) | Traefik VIP |
 
-**Spezifische Overrides** (in `/etc/pihole/custom.list`):
+**Spezifische Overrides:**
 
-| Record | Ziel-IP |
-|--------|---------|
-| `vpn.ackermannprivat.ch` | 10.0.2.20 |
-| `pve00/01/02.ackermannprivat.ch` | 10.0.2.40/41/42 |
-| `pbs.ackermannprivat.ch` | 10.0.2.50 |
+| Record | Ziel |
+|--------|------|
+| `vpn.ackermannprivat.ch` | Traefik VIP |
+| `pve00/01/02.ackermannprivat.ch` | Proxmox-Hosts |
+| `pbs.ackermannprivat.ch` | PBS |
 
-**Conditional Forwarding** (in `/etc/dnsmasq.d/05-consul.conf`):
+Ziel-IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+
+**Conditional Forwarding:**
 
 | Domain-Muster | Upstream | Port |
 |---------------|----------|------|
-| `*.consul` | Consul Server (104/105/106) | 8600 |
-| `*.local` | Router (10.0.0.1) | 53 |
+| `*.consul` | Consul Server | 8600 |
+| `*.local` | Router (UDM Pro) | 53 |
 
 ::: info DNS-Rate-Limit deaktiviert
 Pi-holes Default-Rate-Limit (1000 Anfragen pro 60 s pro Client) ist auf Browser-Last dimensioniert und nicht auf Nomad-Worker mit hoher Container-Dichte. Beim Hochfahren vieler Container gleichzeitig (z. B. Init-Container wie `wait-for-postgres`, die `*.service.consul` im 2-Sekunden-Takt resolven) wird die Schwelle überschritten -- Pi-hole antwortet `REFUSED`, die Init-Container hängen im Loop und halten den Rate-Limit-Zustand aktiv (Cascade-Lock). Daher ist das Limit auf beiden DNS-LXCs deaktiviert. Verwaltet via Ansible-Variable `pihole_rate_limit_count` in `ansible/roles/pihole/defaults/main.yml`.
@@ -170,7 +174,7 @@ Pi-holes Default-Rate-Limit (1000 Anfragen pro 60 s pro Client) ist auf Browser-
 
 Rekursiver Resolver mit DNSSEC-Validierung. Löst Anfragen direkt gegen die Root-Server auf.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Port | 5335 (localhost) |
 | DNSSEC | Aktiv (Unbound validiert, Pi-hole selbst NICHT -- doppelte Validierung ist unnötig und erzeugt Warnings) |
@@ -179,24 +183,17 @@ Rekursiver Resolver mit DNSSEC-Validierung. Löst Anfragen direkt gegen die Root
 
 ### Consul DNS
 
-Service Discovery für den HashiCorp-Cluster. Jeder Consul Server stellt DNS auf Port 8600 bereit.
-
-| Consul Server | IP | Port |
-|---------------|-----|------|
-| vm-nomad-server-04 | 10.0.2.104 | 8600 |
-| vm-nomad-server-05 | 10.0.2.105 | 8600 |
-| vm-nomad-server-06 | 10.0.2.106 | 8600 |
+Service Discovery für den HashiCorp-Cluster. Alle drei Consul Server (vm-nomad-server-04/05/06) stellen DNS auf Port 8600 bereit -- Adressen siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) und [HashiCorp Stack](../nomad/index.md).
 
 ## Synchronisation (Nebula-Sync)
 
 Ein Nomad-Job synchronisiert die Pi-hole-Konfiguration von lxc-dns-01 (Primary) auf lxc-dns-02 (Replica).
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Modus | Full Sync (Teleporter) |
 | Intervall | Täglich 04:00 Uhr |
-| Nomad-Job | `nebula-sync` |
-| Image | `lovelaze/nebula-sync` |
+| Nomad-Job | `nebula-sync` (Service-Job, Cron intern via `CRON=0 4 * * *`) |
 | Credentials | Nomad Variable `nomad/jobs/nebula-sync` |
 
 Synchronisiert werden: Blocklists, Custom DNS Records, Gruppen, Clients, Einstellungen. **Nicht** synchronisiert: `/etc/dnsmasq.d/`-Dateien (werden über Ansible identisch deployed).
@@ -211,12 +208,7 @@ Alle Nomad Clients haben in `/etc/docker/daemon.json` beide DNS-Server (lxc-dns-
 
 ## Standorte und Failover
 
-| Standort | Host | IP | LXC-ID | Proxmox |
-|----------|------|-----|--------|---------|
-| Primär | lxc-dns-01 | 10.0.2.1 | 4021 | pve01 |
-| Sekundär | lxc-dns-02 | 10.0.2.2 | 4022 | pve02 |
-
-Alle Netzwerk-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../_referenz/hosts-und-ips.md). Alle Netzwerk-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
 
 ::: warning Nie beide gleichzeitig rebooten
 Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer einen LXC am Laufen lassen.

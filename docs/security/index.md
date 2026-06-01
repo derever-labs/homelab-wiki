@@ -9,20 +9,35 @@ tags:
 
 # Sicherheit & Authentifizierung
 
-## Übersicht
-
 Der Zugriff auf interne Services wird zentral über Traefik gesteuert. Authentifizierungsanfragen werden an Authentik delegiert. CrowdSec läuft als natives Traefik-Plugin und blockiert böswillige IPs im Stream-Modus, bevor der Request überhaupt die Middleware-Chain erreicht.
 
+## Übersicht
+
+| Attribut | Wert |
+|----------|------|
+| Auth | Traefik Middleware Chains mit Authentik ForwardAuth |
+| Deployment (Authentik) | Nomad Job `identity/authentik.nomad` |
+| Secrets | Vault `kv/authentik`, `kv/authentik-outpost` |
+
+## Architektur
+
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
 direction: right
 
-User: User Request
-CS: CrowdSec Plugin (Stream-Modus)
-Chain: Middleware Chain (secure-headers)
-FWD: Authentik ForwardAuth
-AK: Authentik { tooltip: "auth.ackermannprivat.ch" }
-Backend: Backend Service
-Block: Blockiert (böswillige IP)
+User: User Request { style.border-radius: 8 }
+CS: CrowdSec Plugin (Stream-Modus) { style.border-radius: 8 }
+Chain: Middleware Chain (secure-headers) { style.border-radius: 8 }
+FWD: Authentik ForwardAuth { style.border-radius: 8 }
+AK: Authentik { tooltip: auth.ackermannprivat.ch; style.border-radius: 8 }
+Backend: Backend Service { style.border-radius: 8 }
+Block: Blockiert (böswillige IP) { style.border-radius: 8 }
 
 User -> CS
 CS -> Chain
@@ -46,8 +61,6 @@ Authentik ist der zentrale Identity Store für alle User-Accounts. Die User-Date
 - **ForwardAuth** für Web-UIs ohne OIDC-Support (via Traefik Middleware Chains)
 - **LDAP Bind** für Jellyfin über den [Authentik LDAP Outpost](../ldap/index.md)
 
-Authentik ersetzt die frühere Kombination aus Keycloak und oauth2-proxy. Die ForwardAuth-Integration läuft direkt in Traefik -- kein separater oauth2-proxy-Container mehr.
-
 Details: [Authentik](../authentik/index.md) -- Übersicht und Architektur. LDAP-Schichten im Homelab: [LDAP im Homelab](../ldap/index.md).
 
 ### CrowdSec (natives Traefik-Plugin)
@@ -58,34 +71,15 @@ Details: [CrowdSec](../crowdsec/index.md)
 
 ## Zugriffsgruppen
 
-| Gruppe | Mitglieder | Zugriff |
-|--------|------------|---------|
-| `admin` | samuel | Voller Zugriff auf alle Services |
-| `family` | corinna, + weitere | Familien-Zugriff (Jellyseerr, Jellyfin, etc.) |
-| `guest` | Weitere | Limitierter Zugriff |
+Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Referenz](../authentik/referenz.md#gruppen).
 
 ## Middleware Chains
 
-Detaillierte Beschreibung siehe [Traefik Middleware Chains](../traefik/referenz.md).
-
-### Kurzübersicht
-
-| Chain | Beschreibung |
-|-------|--------------|
-| `intern-api@file` | Nur IP-Allowlist (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10) |
-| `intern-auth@file` | secure-headers + Authentik ForwardAuth + IP-Allowlist |
-| `public-auth@file` | CrowdSec + secure-headers + Authentik ForwardAuth |
-| `public-noauth@file` | CrowdSec + secure-headers |
-
-Vollständige Dokumentation: [Traefik Middlewares](../traefik/referenz.md)
+Alle Services werden über eine der vier Chains (`intern-api`, `intern-auth`, `public-auth`, `public-noauth`) geschützt. Die kanonische Chain-Definition inklusive Komponenten-Reihenfolge und IP-Allowlist-Ranges liegt in [Traefik Middlewares](../traefik/referenz.md).
 
 ## Konfiguration neuer Services
 
 Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware als Tag gesetzt, z.B. `traefik.http.routers.my-service.middlewares=intern-auth@file`.
-
-## Tailscale-Zugriff
-
-Tailscale-Verbindungen nutzen den CGNAT-Bereich `100.64.0.0/10`. Dieser ist in der `intern-api` und `intern-auth` IP-Allowlist enthalten, sodass Zugriff über Tailscale auf interne Services möglich ist.
 
 ## Verwandte Seiten
 

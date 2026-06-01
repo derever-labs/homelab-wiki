@@ -24,7 +24,7 @@ Details zu NFS-Exports: [NAS-Speicher](../nas-storage/index.md)
 
 ## 2. Aktuelle Datenbank-Strategie
 
-Alle datenbank-gestützten Services nutzen den **PostgreSQL 16 Shared Cluster** auf einem DRBD-replizierten Linstor CSI Volume. Details zur Architektur, Service-Zuordnung und Backup: [Datenbank-Architektur](./datenbank-architektur.md) | [Backup-Strategie](../backup/index.md)
+Alle datenbank-gestützten Services nutzen den **PostgreSQL Shared Cluster** auf einem DRBD-replizierten Linstor CSI Volume. Details zur Architektur, Service-Zuordnung und Backup: [Datenbank-Architektur](./datenbank-architektur.md) | [Backup-Strategie](../backup/index.md)
 
 ## 3. Litestream Replikation (SQLite) -- Nicht umgesetzt
 
@@ -37,6 +37,12 @@ Für die aktuelle Strategie siehe [Datenbank-Architektur](./datenbank-architektu
 Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanzen zu replizieren. Zwei MinIO-Peers auf Node-05/06 (verbunden über Thunderbolt) hätten als schnelle Replicas gedient, mit dem NAS-MinIO als Langzeit-Backup.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: down
 
 SVC: Service mit SQLite { style.border-radius: 8 }

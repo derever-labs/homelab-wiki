@@ -9,20 +9,16 @@ tags:
 
 # Vaultwarden
 
-## Übersicht
-
 Vaultwarden ist der zentrale Passwort-Manager -- eine leichtgewichtige Reimplementierung der Bitwarden-Server-API. Alle Bitwarden-Clients (Browser-Extension, Desktop, iOS, Android) sprechen direkt mit der Vaultwarden-API.
+
+## Übersicht
 
 | Attribut | Wert |
 |----------|------|
 | URL | [p.ackermannprivat.ch](https://p.ackermannprivat.ch) -- siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/vaultwarden.nomad` |
-| Image | `localhost:5000/vaultwarden/server:1.35.4` (gepinnt, via lokale Registry) |
-| Datenbank | PostgreSQL via Consul DNS (`postgres.service.consul`, DB `vaultwarden`) |
-| Storage | Linstor CSI Volume `vaultwarden-data` (1 GiB ext4, DRBD-repliziert auf client-05/06) |
-| Platzierung | Nur `vm-nomad-client-05` oder `vm-nomad-client-06`, Affinity auf 05 |
+| Storage | Linstor CSI Volume `vaultwarden-data-r2` (DRBD-repliziert auf client-05/06) |
 | Auth | `intern-noauth@file` (IP-Allowlist, kein Authentik) |
-| SMTP | `smtp.service.consul:25` (Plain) |
 
 ## Rolle im Stack
 
@@ -33,28 +29,38 @@ Vaultwarden ist der zentrale Passwort-Manager im Homelab. Alle Passwörter, TOTP
 Vaultwarden trennt zwei Datenpfade: die strukturierte Vault-Datenbank lebt im gemeinsamen PostgreSQL-Cluster, der lokale Service-State (Anhänge, generierte Server-Schlüssel, Icon-Cache) liegt auf einem DRBD-replizierten Linstor-CSI-Volume. Beide Pfade sind dadurch zwischen client-05 und client-06 redundant.
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
+
+classes: {
+  node: { style.border-radius: 8 }
+}
 
 clients: Clients {
   style.stroke-dash: 4
-  brw: Browser-Extension
-  app: "Bitwarden-App (iOS / Android / Desktop)"
+  brw: Browser-Extension { class: node }
+  app: "Bitwarden-App (iOS / Android / Desktop)" { class: node }
 }
 
-traefik: Traefik 10.0.2.20 {
+traefik: Traefik {
   style.stroke-dash: 4
-  router: "Router p.ackermannprivat.ch (intern-noauth)"
+  router: "Router p.ackermannprivat.ch (intern-noauth)" { class: node }
 }
 
 nomad: Nomad-Cluster {
   style.stroke-dash: 4
-  vw: Vaultwarden { tooltip: "client-05/06, image vaultwarden/server:1.35.4" }
+  vw: Vaultwarden { class: node; tooltip: "client-05/06" }
 }
 
 storage: Storage {
   style.stroke-dash: 4
-  csi: "Linstor CSI vaultwarden-data" { tooltip: "1 GiB ext4, DRBD-repliziert auf client-05/06" }
-  pg: "PostgreSQL postgres.service.consul" { tooltip: "DB vaultwarden im Postgres-DRBD-Cluster" }
+  csi: "Linstor CSI vaultwarden-data-r2" { class: node; tooltip: "ext4, DRBD-repliziert auf client-05/06" }
+  pg: "PostgreSQL postgres.service.consul" { class: node; tooltip: "DB vaultwarden im Postgres-DRBD-Cluster" }
 }
 
 clients.brw -> traefik.router: HTTPS
@@ -70,11 +76,11 @@ nomad.vw -> storage.pg: "Vault-Datenbank"
 
 Vaultwarden nutzt die gemeinsame PostgreSQL-Instanz des `postgres-drbd`-Cluster über `postgres.service.consul:5432`. Die Datenbank `vaultwarden` und der zugehörige User werden dort betrieben. Zugangsdaten und der Vaultwarden-Admin-Token kommen aus Vault (`kv/data/vaultwarden`) und werden vom Job per Vault-Integration als Environment ins Template gerendert.
 
-Der Hauptcontainer wartet über einen `prestart`-Sidecar (Alpine `nc`-Loop auf Port 5432) auf die Verfügbarkeit von Postgres, bevor Vaultwarden selbst startet. Damit überlebt der Job Postgres-Failover ohne Crashloop.
+Der Hauptcontainer wartet über einen `prestart`-Task (Alpine `nc`-Loop auf Port 5432) auf die Verfügbarkeit von Postgres, bevor Vaultwarden selbst startet. Damit überlebt der Job Postgres-Failover ohne Crashloop.
 
 ### Storage
 
-Das CSI-Volume `vaultwarden-data` (Definition unter `nomad-jobs/volumes/vaultwarden-volume.hcl`, Resource Group `rg-replicated`, `autoPlace=2`) wird mit `mount_options { fs_type = "ext4", mount_flags = ["noatime", "discard"] }` ins Volume gemountet. Es enthält:
+Das CSI-Volume `vaultwarden-data-r2` (Definition unter `nomad-jobs/volumes/vaultwarden-data-r2-volume.hcl`) enthält:
 
 - Anhänge der Vault-Einträge
 - Generierte Server-RSA-Schlüssel (`rsa_key.pem`, `rsa_key.pub.pem`)
@@ -84,8 +90,8 @@ Linstor repliziert es zwischen `vm-nomad-client-05` und `vm-nomad-client-06`. De
 
 ### Sicherheit
 
-- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist auf 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 und 100.64.0.0/10. Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
-- Externe Zugriffe (Mobile, unterwegs) laufen über das Tailscale-Netz im 100.64.0.0/10-Bereich, das in der Allowlist enthalten ist.
+- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist (Range-Details: [Traefik Referenz](../traefik/referenz.md)). Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
+- Externe Zugriffe (Mobile, unterwegs) laufen über das Tailscale-Netz, dessen Bereich in der Allowlist enthalten ist.
 - TLS terminiert Traefik mit dem Default-Wildcard-Zertifikat.
 
 ::: warning
@@ -101,7 +107,7 @@ Vaultwarden verschickt Mails (Einladungen, Hinweise, Master-Password-Hint) über
 Die zwei Datenpfade werden separat gesichert:
 
 - **PostgreSQL-DB `vaultwarden`** -- Teil der `postgres-backup`-Pipeline aus dem zentralen Postgres-Cluster
-- **CSI-Volume `vaultwarden-data`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
+- **CSI-Volume `vaultwarden-data-r2`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
 
 ## Verwandte Seiten
 

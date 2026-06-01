@@ -21,52 +21,11 @@ Drei-Knoten-Proxmox-Cluster (lenzburg) als Virtualisierungsplattform für alle H
 | Migration-Netzwerk | 10.99.1.0/24 (Thunderbolt) |
 | IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 
-## Cluster-Knoten
+## Cluster-Knoten und VMs
 
-| Node | IP (Management) | Rolle | Hardware (CPU/RAM) |
-|------|-----------------|-------|--------------------|
-| **pve00** | 10.0.2.40 | Quorum / VM Host | 4 CPU / 16 GB |
-| **pve01** | 10.0.2.41 | Main Compute Node | 16 CPU / 64 GB |
-| **pve02** | 10.0.2.42 | Main Compute Node | 16 CPU / 64 GB |
+Der Cluster besteht aus drei Knoten (pve00 als Quorum/VM-Host, pve01 und pve02 als Compute-Nodes). Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar; SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
 
-Alle Nodes sind über das Management-Netzwerk (10.0.2.0/24) erreichbar. SSH-Zugang erfolgt als `root` auf den jeweiligen Management-IPs.
-
-## VM-Übersicht
-
-### Infrastructure VMs und LXCs
-
-| Host | IP | VM-ID | Host | Rolle |
-|----|-----|-------|------|-------|
-| **lxc-dns-01** | 10.0.2.1 | 4021 | pve01 | Pi-hole v6 + Unbound (Primary DNS) |
-| **lxc-dns-02** | 10.0.2.2 | 4022 | pve02 | Pi-hole v6 + Unbound (Secondary DNS) |
-| **vm-traefik-01** | 10.0.2.21 | 4011 | pve01 | Traefik Reverse Proxy (VIP: 10.0.2.20) |
-| **vm-traefik-02** | 10.0.2.22 | 4012 | pve02 | Traefik Reverse Proxy (VIP: 10.0.2.20, Keepalived HA) |
-| **checkmk** | 10.0.2.150 | 2000 | pve01 | Monitoring System |
-| **pbs-backup-server** | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
-| **datacenter-manager** | 10.0.2.60 | 99998 | pve01 | Management Tools |
-
-### HashiCorp Stack -- Nomad Server (3x)
-
-| VM | IP | VM-ID | Host | Specs |
-|----|-----|-------|------|-------|
-| **vm-nomad-server-04** | 10.0.2.104 | 3004 | pve00 | 2 CPU, 2 GB RAM |
-| **vm-nomad-server-05** | 10.0.2.105 | 3005 | pve01 | 2 CPU, 2 GB RAM |
-| **vm-nomad-server-06** | 10.0.2.106 | 3006 | pve02 | 2 CPU, 2 GB RAM |
-
-### HashiCorp Stack -- Nomad Clients (3x)
-
-| VM | IP | VM-ID | Host | Specs |
-|----|-----|-------|------|-------|
-| **vm-nomad-client-04** | 10.0.2.124 | 3104 | pve00 | 4 CPU, 14 GB RAM |
-| **vm-nomad-client-05** | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM, iGPU Passthrough |
-| **vm-nomad-client-06** | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM, iGPU Passthrough |
-
-### IoT VMs
-
-| VM | IP | VM-ID | Host | Rolle |
-|----|-----|-------|------|-------|
-| **homeassistant** | 10.0.0.100 | 1000 | pve02 | Home Assistant OS |
-| **zigbee-node** | 10.0.0.110 | 1100 | pve02 | Zigbee2MQTT, Mosquitto |
+Vollständige Knoten-, VM- und LXC-Liste mit IPs, VM-IDs und Host-Zuordnung: [Hosts und IPs](../_referenz/hosts-und-ips.md#proxmox-cluster). Physische Hardware-Specs (CPU, RAM, Storage): [Hardware-Inventar](../_referenz/hardware-inventar.md).
 
 ## iGPU Passthrough
 
@@ -95,18 +54,12 @@ Die VMs benötigen `intel-media-va-driver-non-free` für VAAPI/QSV. Der Render-N
 
 ## Thunderbolt Netzwerk
 
-Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration und DRBD-Replikation. Ein Linux Bond (`bond-tb`, active-backup) aggregiert beide TB-Interfaces und löst damit das Problem der nicht-deterministischen Interface-Benennung nach Reboots. Die Bridge `vmbr-tb` nutzt den Bond als einzigen Port.
-
-| Host | vmbr-tb | Bandbreite |
-|------|---------|------------|
-| pve01 | 10.99.1.1 | ~20 Gbps |
-| pve02 | 10.99.1.2 | ~20 Gbps |
+Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration und DRBD-Replikation. Ein Linux Bond (`bond-tb`, active-backup) aggregiert beide TB-Interfaces und löst damit das Problem der nicht-deterministischen Interface-Benennung nach Reboots. Die Bridge `vmbr-tb` nutzt den Bond als einzigen Port. Bandbreite ca. 20 Gbps; IPs im Subnetz 10.99.1.0/24 siehe [Hosts und IPs](../_referenz/hosts-und-ips.md#thunderbolt-netzwerk).
 
 ## HA Konfiguration
 
 - **shutdown_policy:** `migrate` -- VMs werden bei geplanten Host-Shutdowns automatisch migriert
 - **Migration Network:** 10.99.1.0/24 (Thunderbolt Bridge)
-- **Letzte HA-Prüfung:** 2026-04-05 (Details: [Betrieb](./betrieb.md))
 
 ## Storage
 
@@ -142,13 +95,13 @@ Auf allen Proxmox-Hosts (`/etc/modprobe.d/zfs.conf`):
 - `zfs_vdev_async_read_max_active=8` -- Mehr parallele Async-Reads (Default 3)
 - `zfs_txg_timeout=3` -- Kürzere Sync-Intervalle für bessere Write-Latenz (Default 5)
 
-Nach Änderung muss das initramfs neu generiert werden.
+Nach Änderung muss das initramfs neu generiert werden, damit die Parameter beim Boot greifen.
 
 ## Authentifizierung (SSO)
 
 Die PVE-Nodes nutzen Authentik als OpenID Connect Provider für SSO-Login.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Realm | `authentik` (Default) |
 | Typ | OpenID Connect |
@@ -159,13 +112,7 @@ Die PVE-Nodes nutzen Authentik als OpenID Connect Provider für SSO-Login.
 
 ### Web-Zugang (mit gültigen ACME-Zertifikaten)
 
-| Node | URL |
-|------|-----|
-| pve00 | `https://pve00.ackermannprivat.ch:8006` |
-| pve01 | `https://pve01.ackermannprivat.ch:8006` |
-| pve02 | `https://pve02.ackermannprivat.ch:8006` |
-
-Die Zertifikate werden automatisch via Let's Encrypt (ACME) mit Cloudflare DNS-Challenge erneuert. DNS-Einträge liegen in den Pi-hole Overrides (`06-specific-overrides.conf`).
+Jeder Node ist als `pveXX.ackermannprivat.ch:8006` erreichbar (vollständige URL-Liste: [Web-Interfaces](../_referenz/web-interfaces.md)). Die Zertifikate werden automatisch via Let's Encrypt (ACME) mit Cloudflare DNS-Challenge erneuert. DNS-Einträge liegen in den Pi-hole Overrides (`06-specific-overrides.conf`).
 
 ### SSO-Benutzer
 
@@ -181,19 +128,15 @@ PAM-Login (`root@pam`) bleibt als Fallback verfügbar -- einfach im Realm-Dropdo
 
 Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung des PVE Clusters und des Proxmox Backup Servers.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Host | datacenter-manager (10.0.2.60) |
 | Web UI | `https://pdm.ackermannprivat.ch` |
 | Port | 8443 |
-| OS | Debian 13 (trixie) |
-| Version | Siehe PDM Web-UI |
 
 ### Konfigurierte Remotes
 
-**Proxmox VE Cluster "lenzburg":** pve00 (10.0.2.40), pve01 (10.0.2.41), pve02 (10.0.2.42)
-
-**Proxmox Backup Server "pbs":** pbs-backup-server (10.0.2.50, Port 8007)
+Remotes: PVE-Cluster "lenzburg" (3 Nodes) und PBS "pbs" -- IPs und Ports siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
 ### Authentifizierung
 

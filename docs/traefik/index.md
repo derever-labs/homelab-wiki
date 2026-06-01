@@ -134,16 +134,15 @@ providers.File -> backend.Standalone: File Routes {
 }
 ```
 
-Traefik läuft im HA-Setup auf zwei VMs mit Keepalived VIP. Bei Ausfall eines Nodes übernimmt der andere automatisch. Beide Nodes sind identisch konfiguriert und werden per Ansible rolling deployed.
-
 ## Hochverfügbarkeit (Keepalived)
 
-| Eigenschaft | Wert |
-|-------------|------|
-| VIP | 10.0.2.20 (Keepalived) |
-| MASTER | vm-traefik-01 (pve01, Priorität 150) |
-| BACKUP | vm-traefik-02 (pve02, Priorität 100) |
+| Attribut | Wert |
+|----------|------|
+| MASTER | Priorität 150 |
+| BACKUP | Priorität 100 |
 | Health-Check | Keepalived VRRP-Script prüft Traefik `/ping` |
+
+VIP und Node-Zuordnung: siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
 Keepalived prüft per VRRP-Script ob Traefik antwortet. Bei Ausfall wechselt die VIP automatisch zum BACKUP-Node.
 
@@ -153,7 +152,7 @@ Drei Massnahmen verhindern, dass beide Nodes gleichzeitig die VIP halten:
 
 **Gateway-Track-Script (`chk_gateway`):** Pingt Pi-hole DNS (10.0.2.1). Bei Ausfall sinkt die Priority des MASTER um 60 (von 150 auf 90, unter BACKUP's 100). Der MASTER gibt die VIP ab. Schützt gegen Netzwerk-Partitionen, bei denen VRRP-Heartbeats noch durchkommen, echter Traffic aber nicht.
 
-**`nopreempt` auf BACKUP:** Der BACKUP übernimmt die VIP nur, wenn kein VRRP-Heartbeat mehr eintrifft. Ein kurzzeitig erhöhter Priority-Wert des BACKUP (z.B. nach Gateway-Ausfall auf MASTER) führt nicht zu einer sofortigen VIP-Übernahme und damit zu keinem Flapping.
+**`nopreempt` auf beiden Nodes:** Ein Node übernimmt die VIP nur, wenn kein VRRP-Heartbeat mehr eintrifft, nicht allein wegen höherer Priority. Auf dem MASTER verhindert das ein sofortiges Zurückschwenken nach kurzem Ausfall, auf dem BACKUP eine sofortige Übernahme bei kurzzeitig erhöhtem Priority-Wert -- in beiden Fällen entsteht so kein Flapping.
 
 **Atomarer Keepalived-Restart:** Das Ansible-Deployment startet Keepalived auf allen Hosts gleichzeitig (`serial: 0`, separater Play am Ende). Rolling-Restarts würden einen kurzen Auth-Mismatch erzeugen, bei dem MASTER und BACKUP unterschiedliche VRRP-Auth-Passwörter verwenden und beide gleichzeitig die VIP beanspruchen.
 
@@ -173,13 +172,7 @@ Für Standalone-Services (nicht in Nomad) wird der File-Provider verwendet (`ser
 
 ## Authentifizierung (Middlewares)
 
-Authentifizierung läuft über Authentik als Identity Provider mit ForwardAuth. Vollständige Dokumentation: [Traefik Middleware Chains](./referenz.md)
-
-Kurzübersicht:
-- **intern-auth:** Authentik ForwardAuth + IP-Allowlist (interner Zugriff mit Login)
-- **intern-api:** Nur IP-Allowlist (interne API-Endpunkte ohne Login)
-- **public-auth:** CrowdSec + Authentik ForwardAuth (externer Zugriff mit Login)
-- **public-noauth:** CrowdSec + secure-headers (öffentliche Services ohne Login)
+Authentifizierung läuft über Authentik als Identity Provider mit ForwardAuth. Vier Chains (intern-auth, intern-api, public-auth, public-noauth) decken die Zugriffsmuster ab. Vollständige Dokumentation: [Traefik Middleware Chains](./referenz.md)
 
 ## Security
 
@@ -206,18 +199,7 @@ Das Playbook:
 
 ### Konfigurationsstruktur
 
-| Datei | Inhalt |
-|-------|--------|
-| `middlewares.yml` | Middleware-Definitionen (CrowdSec Plugin, Authentik, Headers, Rate-Limits) |
-| `middleware-chains.yml` | Authentik-basierte Chains |
-| `tls-options.yml` | TLS-Mindestversion, Cipher Suites, Curves |
-| `servers-transports.yml` | `insecureSkipVerify` Transport für interne Backends |
-| `auth-routes.yml` | Authentik-Callback-Routen (Priority 1000) |
-| `services-external.yml` | File-Provider-Routen (checkmk, dns, pihole, linstor etc.) |
-| `tcp-meeting.yml` | TCP Passthrough für meeting.ackermannprivat.ch |
-| `wildcard-certs.yml` | ACME Wildcard-Cert Router |
-
-Dynamische Config wird live geloaded (`watch: true`). Die Quelldateien liegen unter `standalone-stacks/traefik-proxy/configurations/` und werden per Ansible synchronisiert.
+Die dynamische Config wird live geladen (`watch: true`). Die Quelldateien liegen unter `standalone-stacks/traefik-proxy/configurations/` und werden per Ansible synchronisiert. Vollständige Dateiliste: [Konfigurationsdateien](./referenz.md#konfigurationsdateien).
 
 ### Statische Konfiguration
 

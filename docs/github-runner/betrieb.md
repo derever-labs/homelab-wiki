@@ -58,7 +58,7 @@ Mögliche Ursachen:
 
 ### Vault Nomad Secret Engine nicht funktionsfähig
 
-Wenn die Vault Engine `nomad/` defekt oder die Konfiguration verloren gegangen ist, kann die CD-Pipeline keinen Nomad-Token mehr holen. Für manuelle Deploys oder zur Neukonfiguration der Engine steht der Recovery-Mgmt-Token in 1Password unter "Nomad Recovery Homelab" zur Verfügung. Accessor: `0a1fd26e-...`.
+Wenn die Vault Engine `nomad/` defekt oder die Konfiguration verloren gegangen ist, kann die CD-Pipeline keinen Nomad-Token mehr holen. Für manuelle Deploys oder zur Neukonfiguration der Engine steht der Recovery-Mgmt-Token in 1Password unter "Nomad Recovery Homelab" zur Verfügung.
 
 Mit diesem Token kann:
 

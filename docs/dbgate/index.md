@@ -23,16 +23,29 @@ DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bie
 
 ## Architektur
 
-DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bietet SQL-Editor, Schema-Browser und Datenexport für den zentralen PostgreSQL Cluster.
-
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+}
+
 direction: right
 
-User: Admin User
-Traefik: "Traefik\nintern-auth"
-DbGate: "DbGate\n(host network)"
+User: Admin User { class: node }
+Traefik: "Traefik\nintern-auth" { class: node }
+DbGate: "DbGate\n(host network)" { class: node }
 PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
-NFS: "NFS\n/nfs/docker/dbgate/data" { shape: cylinder }
+NFS: "NFS Storage" { shape: cylinder }
 
 User -> Traefik: HTTPS
 Traefik -> DbGate
@@ -50,7 +63,7 @@ Der Host Network Mode vermeidet, dass PostgreSQL über das Netzwerk exponiert we
 
 ## Persistenz
 
-Verbindungskonfigurationen und gespeicherte Queries werden unter `/root/.dbgate` im Container gespeichert, das auf NFS gemappt ist (`/nfs/docker/dbgate/data`). Dadurch bleiben die Einstellungen bei Container-Neustarts erhalten.
+Verbindungskonfigurationen und gespeicherte Queries werden im Container unter `/root/.dbgate` persistiert (NFS-Mount, siehe Storage-Zeile in der Übersicht).
 
 ## Verwandte Seiten
 

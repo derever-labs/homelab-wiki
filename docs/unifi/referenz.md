@@ -30,13 +30,15 @@ IPs und Hostnamen der Netzwerkgeräte sind in [Hosts und IPs](../_referenz/hosts
 
 ## DHCP-Konfiguration
 
-| Netzwerk | VLAN | Subnetz | DHCP-Range | Domain |
-|----------|------|---------|------------|--------|
-| Management | -- (native) | 10.0.0.1/22 | 10.0.1.1 -- 10.0.1.160 | homenet.local |
-| Device | 10 | 10.0.10.1/24 | 10.0.10.6 -- 10.0.10.254 | homenet.local |
-| Guest | 30 | 10.0.30.1/24 | 10.0.30.6 -- 10.0.30.254 | homenet |
-| Rack | 100 | 10.0.100.1/24 | 10.0.100.6 -- 10.0.100.254 | homenet.local |
-| IoT | 200 | 10.0.200.1/24 | 10.0.200.6 -- 10.0.200.254 | -- |
+Subnetze, VLAN-IDs und Gateways der Segmente führt [Netzwerk](../netzwerk/#netzwerk-segmente). Die controller-spezifischen DHCP-Ranges und Domains:
+
+| Netzwerk | VLAN | DHCP-Range | Domain |
+|----------|------|------------|--------|
+| Management | -- (native) | 10.0.1.1 -- 10.0.1.160 | homenet.local |
+| Device | 10 | 10.0.10.6 -- 10.0.10.254 | homenet.local |
+| Guest | 30 | 10.0.30.6 -- 10.0.30.254 | homenet |
+| Rack | 100 | 10.0.100.6 -- 10.0.100.254 | homenet.local |
+| IoT | 200 | 10.0.200.6 -- 10.0.200.254 | -- |
 
 DHCP Guard ist auf allen Netzwerksegmenten aktiv.
 
@@ -96,7 +98,7 @@ Die NAS-Policy umfasst ca. 12 Einzelregeln für alle relevanten Zonen-Kombinatio
 | Analytics | Minimum |
 
 ::: info IPS deaktiviert
-IPS ist konfiguriert, aber bewusst deaktiviert -- vermutlich wegen Performance auf der ARM-Hardware. Bei Aktivierung Monitoring auf CPU/RAM beobachten.
+IPS ist konfiguriert, aber bewusst deaktiviert. Bei Aktivierung Monitoring auf CPU/RAM beobachten.
 :::
 
 ## API und Zugang
@@ -107,7 +109,7 @@ Der UniFi Network Controller läuft lokal auf dem UDM Pro. Kein Cloud-Konto notw
 
 Authentifizierung über Cookie-Session (Login via `/api/auth/login`). Zugangsdaten: [Zugangsdaten](../_referenz/credentials.md).
 
-**SSH-Zugang:** `root@10.0.0.1`, Authentifizierung über Keyboard-Interactive.
+**SSH-Zugang:** Verbindungsdetails in [Ports und Dienste](../_referenz/ports-und-dienste.md) und [SSH-Zugang](../_referenz/ssh-zugang.md), Authentifizierung über Keyboard-Interactive.
 
 ::: info Root-Partition
 Die Root-Partition (`/boot/firmware`) enthält genau 2 Firmware-Images (aktiv + Rollback) und zeigt daher ~99% Auslastung -- das ist normales Verhalten. Die Daten-Partition `/mnt/.rwfs` hat ausreichend Platz.

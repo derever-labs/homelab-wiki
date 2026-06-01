@@ -144,9 +144,9 @@ Verboten in der Übersicht-Tabelle: Version, Image-Tag, Status, CPU/RAM -- diese
 3. **Einleitungssatz** -- 1-3 Sätze, was das System ist
 4. **Übersicht-Tabelle** (URL, Deployment, Storage, Auth, Secrets)
 5. **Rolle im Stack** -- wie der Service ins Gesamtbild passt
-5. **Architektur** -- D2-Diagramm (wenn sinnvoll)
-6. **Service-spezifische Sektionen** -- keine SSOT-Duplikate
-7. **Verwandte Seiten** (Pflicht) -- Aufzählungsliste mit Links am Ende
+6. **Architektur** -- D2-Diagramm (wenn sinnvoll)
+7. **Service-spezifische Sektionen** -- keine SSOT-Duplikate
+8. **Verwandte Seiten** (Pflicht) -- Aufzählungsliste mit Links am Ende
 
 ### Verwandte Seiten
 
@@ -222,7 +222,7 @@ Die Admonition-Syntax von MkDocs (`!!! note`) wird **nicht** verwendet. Stattdes
 
 ### Diagramme
 
-D2-Diagramme sind unterstützt für Workflows und Architektur:
+D2-Diagramme (d2lang.com) sind unterstützt für Workflows und Architektur -- kein Mermaid.
 
 ````markdown
 ```d2
@@ -232,12 +232,19 @@ A -> B -> C
 ```
 ````
 
+Verbindliche D2-Konventionen:
+
+- **Theme:** Neutral Grey (`theme-id: 1`), Layout-Engine ELK
+- **Classes** für wiederholte Styles: `node`, `container`, `data` mit `border-radius: 8` (kein `shadow`); Container zusätzlich `stroke-dash: 4`
+- **Keine `icon:`-Zeilen** -- die Icon-Quelle ist seit 2026-04 nicht erreichbar (403)
+- **Tooltips einzeilig** für IPs, Specs oder Kontext-Infos
+- **Keine** `<`, `>`, `{`, `}` in Labels oder Tooltips
+- Vollständige Richtlinien und Beispiele: Abschnitt "Diagramme (D2)" weiter unten bzw. in den bestehenden Diagrammen
+
 ## Verlinkung
 
 - Relative Pfade verwenden: `[Text](../traefik/referenz.md)`
 - Bei Verweisen auf spezifische Abschnitte: `[Text](datei.md#abschnitt)`
-- Lieber einmal verlinken als Inhalte duplizieren
-- Jede Seite hat einen "Seite bearbeiten" Link zu GitHub
 
 ## Dynamische Daten vermeiden
 

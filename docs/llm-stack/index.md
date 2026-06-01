@@ -10,9 +10,9 @@ tags:
 
 # LLM-Stack
 
-## Übersicht
-
 Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sprachmodelle, Open WebUI und HolLama bieten jeweils ein Web-Interface für die Interaktion.
+
+## Übersicht
 
 **Ollama** (LLM-Backend, Inferenz):
 
@@ -44,6 +44,12 @@ Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 direction: right
 
 User: Benutzer {
@@ -51,9 +57,9 @@ User: Benutzer {
   Browser: Browser { style.border-radius: 8 }
 }
 
-Traefik: "Traefik (10.0.2.20)" {
+Traefik: "Traefik" {
   style.stroke-dash: 4
-  tooltip: "10.0.2.20"
+  tooltip: "IP siehe _referenz/hosts-und-ips.md"
   RC: "Router: chat.*\nintern-noauth" { style.border-radius: 8 }
   RH: "Router: hollama.*\nintern-noauth" { style.border-radius: 8 }
   RO: "Router: ollama.*\nintern-noauth" { style.border-radius: 8 }
@@ -67,6 +73,7 @@ Nomad: "Nomad Cluster" {
 }
 
 NFS: "NFS /nfs/docker/ollama" { shape: cylinder }
+NFS_OW: "NFS /nfs/docker/open-webui" { shape: cylinder }
 
 User.Browser -> Traefik.RC: HTTPS
 User.Browser -> Traefik.RH: HTTPS
@@ -76,9 +83,10 @@ Nomad.OW -> Nomad.OL: "HTTP :11434\nvia Consul DNS"
 Nomad.HL -> Nomad.OL: "HTTP :11434\nvia Browser/CORS"
 Traefik.RO -> Nomad.OL
 Nomad.OL -> NFS
+Nomad.OW -> NFS_OW
 ```
 
-## Zusammenspiel
+## Rolle im Stack
 
 Ollama ist das zentrale Backend. Es lädt Sprachmodelle in den RAM, führt die Inferenz durch und stellt eine REST-API auf Port 11434 bereit. Die beiden Web-UIs sprechen diese API an:
 
@@ -86,26 +94,16 @@ Ollama ist das zentrale Backend. Es lädt Sprachmodelle in den RAM, führt die I
 - **HolLama** verbindet sich clientseitig -- der Browser des Benutzers ruft die Ollama-API direkt auf. Dafür ist CORS in Ollama konfiguriert. HolLama speichert alles im Browser (LocalStorage) und hat keinen serverseitigen State.
 
 ::: info Modell-Verwaltung
-Ollama zieht beim Start automatisch ein Startmodell (via model-init Sidecar). Weitere Modelle können über die Open WebUI oder die Ollama-API nachgeladen werden. Die Modelle liegen persistent auf NFS.
+Ollama zieht beim Start automatisch ein Startmodell (via model-init Poststart-Task). Weitere Modelle können über die Open WebUI oder die Ollama-API nachgeladen werden. Die Modelle liegen persistent auf NFS.
 :::
 
 ## Ollama
 
 ### Konfiguration
 
-Ollama läuft ausschliesslich auf den 48-GB-Nodes (`vm-nomad-client-05` / `vm-nomad-client-06`) mit Affinität zu Node 06.
+Ollama läuft ausschliesslich auf den RAM-starken Nodes `vm-nomad-client-05` / `vm-nomad-client-06` (Specs siehe [hosts-und-ips.md](../_referenz/hosts-und-ips.md)) mit Affinität zu Node 06.
 
-Wichtige Umgebungsvariablen (vollständige Konfiguration siehe `services/ollama.nomad`):
-
-| Variable | Wert | Bedeutung |
-| :--- | :--- | :--- |
-| `OLLAMA_NUM_PARALLEL` | 4 | Parallele Anfragen pro Modell |
-| `OLLAMA_MAX_LOADED_MODELS` | 1 | Nur ein Modell gleichzeitig im RAM |
-| `OLLAMA_KEEP_ALIVE` | 30m | Modell bleibt 30 Min. nach letzter Anfrage geladen |
-| `OLLAMA_NUM_THREAD` | 16 | Nutzt alle verfügbaren CPU-Threads |
-| `OLLAMA_FLASH_ATTENTION` | 1 | Flash Attention für schnellere Inferenz |
-
-### Consul Service
+Die Tuning-Strategie ist auf den CPU-only-Betrieb ausgelegt: nur ein Modell gleichzeitig im RAM, parallele Anfragen erlaubt, Modell bleibt nach der letzten Anfrage eine Weile geladen und Flash Attention ist aktiv. Die konkreten Umgebungsvariablen-Werte stehen im Nomad-Job `services/ollama.nomad`.
 
 Ollama registriert sich als `ollama.service.consul` und ist damit für andere Services im Cluster ohne IP-Konfiguration erreichbar.
 
@@ -122,8 +120,6 @@ Open WebUI authentifiziert über OIDC direkt gegen Authentik (Provider `open-web
 | `kv/data/open-webui` | `oauth_client_secret` |
 
 ## HolLama
-
-HolLama ist ein minimales, rein clientseitiges UI. Es hat keine Datenbank, keine Benutzerverwaltung und keinen serverseitigen State. Der Zugriff ist über IP-Whitelist (`intern-noauth@file`) eingeschränkt.
 
 ::: tip Wann welches UI?
 - **Open WebUI** für den Alltag: Chat-Historien, mehrere Modelle vergleichen, längere Konversationen

@@ -10,20 +10,28 @@ tags:
 
 # InfluxDB & Telegraf
 
+InfluxDB ist das zentrale Zeitreihen-Backend des Homelab. Telegraf läuft als zweite Task-Group im selben Nomad-Job und sammelt Metriken aller Quellen.
+
 ## Übersicht
 
 | Attribut | Wert |
 | :--- | :--- |
-| **Status** | Produktion |
 | **URL** | [influx.ackermannprivat.ch](https://influx.ackermannprivat.ch) |
 | **Deployment** | Nomad Job `monitoring/influx.nomad` (InfluxDB + Telegraf als zweite Task-Group) |
-| **Storage** | Linstor CSI Volume `influxdb-data` (repliziert) |
+| **Storage** | Linstor CSI Volume `influxdb-data-r2` (repliziert) |
+| **Auth** | `intern-auth@file` (Traefik Middleware) |
 | **Secrets** | Vault `kv/data/shared/influxdb` (username, password, url, token) |
-| **Organisation** | `ackermann` |
 
 ## Architektur
 
 ```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
 direction: right
 
 Sources: Quellen {
@@ -52,6 +60,10 @@ TELHOST -> INFLUX: "Bucket telegraf\n(+ telegraf-host)"
 TEL -> INFLUX
 INFLUX -> GRAF
 ```
+
+## Rolle im Stack
+
+InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu Loki (Logs). Telegraf ist der zentrale Collector, der SNMP-, Prometheus- und Exec-Quellen einsammelt; Proxmox und die Telegraf-Host-Agenten schreiben zusätzlich direkt nach InfluxDB. Grafana liest alle Buckets als Datasources und wertet die metrikbasierten Alert-Rules darauf aus. Einordnung im Gesamtbild siehe [Monitoring Stack](./index.md).
 
 ## Buckets
 
@@ -109,15 +121,14 @@ Die CheckMK-Site `homelab` schreibt Service-Performance-Metriken aller monitored
 | :--- | :--- | :--- | :--- |
 | `cmc_influxdb_service_metrics` | `InfluxDB_Ops_Privat` | `telegraf` | `influxdb.service.consul:8086` |
 
-::: info Service-Discovery via vm-proxy-dns-01
-vm-checkmk Homelab nutzt `10.0.2.1` (`vm-proxy-dns-01`) als DNS-Server, der `*.consul`-Anfragen an die Consul-Cluster weiterleitet. Damit folgt der Forwarder automatisch jedem Reschedule des Influx-Service.
+::: info Service-Discovery via Pi-hole-DNS
+vm-checkmk Homelab nutzt `10.0.2.1` (`lxc-dns-01`, Pi-hole) als DNS-Server, der `*.consul`-Anfragen an die Consul-Cluster weiterleitet. Damit folgt der Forwarder automatisch jedem Reschedule des Influx-Service.
 :::
 
 ## Secrets-Verwaltung
 
-Alle Secrets werden via Vault injiziert:
+Alle Secrets werden via Vault injiziert (InfluxDB-Pfad siehe Übersicht-Tabelle):
 
-- **InfluxDB Token:** `kv/data/shared/influxdb` (Key: `token`)
 - **SNMP Credentials:** `kv/data/shared/telegraf-snmp` (Keys: `sec_name`, `auth_password`, `priv_password`)
 
 Die Telegraf-Config (`telegraf.conf`) verwendet Umgebungsvariablen (`${INFLUXDB_TOKEN}`, `${SNMP_SEC_NAME}` etc.), die via Nomad-Template aus Vault geladen werden.
@@ -128,12 +139,12 @@ Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitori
 
 ## Grafana Datasources
 
-| Name | UID | Bucket |
-| :--- | :--- | :--- |
-| `InfluxDB-Flux` | `cf7vieensej28c` | `telegraf` |
-| `InfluxDB-Proxmox` | `cf7vogqv7xyiod` | `proxmox` |
-| `InfluxDB-InfluxQL` | `PAD860D6E340F6174` | `telegraf_1y` |
-| `InfluxDB-InfluxQL-Hot` | `influxql-hot-telegraf` | `telegraf` |
+| Name | Bucket |
+| :--- | :--- |
+| `InfluxDB-Flux` | `telegraf` |
+| `InfluxDB-Proxmox` | `proxmox` |
+| `InfluxDB-InfluxQL` | `telegraf_1y` |
+| `InfluxDB-InfluxQL-Hot` | `telegraf` |
 
 `InfluxDB-InfluxQL` nutzt die schnellere InfluxQL-Abfragesprache (6-30x schneller als Flux für einfache Aggregationen). Empfohlen für Dashboards. Flux-Datasources bleiben für komplexe Queries mit `pivot()` oder `map()`.
 

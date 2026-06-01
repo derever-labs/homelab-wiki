@@ -21,11 +21,7 @@ Die Wrapper-Apps sind minimale `.app`-Bundles (~1 KB) mit eigenem `CFBundleIdent
 
 ## Einrichtung und Updates
 
-Das Setup-Script liegt im Gitea-Repo `dotfiles/clickup-multi-instance.sh`. Nach jedem ClickUp-Update erneut ausführen:
-
-```bash
-bash /Users/Shared/git/gitea/dotfiles/clickup-multi-instance.sh
-```
+Das Setup-Script liegt im Gitea-Repo `dotfiles/clickup-multi-instance.sh`. Nach jedem ClickUp-Update erneut ausführen mit `bash /Users/Shared/git/gitea/dotfiles/clickup-multi-instance.sh`.
 
 ## Struktur
 

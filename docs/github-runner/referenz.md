@@ -16,20 +16,16 @@ Technische Referenz für den Self-hosted GitHub Actions Runner. Für die Archite
 
 - **Job-Name** -- github-runner
 - **Typ** -- service
-- **Datacenter** -- homelab
-- **Constraint** -- vm-nomad-client-05 oder vm-nomad-client-06 (regexp)
+- **Datacenter** -- dc1
 - **Count** -- 1
-- **Netzwerk** -- host (für `localhost:5000` ZOT-Zugriff)
-- **Privileged** -- true (Docker-in-Docker via Docker Socket Mount)
-- **Scope** -- org (Organisation `derever-labs`)
 
-Job-Definition: `nomad-jobs/infrastructure/github-runner.nomad`
+Placement, Host-Networking, Privileged Mode und Org-Scope siehe [Übersicht](./index.md). Job-Definition: `nomad-jobs/infrastructure/github-runner.nomad`
 
 ## Vault-Konfiguration
 
 ### Workload Identity (Runner-Authentifizierung)
 
-Der Runner-Job authentifiziert sich bei Vault über die JWT-Auth-Methode `jwt-nomad`. Die Vault-Policy `nomad-workloads` erlaubt Zugriff auf `kv/data/github-runner`.
+Der Runner-Job authentifiziert sich bei Vault über die JWT-Auth-Methode `jwt-nomad`. Die Vault-Policy `nomad-workload` erlaubt Zugriff auf `kv/data/github-runner`.
 
 - **Auth-Method** -- `auth/jwt-nomad`
 - **Role** -- `github-runner-deploy`
@@ -115,69 +111,7 @@ runner -> vault.engine: sys/leases/revoke\n(am Workflow-Ende) {
 }
 ```
 
-### Token-Lebenszyklus
-
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-direction: right
-
-classes: {
-  gh: { style: { border-radius: 8; stroke: "#1a73e8" } }
-  runner: { style: { border-radius: 8; stroke: "#e8710a" } }
-  vault: { style: { border-radius: 8; stroke: "#188038" } }
-  nomad: { style: { border-radius: 8; stroke: "#d93025" } }
-  phase: { style: { border-radius: 8; stroke-dash: 4 } }
-}
-
-trigger: 1. Trigger {
-  class: phase
-  direction: down
-  push: "GitHub: push auf main" { class: gh }
-  dispatch: "GitHub Actions\ndispatcht Workflow" { class: gh }
-  push -> dispatch
-}
-
-setup: 2. Runner-Setup {
-  class: phase
-  direction: down
-  prep: "checkout + install\nnomad CLI" { class: runner }
-}
-
-token: 3. Token holen {
-  class: phase
-  direction: down
-  req: "Runner GET\nnomad/creds/github-deploy" { class: runner }
-  engine: "Vault POST /v1/acl/token" { class: vault }
-  issue: "Nomad: Client-Token\nTTL 30m, max 1h" { class: nomad }
-  deliver: "secret_id + lease_id\nan Runner" { class: vault }
-  req -> engine -> issue -> deliver
-}
-
-deploy: 4. Deploy {
-  class: phase
-  direction: down
-  diff: "git diff +\nBlocklist-Filter" { class: runner }
-  plan: "nomad job plan" { class: runner }
-  run: "nomad job run -detach" { class: runner }
-  diff -> plan -> run
-}
-
-cleanup: 5. Cleanup {
-  class: phase
-  direction: down
-  revoke: "Runner PUT\nsys/leases/revoke" { class: runner }
-  engine: "Vault widerruft\nClient-Token" { class: vault }
-  revoke -> engine
-}
-
-trigger -> setup -> token -> deploy -> cleanup
-```
+Der vollständige Token-Lebenszyklus (Trigger, Runner-Setup, Token holen, Deploy, Cleanup) ist als nummerierte Liste im [Pipeline-Ablauf](#pipeline-ablauf) beschrieben.
 
 ### Vault Nomad Secret Engine
 
@@ -222,7 +156,7 @@ Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
 - **Trigger** -- push auf `main`, paths-Filter auf `nomad-jobs/**/*.nomad`
 - **Concurrency-Group** -- `nomad-deploy-homelab` (verhindert parallele Deploys)
-- **Checkout** -- SHA-gepinnte `actions/checkout@v4.2.2`
+- **Checkout** -- SHA-gepinnte `actions/checkout`
 
 ### Pipeline-Ablauf
 
@@ -253,7 +187,7 @@ Workflow-Datei im Repo: `.github/workflows/deploy-grafana-dashboards.yml`
 
 - **Trigger** -- push auf `main`, paths-Filter auf `monitoring/grafana-dashboards/*.json`; zusätzlich `workflow_dispatch` mit Flag `force_all`
 - **Concurrency-Group** -- `grafana-dashboards-deploy`
-- **Checkout** -- SHA-gepinnte `actions/checkout@v4.2.2`
+- **Checkout** -- SHA-gepinnte `actions/checkout`
 
 ### Pipeline-Ablauf
 
@@ -272,11 +206,9 @@ Die frühere NFS-Lösung (`/nfs/docker/grafana/dashboards` read-only mount + Gra
 Ein File-provisioned Dashboard bleibt in Grafana als "provisioned" markiert, auch nach einem API-Overwrite. Wird der Provider anschliessend entfernt, räumt Grafana die provisionierten Dashboards auf. Beim einmaligen Wechsel mussten die betroffenen Dashboards deshalb nach dem Provisioner-Entfernen ein zweites Mal via API gepusht werden -- dann sind sie reguläre DB-Einträge.
 :::
 
-## Aktive Pipelines im Überblick
+## Weitere Pipeline
 
-- **deploy-nomad-jobs.yml** -- Vault-basiertes CD, alle `nomad-jobs/**/*.nomad` ausserhalb der Blocklist
-- **deploy-grafana-dashboards.yml** -- Grafana Dashboards via API-Push, Trigger auf `monitoring/grafana-dashboards/*.json`
-- **deploy.yml** (immo-monitor Repo) -- Alloc-Stop-Refresh via statischem `NOMAD_TOKEN` Repo-Secret (älteres Pattern)
+Neben den beiden oben beschriebenen Workflows existiert im immo-monitor Repo die `deploy.yml` -- ein Alloc-Stop-Refresh via statischem `NOMAD_TOKEN` Repo-Secret (älteres Pattern ohne Vault Workload Identity).
 
 ## Verwandte Seiten
 

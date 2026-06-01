@@ -7,7 +7,6 @@ tags:
   - drbd
   - linstor
   - drbd-reactor
-  - dclab
 ---
 
 # Linstor & DRBD
@@ -19,9 +18,7 @@ Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Devi
 | Attribut | Wert |
 |----------|------|
 | Deployment | Ansible Role `drbd-reactor` + Nomad CSI (`system/linstor-csi.nomad`) |
-| Auth | `intern-auth@file` (Authentik ForwardAuth) für LINBIT GUI |
-
-Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Device). DRBD spiegelt Schreibvorgänge synchron auf Block-Level zwischen Nodes.
+| API-Endpoint | `http://linstor-controller.service.consul:3370` |
 
 | Komponente | Funktion |
 |------------|----------|
@@ -35,7 +32,7 @@ Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Devi
 
 ### Controller High Availability (HA)
 
-Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`).
+Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`). DRBD Reactor überwacht das Volume und startet den Controller automatisch auf dem Node mit DRBD Primary. Die gesamte Konfiguration (Promoter, Systemd Mount Unit, Consul Registration, JVM Memory) wird durch die Ansible Role `drbd-reactor` verwaltet (Repository `homelab-hashicorp-stack/ansible/roles/drbd-reactor/`).
 
 **Wichtig:** Linstor Controller ist für Active/Passive designed -- nur EIN Controller kann gleichzeitig laufen!
 
@@ -100,7 +97,7 @@ DB -- C06: DRBD Secondary {
   style.stroke-dash: 3
   tooltip: "Synchrone Replikation der H2 DB"
 }
-C05 <-> C06: Thunderbolt 25 Gbit/s {
+C05 <-> C06: Thunderbolt ~20 Gbit/s {
   style.stroke: "#2563eb"
   tooltip: "10.99.1.0/24 | DRBD-Replikation aller Volumes"
 }
@@ -118,20 +115,14 @@ CSI -> C05: Linstor API {
 }
 ```
 
-**Architektur-Details:**
-- **Active/Passive:** Nur ein Controller läuft gleichzeitig (managed by drbd-reactor)
-- **DRBD Reactor:** Überwacht DRBD Quorum und startet/stoppt Services automatisch
-- **H2 Datenbank:** Schneller als etcd, auf DRBD-Volume repliziert
-- **Thunderbolt (25 Gbit):** DRBD Replikation zwischen client-05 und client-06
-- **Management (1 Gbit):** Control Plane, CSI, Satellite-Kommunikation
-- **TieBreaker:** client-04 ist diskloser Quorum-Witness (kein Thunderbolt nötig)
+Die H2-Controller-Datenbank ist schneller als etcd und liegt auf dem DRBD-Volume repliziert. Netzwerk-Pfade und Quorum-Rollen zeigt das Diagramm; die konkreten Bandbreiten siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
 ### Netzwerk
 
 | Netzwerk | Verwendung | Bandbreite |
 |----------|------------|------------|
 | 10.0.2.0/24 | Management, Nomad CSI | 1 Gbit |
-| 10.99.1.0/24 | DRBD Replikation | 25 Gbit (Thunderbolt) |
+| 10.99.1.0/24 | DRBD Replikation | ~20 Gbit (Thunderbolt) |
 
 ### Quorum
 
@@ -167,7 +158,7 @@ Der Schreibpfad ist bewusst lokal. Bis 2026-05-29 schrieb das Skript nach `/nfs/
 Token: `/etc/nomad.d/csi-monitor.token` (mode 0400 root:root) -- Nomad-ACL-Policy `csi-monitor` mit `node:read` + `namespace:read`. Token-Wert in 1Password als "Nomad CSI Monitor Token" (Privat Vault).
 
 ::: info Detection-only, kein Auto-Cleanup
-Die erste Iteration alarmiert nur, sie löscht keine Mounts selbst. Cleanup nach Alert: SSH auf die Node, `findmnt | grep csi` plus `nomad alloc status -short`, `umount` der orphan Pfade. Auto-Cleanup wäre eine zweite Iteration nach 30 Tagen Beobachtung der Detection-Verlässlichkeit.
+Die Detection alarmiert nur, sie löscht keine Mounts selbst. Cleanup nach Alert: SSH auf die Node, `findmnt | grep csi` plus `nomad alloc status -short`, `umount` der orphan Pfade.
 :::
 
 ## Performance Tuning
@@ -195,204 +186,37 @@ Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
 Der Default-ping-timeout von 500 ms ist auf einer VM mit enger CPU-Allocation zu knapp. Wenn der Kernel-Receiver-Thread nicht innerhalb von 500 ms auf einen PingAck antwortet -- z. B. während ein dpkg-Install Kernel-Module neu schreibt oder während ein Docker-Daemon-Restart läuft -- markiert DRBD die Verbindung als tot und initiiert einen Reconnect. Das verursacht Flap-Kaskaden mit Telegram-Noise, ohne dass ein echtes Netzwerkproblem vorliegt.
 
 2 Sekunden fangen Mikro-Stalls aus CPU-Steal, Kernel-Freezes beim Modul-Reload und kurze Netzwerk-Jitter ab, ohne echte Verbindungsprobleme zu maskieren: ein länger als 2 s ausgefallener Peer ist in jedem Fall nicht mehr ok.
-:::
 
 ## Nomad-Client-Sizing
 
-Die Nomad-Worker-VMs hängen je 1:1 an einem Proxmox-Host. Auf den N100-Mini-PCs (`pve00`, 4 pCPU, 15 GB RAM) gilt: VM-vCPU-Allocation muss unter den physischen Cores bleiben.
+Die Nomad-Worker-VMs hängen je 1:1 an einem Proxmox-Host. Auf den N100-Mini-PCs (`pve00`, 4 pCPU, 16 GB RAM) gilt: VM-vCPU-Allocation muss unter den physischen Cores bleiben.
 
 - **Richtig**: 2 vCPU für die Worker-VM, 2 für Host + Nomad-Server-VM
 - **Falsch**: 4 vCPU für die Worker-VM auf einem 4-Core-Host -- keine Reserve, jede Host-Aktivität erzeugt VM-Steal, kurze Stalls verletzen DRBD-Timeouts
 
 Auf den i9-12900H-Hosts (`pve01`/`pve02`, 16 pCPU) ist die Ratio unkritisch -- dort laufen Worker-VMs mit 16 vCPU ohne Steal-Risiko.
 
-## DClab Konfiguration
+## MaxOversubscriptionRatio
 
-Das DClab verwendet ein separates 10GbE Netzwerk (172.180.46.0/24) für DRBD-Replikation zwischen den Storage-Nodes.
-
-### Netzwerk-Topologie
-
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-classes: {
-  node: { style: { border-radius: 8 } }
-  container: { style: { border-radius: 8; stroke-dash: 4 } }
-}
-
-direction: down
-
-DB2: DRBD Resource linstor_db {
-  class: node
-  tooltip: "Quorum 2/3 | H2 Datenbank fuer Linstor Controller State"
-}
-
-DC02: vm-nomad-client-02 -- ACTIVE {
-  class: container
-
-  DC02a: Linstor Controller + Satellite {
-    class: node
-    tooltip: "10.180.46.82 | DRBD: 172.180.46.82 | NVMe Storage, drbd-reactor managed"
-  }
-}
-
-DC03: vm-nomad-client-03 -- STANDBY {
-  class: container
-
-  DC03a: Linstor Satellite (Standby Controller) {
-    class: node
-    tooltip: "10.180.46.83 | DRBD: 172.180.46.83 | NVMe Storage, Failover via drbd-reactor"
-  }
-}
-
-DC01: vm-nomad-client-01 -- TieBreaker {
-  class: container
-
-  DC01a: Satellite (Diskless) {
-    class: node
-    tooltip: "10.180.46.81 | Kein 10GbE-Zugang, nur Quorum-Witness"
-  }
-}
-
-DB2 -- DC02: DRBD Primary {
-  style.stroke: "#854d0e"
-}
-DB2 -- DC03: DRBD Secondary {
-  style.stroke: "#854d0e"
-  style.stroke-dash: 3
-}
-DC02 <-> DC03: 10GbE DRBD-Sync (172.180.46.x) {
-  style.stroke: "#2563eb"
-  tooltip: "Dediziertes 10GbE Netzwerk fuer Replikation"
-}
-DC02 -> DC01: Management 1 Gbit {
-  style.stroke: "#6b7280"
-  tooltip: "10.180.46.x | Control Plane, Quorum"
-}
-DC03 -> DC01: Management 1 Gbit {
-  style.stroke: "#6b7280"
-  tooltip: "10.180.46.x | Control Plane, Quorum"
-}
-```
-
-### Netzwerk-Übersicht
-
-| Node | Management (1GbE) | DRBD-Sync (10GbE) | Rolle |
-|------|-------------------|-------------------|-------|
-| vm-nomad-client-01 | 10.180.46.81 | - | TieBreaker (Diskless) |
-| vm-nomad-client-02 | 10.180.46.82 | 172.180.46.82 | Storage + Controller |
-| vm-nomad-client-03 | 10.180.46.83 | 172.180.46.83 | Storage + Controller |
-
-**Wichtig:** client-01 hat NUR Zugang zum Management-Netzwerk (1GbE). Das DRBD-Sync Netzwerk (172.180.46.0/24) ist nur zwischen client-02 und client-03 verfügbar.
-
-### Connection Paths
-
-Da client-01 das 10GbE-Netzwerk nicht erreichen kann, würde Linstor ohne expliziten Path-Override versuchen, alle Verbindungen über das PrefNic-Interface (drbd-sync) aufzubauen -- Resultat: asymmetrische Pfade c83:172.x → c01:10.x, die topologisch nicht connectbar sind und zu permanenten `connection:Connecting`-Zuständen führen.
-
-Lösung: zwei `linstor node-connection path create`-Einträge auf Cluster-Ebene, die DRBD für jede Verbindung zu c01 auf das `default`-Interface auf beiden Seiten zwingen. Diese wirken als Fallback für jede Resource-Connection ohne eigenes Path-Property -- alle dynamisch via CSI angelegten Volumes erben das Routing automatisch (Quelle: `ConfFileBuilder.java`, Resource-Connection-Path überschattet Node-Connection-Path).
-
-| Verbindung | Netzwerk | Interface | Konfiguration |
-|------------|----------|-----------|---------------|
-| client-01 -- client-02 | Management (10.180.46.x) | default -- default | node-connection path management-path |
-| client-01 -- client-03 | Management (10.180.46.x) | default -- default | node-connection path management-path |
-| client-02 -- client-03 | DRBD-Sync (172.180.46.x) | drbd-sync -- drbd-sync | PrefNic-Default, kein Override |
-
-### IP-Reservierungen (172.180.46.0/24)
-
-| IP | Verwendung |
-|----|------------|
-| 172.180.46.1-4 | Reserviert (Netzwerk-Infrastruktur) |
-| 172.180.46.82 | vm-nomad-client-02 (DRBD-Sync) |
-| 172.180.46.83 | vm-nomad-client-03 (DRBD-Sync) |
-
-### Aktive Resources (DClab)
-
-Alle Production-Volumes sind seit 2026-05-12 auf 2-Replica migriert (c02 + c03, Diskless-TieBreaker c01). `flame-data` wurde bereinigt. Aktuelle Volume-Liste via `linstor v l` oder Nomad Web-UI prüfen.
-
-### MaxOversubscriptionRatio (beide Cluster)
-
-Pool-Property auf c02/c03 (DClab) und c05/c06 (Homelab) von Default 5 auf 30 gesetzt. Verhindert, dass stark overcommittete Thin Pools neue Resource-Creates blockieren.
+Pool-Property auf c05/c06 (Homelab) von Default 5 auf 30 gesetzt. Verhindert, dass stark overcommittete Thin Pools neue Resource-Creates blockieren. Im DClab gilt dieselbe Einstellung auf c02/c03 -- die DClab-spezifische Topologie und Konfiguration ist im DClab-Wiki dokumentiert.
 
 ## Schedule-Engine (Backup)
 
-Ab 2026-05-12 ersetzt die Linstor Schedule-Engine den Cron-basierten Snapshot-Ansatz auf beiden Clustern. Alte Skripte bleiben als `.disabled` für Rollback.
-
-**Homelab Schedule `backup-daily`:**
-- Zeitplan: täglich 04:00 (`0 4 * * *`)
-- Scope: alle 11 Resource Groups / 22 Resources
-- KEEP_LOCAL: 0, KEEP_REMOTE: 7
-- S3 Remote: Garage Homelab (10.0.0.200:9012, Bucket `linstor-backups`)
-
-```d2
-direction: right
-
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-classes: {
-  node: { style: { border-radius: 8 } }
-  container: { style: { border-radius: 8; stroke-dash: 4 } }
-  storage: { shape: cylinder; style: { border-radius: 8 } }
-}
-
-sched: Schedule-Engine\nbackup-daily 04:00 {
-  class: node
-  tooltip: "KEEP_LOCAL=0, KEEP_REMOTE=7, On-Failure=RETRY | 11 RGs / 22 Resources"
-}
-
-drbd: DRBD Volumes\n(c05 + c06) {
-  class: storage
-  tooltip: "Alle 22 Homelab-Volumes 2-Replica, Diskless-TieBreaker c04"
-}
-
-snap: Linstor Snapshot\n(ephemeral) {
-  class: storage
-  tooltip: "Full-Snapshot, nach Shipping geloescht (KEEP_LOCAL=0)"
-}
-
-garage: Garage S3\n10.0.0.200:9012 {
-  class: storage
-  tooltip: "Bucket linstor-backups, 14 Vollbackups, Garage-Key in 1P PRIVAT Agent"
-}
-
-dms: Uptime Kuma\nDead-Man's-Switch {
-  class: node
-  tooltip: "linstor-snapshot-check.sh 05:00 + linstor-s3-backup-check.sh"
-}
-
-sched -> drbd: DRBD-Snapshot\ntriggern {style.stroke: "#854d0e"}
-drbd -> snap: Snapshot erstellen {style.stroke: "#854d0e"}
-snap -> garage: Backup-Shipping\n(S3 Upload) {style.stroke: "#16a34a"; style.bold: true}
-snap -> sched: Loeschen nach\nShipping {style.stroke-dash: 3}
-sched -> dms: Push bei Erfolg {style.stroke: "#16a34a"; style.stroke-dash: 3}
-```
+Die Linstor Schedule-Engine (`backup-daily`) erstellt einen ephemeren DRBD-Snapshot, schickt ihn als Vollbackup nach Garage S3 und löscht den Snapshot nach dem Shipping (KEEP_LOCAL=0). Ein Dead-Man's-Switch pusht den Erfolg an Uptime Kuma. Zeitplan, Scope, KEEP-Parameter und Bucket: siehe [Linstor Betrieb](./betrieb.md).
 
 ::: danger Garage-Bug: kein Incremental
-Linstor 1.33.1 + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
+Linstor + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
 :::
 
 ## Encryption und Auto-Unlock
 
 Passphrase-File auf c05 und c06 (`/etc/linstor/passphrase`, mode 600). `linstor-auto-unlock.service` entsperrt automatisch nach Controller-Promotion. Passphrase in 1Password: "Linstore Passphrase HOME" (PRIVAT Agent Vault).
 
-## Installation und Konfiguration
-
-Deployment via Ansible Role `drbd-reactor`. Siehe Repository `homelab-hashicorp-stack/ansible/roles/drbd-reactor/`.
-
 ## Nomad CSI Integration
 
 Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Job-Typ | System (läuft auf allen Storage Nodes) |
 | Plugin-ID | `linstor.csi.linbit.com` |
@@ -403,7 +227,7 @@ Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linst
 
 Der Container läuft im privileged Mode, da CSI-Plugins Mount-Operationen auf dem Host durchführen müssen.
 
-**Wichtig:** Das offizielle LINBIT Image (drbd.io) erfordert Login. Stattdessen wird `kvaps/linstor-csi` von Docker Hub verwendet.
+**Wichtig:** Das offizielle LINBIT Image (drbd.io) erfordert Login. Stattdessen wird das `quay.io/piraeusdatastore/piraeus-csi`-Image verwendet (`docker.io/kvaps` hat nur Tags bis v0.9.0). Konkreter Tag: siehe Nomad-Job `system/linstor-csi.nomad`.
 
 ### CSI HA via Consul Service Discovery
 
@@ -420,17 +244,11 @@ Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung de
 - **Systemd Service:** `linstor-consul-register.service` (hängt von linstor-controller ab)
 - **DRBD Reactor:** Startet den Registration-Service zusammen mit dem Controller
 
-## Controller HA mit DRBD Reactor
-
-Der Linstor Controller läuft im Active/Passive Modus. DRBD Reactor überwacht das `linstor_db` DRBD-Volume und startet den Controller automatisch auf dem Node mit DRBD Primary.
-
-Die gesamte Konfiguration (DRBD Reactor Promoter, Systemd Mount Unit, Consul Registration, JVM Memory) wird durch die Ansible Role `drbd-reactor` verwaltet.
-
 ## Performance
 
 ### Thunderbolt Optimierung
 
-Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit 25 Gbit/s. Dadurch ist die Latenz für synchrone Replikation minimal.
+Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit ~20 Gbit/s (Werte siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Dadurch ist die Latenz für synchrone Replikation minimal.
 
 | Metrik | Erwarteter Wert |
 |--------|-----------------|

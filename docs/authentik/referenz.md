@@ -64,7 +64,7 @@ Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der ers
 
 #### Login-Sequenz `watch.ackermannprivat.ch`
 
-Der vollständige Pfad vom Browser bis zur Jellyfin-Session inklusive aller Flow-Stages, Cache-Entscheidung und API-Roundtrips im Outpost:
+Der Pfad vom Browser bis zur Jellyfin-Session mit Cache-Entscheidung (Hit vs. Miss) und den API-Roundtrips im Outpost:
 
 ```d2
 vars: {
@@ -107,15 +107,10 @@ hit: "Hit-Pfad -- bind_mode=cached" {
 miss: "Miss-Pfad -- Cache-Miss / Erstlogin" {
   class: phase
   direction: down
-  s10: "Stage 10 ldap-identification\nOutpost -> Authentik" { class: outpost }
-  pgq: "Authentik -> PostgreSQL\nUser-Lookup (case-insensitive)" { class: ak }
-  s20: "Stage 20 ldap-password\nReputation + Argon2" { class: ak }
-  s30: "Stage 30 ldap-user-login\nSession erzeugen" { class: ak }
-  acc: "Outpost GET\n/outposts/ldap/PK/check_access/" { class: outpost }
-  me: "Outpost GET /core/users/me/\nUserInfo: pk, groups, mail" { class: outpost }
-  cache: "Outpost schreibt\nboundUsers in Cache" { class: outpost }
-  ok: "Outpost -> Jellyfin\nLDAPResult Success" { class: outpost }
-  s10 -> pgq -> s20 -> s30 -> acc -> me -> cache -> ok
+  flow: "Voller LDAP-Flow gegen Authentik\nidentification -> password -> user-login\n(PostgreSQL-Lookup, Reputation, Argon2, Session)" { class: ak }
+  api: "Zwei API-Calls mit Session-Cookie\ncheck_access (Provider-ACL)\ncore/users/me (pk, groups, mail)" { class: outpost }
+  cache: "Outpost schreibt boundUsers in Cache\n-> Outpost LDAPResult Success" { class: outpost }
+  flow -> api -> cache
 }
 
 finish: Jellyfin Session {
@@ -179,10 +174,10 @@ Die Policy greift bei jedem Set-Password, also auch bei Self-Service-Änderungen
 
 Wichtige konfigurierte Stages (für API-Referenz):
 
-- `default-authentication-identification` -- `user_fields=[email,username]`, verknüpft mit `recovery_flow`, `passwordless_flow`, `enable_remember_me=true`
+- `default-authentication-identification` -- `user_fields=[email]`, verknüpft mit `recovery_flow`, `passwordless_flow`
 - `default-authentication-password` -- `failed_attempts_before_cancel=5`
 - `default-authentication-mfa-validation` -- `not_configured_action=configure`, `configuration_stages=[totp, webauthn, static]`
-- `default-authentication-login` -- `session_duration=1d`, `remember_me_offset=14d`, `terminate_other_sessions=true`
+- `default-authentication-login` -- `session_duration=days=7`, `remember_me_offset=seconds=0` (fixe 7-Tage-Session ohne Checkbox), `terminate_other_sessions=true`
 - `passwordless-authenticator-validate` -- `device_classes=[webauthn]`, `not_configured_action=deny`, `webauthn_user_verification=required`
 - `default-authenticator-webauthn-setup` -- `user_verification=required`, `resident_key_requirement=required`
 - `recovery-email` -- `use_global_settings=true` (nutzt `AUTHENTIK_EMAIL__*` aus dem Nomad-Job)
@@ -278,12 +273,12 @@ Admin-Accounts:
 
 ### Group-Binding-Strategie
 
-Alle 45 Applications sind explizit einer der drei Tiers (`admin`, `family`, `guest`) zugeordnet. Autoritative Zuordnung und Apply-Mechanik liegen deklarativ im Ordner [`authentik-blueprints/`](https://github.com/derever-labs/PRIVAT-infra/tree/main/authentik-blueprints) -- siehe Abschnitt [Blueprint-Quelle](#blueprint-quelle).
+Alle 45 Applications sind explizit einer der drei Tiers (`admin`, `family`, `guest`) zugeordnet. Autoritative Zuordnung und Apply-Mechanik liegen deklarativ im Ordner [`authentik-blueprints/`](https://github.com/derever-labs/infra/tree/main/authentik-blueprints) -- siehe Abschnitt [Blueprint-Quelle](#blueprint-quelle).
 
 Kernregeln:
 
 - **`policy_engine_mode = any`** auf jeder App (OR-Logik: User darf rein sobald eine gebundene Gruppe passt)
-- **Multi-Binding pro Tier-Übergang.** Authentik 2026.2.x vererbt Gruppen-Mitgliedschaft über das `parent`-Feld NICHT transitiv (empirisch bestätigt per `check_access`-Endpoint am 2026-04-14). Deshalb bekommen niederschwellig berechtigte Apps mehrere Bindings:
+- **Multi-Binding pro Tier-Übergang.** Authentik vererbt Gruppen-Mitgliedschaft über das `parent`-Feld NICHT transitiv (empirisch bestätigt per `check_access`-Endpoint am 2026-04-14). Deshalb bekommen niederschwellig berechtigte Apps mehrere Bindings:
 
   - **guest-Tier** (Apps, die jeder authentifizierte User sehen soll): Bindings auf `admin` (order 0), `family` (order 1), `guest` (order 2)
   - **family-Tier**: Bindings auf `admin` (order 0), `family` (order 1)
@@ -294,27 +289,13 @@ Kernregeln:
 
 Superuser-Verhalten: Mitglieder von `authentik Admins` (is_superuser=True) umgehen Policy-Bindings NICHT. Der `superuser_full_list=true`-Flag zeigt Superusern die App-Liste vollständig in der Admin-UI, die tatsächliche Authorization läuft aber über das Binding. akadmin muss deshalb in `admin` bleiben, sonst verliert er nach Rollout den App-Zugang.
 
-### Tier-Mapping (Stand 2026-04-14)
+### Tier-Mapping
 
-**guest-Tier** (1 App)
+- **guest-Tier:** `jellyseerr` (jeder authentifizierte User)
+- **family-Tier:** `immo-monitor`
+- **admin-Tier:** alle übrigen Apps (Core/OIDC, Dashboards, Observability, Storage/DB, Media-Stack, Office, Utilities, Download-Tools)
 
-- `jellyseerr`
-
-**family-Tier** (1 App)
-
-- `immo-monitor`
-
-**admin-Tier** (43 Apps)
-
-- Core/OIDC: `proxmox`, `gitea-oidc`, `grafana-oidc`, `open-webui-oidc`, `paperless-oidc`, `grafana`, `gitea`
-- Dashboards: `homelab-admin`, `homelab-family`, `homelab-guest`, `homepage-intra`, `flame`, `flame-intra`
-- Observability: `gatus`, `uptime-kuma`, `loki`, `influxdb`, `metabase`
-- Storage/DB: `linstor-gui`, `dbgate`
-- Docs/Knowledge: `vitepress-wiki`
-- Media-Stack: `audiobookshelf`, `jellystat`, `sonarr`, `radarr`, `lazylibrarian`, `sabnzbd`, `prowlarr`, `stash`, `stash-secure`, `notifiarr`
-- Office/Productivity: `kimai`, `solidtime`, `tandoor`
-- Utilities: `czkawka`, `handbrake`, `guacamole`, `meshcmd`, `zigbee2mqtt`
-- Download/Media-Tools: `special-youtube-dl`, `special-yt-dlp`, `video-grabber`, `youtube-dl`
+Die autoritative, vollständige App-zu-Tier-Zuordnung ist der Blueprint `authentik-blueprints/30-apps-admin-tier.yaml` (admin-Tier) bzw. `10-`/`20-apps-*-tier.yaml` -- jede neue App wird dort eingetragen.
 
 ### Blueprint-Quelle
 
@@ -322,11 +303,12 @@ Die Tier-Zuordnung und Gruppen-Bindings werden über Authentik-Blueprints verwal
 
 - **Pfad:** `authentik-blueprints/` im Infra-Repo (Subfolder, kein Submodule)
 - **Files:** `00-groups.yaml` (Gruppen), `10-apps-guest-tier.yaml`, `20-apps-family-tier.yaml`, `30-apps-admin-tier.yaml`
-- **Einbindung:** Der `authentik.nomad`-Worker-Task liest die YAMLs beim `nomad job run` via HCL2 `file()` und mountet den Ordner read-only nach `/blueprints/homelab/` im Container. Der Authentik-Reconciler entdeckt und appliziert sie automatisch (Labels `blueprints.goauthentik.io/system: true` + `instantiate: true`)
-- **Kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT.** Apply = `nomad job run nomad-jobs/identity/authentik.nomad`
-- **Änderungs-Workflow:** Feature-Branch → PR → CODEOWNERS-Review → Merge → manueller Apply über Nomad. Rollback = `git revert` + erneuter `nomad job run`
-- **Validierung lokal:** `docker run --rm -v $PWD:/bp ghcr.io/goauthentik/server:2026.2.2 ak blueprint validate /bp/authentik-blueprints/*.yaml`
+- **Einbindung:** Der `authentik.nomad`-Worker-Task liest die YAMLs beim Deploy via HCL2 `file()` und mountet den Ordner read-only nach `/blueprints/homelab/` im Container. Der Authentik-Reconciler entdeckt und appliziert sie automatisch (Labels `blueprints.goauthentik.io/system: true` + `instantiate: true`)
+- **Kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT.** Apply erfolgt über den `nomad job run` des Identity-Jobs
+- **Validierung lokal:** über die `ak blueprint validate`-Subcommand im Authentik-Server-Image (siehe `authentik-blueprints/README.md`)
 - **Readme im Repo:** siehe `authentik-blueprints/README.md` für Tier-Logik-Details und App-Aufnahme-Workflow
+
+Den vollständigen Änderungs- und Rollback-Workflow (PR, CODEOWNERS-Review, Apply-Reihenfolge) beschreibt [Authentik Betrieb](./betrieb.md#blueprint-workflow).
 
 ## Alerting und Events
 

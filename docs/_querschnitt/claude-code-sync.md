@@ -15,6 +15,12 @@ Zwei macOS-Accounts (`samuel_ackermann` und `hslu_samuel_ackermann`) teilen sich
 
 ```d2
 direction: down
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
 SharedStorage: "Shared Storage (/Users/Shared/git/)" {
   style.stroke-dash: 4
