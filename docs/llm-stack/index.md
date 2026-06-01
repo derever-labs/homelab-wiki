@@ -29,7 +29,8 @@ Drei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 |----------|------|
 | URL | [chat.ackermannprivat.ch](https://chat.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/open-webui.nomad` |
-| Storage | NFS `/nfs/docker/open-webui` |
+| Datenbank | PostgreSQL via Consul DNS (`postgres.service.consul`, DB `open_webui`) |
+| Storage | NFS `/nfs/docker/open-webui` (Uploads, Vektor-Store) |
 | Auth | Natives OIDC via Authentik + `intern-noauth@file` |
 
 **HolLama** (Chat-Interface, leichtgewichtig):
@@ -117,7 +118,7 @@ Open WebUI authentifiziert über OIDC direkt gegen Authentik (Provider `open-web
 
 | Pfad | Keys |
 | :--- | :--- |
-| `kv/data/open-webui` | `oauth_client_secret` |
+| `kv/data/open-webui` | `oauth_client_secret`, `postgres_password` |
 
 ## HolLama
 

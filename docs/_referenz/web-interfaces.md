@@ -80,7 +80,6 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | Tandoor | `https://tandoor.ackermannprivat.ch` | Rezepte |
 | solidtime | `https://time.ackermannprivat.ch` | Zeiterfassung |
 | n8n | `https://n8n.ackermannprivat.ch` | Workflow Automation |
-| Guacamole | `https://remote.ackermannprivat.ch` | Remote Desktop Gateway |
 | ChangeDetection | `https://change.ackermannprivat.ch` | Website-Änderungsüberwachung |
 | Obsidian LiveSync | `https://obsidian-sync.ackermannprivat.ch` | Obsidian Synchronisation |
 | Notifiarr | `https://notifiarr.ackermannprivat.ch` | Benachrichtigungsservice |

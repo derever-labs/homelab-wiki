@@ -90,7 +90,6 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Vaultwarden](./vaultwarden/) | Passwort Manager |
 | [Gitea](./gitea/) | Git Server |
 | [n8n](./n8n/) | Workflow Automation |
-| [Guacamole](./guacamole/) | Remote Desktop Gateway |
 | [Tandoor](./tandoor/) | Rezeptverwaltung |
 | [ChangeDetection](./changedetection/) | Website-Änderungsüberwachung |
 | [Obsidian LiveSync](./obsidian-livesync/) | Obsidian Synchronisation |

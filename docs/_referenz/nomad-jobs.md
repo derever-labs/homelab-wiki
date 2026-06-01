@@ -23,7 +23,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 | infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Stash-Jellyfin-Proxy, Suggestarr, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, Keep, iperf3-to-InfluxDB |
-| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Guacamole, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly |
+| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly |
 | system/ | Alloy (Log-Collector), Linstor CSI |
 | volumes/ | CSI-Volume-Spezifikationen (.hcl) |
 
