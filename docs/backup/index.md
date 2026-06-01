@@ -66,12 +66,7 @@ Das Interval von 26 Stunden gibt 2 Stunden Puffer, falls Backups länger dauern 
 ## Bewusste Architektur-Grenzen
 
 ::: warning Kein Off-Site / 3-2-1 unvollständig
-Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.200`. Das NAS ist damit ein Single Point of Failure, und es gibt keine geografische Off-Site-Kopie. Das ist eine **bewusste Entscheidung** (kein volles 3-2-1) -- das NAS hat eine eigene Backup-Strategie. Homelab- und DCLab-Backups bleiben strikt getrennt (keine Cross-Cluster-Sicherung).
-:::
-
-::: warning Multi-Node-Restore nicht verifiziert
-Ein gleichzeitiger PBS-Restore beider Storage-VMs (client-05 + client-06) wurde nicht durchgespielt. Das DRBD-Split-Brain-Handling nach einem solchen Restore wäre manuell aufzulösen.
-:::
+Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.200`. Das NAS ist damit ein Single Point of Failure, und es gibt keine geografische Off-Site-Kopie. Das ist eine **bewusste Entscheidung** (kein volles 3-2-1) -- das NAS hat eine eigene Backup-Strategie.
 
 ## Verwandte Seiten
 
