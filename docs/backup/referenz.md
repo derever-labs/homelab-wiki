@@ -34,7 +34,7 @@ PBS wendet die Retention-Regeln automatisch an und entfernt veraltete Backups vi
 
 ## Datastore
 
-Der Datastore nutzt einen lokalen ZFS-Pool auf der PBS-VM. ZFS bietet dabei zusätzliche Datenintegrität durch Checksummen auf Blockebene.
+Der PBS-Datastore liegt per NFS auf dem NAS, nicht auf einem lokalen Pool der PBS-VM. Damit ist das NAS ein Single Point of Failure -- eine bewusste Entscheidung ohne Off-Site-Kopie (Details und SPOF-Betrachtung: [Backup](./index.md)).
 
 ## Monitoring
 

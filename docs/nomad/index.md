@@ -124,7 +124,7 @@ Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#clu
 
 ## Scheduler-Konfiguration
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 |-------------|------|
 | Algorithmus | `spread` (gleichmässige Verteilung) |
 | Service Preemption | Aktiv (seit 01.04.2026) |

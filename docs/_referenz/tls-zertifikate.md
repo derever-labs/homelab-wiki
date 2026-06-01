@@ -13,7 +13,7 @@ tags:
 
 Alle öffentlichen Services unter `*.ackermannprivat.ch` erhalten automatisch TLS-Zertifikate über Traefik. Traefik nutzt die Cloudflare DNS Challenge für die Validierung -- es muss kein Port 80 nach aussen offen sein.
 
-| Eigenschaft | Wert |
+| Attribut | Wert |
 | :--- | :--- |
 | Aussteller | Let's Encrypt |
 | Challenge-Typ | DNS-01 (Cloudflare) |

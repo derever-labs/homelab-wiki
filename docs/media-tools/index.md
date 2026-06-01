@@ -11,6 +11,16 @@ tags:
 
 Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb zwingend nötig, sie erweitern aber Monitoring, Wartung und Medienverarbeitung.
 
+## Übersicht
+
+| Tool | Zweck | Deployment |
+|------|-------|------------|
+| Jellystat | Jellyfin-Statistik-Dashboard | `media/jellystat.nomad` |
+| Janitorr | Automatische Mediathek-Bereinigung | `media/janitorr.nomad` |
+| Handbrake | Video-Transcoding (deprecated) | `media/handbrake.nomad.deprecated` |
+| LazyLibrarian | E-Book-/Hörbuch-Verwaltung | `media/lazylibrarian.nomad` |
+| Notifiarr | Notification-Aggregator | `services/notifiarr.nomad` |
+
 ## Jellystat
 
 | Attribut | Wert |
@@ -20,7 +30,7 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | Datenbank | PostgreSQL (Shared Cluster) |
 | Storage | Kein lokaler Storage (Backup via zentrales `pg_dump`) |
 | Auth | `intern-auth@file` |
-| Vault Secrets | `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
+| Secrets | Vault `kv/data/jellystat` (`postgres_user`, `postgres_password`, `postgres_db`, `jwt_secret`) |
 
 ### Rolle
 
@@ -40,8 +50,7 @@ Statistik- und Analyse-Dashboard für Jellyfin. Zeigt Wiedergabe-Historie, belie
 |----------|------|
 | URL | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
 | Deployment | Nomad Job `media/janitorr.nomad` |
-| Storage | Kein NFS (Config via Nomad Template, kein Log-Mount) |
-| Traefik | Deaktiviert (`traefik.enable=false`) |
+| Storage | NFS `/nfs/jellyfin` (liest die Mediathek), Config via Nomad Template; kein Traefik (`traefik.enable=false`) |
 
 ### Rolle
 
@@ -56,6 +65,10 @@ Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder 
 ---
 
 ## Handbrake
+
+::: warning Deprecated
+Der Nomad-Job liegt nur noch als `media/handbrake.nomad.deprecated` vor und wird nicht mehr deployed. Transcoding läuft bei Bedarf direkt über Jellyfin.
+:::
 
 | Attribut | Wert |
 |----------|------|
@@ -98,7 +111,7 @@ Automatisierte Suche und Verwaltung von E-Books und Hörbüchern. Vergleichbar m
 
 ### Besonderheiten
 
-- Separater API-Router mit `intern-api-chain@file` für Zugriff durch andere Services
+- Separater API-Router mit `intern-api@file` für Zugriff durch andere Services
 - Greift auf die gesamte Jellyfin-Mediathek zu (`/nfs/jellyfin`)
 - Ergänzt [Audiobookshelf](../audiobookshelf/index.md) als Beschaffungs-Tool
 

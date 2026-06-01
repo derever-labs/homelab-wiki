@@ -67,7 +67,8 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Stash](./stash/) | Media Organizer |
 | [AudioBookShelf](./audiobookshelf/) | Hörbücher und E-Books |
 | [Video Download](./video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./media-tools/) | Handbrake, Janitorr, Maintainerr, Notifiarr |
+| [Media Tools](./media-tools/) | Jellystat, Janitorr, Handbrake, LazyLibrarian, Notifiarr |
+| [SuggestArr](./suggestarr/) | AI-Empfehlungen für Jellyfin via Jellyseerr |
 
 ## Monitoring
 
@@ -78,6 +79,8 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [CheckMK](./checkmk/) | Infrastructure Monitoring |
 | [CrowdSec](./crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |
+| [Uptime Kuma](./uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
+| [Synology NAS Monitoring](./synology-monitoring/) | Telegraf SNMP, Grafana NAS-Dashboard |
 
 ## Produktivität
 
@@ -116,3 +119,9 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Datenbank-Architektur](./_querschnitt/datenbank-architektur.md) | PostgreSQL Shared Cluster, DRBD |
 | [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | Abhängigkeitsdiagramm aller Services |
 | [Datenstrategie](./_querschnitt/datenstrategie.md) | Speicher-Ebenen, Replikation, Backups |
+
+## Verwandte Seiten
+
+- [Wiki-Richtlinien](./wiki-richtlinien.md) -- Regeln und Konventionen für diese Dokumentation
+- [Globale Referenz](./_referenz/) -- IP-Adressen, Ports, Credentials, Hardware
+- [Querschnittsthemen](./_querschnitt/) -- Systemübergreifende Runbooks und Architektur
