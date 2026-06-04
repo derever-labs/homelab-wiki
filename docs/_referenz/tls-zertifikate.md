@@ -38,7 +38,21 @@ Bei Consul und Vault ist die interne Kommunikation bewusst ohne TLS konfiguriert
 | Nomad | Aktiv (selbstsigniert, `NOMAD_SKIP_VERIFY=true` bei CLI) | ACLs aktiv |
 | Vault | Deaktiviert | Audit Logging, ACLs |
 
+## Proxmox-Nodes -- eigene ACME-Zertifikate
+
+Die Proxmox-Nodes laufen **nicht** hinter Traefik und holen ihre TLS-Zertifikate selbst direkt über den eingebauten ACME-Client (`pvenode acme`). Account `ackermannprivat`, Validierung via Cloudflare DNS-01 (CF-Credentials in `/etc/pve/priv/acme/plugins.cfg`).
+
+| Attribut | Wert |
+| :--- | :--- |
+| Aussteller | Let's Encrypt |
+| Challenge-Typ | DNS-01 (Cloudflare) |
+| ACME-Client | Proxmox-eigen (`pvenode acme`), kein Traefik |
+| Erneuerung | Automatisch durch Proxmox |
+
+Die Node-FQDNs (`pveXX.ackermannprivat.ch`, `pve-lu-01.ackermannprivat.ch`, `pve01.nana.ackermannprivat.ch`) lösen via Pi-hole-Split-DNS auf die jeweilige Tailscale-IP auf. Dadurch funktioniert in PDM die Anbindung über **FQDN + CA-Trust** (ohne IP-im-SAN und ohne fragiles Fingerprint-Pinning).
+
 ## Verwandte Seiten
 
 - [Traefik](../traefik/) -- Reverse Proxy und Zertifikatsverwaltung
 - [Vault](../vault/) -- Secrets Management und Security-Entscheidungen
+- [Proxmox](../proxmox/) -- PDM-Anbindung und Node-Übersicht
