@@ -38,6 +38,27 @@ Nomad-Client-VMs (client-05 und client-06) haben NFS-Mounts ohne `nofail`-Option
 
 - **iGPU Full Passthrough** -- die integrierte GPU eines Nodes ist exklusiv einer einzigen VM zugewiesen. Ein zweiter paralleler GPU-Consumer ist ohne SR-IOV nicht möglich. SR-IOV ist auf der verbauten Hardware nicht verfügbar.
 
+## Externe Standalone-Nodes
+
+Die Nodes `pve-01-nana` (Dottikon) und `pve-lu-01` (Luzern) sind **kein** Cluster-Mitglied: kein Corosync-Quorum, kein HA-Manager, kein DRBD/Linstor. Konsequenzen für den Betrieb:
+
+- **Lokale ZFS-Disk** -- jede Node speichert ihre VMs auf der eigenen NVMe. Keine Live-Migration zwischen den Standorten (kein Shared Storage).
+- **Reboot unkritisch** -- da kein Quorum gehalten werden muss, ist ein Reboot jederzeit möglich; die VMs kommen über `onboot` automatisch zurück (z.B. homeassistant-luzern / homeassistant-dottikon).
+- **Backup via PBS** -- die externen Nodes sichern ihre VMs über den gemeinsamen [Proxmox Backup Server](../backup/referenz.md) (push über Tailscale).
+- **Wartung via Ansible** -- angesprochen über die Inventory-Gruppe `proxmox_external` (gemeinsame Plays via `all_proxmox_hosts`).
+
+::: tip Cross-Cluster-Migration: keine Snapshots
+Eine Remote-Migration (PDM, von lenzburg auf eine externe Node oder umgekehrt) schlägt mit `remote migration with snapshots not supported` fehl, wenn die VM-Disk Snapshots hat. Vor der Migration alle Snapshots entfernen. Bleibt nach einem fehlgeschlagenen `qm delsnapshot` ein Phantom-Snapshot mit Lock zurück: `qm unlock <vmid>` und anschliessend `qm delsnapshot <vmid> <name> --force`.
+:::
+
+::: warning PVE 8→9: deb822-Repo-Falle
+Der Major-Upgrade von PVE 8 auf 9 legt ein aktives Enterprise-Repo im deb822-Format an (`/etc/apt/sources.list.d/pve-enterprise.sources`). Ohne Subscription liefert es bei jedem `apt update` einen 401. Im neuen Format muss `Enabled: false` gesetzt werden -- das alte Auskommentieren der `.list`-Zeile greift hier nicht.
+:::
+
+::: warning PDM erreicht externe Remotes nur via Tailscale
+PDM nutzt bewusst **kein** `accept-routes`. Würde es die Homelab-Subnet-Route `10.0.0.0/22` übernehmen, würde PDM sein eigenes Netz über Tailscale routen und sich aussperren (und die lokalen lenzburg/pbs-Remotes brechen). Die externen Nodes erreicht PDM daher über die direkte Tailscale-Peer-IP -- die Node-FQDNs lösen entsprechend auf die Tailscale-IPs auf. Details: [Tailscale -- Self-Subnet-Lockout](../netzwerk/tailscale.md#externe-proxmox-nodes).
+:::
+
 ## Credentials
 
 Zugangsdaten: [Credentials](../_referenz/credentials.md). SSO via Authentik, Fallback `root@pam` -- Details: [Proxmox Übersicht](index.md#authentifizierung-sso).
