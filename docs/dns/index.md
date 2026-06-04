@@ -156,8 +156,14 @@ Pi-hole v6 mit eingebettetem dnsmasq (FTL) übernimmt DNS-Eingangs-Router und Ad
 | `vpn.ackermannprivat.ch` | Traefik VIP |
 | `pve00/01/02.ackermannprivat.ch` | Proxmox-Hosts |
 | `pbs.ackermannprivat.ch` | PBS |
+| `pve-lu-01.ackermannprivat.ch` | pve-lu-01 (Tailscale-IP 100.112.213.18) |
+| `pve01.nana.ackermannprivat.ch` | pve-01-nana (Tailscale-IP 100.81.116.122) |
 
 Ziel-IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+
+::: info Externe Nodes zeigen auf Tailscale-IPs
+Die Overrides der externen Standalone-Nodes lösen bewusst auf die **Tailscale-IP** auf (nicht auf eine LAN-IP), da diese Standorte nur über Tailscale erreichbar sind. So tragen die FQDNs ein gültiges Let's-Encrypt-Zertifikat und PDM kann sie über FQDN + CA-Trust anbinden. SSOT der Overrides: `ansible/roles/pihole/defaults/main.yml` im `homelab-hashicorp-stack`. Änderungen an `/etc/dnsmasq.d/` greifen erst nach einem `pihole-FTL`-Restart (ein `reload-lists`/`restartdns` lädt die dnsmasq-Config nicht neu).
+:::
 
 **Conditional Forwarding:**
 
