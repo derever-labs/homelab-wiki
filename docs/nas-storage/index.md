@@ -43,7 +43,7 @@ Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfigu
 
 ## Garage S3
 
-Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume2/garage/{meta,data}` -- `/volume1` hält keinen aktiven Pool, der gesamte Block-Storage des NAS sitzt auf `/volume2`. Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
+Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+). Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
 
 Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
@@ -52,8 +52,8 @@ Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 | **API-Endpoint** | Port 9012 |
 | **S3 Web (Static Hosting)** | Port 9013 |
 | **Admin/Metrics** | Port 9014 (Bearer-Token-Auth) |
-| **Storage** | `/volume2/garage/{meta,data}` |
-| **Config** | `/volume2/garage/garage.toml` (0600/root) |
+| **Storage** | `/volume1/garage/{meta,data}` |
+| **Config** | `/volume1/garage/garage.toml` (0600/root) |
 | **Credentials** | siehe [Zugangsdaten](../_referenz/credentials.md) |
 
 ### Buckets

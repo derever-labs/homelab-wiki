@@ -28,7 +28,7 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Nomad Server:** vm-nomad-server-04/05/06 -- Systemdienste, Ressourcenauslastung
 - **Nomad Clients:** vm-nomad-client-04/05/06 -- CPU, RAM, Disk, Docker-Daemon
 - **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
-- **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS2419+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
+- **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS1825+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
 - **Home Assistant:** Verfügbarkeit und Systemzustand
 - **Nomad-Container:** Alle laufenden Allocs via Docker Piggyback-Mechanismus auf den Client-Nodes
 - **Netzwerk:** Erreichbarkeit kritischer Endpunkte

@@ -65,7 +65,7 @@ Single-Notifier-Konvention (Memory `project_monitoring_routing_2026_04`): jede Q
   - 6 Nomad-VMs: vm-nomad-server-04/05/06, vm-nomad-client-04/05/06
   - 3 PVE-Hosts: pve00, pve01, pve02
   - pve-01-nana (Tailscale 100.81.116.122) -- externer Watchdog Dottikon, ICMP-only
-  - 2 Synology-NAS: synology-nas (DS2419+ Homelab), nana-nas (DS1517+ Dottikon via Tailscale) -- SNMP live
+  - 2 Synology-NAS: synology-nas (DS1825+ Homelab), nana-nas (DS1517+ Dottikon via Tailscale) -- SNMP live
   - pbs-backup-server (10.0.2.50) -- als `cmk-agent` angelegt
   - 2 DNS: lxc-dns-01 (10.0.2.1), lxc-dns-02 (10.0.2.2) -- als `cmk-agent` angelegt
   - 2 Traefik: vm-traefik-01 (10.0.2.21), vm-traefik-02 (10.0.2.22) -- als `cmk-agent` angelegt
