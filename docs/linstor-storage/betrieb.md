@@ -63,4 +63,3 @@ Beide senden am Run-Ende einen Kuma-Push-Heartbeat (Monitore `fstrim` / `drbd-ve
 ## Verwandte Seiten
 
 - [LINSTOR Storage](/linstor-storage/)
-- [Referenz](/linstor-storage/referenz.md)

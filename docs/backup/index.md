@@ -56,4 +56,4 @@ Das DRBD-Split-Brain-Handling nach einem solchen Restore wäre manuell aufzulös
 ## Verwandte Seiten
 
 - [LINSTOR Storage](/linstor-storage/)
-- [Proxmox Backup Server](/proxmox/pbs)
+- [Proxmox Backup Server](/proxmox/)
