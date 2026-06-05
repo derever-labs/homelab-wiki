@@ -55,7 +55,7 @@ HSLU: "tag:hslu" {
   OPN1: opn-01 { class: host; tooltip: "FreeBSD, 100.113.244.85, Subnet-Router" }
   OPN2: opn-02 { class: host; tooltip: "FreeBSD, 100.110.151.3, Subnet-Router" }
   MESSE: messe-pc-hslu { class: host; tooltip: "Windows, 100.116.116.63" }
-  HSLUNETS: "10.180.0.0/16, 147.88.0.0/16, 192.168.50.0/24" {
+  HSLUNETS: "10.180.0.0/16, 147.88.0.0/16, 147.88.202.0/24, 192.168.50.0/24" {
     class: host
   }
 }
@@ -66,6 +66,8 @@ HOMELAB: "tag:homelab" {
   TRF2: vm-traefik-02 { class: host; tooltip: "Linux, 100.91.238.106, Subnet-Router + Exit-Node" }
   PVE: pve-01-nana { class: host; tooltip: "Linux, 100.81.116.122, Subnet-Router 192.168.2.0/23" }
   PVELU: pve-lu-01 { class: host; tooltip: "Linux, 100.112.213.18, Subnet-Router 172.16.0.0/24" }
+  PVE00: pve00 { class: host; tooltip: "Linux, 100.89.174.31, Subnet-Router Lenzburg-VLANs" }
+  MORE: "weitere Hosts" { class: host; tooltip: "pdm, checkmk-homelab, pve01, pve02 -- Tailnet-Mitglieder ohne Subnet-Routes" }
   HOMELABNETS: "10.0.0.0/22, 192.168.2.0/23, 172.16.0.0/24" {
     class: host
   }
@@ -85,12 +87,19 @@ HOMELAB -> HSLU: blockiert { class: blocked }
 - `opn-02` -- HSLU OPNsense Secondary, gleiche Subnet-Routes wie opn-01
 - `messe-pc-hslu` (DESKTOP-0PK5JUR) -- Subnet-Router für 192.168.50.0/24
 
-`tag:homelab` (4 Hosts):
+`tag:homelab` (9 Hosts). Subnet-Router (advertisieren ein lokales Netz ins Tailnet):
 
 - `vm-traefik-01` -- Subnet-Router für 10.0.0.0/22, ausserdem Exit-Node für `tag:admin`
 - `vm-traefik-02` -- gleiche Routes wie vm-traefik-01
 - `pve-01-nana` -- externer Watchdog ausserhalb des Heimnetzes, Subnet-Router für 192.168.2.0/23
 - `pve-lu-01` -- Standalone-Proxmox am Standort Luzern, Subnet-Router für 172.16.0.0/24
+- `pve00` -- bringt die Lenzburg-VLAN-Subnetze (`10.0.10.0/23`, `10.0.100.0/23`, `10.0.200.0/23`) sowie `10.0.0.0/21` ins Tailnet. Diese Routes sind manuell approved (nicht über `autoApprovers`) und werden über den `tag:admin`-Vollzugriff genutzt -- der `tag:homelab`-Grant selbst deckt nur `10.0.0.0/22`.
+
+Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
+
+- `pdm` -- Proxmox Datacenter Manager
+- `checkmk-homelab` -- Monitoring-Server
+- `pve01`, `pve02` -- Cluster-Nodes
 
 `tag:admin` (4 Hosts):
 
@@ -140,5 +149,6 @@ Der API-Key liegt im 1Password-Item `Tailscale` im `PRIVAT Agent`-Vault.
 ## Verwandte Seiten
 
 - [Netzwerk-Übersicht](./) -- Topologie, VLANs, Hardware
+- [Standorte](./standorte.md) -- standortübergreifende Netz-Architektur über das Tailscale-Overlay
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- vollständige IP-Zuordnung
 - [Traefik](../traefik/) -- Reverse Proxy mit Tailscale-CGNAT-Whitelist

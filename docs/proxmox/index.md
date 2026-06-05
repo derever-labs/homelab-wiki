@@ -114,6 +114,12 @@ luzern.pvelu -> lenzburg.pbs: Backup (Tailscale) {
 }
 ```
 
+::: info Zwei Sichten auf die Standorte
+Diese Map zeigt die **Verwaltungs- und Backup-Sicht** (PDM verwaltet, PBS sichert). Die **Netz- und
+Tailscale-Sicht** derselben Standorte (Gateways, Subnetze, Schlüssel-Devices) führt
+[Netzwerk -- Standorte](../netzwerk/standorte.md).
+:::
+
 ## iGPU Passthrough
 
 Die Intel Iris Xe iGPU (Alder Lake, 96 EU) auf pve01 und pve02 wird per **Full Passthrough** an die Nomad-Client VMs durchgereicht. Hauptanwendung: [Jellyfin](../jellyfin/index.md) Hardware-Transcoding (QSV).
