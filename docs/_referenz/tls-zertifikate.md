@@ -95,8 +95,8 @@ Traefik ist der ACME-Client für alle reverse-proxied Services. Details zur Trae
 - Erneuerung: vollautomatisch durch Traefik, keine manuelle Intervention nötig
 - Geltungsbereich: alle Services unter `*.ackermannprivat.ch` und `*.ackermann.systems`
 
-::: info Ablösung traefik-certs-dumper (2026-06)
-Der früher verwendete `traefik-certs-dumper`-Container, der Zertifikate nach `/nfs/cert/` exportierte, wird abgelöst. Der NFS-Export `/nfs/cert/` wird nicht mehr benötigt, sobald alle Konsumenten umgestellt sind.
+::: info traefik-certs-dumper abgelöst (2026-06)
+Der früher verwendete `traefik-certs-dumper`-Container exportierte Zertifikate nach `/nfs/cert/`. Er ist entfernt: kein Cluster-Konsument hat `/nfs/cert/` gelesen (verifiziert, 0 offene Handles auf allen Nodes). Mit dem NAS-Cutover wurden der Container, der NFS-Mount in `roles/nfs`, der NFS-Export und der NAS-Shared-Folder `cert` vollständig abgebaut. Native Synology-Dienste erhalten ihr Zertifikat über Pfad 2 (siehe unten).
 :::
 
 ## Pfad 2 -- NAS (DS1825+, `login.ackermannprivat.ch`)

@@ -132,10 +132,24 @@ Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
 ## NAS
 
+Seit dem NAS-Cutover (2026-06) laufen zwei Synology-NAS im Homelab.
+
+### HomeServer (Prod) -- 10.0.0.200
+
+| Attribut | Wert |
+| :--- | :--- |
+| Typ | Synology DS1825+ |
+| Volume | `/volume1` |
+| Funktion | NFS-Exports, Garage S3, Backup-Ziel (Hyper Backup), native DSM-Dienste |
+| Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
+
+### Altes Blech -- 10.0.0.210
+
 | Attribut | Wert |
 | :--- | :--- |
 | Typ | Synology DS2419+ |
-| Funktion | NFS-Exports, Garage S3, Backup-Ziel |
+| Volume | `/volume2` |
+| Funktion | Rollback-Anker nach Cutover; serviert die Jellyfin-Mediathek von USB-Shares per NFS an die Media-Worker |
 | Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
 
 NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)

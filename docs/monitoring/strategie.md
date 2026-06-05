@@ -235,7 +235,6 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 - DHCP-Discover-Probe-Cron
 - Cloudflare DDNS IP-Vergleich-Cron
 - proxmox-watchdog-mux Liveness-Sysctl-Cron
-- traefik-certs-dumper File-mtime-Cron
 - proxmox-pvesr Status-Cron
 - Vault-Unseal Service `is-active`-Cron
 

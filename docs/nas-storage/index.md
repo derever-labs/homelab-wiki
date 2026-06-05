@@ -35,11 +35,12 @@ Die folgenden Pfade werden als NFS-Shares bereitgestellt und auf allen Nomad-Cli
 | `/nfs/docker/` | `/nfs/docker/` | Persistente Daten für Container (Configs, DB-Dateien) |
 | `/nfs/jellyfin/` | `/nfs/jellyfin/` | Medien-Bibliothek für Jellyfin und arr-Stack |
 | `/nfs/nomad/` | `/nfs/nomad/` | Nomad-Daten (inkl. `consul-cert`-Subpfad) |
-| `/nfs/cert/` | `/nfs/cert/` | TLS-Zertifikate (Read-Only) |
 | `/nfs/backup/` | `/nfs/backup/` | Backup-Ziel für pg_dumpall und weitere Jobs |
 | `/nfs/logs/` | `/nfs/logs/` | Log-Dateien für Batch-Jobs |
 
-Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfiguriert.
+Die Mount-Punkte werden über Ansible (`roles/nfs`) in `/etc/fstab` der jeweiligen VMs konfiguriert. Die Exports kommen vom HomeServer (DS1825+, 10.0.0.200, `/volume1`); das alte Blech (DS2419+, 10.0.0.210, `/volume2`) serviert separat die Jellyfin-Mediathek von USB-Shares an die Media-Worker.
+
+Der frühere Export `/nfs/cert/` (TLS-Zertifikate der alten acme-Pipeline) wurde mit dem NAS-Cutover 2026-06 stillgelegt: Der native `acme.sh` deployt direkt in den DSM-Store, kein Cluster-Konsument liest den Pfad mehr. Mount, Export und Shared Folder sind entfernt -- siehe [TLS-Zertifikate](../_referenz/tls-zertifikate.md).
 
 ## Garage S3
 
