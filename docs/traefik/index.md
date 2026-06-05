@@ -160,7 +160,7 @@ Drei Massnahmen verhindern, dass beide Nodes gleichzeitig die VIP halten:
 
 Wildcard-Zertifikate für `*.ackermannprivat.ch` und `*.ackermann.systems` werden automatisch via Let's Encrypt (ACME, Cloudflare DNS Challenge, EC256) bezogen. Beide Nodes haben eigene `acme.json` mit gültigen Zertifikaten.
 
-Der `traefik-certs-dumper` exportiert Zertifikate im PEM-Format nach `/nfs/cert/` für andere Services.
+Der früher hier laufende `traefik-certs-dumper` (PEM-Export nach `/nfs/cert/`) ist mit dem NAS-Cutover 2026-06 abgelöst und entfernt -- er hatte keine Konsumenten mehr. Details: [TLS-Zertifikate](../_referenz/tls-zertifikate.md).
 
 TLS ist mit expliziten Cipher Suites und `minVersion: TLS 1.2` gehärtet. Details: [Traefik Referenz -- TLS-Options](./referenz.md#tls-options)
 

@@ -35,15 +35,16 @@ Die folgenden Pfade werden als NFS-Shares bereitgestellt und auf allen Nomad-Cli
 | `/nfs/docker/` | `/nfs/docker/` | Persistente Daten für Container (Configs, DB-Dateien) |
 | `/nfs/jellyfin/` | `/nfs/jellyfin/` | Medien-Bibliothek für Jellyfin und arr-Stack |
 | `/nfs/nomad/` | `/nfs/nomad/` | Nomad-Daten (inkl. `consul-cert`-Subpfad) |
-| `/nfs/cert/` | `/nfs/cert/` | TLS-Zertifikate (Read-Only) |
 | `/nfs/backup/` | `/nfs/backup/` | Backup-Ziel für pg_dumpall und weitere Jobs |
 | `/nfs/logs/` | `/nfs/logs/` | Log-Dateien für Batch-Jobs |
 
-Die Mount-Punkte werden über Ansible in `/etc/fstab` der jeweiligen VMs konfiguriert.
+Die Mount-Punkte werden über Ansible (`roles/nfs`) in `/etc/fstab` der jeweiligen VMs konfiguriert. Die Exports kommen vom HomeServer (DS1825+, 10.0.0.200, `/volume1`); das alte Blech (DS2419+, 10.0.0.210, `/volume2`) serviert separat die Jellyfin-Mediathek von USB-Shares an die Media-Worker.
+
+Der frühere Export `/nfs/cert/` (TLS-Zertifikate der alten acme-Pipeline) wurde mit dem NAS-Cutover 2026-06 stillgelegt: Der native `acme.sh` deployt direkt in den DSM-Store, kein Cluster-Konsument liest den Pfad mehr. Mount, Export und Shared Folder sind entfernt -- siehe [TLS-Zertifikate](../_referenz/tls-zertifikate.md).
 
 ## Garage S3
 
-Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume2/garage/{meta,data}` -- `/volume1` hält keinen aktiven Pool, der gesamte Block-Storage des NAS sitzt auf `/volume2`. Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
+Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+). Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
 
 Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
@@ -52,8 +53,8 @@ Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 | **API-Endpoint** | Port 9012 |
 | **S3 Web (Static Hosting)** | Port 9013 |
 | **Admin/Metrics** | Port 9014 (Bearer-Token-Auth) |
-| **Storage** | `/volume2/garage/{meta,data}` |
-| **Config** | `/volume2/garage/garage.toml` (0600/root) |
+| **Storage** | `/volume1/garage/{meta,data}` |
+| **Config** | `/volume1/garage/garage.toml` (0600/root) |
 | **Credentials** | siehe [Zugangsdaten](../_referenz/credentials.md) |
 
 ### Buckets

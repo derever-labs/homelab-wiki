@@ -121,7 +121,8 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 
 | Gerät | IP | Funktion |
 | :--- | :--- | :--- |
-| Synology NAS | 10.0.0.200 | NFS-Exports, Garage S3, Backup-Ziel |
+| HomeServer (DS1825+, Prod) | 10.0.0.200 | NFS-Exports, Garage S3, Backup-Ziel, DSM-Dienste |
+| Altes Blech (DS2419+) | 10.0.0.210 | Rollback-Anker nach Cutover; Jellyfin-Media von USB-Shares per NFS |
 
 ## Thunderbolt-Netzwerk
 

@@ -35,7 +35,7 @@ Behalten:
 
 Ausgeschlossen via `ignored_services`:
 
-- `Disk IO sd*` und `Disk IO md*` -- UCD-DiskIO-Counter pro Block-Device und pro Partition. Health steht bereits in «Disks Disk N», IO-Counter ist Performance-Detail ohne Alert-Wert. Bei einer DS2419+ entstehen sonst 56+ redundante Services pro NAS, bei DS1517+ 24+
+- `Disk IO sd*` und `Disk IO md*` -- UCD-DiskIO-Counter pro Block-Device und pro Partition. Health steht bereits in «Disks Disk N», IO-Counter ist Performance-Detail ohne Alert-Wert. Auf der früheren DS2419+ entstanden sonst 56+ redundante Services pro NAS, auf der DS1517+ 24+ -- die aktuelle DS1825+ (Homelab) liegt dazwischen
 - `Disk IO loop*`, `Disk IO ram*`, `Disk IO dm-*`, `Disk IO nvme*`, `Disk IO sata*`, `Disk IO synoboot` -- interne Synology-Devices, kein operativer Wert
 - `Filesystem /dev`, `/run`, `/sys`, `/proc`, `/tmp`, `/var`, `/etc` -- DSM-interne RAM-Filesystems
 - `Filesystem /volume*/@*` -- Snapshot-Mount-Points (z.B. `/volume2/family/#snapshot`)

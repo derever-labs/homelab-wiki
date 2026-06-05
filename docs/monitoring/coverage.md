@@ -52,7 +52,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | pve-01-nana hwmon Temp | pve-01-nana | influx | missing | P1 | thermal-throttle silent | `inputs.temp + hwmon` |
 | pve-01-nana Power-Loss | pve-01-nana | influx | missing | P0 | DeskMini Single-PSU, keine USV im Standort Dottikon | `smart_unsafe_shutdowns delta`-Alert + USV-Erweiterung Standort prüfen. Memory `project_ups_psu_2026` |
 | USV (NUT/upsd) | Producer unbekannt | influx | partial | P0 | `upsd`-Measurement-Quelle unbekannt | UPS-Alerts wären auf toter Datenquelle. Pipeline-Investigate + Alerts bauen |
-| synology-nas (Homelab DS2419+) | 10.0.0.200 | checkmk SNMP | live | P0 | -- | Built-in synology_* Plugins seit 2026-05-01 (RAID/Disk/PSU/Fan/Temp/Volumes/CPU/RAM/IF). Drift 2026-05-02: 7 NAS/LVM-Alerts flappen mit nahezu identischer Count (94-100/50h, LVM Thin Pool 75/85%, Metadata 75%, Disk Temp 55C, SMART, RAID Degraded) -- vermutlich Series-Flapping aus Datenquelle, Investigation [`86c9ktgdw`](https://app.clickup.com/t/86c9ktgdw) |
+| synology-nas (Homelab DS1825+) | 10.0.0.200 | checkmk SNMP | live | P0 | -- | Built-in synology_* Plugins seit 2026-05-01 (RAID/Disk/PSU/Fan/Temp/Volumes/CPU/RAM/IF). Drift 2026-05-02: 7 NAS/LVM-Alerts flappen mit nahezu identischer Count (94-100/50h, LVM Thin Pool 75/85%, Metadata 75%, Disk Temp 55C, SMART, RAID Degraded) -- vermutlich Series-Flapping aus Datenquelle, Investigation [`86c9ktgdw`](https://app.clickup.com/t/86c9ktgdw) |
 | nana-nas (Dottikon DS1517+) | via Tailscale | checkmk SNMP | live | P0 | -- | analog. CheckMK-VM hat Tailscale-Client mit `tag:homelab` und `--accept-routes` |
 | iperf3-Server | 10.0.2.50:5201 (PBS-VM) | uptime | missing | P2 | Service-tot silent | undokumentiert wer Client ist |
 
@@ -106,7 +106,6 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | Tailscale-Mesh | vm-traefik-01/02 + 8 Nodes | none | missing | P1 | Node-Offline silent, Cross-Tailnet HSLU/Privat ungeprüft | Cron-Probe `tailscale status -json`. Memory `reference_tailscale_tailnet`, `feedback_tailscale_ping_ignores_acls` |
 | Cloudflare DDNS x2 | Container vm-traefik-01 | loki | partial | P0 | Update-Fehler silent, IP-Drift unbemerkt | Loki-Pattern + IP-Vergleich-Cron |
 | Keepalived (VRRP) | vm-traefik-01/02 | direct | live | P1 | -- | Multi-MASTER-Detection + Flap-Detection ergänzen |
-| traefik-certs-dumper | Container vm-traefik-01/02 | none | missing | P1 | Cert-Files veralten silent | File-mtime-Check via Cron |
 | nginx-error-page | Container vm-traefik-01/02 | none | missing | P2 | -- | Container-Up-Check |
 | Internet-Reachability | extern | none | missing | P1 | Cert-Renewal/CF-API/Service-Erreichbarkeit kaskadierend | Gatus-Probes 1.1.1.1 + 9.9.9.9 + DNS-Resolve |
 
@@ -141,7 +140,6 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | Vault Sealed-State | vault.service | partial | partial | P0 | nur nach Restart-Loops kritisch | Gatus `sys/health` |
 | CrowdSec | crowdsec@vm-traefik-01 | none | missing | P0 | Container-tot = WAF-tot silent (Fail-Open) | docker-status + CAPI-Sync-Pattern in Loki [`86c9kmc5m`](https://app.clickup.com/t/86c9kmc5m) |
 | Tailscale (Cross-Tailnet HSLU/Privat) | tailscaled@vm-traefik-01 | none | missing | P1 | Cross-Tailnet-Drift unwatched; HSLU-Geräte in Privat-Tailnet | systemd-status + Member-Diff-Cron |
-| traefik-certs-dumper | Container @vm-traefik-01 | partial | partial | P1 | mtime-Drift unwatched | Cron-Diff `acme.json` vs `/nfs/cert` |
 | Authentik-Audit-Job (Drift) | batch-jobs/authentik-audit.nomad | direct | partial | P2 | direct-Telegram statt Keep-Pfad (`TELEGRAM_RELAY_URL=http://telegram-relay.service.consul:9095/notify`) -- Drift gegen Memory `project_monitoring_routing_2026_04` | umstellen auf Keep-Pfad |
 
 ## Layer 7 -- Observability self-monitoring
@@ -202,7 +200,7 @@ Endgeräte und Gäste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ü
 ## Severity-Mapping (kompakt)
 
 - **critical** (VIP-Bot): alle P0-Items mit Cluster-weitem Blast (Vault Sealed, NFS 91%, PBS-Voll, Authentik-Server-Down, LE-Cert <14d, OpenLDAP-Bind-Fail, CrowdSec-Down, Pi-hole Double-Down, Traefik-Double-Down, Cloudflare-DDNS-Failed, UDM-ICMP-Down, Garage-Down, ZFS-DEGRADED, NVMe Critical-Warning, USV Battery-Low, ZOT-Down, NFS-Synology-95-Percent, NFS-Daemon-Down (nfsd threads=0 / Port 2049 refused -- cluster-weiter Blast), gatus-watchdog-broken, Keep-Down, Telegraf-Tot, Alloy-Tot)
-- **warning** (Standard-Bot): alle P1-Items (Slow-Queries, Memory-Pressure, Cardinality >80%, Cert <30d, Outpost-Disconnect, Restart-Loops, NFS-Slow, Backup-Stale, Switch-Down, Tailscale-Node-Offline, CrowdSec-Bouncer-Stale, nebula-sync-failed, certs-dumper-stale, ph_downloader-stale, sabnzbd-stalled)
+- **warning** (Standard-Bot): alle P1-Items (Slow-Queries, Memory-Pressure, Cardinality >80%, Cert <30d, Outpost-Disconnect, Restart-Loops, NFS-Slow, Backup-Stale, Switch-Down, Tailscale-Node-Offline, CrowdSec-Bouncer-Stale, nebula-sync-failed, ph_downloader-stale, sabnzbd-stalled)
 - **info** (nur Dashboard): alle P2-Items (iperf3, etcd, Redis, NAS-Firmware, Cardinality-Trend, gpu-utilization)
 
 ## Verwandte Seiten
