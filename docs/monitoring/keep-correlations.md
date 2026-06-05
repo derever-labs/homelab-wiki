@@ -1,6 +1,6 @@
 ---
 title: "Monitoring: Keep-Correlations"
-description: Correlation-Patterns fuer Keep -- Gruppierung mehrerer Alerts zu einem Incident, mit Severity- und Inhibit-Logik
+description: Correlation-Patterns für Keep -- Gruppierung mehrerer Alerts zu einem Incident, mit Severity- und Inhibit-Logik
 tags:
   - monitoring
   - keep
@@ -11,7 +11,7 @@ tags:
 
 # Monitoring: Keep-Correlations
 
-Diese Seite dokumentiert die Correlation-Patterns fuer Keep. Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings fuer ein einzelnes Storage-Outage bekommt. Stand: 2026-05-02. Status: **Design** -- Live-Anlage in Keep erst nach Welle 2, wenn Source-Alerts existieren. Quelle: Coverage-Audit 2026-04-30 / 2026-05-01.
+Diese Seite dokumentiert die Correlation-Patterns für Keep. Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt. Stand: 2026-05-02. Status: **Design** -- Live-Anlage in Keep erst nach Welle 2, wenn Source-Alerts existieren. Quelle: Coverage-Audit 2026-04-30 / 2026-05-01.
 
 ::: info Status Design vs Live
 Die Patterns sind designet, aber die Source-Alerts existieren noch nicht in Welle 2/3. Sobald Source-Alerts angelegt werden, setzen sie das Label `correlation_key=<pattern-name>`. Erst nach Welle 2 wird die Correlation-Rule in Keep angelegt -- siehe Live-Anlage-Reihenfolge unten.
@@ -19,14 +19,14 @@ Die Patterns sind designet, aber die Source-Alerts existieren noch nicht in Well
 
 ## Zweck
 
-Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht mehrere Telegram-Pings fuer ein einzelnes Storage-Outage bekommt. Dieses Dokument haelt die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
+Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht mehrere Telegram-Pings für ein einzelnes Storage-Outage bekommt. Dieses Dokument hält die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
 
 ## Konvention: Label `correlation_key`
 
 Jeder Alert/Workflow, der Mitglied einer Correlation ist, setzt das Label `correlation_key=<pattern-name>`. Keep matcht darauf in der Correlation-Rule.
 
-- Pattern-Namen sind cluster-uebergreifend identisch -- `auth-cascade` matcht sowohl DCLab als auch Homelab
-- Cluster-Disambiguierung ueber zusaetzliches Label `cluster=dclab|homelab`
+- Pattern-Namen sind cluster-übergreifend identisch -- `auth-cascade` matcht sowohl DCLab als auch Homelab
+- Cluster-Disambiguierung über zusätzliches Label `cluster=dclab|homelab`
 - Welle-2/3-Alert-Subtasks bekommen in der ClickUp-Description den expliziten Hinweis: "Labels: `correlation_key=<name>`, `cluster=<dclab|homelab>`"
 
 ## Severity-Logik
@@ -34,12 +34,12 @@ Jeder Alert/Workflow, der Mitglied einer Correlation ist, setzt das Label `corre
 Keep berechnet die Effective-Severity einer Correlation aus den Member-Alerts:
 
 - mindestens 1 Member `critical` -> Correlation `critical`
-- Alle Members `warning` und mindestens 3 Stueck -> Correlation `critical` (Storm-Eskalation)
-- Sonst: Correlation-Severity = hoechste Member-Severity
+- Alle Members `warning` und mindestens 3 Stück -> Correlation `critical` (Storm-Eskalation)
+- Sonst: Correlation-Severity = höchste Member-Severity
 
 ## Inhibit-Logik
 
-Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Keep-Workflow modelliert, nicht als native Correlation-Rule. Beispiel: bei aktiver `observability-pipeline-down` werden `loki-no-data`-Alerts geschluckt, weil sie Folge der Pipeline sind, nicht eigenstaendige Issues.
+Eine Correlation kann andere Alerts unterdrücken (Storm-Reduktion). Wird als Keep-Workflow modelliert, nicht als native Correlation-Rule. Beispiel: bei aktiver `observability-pipeline-down` werden `loki-no-data`-Alerts geschluckt, weil sie Folge der Pipeline sind, nicht eigenständige Issues.
 
 ## Pattern-Katalog
 
@@ -55,7 +55,7 @@ Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Ke
 
 - **Cluster-Scope**: beide
 - **Trigger-Alerts**: LINSTOR-Quorum-Lost, DRBD-Diskless, CSI-Plugin-Unhealthy, App-Volume-Mount-Failed
-- **Symptome**: Multiple Apps koennen nicht mehr lesen/schreiben
+- **Symptome**: Multiple Apps können nicht mehr lesen/schreiben
 - **Inhibit**: App-Crashloop-Alerts dieses Clusters
 - **Action**: Forum-Topic "Storage", Severity critical
 
@@ -65,8 +65,8 @@ Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Ke
 - **Trigger-Alerts**: Authentik-PG-Connection-Storm, ForwardAuth-502, Authentik-Worker-Restart-Loop, Outpost-Down
 - **Symptome**: alle Apps hinter Authentik werfen 502
 - **Inhibit**: einzelne App-502-Alerts wenn Authentik selbst betroffen ist
-- **Action**: Forum-Topic "Auth", Severity escalation gemaess Severity-Logik
-- **Live-Anlage Pilot**: Homelab-Live-Anlage als Pilot-Schritt 4 [`86c9ktav9`](https://app.clickup.com/t/86c9ktav9) (CEL-Filter + Webhook-Replay-Test). DCLab-Rollout nach 7d Pilot-Stabilitaet [`86c9ktax4`](https://app.clickup.com/t/86c9ktax4). Parallel-Track Root-Cause [`86c9ktajz`](https://app.clickup.com/t/86c9ktajz) -- PgBouncer/Connection-Pool-Limit
+- **Action**: Forum-Topic "Auth", Severity escalation gemäss Severity-Logik
+- **Live-Anlage Pilot**: Homelab-Live-Anlage als Pilot-Schritt 4 [`86c9ktav9`](https://app.clickup.com/t/86c9ktav9) (CEL-Filter + Webhook-Replay-Test). DCLab-Rollout nach 7d Pilot-Stabilität [`86c9ktax4`](https://app.clickup.com/t/86c9ktax4). Parallel-Track Root-Cause [`86c9ktajz`](https://app.clickup.com/t/86c9ktajz) -- PgBouncer/Connection-Pool-Limit
 
 ### 4. dns-outage
 
@@ -82,7 +82,7 @@ Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Ke
 - **Cluster-Scope**: beide
 - **Trigger-Alerts**: Cloudflared-Tunnel-Down, Traefik-5xx-Spike (mind. 10/min), LE-Cert-Expiry-imminent (<7d), Authentik-Outpost-Probe-Fail (von aussen)
 - **Symptome**: Public-Endpoints von aussen nicht erreichbar, Login-Flow gebrochen
-- **Inhibit**: keine (User-impacting, nicht unterdruecken)
+- **Inhibit**: keine (User-impacting, nicht unterdrücken)
 - **Action**: Telegram-Topic "External", Severity critical
 
 ### 6. observability-pipeline-down
@@ -111,17 +111,17 @@ Eine Correlation kann andere Alerts unterdruecken (Storm-Reduktion). Wird als Ke
 
 ### 9. keep-hub-outage
 
-- **Cluster-Scope**: cross-cluster (Keep laeuft pro Cluster, externer Watchdog probt beide)
+- **Cluster-Scope**: cross-cluster (Keep läuft pro Cluster, externer Watchdog probt beide)
 - **Trigger-Alerts**: Externer-Watchdog-Probe-Fail (vom externen Proxmox pve-01-nana), Keep-API-Health-Fail (von ausserhalb)
 - **Symptome**: Keep-Hub selbst offline, alle Alerts gehen verloren bis Recovery
 - **Inhibit**: irrelevant -- Keep ist down, nichts wird verarbeitet
-- **Action**: direkter Telegram-Push vom externen Watchdog (NICHT ueber Keep, wuerde geschluckt), Severity critical
+- **Action**: direkter Telegram-Push vom externen Watchdog (NICHT über Keep, würde geschluckt), Severity critical
 
 ## Live-Anlage-Reihenfolge
 
 Wenn Source-Alerts in Welle 2/3 existieren, in dieser Reihenfolge in Keep anlegen:
 
-1. `keep-hub-outage` -- zuerst, weil externer Watchdog-Trigger und unabhaengig von Keep selbst
+1. `keep-hub-outage` -- zuerst, weil externer Watchdog-Trigger und unabhängig von Keep selbst
 2. `observability-pipeline-down` -- wegen Inhibit-Effekt auf alle anderen
 3. `power-outage`, `dns-outage`, `cluster-storage-outage` -- die schweren Cascades
 4. `auth-cascade`, `external-reachability` -- User-impacting
@@ -134,7 +134,7 @@ Damit die Subtasks die richtigen `correlation_key`-Labels setzen:
 - **Welle 2 Cross-Cluster**:
   - Externer Watchdog -> `correlation_key=keep-hub-outage`
   - LE-Cert-Expiry -> `correlation_key=external-reachability`
-  - Cookie-Domain-Drift -> kein correlation_key (eigenstaendig)
+  - Cookie-Domain-Drift -> kein correlation_key (eigenständig)
   - Consul-Health -> `correlation_key=cluster-storage-outage` (wenn Service-Health der Storage-Komponenten)
   - Authentik-Outpost-Metrics -> `correlation_key=auth-cascade`
 - **Welle 3 DCLab**: konkrete Alert-Mapping pro Subtask in den ClickUp-Descriptions
@@ -145,11 +145,11 @@ Damit die Subtasks die richtigen `correlation_key`-Labels setzen:
 - HSLU [`86c9kkjcv`](https://app.clickup.com/t/86c9kkjcv) -- Live-Anlage Correlations DCLab
 - Privat [`86c9kkjf3`](https://app.clickup.com/t/86c9kkjf3) -- Live-Anlage Correlations Homelab
 
-Beide Subtasks referenzieren dieses Design und fuehren die 9 Patterns einzeln als Checkliste.
+Beide Subtasks referenzieren dieses Design und führen die 9 Patterns einzeln als Checkliste.
 
 ## Verwandte Doku
 
-- [Monitoring](index.md) -- Komponenten-Uebersicht
+- [Monitoring](index.md) -- Komponenten-Übersicht
 - [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
 - [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
 - [Keep](keep.md) -- Alert-Hub Komponentenbeschreibung

@@ -44,7 +44,7 @@ direction: down
 
 Client: Netzwerk-Client {
   class: node
-  tooltip: "Alle Geraete im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
+  tooltip: "Alle Geräte im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
 }
 
 pihole: Pi-hole v6 (DNS-Eingang) {
@@ -59,7 +59,7 @@ pihole: Pi-hole v6 (DNS-Eingang) {
     tooltip: "10.0.2.2 | LXC 4022 auf pve02, Port 53, FTL/dnsmasq"
   }
 
-  PH1 <-> PH2: Nebula-Sync (taeglich 04:00) {
+  PH1 <-> PH2: Nebula-Sync (täglich 04:00) {
     style.stroke: "#6b7280"
     style.stroke-dash: 3
     tooltip: "Full Teleporter Sync, Nomad Service-Job mit internem Cron"
@@ -85,7 +85,7 @@ consul: Consul DNS {
 
 Router: UDM Pro {
   class: node
-  tooltip: "10.0.0.1 | Loest *.local auf"
+  tooltip: "10.0.0.1 | Löst *.local auf"
 }
 
 Traefik: Traefik VIP {
@@ -108,11 +108,11 @@ Client -> pihole: DNS Query (Port 53) {
 }
 pihole -> consul: *.consul (Conditional Forwarding) {
   style.stroke: "#7c3aed"
-  tooltip: "Port 8600 | Service Discovery fuer Nomad-Container"
+  tooltip: "Port 8600 | Service Discovery für Nomad-Container"
 }
 pihole -> Router: *.local {
   style.stroke: "#6b7280"
-  tooltip: "UniFi-Geraete und DHCP-Hostnamen"
+  tooltip: "UniFi-Geräte und DHCP-Hostnamen"
 }
 pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
   style.stroke: "#16a34a"
@@ -120,9 +120,9 @@ pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
 }
 pihole -> Unbound: Alle anderen Domains {
   style.stroke: "#6b7280"
-  tooltip: "Upstream fuer nicht-lokale Anfragen"
+  tooltip: "Upstream für nicht-lokale Anfragen"
 }
-Unbound -> Root: Rekursive Aufloesung {
+Unbound -> Root: Rekursive Auflösung {
   style.stroke: "#6b7280"
   tooltip: "Direkt gegen Root-Server, kein Forwarding"
 }

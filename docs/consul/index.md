@@ -93,7 +93,7 @@ cli: Consul Clients {
 
 TRF: Traefik {
   class: node
-  tooltip: "VIP 10.0.2.20 | Consul Catalog Provider fuer automatisches Routing"
+  tooltip: "VIP 10.0.2.20 | Consul Catalog Provider für automatisches Routing"
 }
 
 DNS: Pi-hole {
@@ -112,7 +112,7 @@ srv -> cli: Health Checks {
 }
 TRF -> srv: Consul Catalog API {
   style.stroke: "#7c3aed"
-  tooltip: "HTTP :8500 | Traefik liest Service-Katalog fuer Backend-Discovery"
+  tooltip: "HTTP :8500 | Traefik liest Service-Katalog für Backend-Discovery"
 }
 DNS -> srv: DNS Query (.consul) {
   style.stroke: "#6b7280"

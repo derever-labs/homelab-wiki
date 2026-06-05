@@ -1,6 +1,6 @@
 ---
 title: Directus Gravel
-description: Headless CMS fuer die persoenliche Gravel-Bike-Recherche
+description: Headless CMS für die persönliche Gravel-Bike-Recherche
 tags:
   - service
   - directus
