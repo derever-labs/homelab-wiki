@@ -116,8 +116,8 @@ luzern.pvelu -> lenzburg.pbs: Backup (Tailscale) {
 
 ::: info Zwei Sichten auf die Standorte
 Diese Map zeigt die **Verwaltungs- und Backup-Sicht** (PDM verwaltet, PBS sichert). Die **Netz- und
-Tailscale-Sicht** derselben Standorte (Gateways, Subnetze, Schlüssel-Devices) führt
-[Netzwerk -- Standorte](../netzwerk/standorte.md).
+Tailscale-Sicht** derselben Standorte (Gateways, Subnetze, Schlüssel-Devices als Gesamtmap) führt die
+[Netzwerk-Übersicht](../netzwerk/#gesamtubersicht); Standort-Details die [Standorte](../netzwerk/standorte.md)-Seite.
 :::
 
 ## iGPU Passthrough

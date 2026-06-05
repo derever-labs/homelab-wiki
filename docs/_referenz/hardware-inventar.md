@@ -173,9 +173,11 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
 
 ## UniFi Netzwerk-Hardware
 
+Switches und Access Points stehen am Hauptstandort **Lenzburg** (Spalte Standort = Raum). Die beiden Aussenstellen haben je ein eigenes UniFi-Gateway (am Tabellenende). Standort-Kontext: [Standorte](../netzwerk/standorte.md).
+
 | Gerät | Modell | Typ | Ports | Standort |
 | :--- | :--- | :--- | :--- | :--- |
-| UDM Pro | UDM Pro | Gateway + Controller | 1x SFP+ WAN, 8x RJ45 LAN | Rack |
+| UDM Pro | UDM Pro | Gateway + Controller | 1x SFP+ WAN, 8x RJ45 LAN | Lenzburg (Rack) |
 | Aggregation Switch | USL8A | 10G Switch | 8x SFP+ | Rack |
 | Rack Switch | US-24 | 1G Switch | 24x RJ45 | Kämmerli |
 | Switch (unbekannt) | US-24 | 1G Switch | 24x RJ45 | unbekannt |
@@ -190,6 +192,8 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
 | AP Koffer | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
 | AP Werkstatt | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
 | AP Garage | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| Gateway Dottikon | UniFi Cloud Gateway Ultra (UCG-Ultra) | Gateway | 1x WAN, 4x RJ45 LAN | Dottikon (192.168.2.1) |
+| Gateway Luzern | UniFi-Gateway (Modell offen) | Gateway | -- | Luzern (172.16.0.1) |
 
 IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwerk)
 
