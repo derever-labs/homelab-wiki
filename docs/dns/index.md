@@ -214,7 +214,9 @@ Alle Nomad Clients haben in `/etc/docker/daemon.json` beide DNS-Server (lxc-dns-
 
 ## Standorte und Failover
 
-lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../_referenz/hosts-und-ips.md). Alle Netzwerk-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+Die zentrale DNS-Infrastruktur (Pi-hole + Unbound) steht am Hauptstandort **Lenzburg**: lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../_referenz/hosts-und-ips.md). Alle Lenzburg-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+
+Die Aussenstellen **Dottikon** und **Luzern** ([Standorte](../netzwerk/standorte.md)) betreiben **keinen eigenen Pi-hole** -- lokale Clients nutzen den DNS ihres jeweiligen UniFi-Gateways. Die Homelab-FQDNs der externen Nodes werden über die oben genannten Split-DNS-Overrides auf ihre Tailscale-IPs aufgelöst.
 
 ::: warning Nie beide gleichzeitig rebooten
 Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer einen LXC am Laufen lassen.

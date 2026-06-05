@@ -15,15 +15,20 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 ## Netzwerk-Bereiche
 
+Die VLAN-Segmente gehören zum Hauptstandort **Lenzburg**; darunter die Standort-LANs der Aussenstellen und das standortübergreifende Tailscale-Overlay. Topologie: [Netzwerk](../netzwerk/), Standort-Details: [Standorte](../netzwerk/standorte.md).
+
 | Netzwerk | Bereich | VLAN | Verwendung |
 | :--- | :--- | :--- | :--- |
-| Management | 10.0.0.0/22 | -- | UniFi-Geräte, Gateway, UDM Pro |
+| Management | 10.0.0.0/22 | native | UniFi-Geräte, Gateway, VMs, Proxmox, Services |
 | Device | 10.0.10.0/24 | 10 | Endgeräte |
 | Guest | 10.0.30.0/24 | 30 | Gästenetz |
-| Rack | 10.0.100.0/24 | 100 | VMs, Proxmox, Services |
+| Rack | 10.0.100.0/24 | 100 | Rack-Infrastruktur |
 | IoT | 10.0.200.0/24 | 200 | Home Assistant, Zigbee |
-| Docker Proxy | 192.168.90.0/24 | -- | Traefik Proxy Network |
-| Thunderbolt | 10.99.1.0/24 | -- | Peer-to-Peer Replikation |
+| Docker Proxy | 192.168.90.0/24 | -- | Traefik Proxy Network (intern) |
+| Thunderbolt | 10.99.1.0/24 | -- | Peer-to-Peer Replikation (pve01/pve02) |
+| Dottikon (Nana) | 192.168.2.0/23 | -- | Aussenstelle -- Standort-LAN |
+| Luzern | 172.16.0.0/24 | -- | Aussenstelle -- Standort-LAN |
+| Tailscale | 100.64.0.0/10 | -- | Remote-Access-Overlay (alle Standorte) |
 
 ## UniFi Netzwerk
 
