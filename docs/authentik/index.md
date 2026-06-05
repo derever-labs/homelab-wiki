@@ -51,7 +51,7 @@ Zugriff: Zugriff {
 
   User: Benutzer {
     class: node
-    tooltip: "Interner oder externer Zugriff auf geschuetzte Services"
+    tooltip: "Interner oder externer Zugriff auf geschützte Services"
   }
 }
 
@@ -60,11 +60,11 @@ Traefik: Traefik HA {
 
   TR: Reverse Proxy {
     class: node
-    tooltip: "VIP 10.0.2.20 | Empfaengt alle eingehenden Requests"
+    tooltip: "VIP 10.0.2.20 | Empfängt alle eingehenden Requests"
   }
   FWD: ForwardAuth Middleware {
     class: node
-    tooltip: "intern-auth / public-auth | Prueft ob Session gueltig ist"
+    tooltip: "intern-auth / public-auth | Prüft ob Session gültig ist"
   }
 }
 
@@ -81,11 +81,11 @@ Authentik: Authentik (Nomad Job) {
   }
   PROXY: Proxy Outpost {
     class: node
-    tooltip: "ForwardAuth Backend fuer Traefik-Integration"
+    tooltip: "ForwardAuth Backend für Traefik-Integration"
   }
   LDAP_OUT: LDAP Outpost {
     class: node
-    tooltip: "LDAP Port 3389 / LDAPS Port 6636 fuer Jellyfin-Authentifizierung"
+    tooltip: "LDAP Port 3389 / LDAPS Port 6636 für Jellyfin-Authentifizierung"
   }
 }
 
@@ -94,7 +94,7 @@ Backend: Backend-Services {
 
   SVC: ForwardAuth-Services {
     class: node
-    tooltip: "Grafana, Nomad UI, Consul UI etc. -- geschuetzt via Middleware-Chain"
+    tooltip: "Grafana, Nomad UI, Consul UI etc. -- geschützt via Middleware-Chain"
   }
   OIDC: OIDC-Services {
     class: node
@@ -131,7 +131,7 @@ Traefik.TR -> Traefik.FWD: Middleware-Chain {
 }
 Traefik.FWD -> Authentik.PROXY: ForwardAuth Check {
   style.stroke: "#7c3aed"
-  tooltip: "Traefik fragt Proxy Outpost ob Session gueltig ist"
+  tooltip: "Traefik fragt Proxy Outpost ob Session gültig ist"
 }
 Authentik.PROXY -> Authentik.AK: Session validieren {
   style.stroke: "#7c3aed"

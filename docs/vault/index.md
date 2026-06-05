@@ -75,7 +75,7 @@ raft: Vault Raft Cluster {
 
 Nomad: Nomad Server {
   class: node
-  tooltip: "Stellt JWT fuer Workload Identity aus"
+  tooltip: "Stellt JWT für Workload Identity aus"
 }
 
 NJ: Nomad Task {
@@ -85,7 +85,7 @@ NJ: Nomad Task {
 
 Consul: Consul {
   class: node
-  tooltip: "Service Discovery fuer active.vault"
+  tooltip: "Service Discovery für active.vault"
 }
 
 Nomad -> NJ: JWT ausstellen {
@@ -155,7 +155,7 @@ Vault: Vault {
 
 KV: KV v2 Secret Engine {
   class: node
-  tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschraenkt Zugriff auf eigenen Pfad"
+  tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschränkt Zugriff auf eigenen Pfad"
 }
 
 # 1. JWT ausstellen
@@ -166,14 +166,14 @@ Nomad -> Task: 1. JWT ausstellen (Workload Identity) {
 # 2. JWT an Vault vorzeigen
 Task -> Vault: 2. JWT vorzeigen (HTTP :8200) {
   style.stroke: "#7c3aed"
-  tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token noetig"
+  tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token nötig"
 }
 
 # 3. Vault validiert und gibt Token
 Vault -> Task: 3. Vault Token (Policy: nomad-workloads) {
   style.stroke-dash: 3
   style.stroke: "#7c3aed"
-  tooltip: "Vault prueft JWT-Signatur via Nomad JWKS, dann Token mit eingeschraenkter Policy"
+  tooltip: "Vault prüft JWT-Signatur via Nomad JWKS, dann Token mit eingeschränkter Policy"
 }
 
 # 4. Secrets lesen
@@ -182,7 +182,7 @@ Task -> KV: 4. kv/data/JOB_ID lesen {
   tooltip: "Task liest nur Secrets unter seinem eigenen Job-Pfad"
 }
 
-# 5. Secret-Werte zurueck
+# 5. Secret-Werte zurück
 KV -> Task: 5. Secret-Werte {
   style.stroke-dash: 3
   style.stroke: "#16a34a"

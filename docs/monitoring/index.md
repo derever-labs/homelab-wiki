@@ -144,7 +144,7 @@ direct: Direct-Webhook (Pfad 1) {
   checkmk: CheckMK {class: svc}
 }
 
-# --- Logs/Metrics fuer Pfad 2/3 ---
+# --- Logs/Metrics für Pfad 2/3 ---
 sources_l: Log-Quellen (Pfad 2) {
   class: container
   apps: Container/Hosts {class: svc}
@@ -210,7 +210,7 @@ telegraf -> influx: write
 influx -> grafana: Flux Query
 
 # Keep -> Bots -> Topics
-keep -> bot_batch: "default + alle Severitaeten"
+keep -> bot_batch: "default + alle Severitäten"
 keep -> bot_vip: "critical / high / page"
 bot_batch -> homelab_alerts.monitoring
 bot_batch -> homelab_alerts.security
