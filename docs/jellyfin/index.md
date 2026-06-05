@@ -113,34 +113,34 @@ Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürli
 
 Vor Jellyfin laufen drei Traefik-Router nebeneinander:
 
-- **`jellyfin`** -- Default-Router fuer die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../banner/index.md) kommt nicht mehr aus dieser Chain, sondern ueber Jellyfins Custom-CSS (siehe unten).
+- **`jellyfin`** -- Default-Router für die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../banner/index.md) kommt nicht mehr aus dieser Chain, sondern über Jellyfins Custom-CSS (siehe unten).
 - **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
-- **`jellyfin-stream`** (Priority 100) -- alle binaeren oder streaming-aehnlichen Pfade. Chain bewusst kuerzer: nur `crowdsec@file` und `secure-headers@file` -- **kein `error-pages`** (das wuerde sonst HTML in Binaer-/Range-Antworten schreiben). Historisch lief hier auch kein `banner-inject`/`force-identity-encoding`; beide sind inzwischen global zurueckgebaut.
+- **`jellyfin-stream`** (Priority 100) -- alle binären oder streaming-ähnlichen Pfade. Chain bewusst kürzer: nur `crowdsec@file` und `secure-headers@file` -- **kein `error-pages`** (das würde sonst HTML in Binär-/Range-Antworten schreiben). Historisch lief hier auch kein `banner-inject`/`force-identity-encoding`; beide sind inzwischen global zurückgebaut.
 
-Hintergrund zum Stream-Router: Urspruenglich war der groessere Treiber `plugin-rewritebody` (= `banner-inject`), das die komplette Response pufferte -- bei multi-GB Videos und HLS-Segmenten zerstoerte das `Content-Length` und blockierte `Range`-Requests (HTTP 206 Partial Content); Clients wie **Infuse** brachen mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab. Seit dem `banner-inject`-Rueckbau bleibt als Grund fuer den Bypass `error-pages`, das keine HTML-Fehlerseiten in Binaer-Streams schreiben darf.
+Hintergrund zum Stream-Router: Ursprünglich war der grössere Treiber `plugin-rewritebody` (= `banner-inject`), das die komplette Response pufferte -- bei multi-GB Videos und HLS-Segmenten zerstörte das `Content-Length` und blockierte `Range`-Requests (HTTP 206 Partial Content); Clients wie **Infuse** brachen mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab. Seit dem `banner-inject`-Rueckbau bleibt als Grund für den Bypass `error-pages`, das keine HTML-Fehlerseiten in Binär-Streams schreiben darf.
 
 Die Stream-Bypass-Rule deckt folgende Pfad-Familien ab (Quelle: Jellyfin-Controller plus Praxiserfahrung):
 
 - `/Videos/*` -- Direct-Stream, HLS-Master/Variant/Segments, Trickplay, eingebettete Subtitles und Attachments
 - `/Audio/*` -- Direct, Universal-Audio (Transcode-Fallback), HLS
 - `/LiveRecordings/`, `/LiveStreamFiles/` -- LiveTV
-- `/Items/<id>/Download` und `/Items/<id>/File` -- vollstaendige Datei-Direktzugriffe
+- `/Items/<id>/Download` und `/Items/<id>/File` -- vollständige Datei-Direktzugriffe
 - `/Providers/Subtitles/` -- Remote-Subtitle-Download
-- `/Playback/BitrateTest` -- bis 100 MB Zufalls-Bytes fuer Bandwidth-Estimation
-- `/FallbackFont/Fonts/` -- Font-Dateien fuer Subtitle-Rendering
-- `/websocket` -- sicherheitshalber, obwohl Traefik WebSockets ueblicherweise transparent durchreicht
+- `/Playback/BitrateTest` -- bis 100 MB Zufalls-Bytes für Bandwidth-Estimation
+- `/FallbackFont/Fonts/` -- Font-Dateien für Subtitle-Rendering
+- `/websocket` -- sicherheitshalber, obwohl Traefik WebSockets üblicherweise transparent durchreicht
 
 Die Rule nutzt `PathRegexp` mit `(?i)`, weil Jellyfins ASP.NET-Routing case-insensitive matched, Traefik aber case-sensitive ist. Quelldatei: `media/jellyfin.nomad` im Repo `derever-labs/homelab-nomad-jobs`.
 
-::: info Was laeuft durch die Default-Chain
-Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen durch die Default-Chain (`crowdsec`, `secure-headers`, `error-pages`). Der Wartungsbanner kommt hier nicht mehr aus der Chain, sondern ueber Jellyfins Custom-CSS (siehe naechster Abschnitt).
+::: info Was läuft durch die Default-Chain
+Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen durch die Default-Chain (`crowdsec`, `secure-headers`, `error-pages`). Der Wartungsbanner kommt hier nicht mehr aus der Chain, sondern über Jellyfins Custom-CSS (siehe nächster Abschnitt).
 :::
 
 ## Wartungsbanner via Custom-CSS
 
-Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern ueber Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile laedt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollstaendige Mechanik und Pflege: [Wartungsbanner](../banner/index.md).
+Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern über Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile lädt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollständige Mechanik und Pflege: [Wartungsbanner](../banner/index.md).
 
-Damit entfaellt der urspruengliche `banner-inject`-Grund des Streaming-Bypass oben -- die `plugin-rewritebody`-Pufferung beruehrt Jellyfin nicht mehr. Der Stream-Router bleibt trotzdem sinnvoll, weil er auch `error-pages` von binaeren Pfaden fernhaelt.
+Damit entfällt der ursprüngliche `banner-inject`-Grund des Streaming-Bypass oben -- die `plugin-rewritebody`-Pufferung berührt Jellyfin nicht mehr. Der Stream-Router bleibt trotzdem sinnvoll, weil er auch `error-pages` von binären Pfaden fernhält.
 
 ## TMDb-Metadata ohne IPv6
 

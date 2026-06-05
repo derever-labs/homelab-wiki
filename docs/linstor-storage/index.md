@@ -53,7 +53,7 @@ direction: down
 
 DB: DRBD Resource linstor_db {
   class: node
-  tooltip: "Quorum 2/3 | H2 Datenbank fuer Linstor Controller State"
+  tooltip: "Quorum 2/3 | H2 Datenbank für Linstor Controller State"
 }
 
 C05: vm-nomad-client-05 -- ACTIVE {
@@ -70,7 +70,7 @@ C06: vm-nomad-client-06 -- STANDBY {
 
   C06a: Linstor Satellite (Standby Controller) {
     class: node
-    tooltip: "10.0.2.126 | TB: 10.99.1.106 | 200 GB ZFS, drbd-reactor uebernimmt bei Failover"
+    tooltip: "10.0.2.126 | TB: 10.99.1.106 | 200 GB ZFS, drbd-reactor übernimmt bei Failover"
   }
 }
 

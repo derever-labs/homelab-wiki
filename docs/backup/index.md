@@ -18,7 +18,7 @@ Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen un
 | Attribut | Wert |
 |----------|------|
 | PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
-| VM Backups (PBS) | Proxmox PBS → PBS Server, Block-Level inkl. LINSTOR-Volumes -- RPO 24h, 6 Monate |
+| VM Backups (PBS) | Proxmox PBS → PBS Server, Block-Level inkl. LINSTOR-Volumes; auch externe Nodes (Luzern/Dottikon) via Tailscale -- RPO 24h, 6 Monate |
 | DRBD-Replikation | 2× Live-Replica (client-05/client-06) -- Hochverfügbarkeit, kein Backup |
 | SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../_querschnitt/datenstrategie.md#litestream-replikation-sqlite-nicht-umgesetzt)) |
 

@@ -1,6 +1,6 @@
 ---
 title: 2026-05-12 ZOT/Redis NAS-Cascade
-description: NAS-Garage-S3 Performance-Crash loest ZOT-Sync-Storm aus, 17 Apps unhealthy, Recovery via Linstor-CSI-Migration
+description: NAS-Garage-S3 Performance-Crash löst ZOT-Sync-Storm aus, 17 Apps unhealthy, Recovery via Linstor-CSI-Migration
 tags:
   - incident
   - post-mortem

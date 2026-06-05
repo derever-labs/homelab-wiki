@@ -27,6 +27,99 @@ Der Cluster besteht aus drei Knoten (pve00 als Quorum/VM-Host, pve01 und pve02 a
 
 Vollständige Knoten-, VM- und LXC-Liste mit IPs, VM-IDs und Host-Zuordnung: [Hosts und IPs](../_referenz/hosts-und-ips.md#proxmox-cluster). Physische Hardware-Specs (CPU, RAM, Storage): [Hardware-Inventar](../_referenz/hardware-inventar.md).
 
+## Externe / Standalone-Nodes
+
+Neben dem Lenzburg-Cluster gibt es zwei eigenständige Proxmox-Nodes an anderen Standorten. Sie sind **kein Cluster-Mitglied** (kein Quorum, kein HA, kein DRBD), nutzen lokale ZFS-Disks und sind via Tailscale ins Homelab eingebunden. Verwaltet werden sie zentral über den [Datacenter Manager](#datacenter-manager-pdm), gesichert über den gemeinsamen PBS.
+
+| Node | Standort | Netz | Rolle |
+| :--- | :--- | :--- | :--- |
+| pve-01-nana | Dottikon | 192.168.2.0/23 | Externer Watchdog (Subnet-Router 192.168.2.0/23), hostet homeassistant-dottikon |
+| pve-lu-01 | Luzern | 172.16.0.0/24 | Standalone-Node (Subnet-Router 172.16.0.0/24), hostet homeassistant-luzern |
+
+IPs, DNS und Details: [Hosts und IPs -- Externe Plattformen](../_referenz/hosts-und-ips.md#externe-plattformen). Hardware: [Hardware-Inventar -- Externe Nodes](../_referenz/hardware-inventar.md#externe-nodes). Betrieb (Wartung, Migration): [Betrieb -- Externe Standalone-Nodes](./betrieb.md#externe-standalone-nodes).
+
+### Standort-Topologie
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: right
+
+lenzburg: Standort Lenzburg {
+  class: container
+  tooltip: "Homelab-Hauptstandort, 10.0.2.0/24"
+
+  cluster: PVE-Cluster lenzburg {
+    class: container
+    pve00: pve00 { class: node; tooltip: "10.0.2.40 | Quorum" }
+    pve01: pve01 { class: node; tooltip: "10.0.2.41 | Compute + MASTER" }
+    pve02: pve02 { class: node; tooltip: "10.0.2.42 | Compute" }
+    pve01 <-> pve02: Thunderbolt / DRBD {
+      style.stroke: "#6b7280"
+      tooltip: "10.99.1.0/24, Linstor-Replikation"
+    }
+  }
+
+  pbs: PBS { class: node; tooltip: "10.0.2.50 | VM 99999 auf pve02" }
+  pdm: PDM { class: node; tooltip: "10.0.2.60 | VM 99998 auf pve01" }
+}
+
+dottikon: Standort Dottikon {
+  class: container
+  tooltip: "192.168.2.0/23"
+  nana: pve-01-nana { class: node; tooltip: "192.168.2.41 | TS 100.81.116.122" }
+}
+
+luzern: Standort Luzern {
+  class: container
+  tooltip: "172.16.0.0/24"
+  pvelu: pve-lu-01 { class: node; tooltip: "172.16.0.200 | TS 100.112.213.18" }
+}
+
+lenzburg.pdm -> lenzburg.cluster: verwaltet {
+  style.stroke: "#7c3aed"
+}
+lenzburg.pdm -> lenzburg.pbs: verwaltet {
+  style.stroke: "#7c3aed"
+}
+lenzburg.pdm -> dottikon.nana: verwaltet (Tailscale) {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+}
+lenzburg.pdm -> luzern.pvelu: verwaltet (Tailscale) {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+}
+
+lenzburg.cluster -> lenzburg.pbs: Backup {
+  style.stroke: "#2563eb"
+}
+dottikon.nana -> lenzburg.pbs: Backup (Tailscale) {
+  style.stroke: "#2563eb"
+  style.stroke-dash: 3
+}
+luzern.pvelu -> lenzburg.pbs: Backup (Tailscale) {
+  style.stroke: "#2563eb"
+  style.stroke-dash: 3
+}
+```
+
+::: info Zwei Sichten auf die Standorte
+Diese Map zeigt die **Verwaltungs- und Backup-Sicht** (PDM verwaltet, PBS sichert). Die **Netz- und
+Tailscale-Sicht** derselben Standorte (Gateways, Subnetze, Schlüssel-Devices als Gesamtmap) führt die
+[Netzwerk-Übersicht](../netzwerk/#gesamtubersicht); Standort-Details die [Standorte](../netzwerk/standorte.md)-Seite.
+:::
+
 ## iGPU Passthrough
 
 Die Intel Iris Xe iGPU (Alder Lake, 96 EU) auf pve01 und pve02 wird per **Full Passthrough** an die Nomad-Client VMs durchgereicht. Hauptanwendung: [Jellyfin](../jellyfin/index.md) Hardware-Transcoding (QSV).
@@ -136,7 +229,20 @@ Der Proxmox Datacenter Manager ermöglicht die zentrale Verwaltung des PVE Clust
 
 ### Konfigurierte Remotes
 
-Remotes: PVE-Cluster "lenzburg" (3 Nodes) und PBS "pbs" -- IPs und Ports siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+| Remote | Typ | Anbindung |
+| :--- | :--- | :--- |
+| lenzburg | PVE-Cluster (3 Nodes) | lokal |
+| pbs | Proxmox Backup Server | lokal |
+| pve-01-nana | Standalone-Node Dottikon | via Tailscale |
+| pve-lu-01 | Standalone-Node Luzern | via Tailscale |
+
+IPs und Ports siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+
+::: tip Alle Remotes auf FQDN + CA-Trust
+Alle Remotes sind über ihren **FQDN mit CA-Trust** eingebunden (kein Fingerprint-Pinning mehr). Die Node-FQDNs lösen via Pi-hole-Split-DNS auf die jeweilige Tailscale-IP auf und tragen ein gültiges Let's-Encrypt-Zertifikat ([TLS-Zertifikate](../_referenz/tls-zertifikate.md#proxmox-nodes-eigene-acme-zertifikate)). Damit überlebt die Anbindung jede Zertifikats-Erneuerung -- ein gepinnter Fingerprint wäre bei jedem Renewal gebrochen.
+
+PDM selbst nutzt **kein** `accept-routes` (das würde sein eigenes Netz `10.0.0.0/22` über Tailscale routen und es aussperren). Die externen Remotes erreicht PDM daher über die direkte Tailscale-Peer-IP, auf die der FQDN auflöst.
+:::
 
 ### Authentifizierung
 

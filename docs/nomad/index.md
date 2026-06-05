@@ -102,12 +102,12 @@ workers -> Vault: JWT Auth, Secrets lesen {
 servers -> Consul: Service Health {
   style.stroke: "#16a34a"
   style.stroke-dash: 3
-  tooltip: "Nomad nutzt Consul Health Checks fuer Task-Status"
+  tooltip: "Nomad nutzt Consul Health Checks für Task-Status"
 }
 servers -> Vault: Workload Identity Config {
   style.stroke: "#7c3aed"
   style.stroke-dash: 3
-  tooltip: "Server stellt JWT fuer Tasks aus, Vault validiert via JWKS"
+  tooltip: "Server stellt JWT für Tasks aus, Vault validiert via JWKS"
 }
 ```
 

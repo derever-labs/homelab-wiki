@@ -15,15 +15,20 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 ## Netzwerk-Bereiche
 
+Die VLAN-Segmente gehören zum Hauptstandort **Lenzburg**; darunter die Standort-LANs der Aussenstellen und das standortübergreifende Tailscale-Overlay. Topologie: [Netzwerk](../netzwerk/), Standort-Details: [Standorte](../netzwerk/standorte.md).
+
 | Netzwerk | Bereich | VLAN | Verwendung |
 | :--- | :--- | :--- | :--- |
-| Management | 10.0.0.0/22 | -- | UniFi-Geräte, Gateway, UDM Pro |
+| Management | 10.0.0.0/22 | native | UniFi-Geräte, Gateway, VMs, Proxmox, Services |
 | Device | 10.0.10.0/24 | 10 | Endgeräte |
 | Guest | 10.0.30.0/24 | 30 | Gästenetz |
-| Rack | 10.0.100.0/24 | 100 | VMs, Proxmox, Services |
+| Rack | 10.0.100.0/24 | 100 | Rack-Infrastruktur |
 | IoT | 10.0.200.0/24 | 200 | Home Assistant, Zigbee |
-| Docker Proxy | 192.168.90.0/24 | -- | Traefik Proxy Network |
-| Thunderbolt | 10.99.1.0/24 | -- | Peer-to-Peer Replikation |
+| Docker Proxy | 192.168.90.0/24 | -- | Traefik Proxy Network (intern) |
+| Thunderbolt | 10.99.1.0/24 | -- | Peer-to-Peer Replikation (pve01/pve02) |
+| Dottikon (Nana) | 192.168.2.0/23 | -- | Aussenstelle -- Standort-LAN |
+| Luzern | 172.16.0.0/24 | -- | Aussenstelle -- Standort-LAN |
+| Tailscale | 100.64.0.0/10 | -- | Remote-Access-Overlay (alle Standorte) |
 
 ## UniFi Netzwerk
 
@@ -56,6 +61,7 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 | Host | IP (LAN) | IP (Tailscale) | DNS | Standort | Rolle |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | pve-01-nana | 192.168.2.41 | 100.81.116.122 | pve01.nana.ackermannprivat.ch | Dottikon Nana | Externer Watchdog-Proxmox für Homelab (Single-Node, kein Cluster-Mitglied) |
+| pve-lu-01 | 172.16.0.200 | 100.112.213.18 | pve-lu-01.ackermannprivat.ch | Luzern | Standalone-Proxmox (Single-Node, kein Cluster-Mitglied) |
 
 ::: info Externer Watchdog (nur Homelab)
 `pve-01-nana` steht physisch ausserhalb des Homelab-Standorts und ist via Tailscale als Subnet-Router für `192.168.2.0/23` ins Tailnet eingebunden. Wird vom Homelab-Ansible über die Inventory-Gruppe `proxmox_external` (bzw. `all_proxmox_hosts` für gemeinsame Plays) angesprochen.
@@ -65,6 +71,14 @@ DNS via Pi-hole-Override (lxc-dns-01/02 → `100.81.116.122`). In PDM (`pdm.acke
 Cross-Site-VPN ist heute Tailscale, Endzustand ist Unifi SD-WAN sobald Public-IP an Nana-Seite verfügbar.
 
 DCLab hat **keinen** externen Watchdog.
+:::
+
+::: info Standalone-Node Luzern
+`pve-lu-01` (Acer Revo RB610) steht am Standort Luzern im eigenen Netz `172.16.0.0/24`, getrennt vom Homelab (`10.0.2.x`) und Dottikon (`192.168.2.x`). Via Tailscale als Subnet-Router für `172.16.0.0/24` eingebunden (Redundanz: `apple-tv` advertisiert dieselbe Route). Kein Cluster-Mitglied, kein HA/Quorum/DRBD -- lokale ZFS-Disk, Backup via PBS.
+
+DNS via Pi-hole-Override (lxc-dns-01/02 → `100.112.213.18`). In PDM (`pdm.ackermannprivat.ch`) als Remote `pve-lu-01` eingehängt. Hostet VM 100 `homeassistant-luzern`.
+
+SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu den übrigen Nodes (Publickey).
 :::
 
 ## Infrastruktur

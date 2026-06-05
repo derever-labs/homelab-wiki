@@ -22,6 +22,8 @@ Hostname, VM ID und Host der PBS-VM sind in [Hosts und IPs](../_referenz/hosts-u
 
 PBS sichert alle VMs und Container des Proxmox-Clusters täglich. Die Backup-Jobs werden direkt in Proxmox VE konfiguriert; jede PVE-Node sendet die Backups ihrer lokalen VMs an PBS. Übersicht aller Backup-Ebenen inklusive applikationsspezifischer Backups: [Backup](./index.md).
 
+Auch die externen [Standalone-Nodes](../proxmox/index.md#externe-standalone-nodes) `pve-lu-01` (Luzern) und `pve-01-nana` (Dottikon) sichern ihre VMs auf denselben PBS -- der Backup-Push läuft über Tailscale. PBS wird dabei über die **lokale IP** (`10.0.2.50`) als Storage eingebunden (VPN-agnostisch), mit dediziertem Token `root@pam!pve-backup` (Rolle `DatastoreBackup`).
+
 ## Retention Policy
 
 | Parameter | Wert |

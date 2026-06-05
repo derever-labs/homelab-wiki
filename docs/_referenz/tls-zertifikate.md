@@ -146,8 +146,22 @@ Die interne Kommunikation zwischen Consul, Nomad und Vault ist bewusst ohne TLS 
 - **Nomad:** ACLs aktiv
 - **Vault:** Audit Logging und ACLs aktiv
 
+## Proxmox-Nodes -- eigene ACME-Zertifikate
+
+Die Proxmox-Nodes laufen **nicht** hinter Traefik und holen ihre TLS-Zertifikate selbst direkt über den eingebauten ACME-Client (`pvenode acme`). Account `ackermannprivat`, Validierung via Cloudflare DNS-01 (CF-Credentials in `/etc/pve/priv/acme/plugins.cfg`).
+
+| Attribut | Wert |
+| :--- | :--- |
+| Aussteller | Let's Encrypt |
+| Challenge-Typ | DNS-01 (Cloudflare) |
+| ACME-Client | Proxmox-eigen (`pvenode acme`), kein Traefik |
+| Erneuerung | Automatisch durch Proxmox |
+
+Die Node-FQDNs (`pveXX.ackermannprivat.ch`, `pve-lu-01.ackermannprivat.ch`, `pve01.nana.ackermannprivat.ch`) lösen via Pi-hole-Split-DNS auf die jeweilige Tailscale-IP auf. Dadurch funktioniert in PDM die Anbindung über **FQDN + CA-Trust** (ohne IP-im-SAN und ohne fragiles Fingerprint-Pinning).
+
 ## Verwandte Seiten
 
-- [Traefik Reverse Proxy](../traefik/index.md) -- Wildcard-Zertifikat, acme.json, HA-Setup
-- [NAS Storage](../nas-storage/index.md) -- Synology DS1825+, DSM-Dienste
-- [Vault](../vault/index.md) -- Secrets Management und Security-Entscheidungen
+- [Traefik](../traefik/) -- Reverse Proxy und Zertifikatsverwaltung
+- [NAS Storage](../nas-storage/) -- Synology DS1825+, DSM-Dienste
+- [Vault](../vault/) -- Secrets Management und Security-Entscheidungen
+- [Proxmox](../proxmox/) -- PDM-Anbindung und Node-Übersicht

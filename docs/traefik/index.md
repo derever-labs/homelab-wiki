@@ -45,7 +45,7 @@ external: Externer Zugang {
   }
   CF: Cloudflare DNS {
     class: node
-    tooltip: "DNS fuer *.ackermannprivat.ch und *.ackermann.systems"
+    tooltip: "DNS für *.ackermannprivat.ch und *.ackermann.systems"
   }
   Router: UDM Pro {
     class: node
@@ -62,11 +62,11 @@ ha: Traefik HA Cluster {
   }
   T1: vm-traefik-01 (MASTER) {
     class: node
-    tooltip: "10.0.2.21 | Prioritaet 150, Docker Compose, CrowdSec"
+    tooltip: "10.0.2.21 | Priorität 150, Docker Compose, CrowdSec"
   }
   T2: vm-traefik-02 (BACKUP) {
     class: node
-    tooltip: "10.0.2.22 | Prioritaet 100, Docker Compose, CrowdSec"
+    tooltip: "10.0.2.22 | Priorität 100, Docker Compose, CrowdSec"
   }
 }
 
@@ -75,7 +75,7 @@ providers: Routing-Provider {
 
   Consul: Consul Catalog {
     class: node
-    tooltip: "Port 8500 | Automatische Service Discovery fuer Nomad-Jobs"
+    tooltip: "Port 8500 | Automatische Service Discovery für Nomad-Jobs"
   }
   File: File Provider {
     class: node

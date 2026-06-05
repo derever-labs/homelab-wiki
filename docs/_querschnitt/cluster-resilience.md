@@ -91,8 +91,8 @@ Bootstrap_Clean: "Bootstrap-Klasse clean (kein ZOT im Pfad)" {
   alloy.class: clean
 }
 
-Anti_Pattern: "Anti-Pattern (haengt an ZOT, zurueckgestellt)" {
-  helper: "wait-for-postgres prestart-Helper\nzot.service.consul/library/alpine\nMechanismus selbst von ZOT abhaengig"
+Anti_Pattern: "Anti-Pattern (hängt an ZOT, zurückgestellt)" {
+  helper: "wait-for-postgres prestart-Helper\nzot.service.consul/library/alpine\nMechanismus selbst von ZOT abhängig"
   latest: "7 Jobs mit force_pull=true + :latest\nzot.service.consul/.../<image>:latest\nImmer Pull bei Restart"
   helper.class: antipattern
   latest.class: antipattern
@@ -114,21 +114,21 @@ ZOT_Service -> Anti_Pattern.helper: "Image-Pull"
 ZOT_Service -> Anti_Pattern.latest: "Image-Pull (force)"
 ```
 
-::: tip Alloy-Selbstreferenz aufgeloest (31.05.2026)
+::: tip Alloy-Selbstreferenz aufgelöst (31.05.2026)
 - **Alloy** (System-Job, Monitoring-Agent) -- **gefixt**: Image von explizitem
   `zot.service.consul`-Ref auf short-form `grafana/alloy:v1.13.1` umgestellt. Nutzt jetzt
-  den ZOT-registry-mirror als Cache, faellt bei ZOT-Down auf docker.io zurueck. Verifiziert
+  den ZOT-registry-mirror als Cache, fällt bei ZOT-Down auf docker.io zurück. Verifiziert
   live auf c04/c05/c06 (3/3 running, 0 Restarts).
 :::
 
-::: warning Zwei Anti-Pattern-Gruppen verbleiben (zurueckgestellt)
+::: warning Zwei Anti-Pattern-Gruppen verbleiben (zurückgestellt)
 - **wait-for-postgres** Helper in mehreren Jobs -- nutzt `zot.service.consul/library/alpine`
   als Image. Optionaler Folge-Schritt (Helper-Image auf docker.io direkt pinnen)
 - **7 Jobs** mit `force_pull=true` auf `zot.service.consul/.../<image>:latest`
   (immoscraper-Familie + meshcmd + stash-jellyfin-proxy + video-grabber + special-yt-dlp).
   3 davon sind Eigen-Builds ohne Upstream-Alternative -- kein sauberer Hebel
 
-Beide bleiben nach der Challenge (31.05) zurueckgestellt. Track: ClickUp 86c9uu5cu.
+Beide bleiben nach der Challenge (31.05) zurückgestellt. Track: ClickUp 86c9uu5cu.
 :::
 
 ## Diagramm 2: 4-Schichten-Modell
@@ -226,7 +226,7 @@ t7_apps: "Image-Pull-Fail: 'context deadline exceeded'\nrestart mode=delay: 3 at
 
 t8_alloy: "Alloy startet auch -- braucht ZOT\nMonitoring kommt nicht hoch\n-> Cascade unsichtbar" { class: problem }
 
-t9: "t=15-30 min: ZOT vollstaendig ready\nApps die im delay-Loop stehen probieren noch\nApps mit 'exceeded' Status: Operator-Restart noetig" { class: warn }
+t9: "t=15-30 min: ZOT vollständig ready\nApps die im delay-Loop stehen probieren noch\nApps mit 'exceeded' Status: Operator-Restart nötig" { class: warn }
 
 t1 -> t2 -> t3 -> t4 -> t5
 t5 -> t6_zot
@@ -267,7 +267,7 @@ t9_cache: "Schicht 1: 80% der Apps haben Image lokal cached\n-> kein Pull, sofor
 
 t9_wait: "Schicht 3: 20% mit neuem Tag oder GC'd Image\n-> prestart wait-for-zot mit raw_exec+curl\n-> kein Pull-Versuch bevor ZOT da" { class: wait }
 
-t10_alloy: "Alloy startet aus ghcr.io direkt\n-> Monitoring sofort verfuegbar\n-> sehen Cascade in Echtzeit" { class: done }
+t10_alloy: "Alloy startet aus ghcr.io direkt\n-> Monitoring sofort verfügbar\n-> sehen Cascade in Echtzeit" { class: done }
 
 t11: "t=300s: alle Apps healthy" { class: done }
 
@@ -316,7 +316,7 @@ Neu: "Ziel-Modell" {
   nz2: "Apps laufen weiter\n(Image schon im Container)" { class: ok }
   nz3: "App-Restart triggered\nz.B. Job-Update, OOM"
   nz4_cache: "Schicht 1: force_pull=false\n-> Image lokal, kein Pull-Versuch\n-> App startet normal" { class: ok }
-  nz4_wait: "Schicht 3: prestart wait-for-zot\nraw_exec+curl mit --max-time 300\n-> wartet bis ZOT zurueck" { class: wait }
+  nz4_wait: "Schicht 3: prestart wait-for-zot\nraw_exec+curl mit --max-time 300\n-> wartet bis ZOT zurück" { class: wait }
   nz5: "Nomad reschedulet ZOT auf anderen Node\nCSI-Volume folgt via DRBD-Re-Attach\nZOT in ~30s wieder online" { class: ok }
   nz6: "prestart-curl wird erfolgreich\nmain-Task startet normal" { class: ok }
 
@@ -348,7 +348,7 @@ Heute_n: "Ist-Zustand" {
   ha1: "c05 stirbt"
   ha2: "Nomad detected via heartbeat-grace ~10s" { class: ok }
   ha3: "ZOT reschedule auf c06\nCSI re-attach: ~10s\nBoltDB-Open: instant\n-> 30s Outage gesamt" { class: ok }
-  ha4: "Andere Apps auf c05:\nmode=delay haengt auf c05\nstirbt mit dem Node\nNomad evictet nach 5min" { class: warn }
+  ha4: "Andere Apps auf c05:\nmode=delay hängt auf c05\nstirbt mit dem Node\nNomad evictet nach 5min" { class: warn }
   ha5: "Apps die ZOT brauchen:\nforce_pull triggert sofort\nfail wenn ZOT noch nicht ready auf c06" { class: problem }
 
   ha1 -> ha2 -> ha3

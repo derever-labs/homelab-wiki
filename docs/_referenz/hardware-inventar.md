@@ -72,6 +72,19 @@ internet: Internet {
 
 rack.aggregation -> udmpro
 udmpro -> internet
+
+luzern: Standort Luzern {
+  class: container
+
+  pvelu: pve-lu-01 {
+    class: node
+    tooltip: "Acer Revo RB610\nCPU: i3-1315U (6C/8T)\nRAM: 8 GB\nStorage: 256 GB WD SN740 NVMe\nNetz: 172.16.0.0/24"
+  }
+}
+
+luzern -> internet: Tailscale {
+  style.stroke-dash: 3
+}
 ```
 
 ## Server-Übersicht
@@ -130,6 +143,24 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
+## Externe Nodes
+
+Standalone-Proxmox-Nodes ausserhalb des Lenzburg-Racks, via Tailscale ins Homelab eingebunden (kein Cluster-Mitglied). IP-Zuordnung und Rollen: [Hosts und IPs](./hosts-und-ips.md#externe-plattformen).
+
+### pve-lu-01 -- Standalone-Node Luzern
+
+Kompakter Standalone-Node am Standort Luzern (Netz `172.16.0.0/24`). Hostet eine eigene Home-Assistant-VM, kein HA/Quorum/DRBD.
+
+| Attribut | Wert |
+| :--- | :--- |
+| Hersteller/Modell | Acer -- Revo RB610 |
+| CPU | Intel Core i3-1315U, 6 Kerne (8 Threads), 1 Socket |
+| RAM | 8 GB |
+| Lokaler Storage | 256 GB NVMe -- WD PC SN740 (SDDQNQD-256G) |
+| NICs | `enp2s0` (2.5G, aktiv); `wlp0s20f3` WLAN ungenutzt |
+| Standort | Luzern (eigenes LAN, getrennt von Homelab/Dottikon) |
+| VMs | homeassistant-luzern (VM 100) |
+
 ## NAS
 
 Seit dem NAS-Cutover (2026-06) laufen zwei Synology-NAS im Homelab.
@@ -156,9 +187,11 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
 
 ## UniFi Netzwerk-Hardware
 
+Switches und Access Points stehen am Hauptstandort **Lenzburg** (Spalte Standort = Raum). Die beiden Aussenstellen haben je ein eigenes UniFi-Gateway (am Tabellenende). Standort-Kontext: [Standorte](../netzwerk/standorte.md).
+
 | Gerät | Modell | Typ | Ports | Standort |
 | :--- | :--- | :--- | :--- | :--- |
-| UDM Pro | UDM Pro | Gateway + Controller | 1x SFP+ WAN, 8x RJ45 LAN | Rack |
+| UDM Pro | UDM Pro | Gateway + Controller | 1x SFP+ WAN, 8x RJ45 LAN | Lenzburg (Rack) |
 | Aggregation Switch | USL8A | 10G Switch | 8x SFP+ | Rack |
 | Rack Switch | US-24 | 1G Switch | 24x RJ45 | Kämmerli |
 | Switch (unbekannt) | US-24 | 1G Switch | 24x RJ45 | unbekannt |
@@ -173,6 +206,8 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
 | AP Koffer | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
 | AP Werkstatt | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
 | AP Garage | UAP-AC-LR | Access Point | Wi-Fi 5, 2.4+5 GHz | -- |
+| Gateway Dottikon | UniFi Cloud Gateway Ultra (UCG-Ultra) | Gateway | 1x WAN, 4x RJ45 LAN | Dottikon (192.168.2.1) |
+| Gateway Luzern | UniFi-Gateway (Modell offen) | Gateway | -- | Luzern (172.16.0.1) |
 
 IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwerk)
 

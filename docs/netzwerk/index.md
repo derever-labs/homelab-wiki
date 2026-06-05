@@ -11,16 +11,114 @@ tags:
 
 # Netzwerk
 
-Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch. Diese Seite ist die kanonische Quelle für Topologie, Segmente und das Hardware-Inventar; Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/).
+Das Homelab erstreckt sich über drei Standorte -- **Lenzburg** (Hauptstandort), **Dottikon** und **Luzern** --, verbunden über ein Tailscale-Overlay. Die [Gesamtübersicht](#gesamtubersicht) zeigt sie im Zusammenhang; Details je Standort führt die [Standorte](./standorte.md)-Seite. Der übrige Teil dieser Seite dokumentiert den **Hauptstandort Lenzburg** im Detail (VLAN-Segmente, physische Topologie, Hardware), geroutet über einen UniFi Dream Machine Pro mit SFP+-WAN-Uplink via ISP-Router. Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/).
 
-## Übersicht
+## Gesamtübersicht
 
-| Attribut | Wert |
-|----------|------|
-| Deployment | UDM Pro (integriert) + UniFi Switches + APs |
+Drei Standorte mit je eigenem UniFi-Gateway und Internet-Uplink, zu einem logischen Netz verbunden über das Tailscale-Overlay (`tag:homelab`). Standort-Tabelle und Beschreibung je Standort: [Standorte](./standorte.md).
 
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+direction: down
 
-## Netzwerk-Diagramm
+classes: {
+  site: {
+    style.stroke-dash: 4
+    style.border-radius: 8
+  }
+  node: {
+    style.border-radius: 8
+  }
+  overlay: {
+    style.stroke-dash: 4
+    style.border-radius: 8
+  }
+  tslink: {
+    style.stroke-dash: 3
+  }
+}
+
+internet: Internet / WAN {
+  class: node
+  tooltip: "Drei getrennte Standort-Uplinks"
+}
+
+lenzburg: Standort Lenzburg {
+  class: site
+  tooltip: "Hauptstandort, 10.0.0.0/22"
+  lzgw: UDM Pro { class: node; tooltip: "Gateway + Controller, 10.0.0.1" }
+  lzpve: Proxmox-Cluster { class: node; tooltip: "pve00/01/02, Thunderbolt-DRBD" }
+  lznas: Synology NAS { class: node; tooltip: "10.0.0.200, NFS + S3 + Backup-Ziel" }
+  lzha: Home Assistant { class: node; tooltip: "10.0.0.100, VM auf pve02" }
+  lzsvc: Traefik + Pi-hole { class: node; tooltip: "Traefik-VIP 10.0.2.20, DNS lxc-dns-01/02" }
+
+  lzgw -> lzpve
+  lzgw -> lznas
+  lzgw -> lzha
+  lzgw -> lzsvc
+}
+
+dottikon: Standort Dottikon {
+  class: site
+  tooltip: "Aussenstelle Nana, 192.168.2.0/23"
+  dogw: UDM Ultra { class: node; tooltip: "Gateway, 192.168.2.1" }
+  dopve: pve-01-nana { class: node; tooltip: "192.168.2.41, externer Watchdog" }
+  donas: NanaServer { class: node; tooltip: "Synology, 192.168.2.200" }
+  doha: Home Assistant { class: node; tooltip: "homeassistant-dottikon, VM auf pve-01-nana" }
+
+  dogw -> dopve
+  dogw -> donas
+  dogw -> doha
+}
+
+luzern: Standort Luzern {
+  class: site
+  tooltip: "Aussenstelle, 172.16.0.0/24"
+  lugw: UniFi-Gateway { class: node; tooltip: "172.16.0.1" }
+  lupve: pve-lu-01 { class: node; tooltip: "172.16.0.200, Standalone-Node" }
+  luha: Home Assistant { class: node; tooltip: "homeassistant-luzern, VM auf pve-lu-01" }
+
+  lugw -> lupve
+  lugw -> luha
+}
+
+tailscale: Tailscale Overlay {
+  class: overlay
+  tooltip: "tag:homelab, 100.64.0.0/10"
+  tsmesh: Mesh-VPN { class: node; tooltip: "Subnet-Router je Standort verbinden die LANs" }
+}
+
+internet -> lenzburg.lzgw: WAN
+internet -> dottikon.dogw: WAN
+internet -> luzern.lugw: WAN
+
+lenzburg.lzsvc -> tailscale.tsmesh: Subnet-Router + Exit-Node {
+  class: tslink
+  tooltip: "vm-traefik-01/02, zusätzlich pve00"
+}
+dottikon.dopve -> tailscale.tsmesh: Subnet-Router 192.168.2.0/23 {
+  class: tslink
+}
+luzern.lupve -> tailscale.tsmesh: Subnet-Router 172.16.0.0/24 {
+  class: tslink
+  tooltip: "Route redundant auch via apple-tv"
+}
+```
+
+::: info Zwei Sichten auf die Standorte
+Diese Map zeigt die **Netz- und Konnektivitäts-Sicht** (Gateways, Subnetze, Tailscale, Schlüssel-Devices).
+Die **Proxmox-Verwaltungs- und Backup-Sicht** derselben Standorte (PDM verwaltet, PBS sichert) führt die
+[Proxmox Standort-Topologie](../proxmox/index.md#standort-topologie).
+:::
+
+## Lenzburg -- Logische Topologie
+
+Das VLAN-Setup des Hauptstandorts: fünf Segmente hinter dem UDM Pro, plus das Thunderbolt-Peer-Netz und das Tailscale-Overlay.
 
 ```d2
 direction: down
@@ -97,13 +195,13 @@ Core.USL8A -> DEV
 Core.USL8A -> GUEST
 Core.USL8A -> RACK
 Core.USL8A -> IOT
-TB.TB01 <-> TB.TB02: ~20 Gbps DRBD + Migration
+TB.TB01 <-> TB.TB02: DRBD + Migration
 TS.TAIL -> Core.UDMPRO: VPN Overlay { style.stroke-dash: 5 }
 ```
 
-## Physische Topologie
+## Lenzburg -- Physische Topologie
 
-Verkabelung von Gateway, Aggregation-Switch, Zugangs-Switches und Access Points. Modelle und Standorte: [Hardware-Inventar](../_referenz/hardware-inventar.md#unifi-netzwerk-hardware).
+Verkabelung von Gateway, Aggregation-Switch, Zugangs-Switches und Access Points am Hauptstandort. Modelle und Standorte: [Hardware-Inventar](../_referenz/hardware-inventar.md#unifi-netzwerk-hardware).
 
 ```d2
 direction: down
@@ -144,9 +242,11 @@ SW_150W -> AP_KUCHE
 
 ## Netzwerk-Segmente
 
+VLAN-Segmente am Hauptstandort Lenzburg. Die Aussenstellen Dottikon (`192.168.2.0/23`) und Luzern (`172.16.0.0/24`) sind flache Standort-LANs ohne eigene VLAN-Segmentierung -- siehe [Standorte](./standorte.md). Die Proxmox- und Service-VMs (`10.0.2.x`) liegen statisch im **nativen Management-Netz** `10.0.0.0/22`, nicht im Rack-VLAN 100.
+
 | Segment | Subnetz | VLAN | Verwendung | Gateway |
 |---------|---------|------|------------|---------|
-| **Management** | 10.0.0.0/22 | native | VMs, Proxmox, Services | 10.0.0.1 |
+| **Management** | 10.0.0.0/22 | native | UniFi-Geräte, VMs, Proxmox, Services | 10.0.0.1 |
 | **Device Network** | 10.0.10.0/24 | 10 | Endgeräte | 10.0.10.1 |
 | **Guest Network** | 10.0.30.0/24 | 30 | Gäste-WLAN | 10.0.30.1 |
 | **Rack Network** | 10.0.100.0/24 | 100 | Rack-Infrastruktur | 10.0.100.1 |
@@ -165,7 +265,7 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 direkt für High-Speed Datenv
 
 | Funktion | Details |
 |----------|---------|
-| Bandbreite | ~20 Gbps |
+| Bandbreite | bis ~15 Gbps (real, single-stream -- [Benchmarks](./referenz.md#benchmark-ergebnisse)) |
 | Bonding Mode | active-backup |
 | Bridge | vmbr-tb |
 | Zweck | DRBD-Replikation, VM-Migration |
@@ -174,7 +274,7 @@ Details zur Konfiguration und IP-Zuordnung: [Proxmox](../proxmox/)
 
 ## Tailscale
 
-Tailscale wird für den Remote-Zugang verwendet. Geräte erhalten IPs aus dem CGNAT-Bereich 100.64.0.0/10. Seit Mai 2026 ist das Tailnet durch eine ACL-Policy in zwei Cluster getrennt -- HSLU/DCLab und Homelab sehen einander nicht, `tag:admin` sieht beide. Details, Tag-Schema und Diagramm: [Tailscale](./tailscale.md).
+Das Tailscale-Overlay (CGNAT-Bereich `100.64.0.0/10`) verbindet die drei Standorte und dient dem Remote-Zugang. Tag-Schema, ACL-basierte Cluster-Trennung (HSLU/Homelab) und das Diagramm führt [Tailscale](./tailscale.md).
 
 
 ## Externe Erreichbarkeit
@@ -205,6 +305,7 @@ Das physische Inventar (Aggregation-Switch USL8A, PoE- und Flex-Mini-Switches, A
 
 ## Verwandte Seiten
 
+- [Standorte](./standorte.md) -- standortübergreifende Netz-Architektur (Lenzburg, Dottikon, Luzern)
 - [UniFi](../unifi/) -- Controller, WLAN, Firewall-Konfiguration
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS

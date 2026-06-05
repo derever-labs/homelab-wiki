@@ -44,7 +44,7 @@ direction: down
 
 Client: Netzwerk-Client {
   class: node
-  tooltip: "Alle Geraete im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
+  tooltip: "Alle Geräte im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
 }
 
 pihole: Pi-hole v6 (DNS-Eingang) {
@@ -59,7 +59,7 @@ pihole: Pi-hole v6 (DNS-Eingang) {
     tooltip: "10.0.2.2 | LXC 4022 auf pve02, Port 53, FTL/dnsmasq"
   }
 
-  PH1 <-> PH2: Nebula-Sync (taeglich 04:00) {
+  PH1 <-> PH2: Nebula-Sync (täglich 04:00) {
     style.stroke: "#6b7280"
     style.stroke-dash: 3
     tooltip: "Full Teleporter Sync, Nomad Service-Job mit internem Cron"
@@ -85,7 +85,7 @@ consul: Consul DNS {
 
 Router: UDM Pro {
   class: node
-  tooltip: "10.0.0.1 | Loest *.local auf"
+  tooltip: "10.0.0.1 | Löst *.local auf"
 }
 
 Traefik: Traefik VIP {
@@ -108,11 +108,11 @@ Client -> pihole: DNS Query (Port 53) {
 }
 pihole -> consul: *.consul (Conditional Forwarding) {
   style.stroke: "#7c3aed"
-  tooltip: "Port 8600 | Service Discovery fuer Nomad-Container"
+  tooltip: "Port 8600 | Service Discovery für Nomad-Container"
 }
 pihole -> Router: *.local {
   style.stroke: "#6b7280"
-  tooltip: "UniFi-Geraete und DHCP-Hostnamen"
+  tooltip: "UniFi-Geräte und DHCP-Hostnamen"
 }
 pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
   style.stroke: "#16a34a"
@@ -120,9 +120,9 @@ pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
 }
 pihole -> Unbound: Alle anderen Domains {
   style.stroke: "#6b7280"
-  tooltip: "Upstream fuer nicht-lokale Anfragen"
+  tooltip: "Upstream für nicht-lokale Anfragen"
 }
-Unbound -> Root: Rekursive Aufloesung {
+Unbound -> Root: Rekursive Auflösung {
   style.stroke: "#6b7280"
   tooltip: "Direkt gegen Root-Server, kein Forwarding"
 }
@@ -156,8 +156,14 @@ Pi-hole v6 mit eingebettetem dnsmasq (FTL) übernimmt DNS-Eingangs-Router und Ad
 | `vpn.ackermannprivat.ch` | Traefik VIP |
 | `pve00/01/02.ackermannprivat.ch` | Proxmox-Hosts |
 | `pbs.ackermannprivat.ch` | PBS |
+| `pve-lu-01.ackermannprivat.ch` | pve-lu-01 (Tailscale-IP 100.112.213.18) |
+| `pve01.nana.ackermannprivat.ch` | pve-01-nana (Tailscale-IP 100.81.116.122) |
 
 Ziel-IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+
+::: info Externe Nodes zeigen auf Tailscale-IPs
+Die Overrides der externen Standalone-Nodes lösen bewusst auf die **Tailscale-IP** auf (nicht auf eine LAN-IP), da diese Standorte nur über Tailscale erreichbar sind. So tragen die FQDNs ein gültiges Let's-Encrypt-Zertifikat und PDM kann sie über FQDN + CA-Trust anbinden. SSOT der Overrides: `ansible/roles/pihole/defaults/main.yml` im `homelab-hashicorp-stack`. Änderungen an `/etc/dnsmasq.d/` greifen erst nach einem `pihole-FTL`-Restart (ein `reload-lists`/`restartdns` lädt die dnsmasq-Config nicht neu).
+:::
 
 **Conditional Forwarding:**
 
@@ -208,7 +214,9 @@ Alle Nomad Clients haben in `/etc/docker/daemon.json` beide DNS-Server (lxc-dns-
 
 ## Standorte und Failover
 
-lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../_referenz/hosts-und-ips.md). Alle Netzwerk-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+Die zentrale DNS-Infrastruktur (Pi-hole + Unbound) steht am Hauptstandort **Lenzburg**: lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../_referenz/hosts-und-ips.md). Alle Lenzburg-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+
+Die Aussenstellen **Dottikon** und **Luzern** ([Standorte](../netzwerk/standorte.md)) betreiben **keinen eigenen Pi-hole** -- lokale Clients nutzen den DNS ihres jeweiligen UniFi-Gateways. Die Homelab-FQDNs der externen Nodes werden über die oben genannten Split-DNS-Overrides auf ihre Tailscale-IPs aufgelöst.
 
 ::: warning Nie beide gleichzeitig rebooten
 Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer einen LXC am Laufen lassen.

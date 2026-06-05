@@ -11,7 +11,11 @@ tags:
 
 # UniFi
 
-Das UniFi Dream Machine Pro ist das zentrale Gateway und verwaltet das gesamte Netzwerk -- Routing, Switching, WLAN und Firewall. Der Controller läuft integriert auf dem UDM Pro. Diese Seite beschreibt die Controller-Spezifika; das kanonische Topologie-, Segment- und Hardware-Inventar führt [Netzwerk](../netzwerk/).
+Das UniFi Dream Machine Pro ist das zentrale Gateway am **Hauptstandort Lenzburg** und verwaltet dort Routing, Switching, WLAN und Firewall. Der Controller läuft integriert auf dem UDM Pro. Diese Seite beschreibt die Controller-Spezifika; das kanonische Topologie-, Segment- und Hardware-Inventar führt [Netzwerk](../netzwerk/).
+
+::: info Aussenstellen mit eigenem Gateway
+Diese Seite deckt nur Lenzburg ab. Die Aussenstellen **Dottikon** (UniFi Cloud Gateway Ultra) und **Luzern** (UniFi-Gateway) betreiben je ein eigenes, separat verwaltetes Gateway -- Übersicht: [Standorte](../netzwerk/standorte.md).
+:::
 
 ## Übersicht
 
