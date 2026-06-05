@@ -20,8 +20,11 @@ Diese Seite ist die kanonische Liste aller Web-Interfaces im Homelab. Zugangsdat
 | Proxmox pve00 | `https://10.0.2.40:8006` | Proxmox Web-UI |
 | Proxmox pve01 | `https://10.0.2.41:8006` | Proxmox Web-UI |
 | Proxmox pve02 | `https://10.0.2.42:8006` | Proxmox Web-UI |
+| Proxmox pve-01-nana | `https://pve01.nana.ackermannprivat.ch:8006` | Standalone Dottikon (via Tailscale, gültiges LE-Cert) |
+| Proxmox pve-lu-01 | `https://pve-lu-01.ackermannprivat.ch:8006` | Standalone Luzern (via Tailscale, gültiges LE-Cert) |
 | PBS | `https://10.0.2.50:8007` | Proxmox Backup Server |
-| Datacenter Manager | `https://10.0.2.60:8443` | Proxmox Datacenter Manager |
+| Datacenter Manager | `https://10.0.2.60:8443` | Proxmox Datacenter Manager (direkt) |
+| Datacenter Manager (SSO) | `https://pdm.ackermannprivat.ch` | PDM via Traefik + Authentik ForwardAuth |
 | Nomad UI | `https://10.0.2.104:4646` | Job-Orchestrierung (ACL Token erforderlich, TLS) |
 | Consul UI | `http://10.0.2.104:8500` | Service Discovery und KV Store |
 | UniFi Network | `https://10.0.0.1` | Lokaler Zugang, UI.com SSO |

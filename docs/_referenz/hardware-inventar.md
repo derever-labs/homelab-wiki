@@ -72,6 +72,19 @@ internet: Internet {
 
 rack.aggregation -> udmpro
 udmpro -> internet
+
+luzern: Standort Luzern {
+  class: container
+
+  pvelu: pve-lu-01 {
+    class: node
+    tooltip: "Acer Revo RB610\nCPU: i3-1315U (6C/8T)\nRAM: 8 GB\nStorage: 256 GB WD SN740 NVMe\nNetz: 172.16.0.0/24"
+  }
+}
+
+luzern -> internet: Tailscale {
+  style.stroke-dash: 3
+}
 ```
 
 ## Server-Übersicht
@@ -129,6 +142,24 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06 |
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
+
+## Externe Nodes
+
+Standalone-Proxmox-Nodes ausserhalb des Lenzburg-Racks, via Tailscale ins Homelab eingebunden (kein Cluster-Mitglied). IP-Zuordnung und Rollen: [Hosts und IPs](./hosts-und-ips.md#externe-plattformen).
+
+### pve-lu-01 -- Standalone-Node Luzern
+
+Kompakter Standalone-Node am Standort Luzern (Netz `172.16.0.0/24`). Hostet eine eigene Home-Assistant-VM, kein HA/Quorum/DRBD.
+
+| Attribut | Wert |
+| :--- | :--- |
+| Hersteller/Modell | Acer -- Revo RB610 |
+| CPU | Intel Core i3-1315U, 6 Kerne (8 Threads), 1 Socket |
+| RAM | 8 GB |
+| Lokaler Storage | 256 GB NVMe -- WD PC SN740 (SDDQNQD-256G) |
+| NICs | `enp2s0` (2.5G, aktiv); `wlp0s20f3` WLAN ungenutzt |
+| Standort | Luzern (eigenes LAN, getrennt von Homelab/Dottikon) |
+| VMs | homeassistant-luzern (VM 100) |
 
 ## NAS
 
