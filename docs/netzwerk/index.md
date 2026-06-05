@@ -11,7 +11,7 @@ tags:
 
 # Netzwerk
 
-Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch. Diese Seite ist die kanonische Quelle für Topologie, Segmente und das Hardware-Inventar; Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/).
+Das Homelab ist in mehrere Netzwerk-Segmente (VLANs) aufgeteilt, die über einen UniFi Dream Machine Pro geroutet werden. Der WAN-Uplink läuft über SFP+ (eth9) via ISP-Router, die öffentliche IP ist dynamisch. Diese Seite ist die kanonische Quelle für Topologie, Segmente und das Hardware-Inventar des **Hauptstandorts Lenzburg**; Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/). Die standortübergreifende Sicht über alle drei Standorte (Lenzburg, Dottikon, Luzern) gibt [Standorte](./standorte.md).
 
 ## Übersicht
 
@@ -205,6 +205,7 @@ Das physische Inventar (Aggregation-Switch USL8A, PoE- und Flex-Mini-Switches, A
 
 ## Verwandte Seiten
 
+- [Standorte](./standorte.md) -- standortübergreifende Netz-Architektur (Lenzburg, Dottikon, Luzern)
 - [UniFi](../unifi/) -- Controller, WLAN, Firewall-Konfiguration
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS
