@@ -40,6 +40,53 @@ Maschinen-Clients können den OIDC-Login nicht durchlaufen, nutzen also den Toke
 - Schema: `GET /openapi/?format=json`
 - Anlage von Menüs/Rezepten: `POST` auf `/api/recipe/`, `/api/meal-plan/`, `/api/meal-type/`, `/api/keyword/`, `/api/recipe-book/`
 
+## Einkaufsliste-Sync mit Bring!
+
+Einträge in Tandoors Einkaufsliste werden automatisch in die **Bring!**-App gespiegelt -- über Tandoors eingebauten *HomeAssistant-Connector* und die offizielle Bring!-Integration von Home Assistant (Lenzburg). Ein nativer Bring!-Connector existiert in Tandoor nicht; eine HA-Automation ist nicht nötig, weil Tandoor direkt in die Bring!-Liste pusht, die Home Assistant als Todo-Entität bereitstellt.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  ext: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
+
+direction: right
+
+TANDOOR: "Tandoor\nEinkaufsliste" { class: node }
+CONN: "HomeAssistant-\nConnector" { class: node }
+HA: "Home Assistant Lenzburg\n(todo.luzern)" { class: node }
+BRING: "Bring!\nListe Luzern" { class: ext }
+
+TANDOOR -> CONN: "Eintrag\nanlegen/loeschen"
+CONN -> HA: "REST: todo.add_item /\ntodo.remove_item"
+HA <-> BRING: "Bring!-Integration"
+```
+
+Tandoor ruft beim Anlegen oder Löschen eines Eintrags die HA-REST-API (`todo.add_item` / `todo.remove_item`) auf der Entität `todo.luzern` auf; Home Assistant spiegelt diese Liste über die Bring!-Integration in die Bring!-Liste *Luzern*.
+
+- **Connector:** `ConnectorConfig` *Bring (HA Lenzburg)* in *sam's Space* -- HA-URL (muss auf `/api/` enden, sonst `404`), `todo_entity=todo.luzern`. Der HA Long-Lived Access Token liegt in 1Password (`HA Token Tandoor Bring`).
+- **Synchronisiert:** Anlegen und Löschen. Reine Änderungen eines bestehenden Eintrags werden vom Connector nicht gespiegelt; Mengenangaben erscheinen in Bring! als `Name (2)`.
+
+::: warning Connector-Cache
+Der Connector cacht seine Konfiguration pro Space im Gunicorn-Prozess. Wird die `ConnectorConfig` direkt in der Datenbank geändert statt über die Tandoor-UI, muss der Tandoor-Task neu gestartet werden, damit die Änderung greift.
+:::
+
 ## Verwandte Seiten
 
 - [Datenbanken](../_referenz/datenbanken.md) -- SSOT für DB-Name `djangodb`, Benutzer und Vault-Pfad
