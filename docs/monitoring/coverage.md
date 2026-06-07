@@ -13,7 +13,7 @@ tags:
 
 # Monitoring: Coverage
 
-Diese Seite ist die **Single Source of Truth** für den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Priorität, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](index.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Stand: 2026-05-02.
+Diese Seite ist die **Single Source of Truth** für den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Priorität, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](index.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Stand: 2026-06-07.
 
 ::: info Single Source of Truth
 Diese Tabelle ist der Pflege-Punkt für Coverage-Status. Andere Agenten, die Drift erkennen oder neue Coverage einrichten, aktualisieren **diese** Seite -- nicht die Audit-Files (sind eingefroren) und nicht andere Wiki-Seiten. Offene Arbeit gehört in den ClickUp-Master [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4). Wiki-Änderungen erfolgen erst nach Implementation.
@@ -74,6 +74,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | pve-01-nana zfs-scrub | pve-01-nana | direct | missing | P1 | scrub-fail silent | `zpool status`-Cron |
 | pve-01-nana pveproxy-api | pve-01-nana:8006 | uptime | missing | P1 | API-Down silent | HTTP-Probe `:8006` über Tailscale-IP |
 | pve-01-nana host-metrics | pve-01-nana | checkmk + influx | partial | P0 | komplett silent, CheckMK-Agent + Alloy + Telegraf noch nicht deployed | Host als `cmk-agent` angelegt am 2026-05-01. Ansible-Plays `06-checkmk-agent.yml` + `deploy-alloy-proxmox.yml` mit `--limit pve-01-nana` über Inventory-Gruppe `proxmox_external` ausstehend [`86c9kwvtg`](https://app.clickup.com/t/86c9kwvtg) |
+| pve-lu-01 (Luzern Standalone) | 172.16.0.200 / 100.112.213.18 (Tailscale) | none | missing | P1 | Node-Down + hostende VM silent, ausserhalb Homelab-Monitoring-Reach | Acer Revo RB610, Standalone-Node Standort Luzern (kein Cluster/Quorum/DRBD), ZFS lokal, PBS-Backup. Hostet `homeassistant-luzern` (VM100). Kein CheckMK-Agent/Telegraf/ICMP-Probe -- analog `pve-01-nana` (Dottikon) nachziehen. Erfasst beim Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
 
 ## Layer 3 -- Storage (DRBD / Linstor / NAS / Backup)
 
@@ -87,7 +88,9 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | CSI-Health-Files | csi-health-metrics.sh c05+c06 | influx | partial | P1 | Skript-tot silent | Stale-Mount + Plugin-Socket abgedeckt; Skript-Self-Heartbeat fehlt. Transport seit 2026-05-29 NFS-frei (lokal `/var/lib/csi-metrics` -> Telegraf-Host-Agent -> Bucket `telegraf`), kein NFS-D-State-Risiko mehr. Memory `project_csi_health_monitoring_2026_04_30` |
 | NFS-Mount-Pipeline | 5 Mounts pro Storage-Node + PBS | none | missing | P1 | Mount-Loss silent; Staleness-Pattern fehlt | indirekt über csi-health, aber kein dedizierter Mount-Loss-Alert |
 | NFS-Server-Daemon (NAS nfsd) | 10.0.0.200:2049 | uptime + checkmk | missing | P0 | nfsd-Boot-Race: nach NAS-Reboot 0 Threads / Port 2049 `Connection refused` -> ALLE NFS-Consumer (Stash, Jellyfin, Proxmox-Storage, cert/logs/docker-Mounts) hart blockiert, kein Alert | Incident 2026-05-31 (Recovery `systemctl restart nfs-server`, threads 0->128). Fehlt: (1) Connectivity-Probe TCP 2049 + `threads>0`, (2) R/W-E2E-Canary (schreibt+liest Testdatei auf Mount, timeout-gewrappt, Hysterese `for:6-8min`). Root-Cause: `nfs-server.service` ist `oneshot/RemainAfterExit` -> 0-Thread-Start wird als `active` maskiert; kein nfsd-Boot-Hook am NAS (nur `ssh-hardening-reapply` bootup-Task). Boot-Fix + Probe in [`86ca1gq1y`](https://app.clickup.com/t/86ca1gq1y). Memory `feedback_synology_nfsd_boot_race` |
-| iperf3-Server | PBS userspace | none | missing | P2 | -- | wofür? wer ist Client? |
+| iperf3-Server | PBS userspace | none | missing | P2 | -- | Client ist Nomad-Job `iperf3-to-influxdb` (periodic, alle 30min -> InfluxDB). Server-Self-Probe + Metric-Absence-Alert fehlen |
+| Altes Blech (DS2419+) NFS Jellyfin-Media | 10.0.0.210 | none | missing | P1 | NFS-Export-Down -> Jellyfin-Mediathek silent weg | Serviert aktiv die Jellyfin-Mediathek von USB-Shares (`/volume2`) per NFS an die Media-Worker (kein blosser Rollback-Anker). TCP-2049-Probe + ggf. SNMP fehlen. Erfasst Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
+| Storage-Maintenance-Jobs (fstrim/drbd-verify/csi-gc) | Nomad batch-jobs | uptime | missing | P1 | `drbd-verify`-Fail silent -> Bit-Rot/Sync-Divergenz erst beim Failover sichtbar | `fstrim` (So 06:00, P2), `drbd-verify` (So 07:00, P1), `csi-gc` (daily 03:30 gegen Stale-Claims, P2). Kein Kuma-Push-Heartbeat pro Job. Memory `feedback_maintenance_as_nomad_jobs`. Erfasst Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
 
 ## Layer 4 -- Network (Pi-hole / Traefik / Tailscale / UDM)
 
@@ -117,15 +120,16 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | vm-nomad-client-04/05/06 | 10.0.2.124/.125/.126 | checkmk + influx + uptime | partial | P0 | analog | Drift 2026-05-01: `Nomad Task Restart-Storm` 158 Transitions / 50h Homelab vs. nur 6 DCLab -- Cluster-Parity-Drift, Investigation [`86c9ktgb7`](https://app.clickup.com/t/86c9ktgb7) (umfasst auch `Nomad Client Node Down` 104/50h flap und `Nomad Failed Allocations` 100/50h). CheckMK Standard-Agent + Docker-Piggyback live. Reschedule-Storm-Detection via Telegraf-File-Input live seit 2026-05-01. Linstor-CSI-Health auf c05/c06. Kuma HTTP-Monitore `Nomad Client API 04/05/06` (eingerichtet 2026-05-13 nach c04-OOM-Vorfall, siehe [`86c9rx6cv`](https://app.clickup.com/t/86c9rx6cv) und [`86c9rx664`](https://app.clickup.com/t/86c9rx664)) + Push `Nomad Token -- vm-nomad-client-04/05/06` |
 | Consul Cluster | vm-nomad-server-04/05/06 | influx | partial | P1 | Quorum-Loss kein Alert, Backup-HB OK | Telegraf-Prometheus auf `:8500` |
 | Vault HA Cluster | vm-nomad-server-04/05/06 | influx | missing | P0 | Sealed silent bis App-Failure | Sealed-Alert + Synthetic-Heartbeat. Memory `reference_vault_unseal_token_on_disk` |
-| etcd Server-Cluster (Legacy?) | vm-nomad-server-04/05/06 | none | missing | P2 | -- | vermutlich Decommissioning -- erst Verifikation, dann ab oder monitor |
+| etcd Server-Cluster (Legacy?) | vm-nomad-server-04/05/06 | none | skip | P2 | -- | Coverage-Audit 2026-06-07: kein etcd-Job in nomad-jobs, kein Ansible-Play in infra-stack (`git log`/`find` beide leer) -- nie deployed bzw. bereits bereinigt, kein Monitoring nötig |
 | Postgres (DRBD Single, Affinity c05) | vm-nomad-client-06 | influx | partial | P0 | Connection-Pool-Storm bekannt | `inputs.postgresql` + Synthetic-Probe. Memory `feedback_authentik_pg_connection_storm`, `project_pg_storage_bottleneck_2026` |
+| MariaDB (DRBD Single, Affinity c05) | client-05/06, Port 3306 | none | missing | P0 | komplett silent -- backt die `uptime_kuma`-DB, MariaDB-Down = Uptime-Kuma-Down (Monitoring-Pfad weg) | `databases/mariadb-drbd.nomad`, Vault `kv/data/shared/mariadb`. Kein Health-Probe, kein `inputs.mysql`. Erfasst Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
 | Postgres-Backup | Nomad batch-job 03:00 | uptime | partial | P1 | Validity-Check fehlt | `pg_restore --list` integrieren |
+| MariaDB-Backup | Nomad batch-job 03:15 | none | missing | P1 | Backup-Fail silent | `batch-jobs/mariadb-backup.nomad`. Kuma-Push-Heartbeat + Validity-Check fehlen (analog Postgres-Backup). Erfasst Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
 | Consul-Snapshot-Backup | Nomad batch-job 01:45 | uptime | live | P2 | -- | Validity gzip-magic-byte ok; Restore-Test ergänzen |
 | Nomad-Snapshot-Backup | Nomad batch-job 01:30 | uptime | partial | P1 | Restore-Test fehlt | analog |
 | Vault-Backup | Nomad batch-job 02:00 | uptime | partial | P1 | Restore-Test fehlt | analog |
 | InfluxDB-Backup | Nomad batch-job 03:30 | none | missing | P0 | komplett silent! | Uptime-Kuma-Push hinzufügen |
 | Renovate | Nomad batch-job 05:00 | uptime | live | P2 | -- | HB existiert |
-| Redis-ZOT | Nomad service | none | missing | P2 | OOM silent | `inputs.redis` |
 
 ## Layer 6 -- Auth / Security (Authentik / Certs / Audit-Logs)
 
@@ -151,7 +155,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | Grafana Homelab | -- | direct + uptime | partial | P0 | Henne-Ei -- wenn Grafana tot, fehlen alle Alert-Trigger | API-Route `/api/*` live seit 2026-05-01 (`intern-api@file`, IP-Allowlist 10/8 + 100.64/10, Bearer-Token via 1P `Grafana API Claude`) -- ermöglicht direkte Annotations-Queries für Frequenz-Audits ohne Authentik-Bypass. UI-Route weiterhin `intern-auth@file`. Externer Watchdog-Probe weiterhin Pflicht. Memory `feedback_traefik_explicit_service_tag` |
 | Telegraf Homelab (system-Job) | system network=host | influx | missing | P0 | Telegraf-tot bedeutet alle Metriken weg, kein Absent-Alert | absent-Pattern (Synology-SNMP für NAS aktiv) |
 | Alloy Homelab (system-Job) | -- | influx | partial (Consul-Health) | P0 | Crash silent, Log-Pattern-Alerts feuern nicht | absent-Pattern + Push-Fail-Detection |
-| Keep Homelab (Single-Point-of-Routing) | -- | direct extern | missing | P0 | KRITISCH -- wenn Keep tot, geht JEDER Alert verloren; kein externer Heartbeat | Externer Watchdog auf pve-01-nana (Dottikon). Plattform live seit 2026-05-01, Stack-Deployment offen [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
+| Keep Homelab (Single-Point-of-Routing) | -- | direct extern + uptime | partial | P0 | KRITISCH -- wenn Keep tot, geht JEDER Alert verloren; EXTERNER Heartbeat fehlt noch | Interner Dead-Man-Switch live: `keep-heartbeat-watch.nomad` (G3-Backstop, alle 3min Kuma-Heartbeat + stale-firing-Watch) + `keep-db-retention.nomad` (daily 04:30 gegen DB-Voll). Beide deployt via branch `feat/keep-l1-foundation` (Merge offen). Verbleibend: EXTERNER Watchdog auf pve-01-nana (Dottikon), Plattform live seit 2026-05-01, Stack-Deployment offen [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
 | vm-checkmk Homelab (Site `homelab`) | 10.0.2.150 | checkmk + uptime | partial | P0 | Site-Down silent | CheckMK Self-Monitoring live. Externer UK-Probe als Site-Down-Detection via pve-01-nana geplant |
 | Uptime-Kuma Homelab | -- | direct | partial | P1 | -- | absent + Disk-Warn |
 | Gatus Nomad Homelab | -- | direct | partial | P1 | externer-Watchdog-Doppelung mit LXC-100 | Endpoint-Liste erweitern |
@@ -163,13 +167,13 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 
 | Item | Adresse | Pfad | Status | Prio | Silent-Fail | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| App-Productivity-Stack (gitea, vaultwarden, paperless, kimai, n8n, obsidian-livesync, dbgate, metabase, solidtime, tandoor, vitepress-wiki) | nomad-jobs/services + databases | uptime + influx + loki | partial | P0 | container-up-but-app-broken silent (kimai-untrusted-host-loop, vaultwarden-heartbeat fehlt) | granulare Health-Probes |
-| App-AI/LLM (ollama, open-webui, hollama, paperless-ai/gpt) | nomad-jobs/services | influx + direct | missing | P0 | external-api-cost-spike silent (Scrapfly + Anthropic + OpenAI) | Cost-Cap-Alerting |
+| App-Productivity-Stack (gitea, vaultwarden, paperless, n8n, obsidian-livesync, dbgate, metabase, solidtime, tandoor, vitepress-wiki, pocketbase) | nomad-jobs/services + databases | uptime + influx + loki | partial | P0 | container-up-but-app-broken silent (vaultwarden-heartbeat fehlt) | granulare Health-Probes. `kimai` entfernt 2026-05-31 (Stale-Cleanup 2026-06-07). `pocketbase` (Wartungsbanner-System) ergänzt |
+| App-AI/LLM (ollama, open-webui, paperless-ai/gpt) | nomad-jobs/services | influx + direct | missing | P0 | external-api-cost-spike silent (Scrapfly + Anthropic + OpenAI) | Cost-Cap-Alerting. `hollama` entfernt 2026-05-13 (Stale-Cleanup 2026-06-07) |
 | Smart-Home (homeassistant-VM, zigbee2mqtt, mosquitto-Pair) | vm:1000 + nomad-jobs/services | uptime + influx + loki | partial | P1 | HA-VM-down silent fail | uptime-kuma-Probe gegen `:8123` |
-| Media-Stack (Arr-x9 + Jellyfin-Trio + Stash-Trio + YT-Downloader-x4) | nomad-jobs/media | influx + loki + direct | partial | P0 | container-up-but-app-broken silent (`special-youtube-dl + youtube-dl` Crash-Loop auf c05 ohne Alert) | NFS-Synology-91-Percent akut, Consul-critical-Forwarding fehlt |
-| Tools/Misc (flame, changedetection, directus-gravel, immo-monitor, immoscraper, notifiarr, telegram-relay, phdler-bot) | nomad-jobs/services | direct + loki | partial | P0 | immoscraper-weekly silent fail | weekly-batch-heartbeat fehlt, scrapfly-cost-cap fehlt. Memory `project_immoscraper_scrapfly` |
-| Infrastructure-Apps (zot-registry, github-runner, nebula-sync, smtp-relay, filebrowser, redis-zot) | nomad-jobs/infrastructure | direct + loki | partial | P0 | zot-registry-down breaks alloc-pulls silent | zot-heartbeat fehlt, smtp-tx-error-rate fehlt |
-| Batch-Jobs (renovate, postgres-backup, vault-backup, consul-snapshot, nomad-snapshot, influxdb-backup, daily_*, docker_prune, dns-performance, ph_downloader, reddit_*-Trio, zot-verify, authentik-audit, immoscraper-weekly) | nomad-jobs/batch-jobs | direct + influx | missing | P0 | batch-job-failed silent | postgres-backup-stale-Alert fehlt, renovate-3-runs-failed fehlt |
+| Media-Stack (Arr: sonarr/radarr/prowlarr/suggestarr/lazylibrarian + Jellyfin-Trio: jellyfin/jellyseerr/jellystat + audiobookshelf + Stash-Trio + sabnzbd + YT-Downloader-x4) | nomad-jobs/media | influx + loki + direct | partial | P0 | container-up-but-app-broken silent (`special-youtube-dl + youtube-dl` Crash-Loop auf c05 ohne Alert) | NFS-Synology-91-Percent akut, Consul-critical-Forwarding fehlt. Enumeration präzisiert 2026-06-07 (`janitorr` war nie deployt, #55 entfernt) |
+| Tools/Misc (flame, flame-intra, homepage-intra, changedetection, directus-gravel, immo-monitor, immoscraper, telegram-relay, phdler-bot, meshcmd) | nomad-jobs/services | direct + loki | partial | P0 | immoscraper-weekly silent fail; `meshcmd` (MeshCommander OOB/AMT-Mgmt) tot = kein Out-of-Band-Zugriff genau im Notfall | weekly-batch-heartbeat fehlt, scrapfly-cost-cap fehlt. `notifiarr` entfernt 2026-06-05; `flame-intra/homepage-intra/meshcmd` ergänzt (Stale-Cleanup 2026-06-07). Memory `project_immoscraper_scrapfly` |
+| Infrastructure-Apps (zot-registry, github-runner, nebula-sync, smtp-relay) | nomad-jobs/infrastructure | direct + loki | partial | P0 | zot-registry-down breaks alloc-pulls silent | zot-heartbeat fehlt, smtp-tx-error-rate fehlt. `filebrowser` + `redis-zot` entfernt 2026-05-13 (Stale-Cleanup 2026-06-07) |
+| Batch-Jobs (renovate, renovate-backlog-watchdog, postgres-backup, vault-backup, consul-snapshot, nomad-snapshot, influxdb-backup, keep-db-retention, daily_* inkl. daily_restart_jellyfin/daily_container_restart, jellyfin_adult_sync, docker_prune, dns-performance, ph_downloader, reddit_*-Pair, authentik-audit, immoscraper-weekly) | nomad-jobs/batch-jobs | direct + influx | missing | P0 | batch-job-failed silent | postgres-backup-stale-Alert fehlt, renovate-3-runs-failed fehlt. Storage-Maintenance (fstrim/drbd-verify/csi-gc) + MariaDB-Backup: eigene Zeilen Layer 3/5. `zot-verify`/`reddit_gallery_dl_backfill` waren nie deployt (#55), entfernt 2026-06-07 |
 | datacenter-manager (PDM Cross-Cluster) | 10.0.2.60 | checkmk + uptime | partial | P1 | -- | Host als `cmk-agent` angelegt. Agent-Install ausstehend. UK HTTP-Probe separat [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) |
 | reddit-downloader | 10.0.2.72 | checkmk | missing | P2 | -- | Host als `cmk-agent` angelegt. Agent-Install ausstehend. low prio |
 
@@ -189,6 +193,15 @@ Endgeräte und Gäste-VLAN sind nicht 24/7 produktiv und werden bewusst nicht ü
 - **`authentik-audit.nomad` Drift** -- bestätigt: Job ruft direkt `http://telegram-relay.service.consul:9095/notify`, nicht über Keep-Hub. Drift gegen Memory `project_monitoring_routing_2026_04`. Layer-6-Eintrag P2
 - **Naming-Drift `pve-5`** -- behoben am 2026-05-01: pve-5 orphan rules aus Homelab `rules.mk` entfernt
 - **Stale-Hosts** -- behoben am 2026-05-01: vm-proxy-dns-01, vm-vpn-dns-01, zigbee-node aus CheckMK `all_hosts` gelöscht
+
+## Coverage-Audit 2026-06-07 (Drift-Bereinigung)
+
+Lücken-Audit gegen Ground-Truth `origin/main` der nomad-jobs (NICHT Feature-Branch) + Wiki-Host-Inventar (3 Explore-Agenten + Selbstverifikation). Offene Implementation der neu erfassten Lücken: [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc).
+
+- **Neu erfasst:** MariaDB (L5, P0 -- backt uptime_kuma-DB), MariaDB-Backup (L5), pve-lu-01 Luzern-Standalone (L2), Altes Blech DS2419+ NFS-Jellyfin-Media (L3), Storage-Maintenance-Jobs fstrim/drbd-verify/csi-gc (L3). Keep-Eintrag (L7) auf `partial` (interner Dead-Man-Switch `keep-heartbeat-watch` + `keep-db-retention` live).
+- **Stale entfernt** (Jobs auf main weg): redis-zot (#de0cc11), kimai (#1aa5f12), filebrowser + hollama (#2b18670), notifiarr (#4f1af79). etcd „Legacy?" -> `skip` (nie deployed). zot-verify/reddit_gallery_dl_backfill/janitorr/mariadb-setup waren nie deployt (#55).
+- **Infra-Hygiene (eigener Strang, nicht Map):** `infra-stack/ansible/inventory/hosts.yml` trägt `vm-proxy-dns-01`, `vm-vpn-dns-01` (parallel zu lxc-dns-01/02) und `zigbee-node` (dekommissioniert 2026-04-17, noch in `deploy-alloy-infra.yml`) weiterhin -- aus CheckMK gelöscht, aber Ansible-Inventory nicht nachgezogen. Bereinigen via [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc).
+- **Verifikations-Limit:** CheckMK `all_hosts`/`rules.mk` werden direkt auf der CheckMK-VM gepflegt (nicht im Repo) -- die effektive CheckMK-Hostliste ist aus Git nicht verifizierbar.
 
 ## Verfolgte Risiken (ausserhalb Monitoring-Scope)
 
