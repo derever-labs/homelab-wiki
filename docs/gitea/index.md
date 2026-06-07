@@ -103,8 +103,31 @@ In `~/.ssh/config` einen Eintrag mit `HostName gitea.service.consul`, `Port 2222
 `vm-nomad-server-04` ist der bevorzugte Jump-Host (fest konfiguriert, immer erreichbar). Alternativ sind `vm-nomad-server-05` und `-06` gleichwertig.
 :::
 
+## Config-Anbindung HA-Luzern über Tailscale
+
+Die Home-Assistant-Instanz am Standort Luzern (separate HAOS-VM, LAN `172.16.0.163`) versioniert ihre `/config` im privaten Gitea-Repo `sam/ha-luzern`. Ein nächtlicher Auto-Push committet einen Config-Snapshot und schiebt ihn nach Gitea; `.storage`, Secrets und Laufzeit-Dateien sind per `.gitignore` ausgeschlossen (Vollzustand decken HA- und Proxmox-Backups separat ab).
+
+Die HA-VM hat kein privates Routing ins Homelab, und der öffentliche Gitea-Pfad liegt hinter Authentik (zudem kein öffentlicher SSH-Port). Der Push läuft deshalb über das **Tailscale-Overlay direkt auf den Gitea-Node** und umgeht Traefik/Authentik. Die HA-VM ist dafür ein eigener Tailnet-Client (`tag:homelab`, `accept-routes`), siehe [Tailscale](../netzwerk/tailscale.md).
+
+| Aspekt | Wert |
+|--------|------|
+| Repo | `sam/ha-luzern` (privat) |
+| Remote | `ssh://git@<gitea-node>:2222/sam/ha-luzern.git` (aktuelle Node-IP des Gitea-Allocs, via Tailscale erreichbar) |
+| Deploy-Key | read-write, privater Key auf der HA-VM unter `/config/.ssh/` (gitignored) |
+| Auto-Push | HA `shell_command` → `/config/scripts/git_autopush.sh`, Automation `Git Auto-Push (naechtlich)` |
+| Fehlermeldung | Push aufs Handy (`notify.mobile_app`) bei returncode ≠ 0 |
+
+::: warning Stop-Gap: Tailscale-Abhängigkeit
+Der Push hängt am Tailscale-Overlay. Bei dessen Ablösung (geplant: UniFi SD-WAN, sobald Public-IPs an beiden Standorten) muss die Erreichbarkeit des Gitea-Node bzw. die Remote-URL angepasst werden. Der gleiche Hinweis steht im Kopf von `/config/scripts/git_autopush.sh`.
+:::
+
+::: warning Gitea-Reschedule pinnt die Node-IP
+Der Auto-Push zielt auf die aktuelle Node-IP des Gitea-Allocs; Gitea wandert zwischen `vm-nomad-client-05/06`. Nach einem Reschedule zeigt die Remote-URL auf den falschen Node und der Push schlägt fehl -- die Fehlermeldung aufs Handy macht das sichtbar, danach die Remote-URL auf die neue Node-IP setzen. Im Gegensatz zum interaktiven Zugang (ProxyJump über `gitea.service.consul`) hat die HA-VM keinen Consul-DNS.
+:::
+
 ## Verwandte Seiten
 
+- [Tailscale](../netzwerk/tailscale.md) -- Overlay-VPN, über das der HA-Luzern-Config-Push läuft
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Linstor](../linstor-storage/index.md) -- CSI Storage für Gitea-Daten
 - [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration

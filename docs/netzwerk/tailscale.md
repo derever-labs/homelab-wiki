@@ -67,7 +67,7 @@ HOMELAB: "tag:homelab" {
   PVE: pve-01-nana { class: host; tooltip: "Linux, 100.81.116.122, Subnet-Router 192.168.2.0/23" }
   PVELU: pve-lu-01 { class: host; tooltip: "Linux, 100.112.213.18, Subnet-Router 172.16.0.0/24" }
   PVE00: pve00 { class: host; tooltip: "Linux, 100.89.174.31, Subnet-Router Lenzburg-VLANs" }
-  MORE: "weitere Hosts" { class: host; tooltip: "pdm, checkmk-homelab, pve01, pve02 -- Tailnet-Mitglieder ohne Subnet-Routes" }
+  MORE: "weitere Hosts" { class: host; tooltip: "pdm, checkmk-homelab, pve01, pve02, homeassistant (HA-Luzern) -- Tailnet-Mitglieder ohne Subnet-Routes" }
   HOMELABNETS: "10.0.0.0/22, 192.168.2.0/23, 172.16.0.0/24" {
     class: host
   }
@@ -87,7 +87,7 @@ HOMELAB -> HSLU: blockiert { class: blocked }
 - `opn-02` -- HSLU OPNsense Secondary, gleiche Subnet-Routes wie opn-01
 - `messe-pc-hslu` (DESKTOP-0PK5JUR) -- Subnet-Router für 192.168.50.0/24
 
-`tag:homelab` (9 Hosts). Subnet-Router (advertisieren ein lokales Netz ins Tailnet):
+`tag:homelab` (10 Hosts). Subnet-Router (advertisieren ein lokales Netz ins Tailnet):
 
 - `vm-traefik-01` -- Subnet-Router für 10.0.0.0/22, ausserdem Exit-Node für `tag:admin`
 - `vm-traefik-02` -- gleiche Routes wie vm-traefik-01
@@ -100,6 +100,7 @@ Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
 - `pdm` -- Proxmox Datacenter Manager
 - `checkmk-homelab` -- Monitoring-Server
 - `pve01`, `pve02` -- Cluster-Nodes
+- `homeassistant` -- HA-Luzern-VM (LAN 172.16.0.163), Client-Node fuer den Config-Git-Push nach Gitea (`accept-routes`, `tag:homelab`). Details: [Gitea -- Config-Anbindung HA-Luzern](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)
 
 `tag:admin` (4 Hosts):
 
