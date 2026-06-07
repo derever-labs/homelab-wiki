@@ -17,7 +17,7 @@ Tandoor ist die selbstgehostete Rezeptverwaltung zum Sammeln, Organisieren und P
 |----------|------|
 | URL | [tandoor.ackermannprivat.ch](https://tandoor.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/tandoor.nomad` |
-| Storage | NFS `/nfs/docker/tandoor/{staticfiles,mediafiles}` |
+| Storage | Linstor CSI -- Volumes `tandoor-static` + `tandoor-media` (ext4, 2 Replicas, `rg-replicated`) |
 | Secrets | Vault `kv/data/tandoor` |
 | Auth | `intern-auth@file` |
 
@@ -27,4 +27,4 @@ Tandoor ist die selbstgehostete Rezeptverwaltung zum Sammeln, Organisieren und P
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
 - [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Medien und Static Files
+- [Linstor-Storage](../linstor-storage/index.md) -- CSI-Volumes für Medien und Static Files (replizierter DRBD-Storage)
