@@ -219,7 +219,13 @@ OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR
 
 ## Passwordless Login
 
-Der Passwordless-Flow existiert parallel zum normalen Login. Auf der Login-Seite erscheint ein dezenter Link "Mit Passkey anmelden". Wer ihn klickt, gibt nur noch Username/E-Mail ein und bestätigt mit einem registrierten Passkey (TouchID, Windows Hello, FIDO2-Stick).
+Der normale `default-authentication-flow` nutzt **WebAuthn Conditional UI (Autofill)**: Sobald der User das E-Mail-Feld fokussiert, bietet der Browser automatisch einen registrierten Passkey zur Auswahl an -- kein separater Link, kein Klick nötig. Das Feld trägt `autocomplete="email webauthn"`. Technisch ist dafür eine `passkey-autofill-validate`-Stage als `webauthn_stage` in der Identification-Stage hinterlegt (`device_classes=[webauthn]`, `not_configured_action=skip`, `webauthn_user_verification=required`).
+
+Voraussetzungen für Conditional UI: HTTPS, Discoverable/Resident-Key, gleicher Hostname, Browser mit Conditional-Mediation-Unterstützung.
+
+Nach erfolgreichem Passkey-Login wird die MFA-Validate-Stage übersprungen: Eine Skip-Policy (`auth_method == auth_webauthn_pwl`) ist am FlowStageBinding der MFA-Stage gebunden -- der Passkey zählt bereits als Besitz + User-Verification. Admins, die sich mit Passwort einloggen, durchlaufen die MFA-Stage weiterhin.
+
+Zusätzlich existiert ein dedizierter `passwordless-flow` (Slug unveränderter, via direkter URL erreichbar). Er startet direkt mit der WebAuthn-Validate-Stage und dient als Fallback, falls Conditional UI im Browser nicht greift. Der frühere "Mit Passkey anmelden"-Link auf der normalen Login-Seite existiert nicht mehr -- das `passwordless_flow`-Feld der Identification-Stage ist leer.
 
 Damit der Flow funktioniert, muss der Passkey als **Resident Key** registriert sein (`resident_key_requirement=required` auf der WebAuthn-Setup-Stage). Nicht-Resident-Keys lassen sich zwar registrieren, können aber keinen Username resolven -- sie funktionieren nur als zweiter Faktor, nicht als primärer Login.
 

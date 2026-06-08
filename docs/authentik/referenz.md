@@ -15,8 +15,8 @@ Diese Seite listet alle konfigurierten Flows, Policies, Stages und OIDC-Provider
 
 | Flow | Designation | Zweck |
 | :--- | :--- | :--- |
-| `default-authentication-flow` | authentication | Primärer Login mit E-Mail/Username + Passwort + MFA (für Admins) |
-| `passwordless-flow` | authentication | Passkey-Login ohne Passwort, via WebAuthn |
+| `default-authentication-flow` | authentication | Primärer Login mit E-Mail/Passwort + MFA (Admins); Passkey-Login via Conditional UI (Autofill) |
+| `passwordless-flow` | authentication | Passkey-Login ohne Passwort, direkter URL-Einstieg (startet sofort mit WebAuthn-Stage) |
 | `default-recovery-flow` | recovery | Passwort-Zurücksetzung per E-Mail-Link |
 | `ldap-authentication-flow` | authentication | Minimaler Bind-Flow für den LDAP-Outpost (Jellyfin) |
 | `default-invalidation-flow` | invalidation | Logout und Session-Invalidierung |
@@ -32,17 +32,18 @@ Der Default-Flow wurde für Passwortmanager-Kompatibilität optimiert:
 - **Single-Page Login** -- Password Stage ist direkt in der Identification Stage referenziert (`password_stage` Feld), E-Mail und Passwort erscheinen auf einer Seite
 - **Nur E-Mail** -- `user_fields=["email"]`, damit das Label auf "E-Mail" reduziert bleibt. Username-Login ist im Haupt-Flow nicht mehr möglich; Notzugang via `admin-local-login`
 - **Recovery-Link** -- die Identification Stage referenziert `default-recovery-flow` über `recovery_flow`. Auf der Login-Seite erscheint dezent "Passwort vergessen?"
-- **Passwordless-Link** -- gleiche Mechanik über `passwordless_flow`, Button "Mit Passkey anmelden"
+- **Passkey-Autofill** -- Die Identification-Stage hat ein `webauthn_stage`-Feld, das auf `passkey-autofill-validate` zeigt. Der Browser bietet beim Fokussieren des E-Mail-Felds automatisch einen registrierten Passkey an (Conditional UI / `autocomplete="email webauthn"`). Ein separater "Mit Passkey anmelden"-Link existiert nicht mehr; `passwordless_flow` der Identification-Stage ist leer
 - **Fixe 7-Tage-Session** -- Login-Stage hat `session_duration=days=7`, `remember_me_offset=seconds=0`. Die "Angemeldet bleiben"-Checkbox wird nicht mehr gerendert, jede Session läuft automatisch 7 Tage
 - **Terminate other sessions** -- Login-Stage beendet vorhandene Sessions des gleichen Users bei einem Neulogin
 
 ### Passwordless Flow
 
-Neu eingeführter alternativer Login-Flow für Passkey-Besitzer. Drei Stages:
+Fallback-Flow für Passkey-Besitzer, erreichbar über eine direkte URL. Zwei Stages (die frühere vorangestellte Identification-Stage wurde entfernt):
 
-1. Identification (wiederverwendet aus Default-Auth, nur Username/E-Mail)
-2. `passwordless-authenticator-validate` -- dedizierte Authenticator-Validate-Stage mit `device_classes=["webauthn"]`, `not_configured_action=deny`, `webauthn_user_verification=required`
-3. Default User-Login-Stage
+1. `passwordless-authenticator-validate` -- dedizierte Authenticator-Validate-Stage mit `device_classes=["webauthn"]`, `not_configured_action=deny`, `webauthn_user_verification=required`
+2. Default User-Login-Stage
+
+Im normalen `default-authentication-flow` übernimmt Conditional UI (via `passkey-autofill-validate` als `webauthn_stage` der Identification-Stage) den Passkey-Login automatisch -- der `passwordless-flow` ist nur als direkter Einstieg relevant, falls der Browser kein Conditional Mediation unterstützt.
 
 Die WebAuthn Setup-Stage ist mit `user_verification=required` und `resident_key_requirement=required` konfiguriert, damit registrierte Passkeys echte FIDO2-Resident-Keys sind und Passwordless zuverlässig funktioniert.
 
@@ -142,12 +143,14 @@ Der Outpost ruft nach dem erfolgreichen Bind zusätzlich `check_access` (prüft 
 
 ### MFA-Erzwingung
 
-Die Expression Policy prüft auf Gruppen-Mitgliedschaft (`admin`, `authentik Admins`) oder `is_superuser`. Sie wird als PolicyBinding am FlowStageBinding der MFA-Validate-Stage im `default-authentication-flow` angehängt -- so wird die Stage nur für Admin-Accounts überhaupt evaluiert. Non-Admins überspringen sie unverändert.
+Die Expression Policy `policy-admins-need-mfa` prüft auf Gruppen-Mitgliedschaft (`admin`, `authentik Admins`) oder `is_superuser`. Sie wird als PolicyBinding am FlowStageBinding der MFA-Validate-Stage im `default-authentication-flow` angehängt -- so wird die Stage nur für Admin-Accounts überhaupt evaluiert. Non-Admins überspringen sie unverändert.
 
-Zusätzlich steht die MFA-Validate-Stage auf `not_configured_action=configure` -- ein Admin ohne Device wird beim Login in den Setup-Flow gezwungen (TOTP, WebAuthn oder Static Codes).
+Zusätzlich ist am FlowStageBinding der MFA-Validate-Stage (order 30) die Skip-Policy `default-authentication-flow-authenticator-validate-stage` gebunden (`policy_engine_mode=all`). Diese Policy überspringt die Stage, wenn `auth_method == auth_webauthn_pwl` -- ein Admin, der sich via Passkey einloggt, durchläuft die MFA-Stage nicht, weil der Passkey bereits Besitz und User-Verification kombiniert. Admins mit Passwort-Login werden weiterhin zur MFA geleitet.
+
+Die MFA-Validate-Stage steht auf `not_configured_action=configure` -- ein Admin ohne Device wird beim Passwort-Login in den Setup-Flow gezwungen (TOTP, WebAuthn oder Static Codes).
 
 ::: warning Binding nicht löschen
-Sowohl die Expression Policy als auch das PolicyBinding sind deklarativ im Blueprint [`40-flow-policies.yaml`](https://github.com/derever-labs/infra/blob/main/authentik-blueprints/40-flow-policies.yaml) verankert. Wird das Binding manuell aus der Admin-UI entfernt, läuft die MFA-Stage wieder für **alle** User -- Non-Admins ohne Device werden in den Setup-Flow gezwungen. Bei Drift: Blueprint via `nomad job run nomad-jobs/identity/authentik.nomad` erneut applien.
+Die Expression Policy sowie beide PolicyBindings sind am FlowStageBinding der MFA-Stage verankert. Wird das Admin-MFA-Binding manuell aus der Admin-UI entfernt, läuft die MFA-Stage wieder für **alle** User -- Non-Admins ohne Device werden in den Setup-Flow gezwungen. Bei Drift: Blueprint via `nomad job run nomad-jobs/identity/authentik.nomad` erneut applien.
 :::
 
 ### Reputation Policy
@@ -174,11 +177,12 @@ Die Policy greift bei jedem Set-Password, also auch bei Self-Service-Änderungen
 
 Wichtige konfigurierte Stages (für API-Referenz):
 
-- `default-authentication-identification` -- `user_fields=[email]`, verknüpft mit `recovery_flow`, `passwordless_flow`
+- `default-authentication-identification` -- `user_fields=[email]`, verknüpft mit `recovery_flow`; `webauthn_stage` zeigt auf `passkey-autofill-validate` (Conditional UI); `passwordless_flow` ist leer
 - `default-authentication-password` -- `failed_attempts_before_cancel=5`
-- `default-authentication-mfa-validation` -- `not_configured_action=configure`, `configuration_stages=[totp, webauthn, static]`
+- `default-authentication-mfa-validation` -- `not_configured_action=configure`, `configuration_stages=[totp, webauthn, static]`; Skip-Policy für Passkey-Login am FlowStageBinding (siehe [MFA-Erzwingung](#mfa-erzwingung))
 - `default-authentication-login` -- `session_duration=days=7`, `remember_me_offset=seconds=0` (fixe 7-Tage-Session ohne Checkbox), `terminate_other_sessions=false` (Multi-Device erlaubt, seit 2026-06-08), `geoip_binding=bind_continent_country` (Session an Land CH gebunden -- Diebstahl-Schutz), `network_binding=no_binding` (aus wegen Tailscale/Split-Horizon)
-- `passwordless-authenticator-validate` -- `device_classes=[webauthn]`, `not_configured_action=deny`, `webauthn_user_verification=required`
+- `passkey-autofill-validate` -- `device_classes=[webauthn]`, `not_configured_action=skip`, `webauthn_user_verification=required`; referenziert als `webauthn_stage` in der Identification-Stage (Conditional UI)
+- `passwordless-authenticator-validate` -- `device_classes=[webauthn]`, `not_configured_action=deny`, `webauthn_user_verification=required`; nur im dedizierten `passwordless-flow` (direkter URL-Einstieg)
 - `default-authenticator-webauthn-setup` -- `user_verification=required`, `resident_key_requirement=required`
 - `recovery-email` -- `use_global_settings=true` (nutzt `AUTHENTIK_EMAIL__*` aus dem Nomad-Job)
 
@@ -229,7 +233,7 @@ Das Default-Brand hat den Titel `ackermannprivat.ch` und verwendet das Custom-CS
 
 - Labels, Sprachauswahl, Authentik-Footer und Pflichtfeld-Sternchen ausgeblendet
 - Placeholder-Texte auf "E-Mail" und "Passwort" vereinfacht (per `::after` pseudo-element)
-- Recovery-Link und Passkey-Link sitzen dezent zentriert innerhalb des Login-Cards
+- Recovery-Link sitzt dezent zentriert innerhalb des Login-Cards (kein separater Passkey-Link mehr -- Passkey wird via Conditional UI automatisch angeboten)
 - Stage-Konsistenz: Avatar-Banner, "Nicht Sie?"-Link, Helper-Texte und Secondary-Buttons werden in TOTP-, MFA- und E-Mail-Stages ausgeblendet, damit alle Stages gleich aussehen wie der Login
 - Recovery-Sent-Stage zeigt den Bestätigungstext via `:host(ak-stage-email)::before`; der "E-Mail erneut senden"-Button ist als Textlink optisch zurückgenommen
 - Akzent-Farbe `#4f6ef7` (Indigo-Blau)

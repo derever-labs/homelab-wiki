@@ -27,7 +27,7 @@ Diese Seite deckt Rolle, Architektur und Komponenten ab. Details zu Flows, Polic
 
 Er ersetzt die frühere Kombination aus Keycloak und oauth2-proxy.
 
-Neben dem reinen Login übernimmt Authentik im Homelab auch Passwort-Recovery per Mail, Multi-Faktor-Erzwingung für Admin-Accounts, Passwordless-Login mit Passkeys und einen dedizierten LDAP-Kanal für Jellyfin.
+Neben dem reinen Login übernimmt Authentik im Homelab auch Passwort-Recovery per Mail, Multi-Faktor-Erzwingung für Admin-Accounts, Passwordless-Login mit Passkeys via WebAuthn Conditional UI (Autofill) und einen dedizierten LDAP-Kanal für Jellyfin.
 
 ## Architektur
 
@@ -195,11 +195,11 @@ Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bz
 ## Sicherheit auf einen Blick
 
 - **3-Tier-Zugriffskontrolle** -- `admin` (alles) > `family` (family-Tier + guest-Tier via Multi-Binding) > `guest` (guest-Tier). Jede App hat eine explizite Gruppen-Bindung. Ohne Bindung = offen (Authentik-Default fail-open) -- deshalb werden alle 45 Apps deklarativ via [Blueprints](./referenz.md#blueprint-quelle) zugeordnet. Ein Drift-Audit-Job überwacht täglich, dass keine neue App ohne Binding auftaucht
-- **MFA-Zwang für Admins** -- Mitglieder von `admin` und `authentik Admins` sowie alle Superuser müssen TOTP oder Passkey registrieren. Non-Admins loggen weiterhin nur mit Passwort ein
+- **MFA-Zwang für Admins** -- Mitglieder von `admin` und `authentik Admins` sowie alle Superuser müssen TOTP oder Passkey registrieren. Admins, die sich via Passkey einloggen, überspringen die MFA-Stage (Passkey zählt als Besitz + User-Verification). Non-Admins loggen weiterhin nur mit Passwort ein
 - **Password Policy** -- mindestens 12 Zeichen, zxcvbn-Score ≥ 3, gebunden an alle Password-Write-Stages
 - **Reputation Policy** -- Threshold −3 auf Username und IP, gebunden an Password-Stages (Auth + LDAP) sowie an Recovery-Identification und MFA-Validate
 - **Recovery-Flow** aktiv mit Link auf der Login-Seite, Mail via globalem SMTP
-- **Passwordless-Flow** (WebAuthn, `user_verification=required`, `resident_key=required`)
+- **Passwordless-Login** -- WebAuthn Conditional UI (Autofill) im normalen Login-Flow; dedizierter `passwordless-flow` als Fallback via direkter URL; `user_verification=required`, `resident_key=required`
 - **Alerting** via Telegram-Relay für `login_failed`, `policy_exception`, `suspicious_request`, `password_set`, `configuration_error`
 
 Details und Mechanik: siehe [Referenz](./referenz.md) -- Betriebs-Konzepte (Recovery-Layer, Breakglass, Rollback) siehe [Betrieb](./betrieb.md).
