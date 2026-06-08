@@ -227,9 +227,13 @@ User registrieren Passkeys selbstständig über das User-Portal unter "Settings 
 
 ## Session-Verhalten
 
-Die Login-Stage erzwingt eine fixe Session-Dauer ohne "Angemeldet bleiben"-Checkbox; zusätzlich beendet jeder Neulogin alle anderen Sessions desselben Users (`terminate_other_sessions`). Die konkreten Werte stehen in der [Referenz](./referenz.md#stages).
+Die Login-Stage erzwingt eine fixe Session-Dauer von 7 Tagen ohne "Angemeldet bleiben"-Checkbox. Parallele Sessions auf mehreren Geräten sind erlaubt (`terminate_other_sessions=false`, seit 2026-06-08) -- ein Neulogin auf einem Gerät beendet die Sessions auf anderen Geräten **nicht** mehr.
 
-Das ist ein Kompromiss zwischen Bequemlichkeit und Sicherheit. Im Lockout-Fall kann ein gestohlenes Session-Cookie immerhin nicht parallel genutzt werden, weil der echte User beim nächsten Login die fremde Session abschiesst.
+Als Diebstahl-Schutz ist die Session stattdessen an das Land gebunden (`geoip_binding=bind_continent_country`): ein gestohlenes Session-Cookie, das aus einem anderen Land genutzt wird, verliert die Gültigkeit. `network_binding` bleibt bewusst aus -- eine Bindung an ASN oder IP würde mit Tailscale-Zugriffen (private Quell-IP ohne ASN/GeoIP) und dem Split-Horizon-DNS kollidieren und unnötige Re-Logins auslösen. Die konkreten Werte stehen in der [Referenz](./referenz.md#stages).
+
+::: warning Trade-off
+Bis 2026-06-08 galt `terminate_other_sessions=true` (nur eine Session gleichzeitig, ein gestohlenes Cookie wurde beim nächsten echten Login abgeschossen). Das wurde bewusst zugunsten der Multi-Device-Nutzbarkeit aufgegeben. Das verbleibende Land-Binding schützt nur gegen Cookie-Nutzung aus einem anderen Land, nicht innerhalb der Schweiz -- und erfordert bei Auslandsreisen nach dem Grenzübertritt einen erneuten Login.
+:::
 
 ## Performance-Konzept
 
