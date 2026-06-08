@@ -100,9 +100,24 @@ Linstor adressiert Garage über das Remote `nas-backup`. Die S3-Konfiguration (E
 
 Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) führen dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die während Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand übereinstimmt.
 
+## DSM-Verwaltung (alle Synology)
+
+Alle Synology im Privat-Umfeld sind einheitlich konfiguriert. Die Steuerung läuft über die DSM-Web-API (`SYNO.Core.Web.DSM`, `SYNO.Core.Security.DSM`, `SYNO.Storage.CGI.Smart.Scheduler`); Login als `admin` mit OTP, Credentials im 1Password Vault `PRIVAT Agent`.
+
+| Einstellung | Wert | Hinweis |
+| :--- | :--- | :--- |
+| DSM-Web-Port (HTTP/HTTPS) | 40000 / 40001 | HTTP→HTTPS-Redirect aktiv; einheitlich auf allen Homelab-Geräten |
+| Logout-Timer | 600 Minuten | inaktive DSM-Sessions werden nach 10 h abgemeldet |
+| SMART Quick-Test | wöchentlich Montag 03:00 | alle Datenträger |
+| SMART Extended-Test | monatlich am 1. um 03:00 | alle Datenträger |
+
+Die SMART-Kadenz folgt dem Konsens von TrueNAS/Backblaze/smartmontools (kurzer Selbsttest wöchentlich, langer Oberflächentest monatlich). DSM-Versionsbesonderheit: der Logout-Timer wird je DSM-Release über eine andere API-Version von `SYNO.Core.Security.DSM` gesetzt (DSM 7.3 → v6, DSM 7.2 → v5, DSM 7.1 → v4).
+
+Die HSLU-DCLab- und ARCH-NAS folgen demselben Muster, behalten aber bewusst den DSM-Port `:8443` (wird für den Authentik-Login-Flow gebraucht) -- diese Geräte sind im DCLab-Wiki dokumentiert.
+
 ## SSH-Zugang und Hardening
 
-Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../_referenz/ssh-zugang.md) und [Zugangsdaten](../_referenz/credentials.md). Login als `admin` mit Public-Key, Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
+Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../_referenz/ssh-zugang.md) und [Zugangsdaten](../_referenz/credentials.md). Login als `admin` mit Public-Key (`SSH Homelab`) und `sudo` über das Admin-Passwort -- einheitlich auf allen Homelab-Synology (HomeServer, MediaServer, DS1525+, Nana). Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
 
 Das NAS ist seit 2026-05-01 nach demselben Pattern wie die DCLab-NAS gehärtet -- relevant für das Verständnis der Architektur:
 

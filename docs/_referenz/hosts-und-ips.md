@@ -122,7 +122,11 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 | Gerät | IP | Funktion |
 | :--- | :--- | :--- |
 | HomeServer (DS1825+, Prod) | 10.0.0.200 | NFS-Exports, Garage S3, Backup-Ziel, DSM-Dienste |
-| Altes Blech (DS2419+) | 10.0.0.210 | Rollback-Anker nach Cutover; Jellyfin-Media von USB-Shares per NFS |
+| MediaServer (DS2419+, vormals «Altes Blech») | 10.0.0.210 | Nach Cutover 2026-06 neu aufgesetzt; Jellyfin-Media von USB-Shares per NFS an die Media-Worker |
+| Backup-NAS (DS1525+, Hostname DS1515) | 10.0.1.68 | Active Backup for Business + `backup`-Share; kein NFS/Nomad-Storage |
+| Nana (DS1517+) | 192.168.2.200 | Aussenstelle Dottikon; Zugriff via Tailscale-Subnet-Router `pve-01-nana` |
+
+Alle vier Synology sind einheitlich konfiguriert (DSM-Port 40000/40001, SMART, Logout-Timer, SSH-Key) -- siehe [DSM-Verwaltung](../nas-storage/index.md#dsm-verwaltung-alle-synology).
 
 ## Thunderbolt-Netzwerk
 
