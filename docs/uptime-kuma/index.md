@@ -18,7 +18,7 @@ Uptime Kuma überwacht alle Services, die **nicht** zur Kern-Infrastruktur gehö
 | URL | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 | Deployment | Nomad Job `monitoring/uptime-kuma.nomad` |
 | Storage | Live-DB in zentraler MariaDB (`mariadb.service.consul`, Datenbank `uptime_kuma`, siehe [Datenbanken](../_referenz/datenbanken.md)); Uploads/Screenshots auf Linstor CSI Volume `uptime-kuma-data-r2` |
-| Auth | `intern-auth@file` (Authentik ForwardAuth); Push-Pfad `/api/push/` via `intern-noauth@file` ohne Auth |
+| Auth | `intern-auth@file` (Authentik ForwardAuth, Gruppe `admin`); Kuma-Eigen-Login deaktiviert (`disableAuth=true`, seit 2026-06-08 -- Authentik ist die alleinige Schutzschicht); Push-Pfad `/api/push/` via `intern-noauth@file` ohne Auth |
 | Secrets | DB-Passwort aus Vault `kv/data/shared/mariadb` (`uptime_kuma_password`); Prometheus-Metrics-API-Key in 1Password `PRIVAT Agent / Monitoring Uptime Kuma` |
 
 ## Rolle im Stack

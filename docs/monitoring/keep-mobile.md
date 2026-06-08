@@ -62,7 +62,7 @@ cluster: Nomad-Cluster {
 browser -> traefik: "HTTPS m.keep.*"
 traefik -> bff: "UI + /api/* (auth)"
 bff -> keep: "Keep-API\n(API-Key serverseitig)"
-bff -> kuma: "/metrics\n(Inline-Status)"
+bff -> kuma: "Status-Page\n(Inline-Status + Verlauf)"
 kuma -> traefik: "/api/health\n(Self-Monitor, no-auth)"
 ```
 
@@ -78,7 +78,8 @@ Damit der externe Uptime-Kuma-Monitor den Liveness-Endpoint pruefen kann, ohne d
 
 Die Verbindung zu [Uptime-Kuma](../uptime-kuma/) besteht in zwei Richtungen:
 
-- **Inline-Status (App liest Kuma):** Traegt ein Incident einen Uptime-Kuma-Alert, blendet die Detail-Ansicht den Live-Monitor-Status (up/down, Uptime 24h, Antwortzeit) sowie einen Deep-Link ins Kuma-Dashboard ein. Der BFF scrapt dafuer Kuma `/metrics` intern ueber Consul (HTTP-Basic mit leerem User und API-Key) -- ohne Kuma-Login im Browser.
+- **Inline-Status (App liest Kuma):** Traegt ein Incident einen Uptime-Kuma-Alert, blendet die Detail-Ansicht eine Heartbeat-Leiste (gruen/gelb/rot pro Check, wie in Kuma), den aktuellen Status, die 24h-Uptime und die Antwortzeit sowie einen Deep-Link ins Kuma-Dashboard ein. Primaerquelle ist der **unauthentifizierte Status-Page-Heartbeat-Endpoint** (`/api/status-page/heartbeat/homelab`, intern via Consul) -- ein Request liefert Verlauf + Uptime fuer alle Monitore der Page, ohne Kuma-Login im Browser. Fallback fuer Monitore ausserhalb der Status-Page ist `/metrics` (HTTP-Basic, leerer User + API-Key).
+- **Deep-Link:** Da Kuma hinter dem Authentik-Outpost laeuft und sein Eigen-Login deaktiviert ist ([Uptime-Kuma](../uptime-kuma/)), oeffnet der Link `…/dashboard/<monitor-id>` das Monitor-Dashboard nahtlos (nur Authentik admin-only davor).
 - **Self-Monitoring (Kuma prueft die App):** Der HTTP-Monitor 86 prueft `m.keep.ackermannprivat.ch/api/health` im 60-Sekunden-Takt. Bei Ausfall alarmiert er ueber die Keep-Notification nach Telegram.
 
 ## Deploy
