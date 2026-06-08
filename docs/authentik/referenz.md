@@ -177,7 +177,7 @@ Wichtige konfigurierte Stages (für API-Referenz):
 - `default-authentication-identification` -- `user_fields=[email]`, verknüpft mit `recovery_flow`, `passwordless_flow`
 - `default-authentication-password` -- `failed_attempts_before_cancel=5`
 - `default-authentication-mfa-validation` -- `not_configured_action=configure`, `configuration_stages=[totp, webauthn, static]`
-- `default-authentication-login` -- `session_duration=days=7`, `remember_me_offset=seconds=0` (fixe 7-Tage-Session ohne Checkbox), `terminate_other_sessions=true`
+- `default-authentication-login` -- `session_duration=days=7`, `remember_me_offset=seconds=0` (fixe 7-Tage-Session ohne Checkbox), `terminate_other_sessions=false` (Multi-Device erlaubt, seit 2026-06-08), `geoip_binding=bind_continent_country` (Session an Land CH gebunden -- Diebstahl-Schutz), `network_binding=no_binding` (aus wegen Tailscale/Split-Horizon)
 - `passwordless-authenticator-validate` -- `device_classes=[webauthn]`, `not_configured_action=deny`, `webauthn_user_verification=required`
 - `default-authenticator-webauthn-setup` -- `user_verification=required`, `resident_key_requirement=required`
 - `recovery-email` -- `use_global_settings=true` (nutzt `AUTHENTIK_EMAIL__*` aus dem Nomad-Job)
