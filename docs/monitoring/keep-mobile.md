@@ -1,0 +1,90 @@
+---
+title: Keep Mobile
+description: Mobile Incident-PWA fuer Keep -- React-SPA + Hono-BFF hinter Authentik
+tags:
+  - service
+  - monitoring
+  - keep
+  - nomad
+  - react
+---
+
+# Keep Mobile
+
+Keep Mobile (`keep-mobile`) ist eine schlanke, mobile-first Progressive Web App fuer die Incident-Ansicht aus [Keep](keep.md). Sie zeigt offene Incidents, erlaubt das Quittieren (Acknowledge) und Aufloesen (Resolve) unterwegs und blendet pro Uptime-Kuma-Alert den Live-Status ein. Sie ist der erste produktive Pilot des [Homelab-App-Standards](../app-standard/).
+
+## Uebersicht
+
+| Attribut | Wert |
+|----------|------|
+| URL | [m.keep.ackermannprivat.ch](https://m.keep.ackermannprivat.ch) |
+| App-Repository | `derever-labs/keep-mobile` (React-SPA + Hono-BFF) |
+| Deploy-Repository | `derever-labs/homelab-nomad-jobs`, Job `monitoring/keep-mobile.nomad` |
+| Architektur | React-SPA (Vite + Tailwind) + Hono-BFF in einem Container |
+| Auth | `intern-auth@file` (Authentik ForwardAuth) -- `/api/health` zusaetzlich ueber `keep-mobile-health` (`intern-noauth`) |
+| Secrets | `kv/data/keep-mobile` (Keep-API-Key, Kuma-API-Key) |
+| Monitoring | Uptime-Kuma HTTP-Monitor 86 auf `/api/health` -- siehe [Coverage](coverage.md) |
+
+## Rolle im Stack
+
+Keep ist der zentrale Incident-Hub; seine eigene Web-UI (`keep.ackermannprivat.ch`) ist auf den Desktop ausgelegt. Keep Mobile ergaenzt sie um eine fokussierte mobile Sicht: nur die wenigen Handgriffe, die unterwegs zaehlen (Incident lesen, Acknowledge, Resolve). Es ist eine **sekundaere** UI -- der eigentliche Alert-Pfad (Keep, Telegram) funktioniert unabhaengig von ihr weiter.
+
+Der Hono-BFF haelt den Keep-API-Key serverseitig und proxyt die Keep-REST-API intern ueber Consul. Der Browser sieht den Key nie und spricht ausschliesslich mit dem BFF auf demselben Origin.
+
+## Architektur
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: right
+
+browser: Mobile-Browser { class: node }
+traefik: "Traefik\n(Authentik ForwardAuth)" { class: node }
+
+cluster: Nomad-Cluster {
+  class: container
+  bff: "keep-mobile\nHono-BFF + React-SPA" { class: node }
+  keep: "keep-backend\n(Consul, intern)" { class: node }
+  kuma: "Uptime-Kuma" { class: node }
+}
+
+browser -> traefik: "HTTPS m.keep.*"
+traefik -> bff: "UI + /api/* (auth)"
+bff -> keep: "Keep-API\n(API-Key serverseitig)"
+bff -> kuma: "/metrics\n(Inline-Status)"
+kuma -> traefik: "/api/health\n(Self-Monitor, no-auth)"
+```
+
+## Auth-Muster
+
+Keep Mobile folgt dem [Auth-Standard fuer SPAs hinter Authentik](../app-standard/): das zentrale Authentik-ForwardAuth bleibt die Auth-Grenze, die App betreibt **kein** eigenes OIDC. Bei Ablauf der Session faengt die SPA den Redirect transparent ab (ein einmaliger, guarded Top-Level-Reload; bei Blockade ein App-weites "Session abgelaufen"-Overlay). Es ist bewusst **kein** Service Worker im Einsatz -- fuer eine auth-gated Live-Alerting-App ohne Offline-Nutzen war er reiner Ballast und Ursache mehrerer Auth-Sackgassen.
+
+Damit der externe Uptime-Kuma-Monitor den Liveness-Endpoint pruefen kann, ohne den Authentik-302 zu kassieren, bedient ein zweiter Traefik-Router `keep-mobile-health` ausschliesslich `Path(/api/health)` ueber die `intern-noauth`-Chain (interne IP-Allowlist, kein Authentik). Der Endpoint ist dependency-frei und liefert nur `{status:"ok"}`. Alle anderen Pfade -- inklusive der uebrigen `/api/*` -- bleiben hinter Authentik. Muster wie `uptime-kuma-push` und `grafana-api`.
+
+## Uptime-Kuma-Integration
+
+Die Verbindung zu [Uptime-Kuma](../uptime-kuma/) besteht in zwei Richtungen:
+
+- **Inline-Status (App liest Kuma):** Traegt ein Incident einen Uptime-Kuma-Alert, blendet die Detail-Ansicht den Live-Monitor-Status (up/down, Uptime 24h, Antwortzeit) sowie einen Deep-Link ins Kuma-Dashboard ein. Der BFF scrapt dafuer Kuma `/metrics` intern ueber Consul (HTTP-Basic mit leerem User und API-Key) -- ohne Kuma-Login im Browser.
+- **Self-Monitoring (Kuma prueft die App):** Der HTTP-Monitor 86 prueft `m.keep.ackermannprivat.ch/api/health` im 60-Sekunden-Takt. Bei Ausfall alarmiert er ueber die Keep-Notification nach Telegram.
+
+## Deploy
+
+Keep Mobile wird nach dem [Homelab-App-Standard](../app-standard/) ausgeliefert: ein Commit ins App-Repo baut das Image und oeffnet einen SHA-Bump-PR auf `homelab-nomad-jobs`; der Merge startet den Nomad-Deploy mit Health-Gate und `auto_revert`. Job-Details und Traefik-Tags stehen in `monitoring/keep-mobile.nomad`.
+
+## Verwandte Dokumentation
+
+- [Keep](keep.md) -- Incident-Hub und Alert-Routing
+- [Homelab-App-Standard](../app-standard/) -- Build-/Deploy-Pattern und Auth-Muster
+- [Uptime-Kuma](../uptime-kuma/) -- Monitoring-Backend
+- [Coverage](coverage.md) -- Monitoring-Abdeckung (Layer 8)
