@@ -82,6 +82,14 @@ Die Verbindung zu [Uptime-Kuma](../uptime-kuma/) besteht in zwei Richtungen:
 - **Deep-Link:** Da Kuma hinter dem Authentik-Outpost laeuft und sein Eigen-Login deaktiviert ist ([Uptime-Kuma](../uptime-kuma/)), oeffnet der Link `…/dashboard/<monitor-id>` das Monitor-Dashboard nahtlos (nur Authentik admin-only davor).
 - **Self-Monitoring (Kuma prueft die App):** Der HTTP-Monitor 86 prueft `m.keep.ackermannprivat.ch/api/health` im 60-Sekunden-Takt. Bei Ausfall alarmiert er ueber die Keep-Notification nach Telegram.
 
+## Keep-Deep-Link
+
+Die Incident-Detailseite zeigt im Header immer einen **In Keep oeffnen**-Link auf den vollen Incident in der Keep-Web-UI (`https://keep.ackermannprivat.ch/incidents/<id>`). Die oeffentliche Keep-URL kommt als `KEEP_BASE_URL` aus der Nomad-Env (kein Secret) ueber `/api/config` in den Client -- dasselbe Muster wie der Kuma-Deep-Link.
+
+::: warning callbackUrl beim Keep-Erstlogin
+Ist die Keep-Web-UI im Ziel-Tab noch nicht angemeldet, verwirft Keeps NextAuth-Signin nach dem Authentik-OIDC-Round-Trip den `callbackUrl` und landet auf der Incidents-Liste statt beim verlinkten Incident. Bei bereits angemeldetem Keep oeffnet der Link den Incident direkt (der uebliche On-Call-Fall). Keep-internes Login-Verhalten, unabhaengig vom Deep-Link.
+:::
+
 ## Deploy
 
 Keep Mobile wird nach dem [Homelab-App-Standard](../app-standard/) ausgeliefert: ein Commit ins App-Repo baut das Image und oeffnet einen SHA-Bump-PR auf `homelab-nomad-jobs`; der Merge startet den Nomad-Deploy mit Health-Gate und `auto_revert`. Job-Details und Traefik-Tags stehen in `monitoring/keep-mobile.nomad`.
