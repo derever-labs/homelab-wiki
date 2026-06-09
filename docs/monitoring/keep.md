@@ -192,6 +192,20 @@ Der interne Backstop ist **nicht** vollständig unabhängig: er pusht an Kuma (M
 
 Default-Dedup-Rule (Provider-Type `keep`) plus optional source-spezifische Rules. Fingerprint-Felder: `fingerprint`, `name`, `source`. Wiederholte Alerts mit gleichem Fingerprint lösen nur einen Incident-Eintrag aus.
 
+## Wartungsfenster -- Notifications temporär stummschalten
+
+Zwei verschiedene Bedürfnisse, zwei verschiedene Wege -- bewusst **kein** globaler Mute-Knopf in der App. Ein globales Mute würde eine echte kritische Störung während des Fensters verschlucken und wäre damit schlechter als die feineren Alternativen (Entscheid nach Challenge 2026-06-09).
+
+- **Spontaner Alert-Sturm** -- am Telegram-Client das betroffene **Severity-Topic stummschalten** (Kritisch/Warnung/Info einzeln, native Telegram-Funktion). Granular, sofort, kein Server-State; Kritisch bleibt bewusst laut, die Incidents bleiben im Keep-Dashboard sichtbar.
+
+- **Geplante Operation** (z.B. RAID-Erweiterung, Storage-Umbau), die bekanntes Rauschen erzeugt -- ein **gezieltes Maintenance-Window** auf den betroffenen Dienst. Es unterdrückt die Telegram-Notification für passende Alerts, lässt den Vorfall aber sichtbar und ackbar (`suppress=true`).
+
+Maintenance-Windows verwaltet der Runbook-Helfer `nomad-jobs/monitoring/keep-maintenance.py` (`list` / `start <match> <minutes>` / `stop <id>`); der Aufruf-Ablauf steht im Datei-Docstring. Sichere Defaults sind fest verdrahtet: `suppress=true` (nie verwerfen), enger `name.contains`-Scope statt globalem Match, Idempotenz-Schutz gegen doppelte Fenster. Entwarnungen (`resolved`/`acknowledged`) kommen weiter durch.
+
+::: warning Fenster nach der Op aktiv beenden
+Der Maintenance-Filter wirkt pro eingehendem Alert-Event und ist der erste Ingestion-Schritt. Läuft ein Fenster mitten in einer echten Störung ab, kommt der nächste Re-Send des Alerts normal durch (Verzögerung = Re-Send-Intervall der Quelle); ein einmaliges Event im Fenster wird hingegen permanent verschluckt. Darum Fenster knapp wählen und nach der Operation mit `stop <id>` aktiv beenden statt auf den Ablauf zu warten.
+:::
+
 ## Deploy -- GitOps, Restart-pflichtig
 
 Workflows und Provider sind in `keep.nomad` per `file()` eingebettet und werden beim Keep-Start **by-name provisioniert**. Es gibt **keinen Hot-Reload** -- eine Workflow-Änderung im Repo wird erst nach einem Keep-Restart (Job-Redeploy) wirksam. Vor dem Restart den `keep-heartbeat-watch`-Job pausieren, damit der Neustart keinen False-Down-Alarm auslöst. Repo-YAML und Live müssen identisch bleiben (der Restart re-provisioniert die `file()`-Version).
