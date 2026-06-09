@@ -61,7 +61,7 @@ Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-
 **Contact Point:** Webhook auf `https://keep.ackermannprivat.ch/alerts/event/grafana`
 **Notification Policy:** Alle Alerts -> Keep, Group-Wait 30s, Repeat 4h
 
-Keep übernimmt anschliessend Source-Routing in Forum-Topics, Severity-Eskalation an den VIP-Bot und Deduplizierung. Details siehe [Keep](keep.md).
+Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet nach Incident-Severity in drei Forum-Topics (Kritisch/Warnung/Info) über den batch-Bot. Details siehe [Keep](keep.md).
 
 **Metrik-basierte Alert Rules (InfluxDB):**
 
@@ -139,7 +139,6 @@ direct: Direct-Webhook (Pfad 1) {
   kuma: Uptime Kuma {class: svc}
   authentik: Authentik {class: svc}
   arr: Sonarr/Radarr/Prowlarr {class: svc}
-  notifiarr: Notifiarr {class: svc}
   immo: Immo-Scraper {class: svc}
   checkmk: CheckMK {class: svc}
 }
@@ -166,25 +165,14 @@ keep: Keep\nIncident-Hub\nDedup + Routing {class: svc}
 
 bot_batch: batch-Bot\nbatch_ackermann_bot {
   class: agent
-  tooltip: "Standard-Schiene; postet in Forum-Topics"
-}
-bot_vip: vip-Bot\ntop_uptime_ackermann_bot {
-  class: agent
-  tooltip: "Critical-Eskalation; postet im 1:1-Chat"
+  tooltip: "Alleiniger Sender; postet nach Severity in die Topics"
 }
 
 homelab_alerts: Homelab Alerts\nForum-Channel\n(chat-id -1003971798942) {
   class: container
-  monitoring: Topic 3 monitoring {class: sink}
-  security: Topic 4 security {class: sink}
-  cicd: Topic 5 ci-cd {class: sink}
-  backup: Topic 6 backup {class: sink}
-  downloader: Topic 7 downloader {class: sink}
-  immo: Topic 8 immo {class: sink}
-}
-
-vip_chat: 1:1 Chat\n(chat-id 813893907) {
-  class: sink
+  krit: Kritisch (25009) {class: sink}
+  warn: Warnung (25010) {class: sink}
+  info: Info (25011) {class: sink}
 }
 
 # Pfad 1: Direct-Webhook
@@ -192,7 +180,6 @@ direct.gatus -> keep: webhook
 direct.kuma -> keep: webhook
 direct.authentik -> keep: webhook
 direct.arr -> keep: webhook
-direct.notifiarr -> keep: webhook
 direct.immo -> keep: webhook
 direct.checkmk -> keep: webhook
 
@@ -209,20 +196,15 @@ sources_m.hosts -> telegraf: scrape
 telegraf -> influx: write
 influx -> grafana: Flux Query
 
-# Keep -> Bots -> Topics
-keep -> bot_batch: "default + alle Severitäten"
-keep -> bot_vip: "critical / high / page"
-bot_batch -> homelab_alerts.monitoring
-bot_batch -> homelab_alerts.security
-bot_batch -> homelab_alerts.cicd
-bot_batch -> homelab_alerts.backup
-bot_batch -> homelab_alerts.downloader
-bot_batch -> homelab_alerts.immo
-bot_vip -> vip_chat
+# Keep -> Incident -> batch-Bot -> Severity-Topics
+keep -> bot_batch: "Incident-Workflows"
+bot_batch -> homelab_alerts.krit: "critical / high / fail-open"
+bot_batch -> homelab_alerts.warn: "warning"
+bot_batch -> homelab_alerts.info: "info / low"
 ```
 
 ::: info Routing-Logik
-**Source -> Topic** wird vom Keep-Workflow per Source-Regex bestimmt (`homelab-route-monitoring|security|cicd|backup|downloader|immo`). **Severity -> Bot** läuft als `if`-Condition innerhalb desselben Workflows. Standard-Alerts gehen über den batch-Bot in den passenden Forum-Topic, `critical|high|page` eskaliert zusätzlich an den vip-Bot in den 1:1-Chat.
+Keep korreliert eingehende Alerts zu **Incidents** (vier disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep.md), [Telegram-Bots](telegram-bots.md).
 :::
 
 ### Admin-Zugang zur Grafana-HTTP-API
@@ -403,7 +385,7 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 - [Coverage](./coverage.md) -- Welcher Host und Service wird wie überwacht und was bewusst ausgelassen
 - [CheckMK Discovery-Policy](./checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
 - [Keep](./keep.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
-- [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (default/vip/batch + Topic-IDs)
+- [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (batch-Bot + Severity-Topics; vip idle)
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
 - [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
