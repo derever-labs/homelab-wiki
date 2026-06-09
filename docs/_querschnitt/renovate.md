@@ -43,6 +43,7 @@ Renovate verwendet drei Custom Regex Manager, um verschiedene Image-Formate in N
 - **Digest-Updates** (Layer-Rebuilds ohne Tag-Änderung): Automatisch gemerged
 - **Vulnerability-Alerts** (CVE-Updates, GitHub/OSV-getrieben): Automatisch gemerged, Label `security`. Diese Regel überschreibt `matchUpdateTypes`, greift also auch bei Minor- oder Major-Sprüngen wenn eine CVE der Anlass ist.
 - **Minor-Updates** (z.B. 1.2 → 1.3): Pull Request mit Label `minor-update`, manuelles Review
+- **devDependencies-Minor** (npm Build-/Lint-/Test-Tooling, z.B. `prettier`, `postcss`, `eslint-*`, `tsx`): Automatisch gemerged, zusätzliches Label `devdeps`. Diese Pakete sind Build-Zeit-only und brechen keine Laufzeit -- das eliminiert den Review-Stau im Single-Maintainer-Betrieb. Greift nur bei `depType: devDependencies`; Runtime-`dependencies` und Docker-Image-Tags (`.nomad`, kein depType) bleiben review-pflichtig.
 - **Major-Updates** (z.B. 1.x → 2.x): Pull Request mit Label `major-update`, kein Auto-Merge
 
 Kombiniert mit der schlanken CD-Pipeline-Blocklist bedeutet das: Patches, Digests und Security-Fixes landen nach Merge automatisch im Cluster (Merge = Review-Gate). Siehe [github-runner/referenz.md](../github-runner/referenz.md#blocklist).
