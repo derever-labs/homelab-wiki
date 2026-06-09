@@ -11,25 +11,27 @@ tags:
 
 # Monitoring: Keep-Correlations
 
-Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-Correlation** (vier disjunkte Rules, die jeden Alert zu einem Incident gruppieren -- siehe unten) und die geplanten **cross-service-Inhibit-Patterns** (Pattern-Katalog, Status Design). Beide gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt.
+Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-Correlation** (zwei Rules, die jeden Alert zu einem Incident gruppieren -- siehe unten) und die geplanten **cross-service-Inhibit-Patterns** (Pattern-Katalog, Status Design). Beide gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt.
 
 ::: info Zwei Ebenen -- live vs geplant
-**Live (seit Layer 3, 2026-06):** vier Grouping-Rules gruppieren nach `service` / Grafana-`alertname` / CheckMK-`name` / Catch-all -- siehe Abschnitt "Live: Grouping-Correlation". Das ist die Basis-Korrelation, die heute jeden Incident erzeugt.
+**Live (seit Layer 3, 2026-06):** zwei Grouping-Rules -- Service-Correlation (nach `service`) + Catch-all (nach `fingerprint`) -- siehe Abschnitt "Live: Grouping-Correlation". Das ist die Basis-Korrelation, die heute jeden Incident erzeugt.
 **Geplant (Status Design, Stand 2026-05-02):** die neun cross-service-Inhibit-Patterns im Pattern-Katalog (`correlation_key`-Label-basiert) sind noch nicht in Keep angelegt -- sie brauchen Source-Alerts mit dem Label `correlation_key=<pattern-name>`. Offene Live-Anlage wird über ClickUp geführt (Folge-Tasks unten), nicht hier.
 :::
 
-## Live: Grouping-Correlation (4 Rules)
+## Live: Grouping-Correlation (2 Rules)
 
-Seit Layer 3 erzeugen vier disjunkte Grouping-Rules (`nomad-jobs/monitoring/keep-bootstrap/setup-topology.py`, alle `resolveOn: all_resolved`) die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen:
+Seit Layer 3 erzeugen zwei disjunkte Grouping-Rules (`nomad-jobs/monitoring/keep-bootstrap/setup-topology.py`, beide `resolveOn: all_resolved`) die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen:
 
 | Rule | Bedingung (CEL) | Gruppierung |
 | :--- | :--- | :--- |
-| Service | `size(service) > 0 && source != "checkmk"` | nach `service` |
-| Grafana | `source == "grafana" && has(labels.alertname)` | nach `labels.alertname` (bündelt Stürme) |
-| CheckMK | `source == "checkmk"` | nach `name` |
-| Catch-all | service-los, nicht-grafana, nicht-checkmk | nach `fingerprint` |
+| Service-Correlation | `size(service) > 0` | nach `service` -- ein Incident pro `service`-Wert |
+| Catch-all | `size(service) == 0` | nach `fingerprint` |
 
-`size(service) > 0` statt `service != null` ist Pflicht (CEL-null-Falle CON-25, Details in [Keep](keep.md#correlation-vier-disjunkte-rules)). Diese vier Rules sind die heute wirksame Korrelation; der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
+`size(service) > 0` statt `service != null` ist Pflicht (CEL-null-Falle CON-25, Details in [Keep](keep.md#correlation-zwei-rules)). Diese zwei Rules sind die heute wirksame Korrelation; eine frühere 4-Rule-Variante (eigene Grafana-/CheckMK-Rules) wurde nicht deployt. Der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
+
+::: warning service = Alertname bei Grafana-Alerts
+Grafana-Alerts tragen als `service` den Rule-Titel (z.B. `DRBD Verbindung getrennt`), keinen kanonischen Dienst -- die Service-Correlation bündelt also nur je Alertname. Bei einem Node-Ausfall entsteht dadurch ein Incident pro DRBD-/Linstor-Alertname, bei Flapping je Zyklus ein neuer. Dominanter Spam-Vektor (siehe [Coverage](coverage.md) Layer 3); primär an der Quelle via Grafana `for`/`keep_firing_for` zu dämpfen.
+:::
 
 ## Zweck
 

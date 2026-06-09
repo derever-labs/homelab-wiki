@@ -15,7 +15,7 @@ Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Gatus, Grafan
 ## Zweck
 
 - **Single Point of Routing** -- Alle Quellen treffen sich auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Änderungen an Bot oder Topics passieren in Keep, nicht in jeder Quelle.
-- **Korrelation zu Incidents** -- Eingehende Alerts werden über vier disjunkte Correlation-Rules zu Incidents gruppiert (pro Dienst, pro Grafana-Alertname, pro CheckMK-Service, Catch-all). Aus N Sturm-Alerts wird ein Incident.
+- **Korrelation zu Incidents** -- Eingehende Alerts werden über zwei Correlation-Rules zu Incidents gruppiert (nach `service`, plus Catch-all nach `fingerprint`). Aus N gleichartigen Alerts wird ein Incident.
 - **Severity-Routing in drei Topics** -- Die Incident-Severity entscheidet das Ziel-Topic: Kritisch / Warnung / Info. Stummschalten ist Telegram-natives Per-Topic-Mute beim Empfänger (siehe [Telegram-Bots](telegram-bots.md)).
 - **Acknowledge & Eskalation** -- Kritische Incidents tragen einen Ack-Deep-Link; eine echte Hoch-Eskalation (warning -> critical) pagt nach, ein bereits kritisch gestarteter Incident wird nicht doppelt gemeldet.
 - **Dead-Man-Switch** -- Ein Keep-unabhängiger Heartbeat-Watcher plus drei Uptime-Kuma-Watchdogs machen einen stillen Keep-Ausfall sichtbar.
@@ -49,7 +49,7 @@ sources: Alert-Quellen {
 keep: Keep {
   class: layer
   ident: 1. Identification\nExtraction + Mapping\n-> service-Feld { class: svc }
-  corr: 2. Correlation\n4 disjunkte Rules\n-> Incident { class: svc }
+  corr: 2. Correlation\n2 Rules (service / catch-all)\n-> Incident { class: svc }
   act: 3. Action\n4 Incident-Workflows\n(notify/escalate/ack/resolve) { class: svc }
 }
 
@@ -99,19 +99,23 @@ Damit Alerts sinnvoll korrelieren, braucht jeder Alert ein kanonisches `service`
 
 Die Enrichment-Schicht läuft beweisbar **vor** dem Workflow-Trigger und der Correlation (Ingestion-Reihenfolge: Extraction -> Mapping -> Workflows -> Correlation). Das `service`-Feld füllt später `incident.services` und ist damit die strukturelle Voraussetzung für Per-Dienst-Acknowledge.
 
-## Correlation -- vier disjunkte Rules
+## Correlation -- zwei Rules
 
-Statt einer einzigen Catch-all-Rule (die früher 545 Incidents in einen Eimer warf) gruppieren vier lückenlos-disjunkte Rules (`setup-topology.py`, alle `resolveOn: all_resolved`):
+Statt einer einzigen Catch-all-Rule (die früher 545 Incidents in einen Eimer warf) korrelieren zwei disjunkte Rules (`setup-topology.py`, beide `resolveOn: all_resolved`):
 
 | Rule | Bedingung (CEL) | Gruppierung |
 | :--- | :--- | :--- |
-| Service | `size(service) > 0 && source != "checkmk"` | nach `service` -- ein Incident pro Dienst |
-| Grafana | `source == "grafana" && has(labels.alertname)` | nach `labels.alertname` -- bündelt Stürme (z.B. Nomad-Reschedule) |
-| CheckMK | `source == "checkmk"` | nach `name` |
-| Catch-all | service-los, nicht-grafana-korreliert, nicht-checkmk | nach `fingerprint` -- echter, ackbarer Fallback |
+| Service-Correlation | `size(service) > 0` | nach `service` -- ein Incident pro `service`-Wert (alle Quellen) |
+| Catch-all | `size(service) == 0` | nach `fingerprint` -- Fallback für service-lose Alerts |
+
+Alle aktiven Incidents tragen daher den Rule-Namen `Homelab Service-Correlation` bzw. den Catch-all. (Eine frühere 4-Rule-Variante mit eigenen Grafana-/CheckMK-Rules wurde nicht deployt -- live sind diese zwei.)
 
 ::: warning CEL-null-Falle (CON-25)
-Die Bedingungen nutzen `size(service) > 0` statt `service != null`. Keeps Rules-Engine ersetzt `null`-Tokens textuell durch `""`, und der CEL-Evaluator kann `NoneType` nicht vergleichen -- `service != null` würde entweder jeden service-losen Alert fälschlich fangen oder die Rule lautlos töten. Disjunktheit gegen 400 echte Live-Alerts verifiziert (kein none-Bucket, kein Overlap).
+Die Bedingungen nutzen `size(service) > 0` statt `service != null`. Keeps Rules-Engine ersetzt `null`-Tokens textuell durch `""`, und der CEL-Evaluator kann `NoneType` nicht vergleichen -- `service != null` würde entweder jeden service-losen Alert fälschlich fangen oder die Rule lautlos töten. Gleiche `size()`-CEL bricht uebrigens den `GET /rules`-Endpoint (HTTP 500, `CelToAstConverter`) -- kosmetisch, das Matching (`run_rules`) ist nicht betroffen.
+:::
+
+::: warning service = Alertname bei Grafana-Alerts -- Spam-Vektor bei Node-Ausfall
+Grafana-Alerts tragen als `service` den Rule-Titel (z.B. `DRBD Out-of-Sync > 1 MiB`), keinen kanonischen Dienst. Die Service-Correlation bündelt daher nur INNERHALB eines Alertnamens, nicht darüber hinaus: ein Storage-Node-Ausfall erzeugt einen Incident pro DRBD-/Linstor-Alertname, und bei Flapping je Zyklus einen neuen. Das ist der dominante Spam-Vektor bei Node-Ausfällen (siehe [Coverage](coverage.md) Layer 3: „DRBD Verbindung getrennt" flappte historisch 8601 Transitions/50h). Primär an der Quelle zu dämpfen (Grafana `for`/`keep_firing_for`), nicht in Keep.
 :::
 
 ## Incident-Workflows -- Severity-Routing & Lifecycle
