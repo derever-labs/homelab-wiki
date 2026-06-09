@@ -10,85 +10,209 @@ tags:
 
 # Keep
 
-Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Gatus, Grafana, Uptime Kuma, Authentik, Sonarr, Radarr, Prowlarr, CheckMK, Notifiarr, Immo-Scraper) schicken ihre Events an einen Endpoint statt jede Quelle einzeln mit Telegram zu verdrahten. Keep korreliert, dedupliziert und routet anschliessend in die passenden Forum-Topics des Telegram-Channels `Homelab Alerts`.
+Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Gatus, Grafana, Uptime Kuma, CheckMK sowie einzelne Apps) schicken ihre Events an **einen** Endpoint, statt jede Quelle einzeln mit Telegram zu verdrahten. Keep reichert die Alerts an, korreliert sie zu **Incidents**, dedupliziert und routet anschliessend nach Severity in drei Forum-Topics des Telegram-Channels `Homelab Alerts`. Acknowledgen, Eskalieren und Entwarnen laufen über vier Incident-Workflows.
 
 ## Zweck
 
-- **Single Point of Routing** -- Alle Alerting-Quellen treffen sich auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Änderungen an Bot oder Topics passieren in Keep, nicht in jeder Quelle.
-- **Deduplizierung** -- Wiederkehrende Alerts mit gleichem Fingerprint lösen nur eine Telegram-Nachricht aus, weitere identische werden bis zum Status-Wechsel oder Resolve unterdrückt.
-- **Severity-Eskalation** -- Standard-Alerts gehen über `batch-Bot` in Forum-Topics; `critical | high | page` eskaliert zusätzlich an `vip-Bot` in den 1:1-Chat für sofortige Sichtbarkeit.
-- **Incident-Management (seit 2026-05-19)** -- Alerts werden automatisch zu Incidents korreliert. Service-Topology mit 10 Hauptservices + Catch-all-Rule (per source+host, 5min-Window) gruppiert eingehende Alerts. UI-Sicht "Was brennt jetzt": `https://keep.ackermannprivat.ch/incidents?status=Open`. Lifecycle: Open -> Acknowledged -> Resolved (manuelles Ack in Keep-UI).
+- **Single Point of Routing** -- Alle Quellen treffen sich auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Änderungen an Bot oder Topics passieren in Keep, nicht in jeder Quelle.
+- **Korrelation zu Incidents** -- Eingehende Alerts werden über vier disjunkte Correlation-Rules zu Incidents gruppiert (pro Dienst, pro Grafana-Alertname, pro CheckMK-Service, Catch-all). Aus N Sturm-Alerts wird ein Incident.
+- **Severity-Routing in drei Topics** -- Die Incident-Severity entscheidet das Ziel-Topic: Kritisch / Warnung / Info. Stummschalten ist Telegram-natives Per-Topic-Mute beim Empfänger (siehe [Telegram-Bots](telegram-bots.md)).
+- **Acknowledge & Eskalation** -- Kritische Incidents tragen einen Ack-Deep-Link; eine echte Hoch-Eskalation (warning -> critical) pagt nach, ein bereits kritisch gestarteter Incident wird nicht doppelt gemeldet.
+- **Dead-Man-Switch** -- Ein Keep-unabhängiger Heartbeat-Watcher plus drei Uptime-Kuma-Watchdogs machen einen stillen Keep-Ausfall sichtbar.
 
-## "Was brennt jetzt"-Dashboard
+## Architektur in drei Schichten
 
-[`https://keep.ackermannprivat.ch/incidents?status=Open`](https://keep.ackermannprivat.ch/incidents?status=Open) -- Faceted-Filter zeigt alle offenen Incidents mit Severity, Source, Service, Assignee. Erste Anlaufstelle bei Alarm. Aus Telegram-Notification per Klick auf den Master-Template-Link erreichbar.
+```d2
+direction: right
 
-Service-Topology (10 Services): [`/topology`](https://keep.ackermannprivat.ch/topology) -- wiki, jellyfin, keep, postgres, vault, nomad, consul, traefik, monitoring, pihole. Bootstrap-Script: `nomad-jobs/monitoring/keep-bootstrap/`.
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
 
-Correlation-Rules: [`/rules`](https://keep.ackermannprivat.ch/rules) -- aktuell 1 Catch-all-Rule. Service-Topology-Correlation läuft als Hintergrund-Processor (`KEEP_TOPOLOGY_PROCESSOR=true` Env-Var).
+classes: {
+  svc: { style: { border-radius: 8 } }
+  layer: { style: { border-radius: 8; stroke-dash: 4 } }
+  sink: { style: { border-radius: 8 } }
+}
+
+sources: Alert-Quellen {
+  class: layer
+  gatus: Gatus { class: svc }
+  grafana: Grafana\n(Loki + InfluxDB) { class: svc }
+  kuma: Uptime Kuma { class: svc }
+  checkmk: CheckMK { class: svc }
+}
+
+keep: Keep {
+  class: layer
+  ident: 1. Identification\nExtraction + Mapping\n-> service-Feld { class: svc }
+  corr: 2. Correlation\n4 disjunkte Rules\n-> Incident { class: svc }
+  act: 3. Action\n4 Incident-Workflows\n(notify/escalate/ack/resolve) { class: svc }
+}
+
+topics: Homelab Alerts {
+  class: layer
+  krit: Kritisch (25009) { class: sink }
+  warn: Warnung (25010) { class: sink }
+  info: Info (25011) { class: sink }
+}
+
+sources.gatus -> keep.ident: "/alerts/event/<source>"
+sources.grafana -> keep.ident
+sources.kuma -> keep.ident
+sources.checkmk -> keep.ident
+keep.ident -> keep.corr -> keep.act
+keep.act -> topics.krit: "critical / high / fail-open"
+keep.act -> topics.warn: "warning"
+keep.act -> topics.info: "info / low"
+```
+
+Drei Schichten, alle drei müssen sitzen: **Identification** (jeder Alert bekommt ein `service`-Feld), **Correlation** (Alerts werden zu sinnvollen Incidents gruppiert statt in einen Catch-all-Eimer), **Action** (Incident-Workflows benachrichtigen, eskalieren, acknowledgen, entwarnen).
+
+## Drei Eingangs-Pfade zu Keep
+
+Quellen erreichen Keep auf einem von drei Wegen, je nachdem ob sie eigenes Alerting mitbringen oder nur Rohdaten liefern. Alle drei münden im selben Hub.
+
+::: info 1. Direct-Webhook
+Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Gatus, einzelne Apps.
+:::
+
+::: info 2. Log-basiert über Loki
+Die Quelle liefert nur Logs. Alloy nimmt sie auf, schreibt nach Loki, Grafana definiert LogQL-Alert-Rules, und die Rule postet den Webhook nach Keep. Beispiel: Failed SSH Logins, Traefik 5xx Spike, Vault Permission Denied.
+:::
+
+::: info 3. Metrik-basiert über InfluxDB
+Telegraf scraped (SNMP, Prometheus, Exec), schreibt Zeitreihen nach InfluxDB, Grafana hat InfluxQL-Alert-Rules. Beispiel: LVM Thin Pool, DRBD Out-of-Sync, Telegraf-Heartbeat-Absence.
+:::
+
+Faustregel: Webhook-/Notifications-Mechanismus -> Pfad 1. Nur Logs -> Pfad 2. Nur Metriken -> Pfad 3. Schwellwerte und Alert-Logik liegen bei Pfad 2/3 ausschliesslich in Grafana.
+
+## Identification -- das service-Feld
+
+Damit Alerts sinnvoll korrelieren, braucht jeder Alert ein kanonisches `service`-Feld. Das setzen Keep-eigene **Extraction- und Mapping-Rules** (`nomad-jobs/monitoring/keep-bootstrap/setup-enrichment.py`), nicht Custom-Code in den Quellen:
+
+- **Extraction** -- zieht aus dem Uptime-Kuma-Monitornamen den Dienstnamen ins `service`-Feld (Regex-Named-Group).
+- **Mapping (CSV)** -- ergänzt abgeleitete Felder (Routing-/Team-Tags) anhand des `service`-Werts.
+
+Die Enrichment-Schicht läuft beweisbar **vor** dem Workflow-Trigger und der Correlation (Ingestion-Reihenfolge: Extraction -> Mapping -> Workflows -> Correlation). Das `service`-Feld füllt später `incident.services` und ist damit die strukturelle Voraussetzung für Per-Dienst-Acknowledge.
+
+## Correlation -- vier disjunkte Rules
+
+Statt einer einzigen Catch-all-Rule (die früher 545 Incidents in einen Eimer warf) gruppieren vier lückenlos-disjunkte Rules (`setup-topology.py`, alle `resolveOn: all_resolved`):
+
+| Rule | Bedingung (CEL) | Gruppierung |
+| :--- | :--- | :--- |
+| Service | `size(service) > 0 && source != "checkmk"` | nach `service` -- ein Incident pro Dienst |
+| Grafana | `source == "grafana" && has(labels.alertname)` | nach `labels.alertname` -- bündelt Stürme (z.B. Nomad-Reschedule) |
+| CheckMK | `source == "checkmk"` | nach `name` |
+| Catch-all | service-los, nicht-grafana-korreliert, nicht-checkmk | nach `fingerprint` -- echter, ackbarer Fallback |
+
+::: warning CEL-null-Falle (CON-25)
+Die Bedingungen nutzen `size(service) > 0` statt `service != null`. Keeps Rules-Engine ersetzt `null`-Tokens textuell durch `""`, und der CEL-Evaluator kann `NoneType` nicht vergleichen -- `service != null` würde entweder jeden service-losen Alert fälschlich fangen oder die Rule lautlos töten. Disjunktheit gegen 400 echte Live-Alerts verifiziert (kein none-Bucket, kein Overlap).
+:::
+
+## Incident-Workflows -- Severity-Routing & Lifecycle
+
+Vier `type:incident`-Workflows unter `nomad-jobs/monitoring/keep-workflows/`, alle über den `telegram-homelab-batch`-Provider in den Channel `Homelab Alerts` (`-1003971798942`):
+
+| Workflow | Trigger | Ziel | Zweck |
+| :--- | :--- | :--- | :--- |
+| notify | `created` | 25009 / 25010 / 25011 | je Incident genau eine Meldung, nach Severity ins Topic; Kritisch trägt Ack-Button |
+| escalate | `updated` | 25009 | echte Hoch-Eskalation (warning -> critical) pagt nach (schliesst G1) |
+| ack | `updated` | 25009 | Quittung wenn ein Incident im Keep-UI acknowledged wird |
+| resolve | `updated` | 25009 / 25010 / 25011 | Entwarnung im selben Topic wie die Meldung, genau einmal (Flag-Dedup) |
+
+Wichtige Engine-Eigenheiten, die das Design tragen:
+
+- **`created` feuert genau einmal pro Incident** (beim `is_visible`-Flip) -> `events:[created]` = eine Telegram-Meldung pro Incident ohne Spam-Loop. Folgeänderungen kommen als `updated`.
+- **Severity-Gate Kritisch ist fail-open:** `severity not in ['warning','info','low']` fängt `critical`/`high` UND jede unerwartete oder leere Severity. Warnung `== 'warning'`, Info `in ['info','low']` -- disjunkt und lückenlos.
+- **`enrich_incident` darf NIE an einer Telegram-Action hängen** (der Telegram-Provider hat kein `_notify` für Enrichment -> NoneType-Crash). Dedup-Flags (`escalation_notified`, `ack_notified`, `resolve_notified`) werden über configless `console`-Actions gesetzt -- erst benachrichtigen, dann Flag.
+- **Status immer über `status.value`** lesen, sonst rendert der Enum-repr (`IncidentStatus.FIRING`) und Gates greifen nie.
+- **Workflow-Selektion ist ALL-MATCH** (kein First-Match): jeder passende Workflow läuft, Disjunktheit muss über die `if:`-Gates hergestellt werden.
+
+Stilles Verstummen/Expiry erzeugt **kein** Workflow-Event und damit kein Auto-Resolve -- Schweigen ist keine Entwarnung. Das fängt der Dead-Man-Switch als Report-Digest.
+
+## Dead-Man-Switch und Watchdog-Tier
+
+Wenn Keep selbst tot ist, geht jeder Alert verloren. Drei Keep-**unabhängige** Pfade machen das sichtbar -- alle posten über den batch-Bot direkt ins Kritisch-Topic (umgehen die Keep-Engine):
+
+```d2
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  svc: { style: { border-radius: 8 } }
+  watch: { style: { border-radius: 8; stroke-dash: 2 } }
+  sink: { style: { border-radius: 8 } }
+}
+
+keep: Keep\n(Postgres) { class: svc }
+
+dms: keep-heartbeat-watch\n(Dead-Man-Switch, alle 3 min) { class: watch; tooltip: "Kuma-Heartbeat + stale-firing-Digest" }
+
+kuma: Uptime-Kuma-Watchdog-Tier {
+  class: watch
+  m84: in-cluster\nMonitor keep-heartbeat { class: watch }
+  home: wd-home (LXC) { class: watch }
+  nana: wd-nana (Dottikon) { class: watch }
+}
+
+batch: batch-Bot { class: svc }
+krit: Kritisch-Topic (25009) { class: sink }
+
+keep -> dms: "Heartbeat-Push"
+dms -> batch: "bei Fehler/Stille"
+kuma.m84 -> batch
+kuma.home -> batch
+kuma.nana -> batch
+batch -> krit: "Kuma-Watchdog\n+ Uptime-Link"
+```
+
+- **Dead-Man-Switch** (`keep-heartbeat-watch.nomad`) -- pusht alle 3 min einen Kuma-Heartbeat und überwacht stale-firing Incidents; meldet Keep-interne Fehler direkt ins Kritisch-Topic.
+- **Kuma-Watchdog-Tier** -- drei Uptime-Kuma-Instanzen alarmieren mit einem Custom-Template, das die Kuma-Standardmeldung um eine `Kuma-Watchdog`-Kennzeile und den Uptime-Link ergänzt, sodass die Herkunft klar ist.
+
+::: danger Stack-Single-Point bleibt
+Der interne Backstop ist **nicht** vollständig unabhängig: er pusht an Kuma (MariaDB), Keep läuft auf Postgres -- beide DRBD-Single auf client-05/06. Ein Postgres- oder MariaDB-Ausfall killt Keep UND den Backstop gleichzeitig. Echte Unabhängigkeit liefert nur der externe Watchdog `wd-nana` in Dottikon. Siehe [Coverage](coverage.md) Layer 7.
+:::
+
+## Deduplizierung
+
+Default-Dedup-Rule (Provider-Type `keep`) plus optional source-spezifische Rules. Fingerprint-Felder: `fingerprint`, `name`, `source`. Wiederholte Alerts mit gleichem Fingerprint lösen nur einen Incident-Eintrag aus.
+
+## Deploy -- GitOps, Restart-pflichtig
+
+Workflows und Provider sind in `keep.nomad` per `file()` eingebettet und werden beim Keep-Start **by-name provisioniert**. Es gibt **keinen Hot-Reload** -- eine Workflow-Änderung im Repo wird erst nach einem Keep-Restart (Job-Redeploy) wirksam. Vor dem Restart den `keep-heartbeat-watch`-Job pausieren, damit der Neustart keinen False-Down-Alarm auslöst. Repo-YAML und Live müssen identisch bleiben (der Restart re-provisioniert die `file()`-Version).
 
 ## Konfiguration
 
-- **URL** -- [keep.ackermannprivat.ch](https://keep.ackermannprivat.ch)
+- **URL** -- [keep.ackermannprivat.ch](https://keep.ackermannprivat.ch); mobile PWA für Deep-Links: `m.keep.ackermannprivat.ch` (siehe [Keep Mobile](keep-mobile.md))
 - **Consul-Service** -- `keep` (Frontend), `keep-backend` (API + Webhook-Endpoint)
 - **Auth UI** -- Authentik ForwardAuth (`authentik-app@file`)
 - **Auth Webhooks** -- `chain-no-auth@file` auf `/alerts/event/*`, damit Quellen ohne Token pushen können
 - **Database** -- PostgreSQL (`postgres.service.consul`, DB `keep`)
-- **Cache** -- Redis-Sidecar, ephemeral
-- **Storage** -- Linstor CSI-Volume `keep-data` für Backend-State (Provider-Secrets als `SECRET_MANAGER_TYPE=FILE`)
-- **Job** -- `nomad-jobs/monitoring/keep.nomad`
-- **Tokens** -- 1P `Monitoring Telegram Bots` (default + vip + batch Bot)
+- **Storage** -- Linstor CSI-Volume `keep-data` für Backend-State (`SECRET_MANAGER_TYPE=FILE`)
+- **Job** -- `nomad-jobs/monitoring/keep.nomad`; Provider nur noch `telegram-homelab-batch`
+- **Tokens** -- 1P `Monitoring Telegram Bots` + Vault `kv/keep` (`telegram_batch_token`)
 
-## Drei Eingangs-Pfade zu Keep
+## "Was brennt jetzt"-Dashboard
 
-Quellen erreichen Keep auf einem von drei Wegen, je nachdem ob sie eigenes Alerting mitbringen oder nur Rohdaten liefern. Alle drei münden im selben Hub und durchlaufen anschliessend dieselbe Routing- und Dedup-Logik.
-
-::: info 1. Direct-Webhook
-Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Kein Storage dazwischen. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Authentik Events, Gatus, Sonarr/Radarr/Prowlarr/Notifiarr, Immo-Scraper.
-:::
-
-::: info 2. Log-basiert über Loki
-Die Quelle liefert nur Logs, keine fertigen Alerts. Alloy nimmt sie auf, schreibt nach Loki, und Grafana definiert LogQL-Alert-Rules. Wenn die Rule feuert, postet Grafana den Webhook nach Keep. Beispiel: Failed SSH Logins, Traefik 5xx Spike, Vault Permission Denied.
-:::
-
-::: info 3. Metrik-basiert über InfluxDB
-Telegraf scraped (SNMP, Prometheus, Exec), schreibt Zeitreihen nach InfluxDB. Grafana hat darauf Flux-Alert-Rules. Beispiel: LVM Thin Pool > 85%, DRBD Disconnected, SNMP-Target down.
-:::
-
-Faustregel für neue Quellen: hat sie einen Webhook-/Notifications-Mechanismus, immer Pfad 1. Liefert sie nur Logs (Syslog, Stdout), Pfad 2. Liefert sie nur Metriken (SNMP, Prometheus-Scrape, Exec), Pfad 3. Schwellwerte und Alert-Logik liegen in Pfad 2 und 3 ausschliesslich in Grafana -- die Quelle weiss nichts davon.
-
-## Routing-Workflows
-
-Sechs Source-Cluster, jeweils ein Workflow im Repo unter `nomad-jobs/monitoring/keep-workflows/`. Severity entscheidet pro Workflow über den Bot, Source über den Topic.
-
-::: info Source -> Topic
-- **monitoring** (Topic 3) -- gatus, kuma, uptime, grafana, checkmk, prometheus, telegraf, loki, test, keep
-- **security** (Topic 4) -- authentik, crowdsec, security
-- **ci-cd** (Topic 5) -- gitea, github, runner, ci
-- **backup** (Topic 6) -- borg, restic, duplicati, backup, pbs
-- **downloader** (Topic 7) -- sonarr, radarr, sabnzbd, prowlarr, jellyseerr, downloader, notifiarr, lazylibrarian
-- **immo** (Topic 8) -- immo, scraper, immoscraper
-:::
-
-::: info Severity -> Bot
-- **Default (alle Severitäten)** -- `telegram-homelab-batch` (Bot `batch_ackermann_bot`) schreibt in den entsprechenden Forum-Topic des Channels `Homelab Alerts` (chat-id `-1003971798942`)
-- **critical | high | page** -- zusätzlich `telegram-homelab-vip` (Bot `top_uptime_ackermann_bot`) in den 1:1-Chat (chat-id `813893907`) für sofortige Sichtbarkeit
-:::
-
-Conditional Bot-Wahl erfolgt per `if:`-Statement in den Workflow-Actions. Keep wählt für einen Alert nur den ersten passenden Workflow (First-Match), die Severity-Logik liegt deshalb in **jedem** Source-Workflow doppelt vor.
-
-## Deduplizierung
-
-Default-Rule (Provider-Type `keep`) plus optional source-spezifische Rules. Fingerprint-Felder: `fingerprint`, `name`, `source`. Wiederholte Alerts mit gleichem Fingerprint lösen nur eine Telegram-Nachricht aus.
-
-## Reload nach DB-Reset
-
-Workflows sind als YAML versioniert und werden nach einem Keep-Reset per Multipart-Upload zurückgespielt. Pfad-Details und das Wieder-Aufspielen-Skript sind im README des Workflow-Verzeichnisses dokumentiert.
+[`https://keep.ackermannprivat.ch/incidents?status=Open`](https://keep.ackermannprivat.ch/incidents?status=Open) -- Faceted-Filter über alle offenen Incidents (Severity, Source, Service, Assignee). Aus jeder Kritisch-Telegram-Nachricht per Ack-Button (Deep-Link auf die Incident-Seite) erreichbar.
 
 ## Verwandte Dokumentation
 
+- [Telegram-Bots](telegram-bots.md) -- Bot- und Topic-Inventar, Severity-Topics, Watchdog-Sender
+- [Keep Master-Template](keep-master-template.md) -- Aufbau der Telegram-Nachricht
+- [Keep-Correlations](keep-correlations.md) -- Correlation-Patterns
+- [Keep Mobile](keep-mobile.md) -- mobile Incident-PWA für Deep-Links
 - [Monitoring](index.md) -- Stack-Übersicht und Datenflüsse
-- [Telegram-Bots](telegram-bots.md) -- Bot- und Channel-Inventar
-- [Gatus](../gatus/index.md) -- Alert-Quelle (Direct-Webhook)
-- [CheckMK](../checkmk/index.md) -- Alert-Quelle (Direct-Webhook)
+- [Coverage](coverage.md) -- Monitoring-Coverage inkl. Keep-Self-Monitoring (Layer 7)
 - DCLab-Pendant: HSLU IT-Wiki `monitoring/ops/keep.md`

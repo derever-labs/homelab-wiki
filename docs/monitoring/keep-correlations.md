@@ -11,11 +11,25 @@ tags:
 
 # Monitoring: Keep-Correlations
 
-Diese Seite dokumentiert die Correlation-Patterns für Keep. Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt. Stand: 2026-05-02. Status: **Design** -- Live-Anlage in Keep erst nach Welle 2, wenn Source-Alerts existieren. Quelle: Coverage-Audit 2026-04-30 / 2026-05-01.
+Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-Correlation** (vier disjunkte Rules, die jeden Alert zu einem Incident gruppieren -- siehe unten) und die geplanten **cross-service-Inhibit-Patterns** (Pattern-Katalog, Status Design). Beide gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt.
 
-::: info Status Design vs Live
-Die Patterns sind designet, aber die Source-Alerts existieren noch nicht in Welle 2/3. Sobald Source-Alerts angelegt werden, setzen sie das Label `correlation_key=<pattern-name>`. Erst nach Welle 2 wird die Correlation-Rule in Keep angelegt -- siehe Live-Anlage-Reihenfolge unten.
+::: info Zwei Ebenen -- live vs geplant
+**Live (seit Layer 3, 2026-06):** vier Grouping-Rules gruppieren nach `service` / Grafana-`alertname` / CheckMK-`name` / Catch-all -- siehe Abschnitt "Live: Grouping-Correlation". Das ist die Basis-Korrelation, die heute jeden Incident erzeugt.
+**Geplant (Status Design, Stand 2026-05-02):** die neun cross-service-Inhibit-Patterns im Pattern-Katalog (`correlation_key`-Label-basiert) sind noch nicht in Keep angelegt -- sie brauchen Source-Alerts mit dem Label `correlation_key=<pattern-name>`. Offene Live-Anlage wird über ClickUp geführt (Folge-Tasks unten), nicht hier.
 :::
+
+## Live: Grouping-Correlation (4 Rules)
+
+Seit Layer 3 erzeugen vier disjunkte Grouping-Rules (`nomad-jobs/monitoring/keep-bootstrap/setup-topology.py`, alle `resolveOn: all_resolved`) die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen:
+
+| Rule | Bedingung (CEL) | Gruppierung |
+| :--- | :--- | :--- |
+| Service | `size(service) > 0 && source != "checkmk"` | nach `service` |
+| Grafana | `source == "grafana" && has(labels.alertname)` | nach `labels.alertname` (bündelt Stürme) |
+| CheckMK | `source == "checkmk"` | nach `name` |
+| Catch-all | service-los, nicht-grafana, nicht-checkmk | nach `fingerprint` |
+
+`size(service) > 0` statt `service != null` ist Pflicht (CEL-null-Falle CON-25, Details in [Keep](keep.md#correlation-vier-disjunkte-rules)). Diese vier Rules sind die heute wirksame Korrelation; der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
 
 ## Zweck
 
@@ -156,4 +170,4 @@ Beide Subtasks referenzieren dieses Design und führen die 9 Patterns einzeln al
 - ClickUp HSLU [`86c9jqvtj`](https://app.clickup.com/t/86c9jqvtj) -- Welle-3-Master DCLab
 - ClickUp Privat [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
 
-Memory-Pointer: `project_monitoring_routing_2026_04`, `feedback_keep_workflow_first_match`, `feedback_keep_workflow_yaml_upload`
+Memory-Pointer: `project_monitoring_routing_2026_04`, `project_keep_refactoring_2026`

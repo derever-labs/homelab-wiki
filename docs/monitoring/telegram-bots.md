@@ -10,11 +10,11 @@ tags:
 
 # Telegram Bots
 
-Telegram ist der primäre Output-Channel der [Keep](keep.md)-Routing-Pipeline. Alle Alert-Quellen melden an Keep, und Keep verteilt nach Source/Severity an einen der drei Bots in den entsprechenden Channel und Forum-Topic.
+Telegram ist der primäre Output-Channel der [Keep](keep.md)-Pipeline. Alle Alert-Quellen melden an Keep, Keep korreliert sie zu Incidents, und die Incident-Workflows posten über **einen einzigen Bot** (`batch`) nach Severity sortiert in eines von drei Forum-Topics des Channels `Homelab Alerts`. Stummschalten übernimmt Telegrams natives Per-Topic-Mute -- das gehört dem Empfänger, nicht der Routing-Logik.
 
 ## Rolle im Stack
 
-Telegram ist **kein** dedizierter Service im Cluster -- es wird über die Bot-API von `api.telegram.org` angesprochen. Im Regelbetrieb gibt es genau einen einzigen Pfad: **Quelle -> Keep -> Bot -> Channel/Topic**. Direkte Bot-Aufrufe aus Services existieren nur noch für Apprise-Integrationen über den Telegram-Relay (siehe unten).
+Telegram ist **kein** dedizierter Service im Cluster -- es wird über die Bot-API von `api.telegram.org` angesprochen. Im Regelbetrieb gibt es genau einen Pfad: **Quelle -> Keep -> Incident -> batch-Bot -> Severity-Topic**. Direkte Bot-Aufrufe aus Services existieren nur noch für Apprise-Integrationen über den Telegram-Relay (siehe unten).
 
 ```d2
 direction: right
@@ -31,104 +31,98 @@ classes: {
   agent: { style: { border-radius: 8; stroke-dash: 2 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
   sink: { style: { border-radius: 8 } }
+  idle: { style: { border-radius: 8; stroke-dash: 2; opacity: 0.5 } }
 }
 
-keep: Keep\nIncident-Hub { class: svc }
+keep: Keep\nIncident-Engine { class: svc }
 
-bots: Telegram-Bots {
+batch: batch-Bot\nbatch_ackermann_bot {
+  class: agent
+  tooltip: "Alleiniger Sender; Admin der Gruppe (can_manage_topics)"
+}
+
+vip: vip-Bot\ntop_uptime_ackermann_bot {
+  class: idle
+  tooltip: "Seit 2026-06-09 IDLE -- kein Workflow/Job sendet mehr"
+}
+
+forum: Homelab Alerts (Forum-Gruppe -1003971798942) {
   class: container
-  batch: batch-Bot\nbatch_ackermann_bot {
-    class: agent
-    tooltip: "Standard-Schiene; postet in Forum-Topics"
-  }
-  vip: vip-Bot\ntop_uptime_ackermann_bot {
-    class: agent
-    tooltip: "Critical-Eskalation; postet im 1:1-Chat"
-  }
-  default: default-Bot\nuptime_ackermann_bot {
-    class: agent
-    tooltip: "Legacy für ad-hoc; nicht im Keep-Routing"
-  }
+  krit: Kritisch (25009)\ncritical + high + fail-open { class: sink; tooltip: "Ack-Button, NIE muten" }
+  warn: Warnung (25010)\nwarning { class: sink; tooltip: "eigener Mute-Schalter" }
+  info: Info (25011)\ninfo + low { class: sink; tooltip: "default stumm-bar" }
 }
 
-forum: Homelab Alerts (Forum-Channel) {
-  class: container
-  monitoring: Topic 3 monitoring { class: sink }
-  security: Topic 4 security { class: sink }
-  cicd: Topic 5 ci-cd { class: sink }
-  backup: Topic 6 backup { class: sink }
-  downloader: Topic 7 downloader { class: sink }
-  immo: Topic 8 immo { class: sink }
-}
-
-vipchat: 1:1 Chat\n(Samuel) { class: sink }
-
-keep -> bots.batch: "Standard-Severitäten"
-keep -> bots.vip: "critical / high / page"
-bots.batch -> forum.monitoring
-bots.batch -> forum.security
-bots.batch -> forum.cicd
-bots.batch -> forum.backup
-bots.batch -> forum.downloader
-bots.batch -> forum.immo
-bots.vip -> vipchat
+keep -> batch: "Incident-Workflows\n(notify/escalate/ack/resolve)"
+batch -> forum.krit: "severity not in\n[warning,info,low]"
+batch -> forum.warn: "== warning"
+batch -> forum.info: "in [info,low]"
 ```
+
+## Severity-Topics statt VIP-DM (Cutover 2026-06-09)
+
+Bis 2026-06-08 lief eine zweite Schiene: kritische Alerts gingen zusätzlich als 1:1-DM über den `vip`-Bot, und alle anderen in ein einziges Sammel-Topic (24554). Zwei Schmerzpunkte (Warnungen liessen sich nicht stummschalten ohne Critical mitzuverlieren; das Wichtige lag in einem separaten DM-Kanal) führten zum Cutover auf **drei Severity-Topics in der Gruppe**, alle über den batch-Bot:
+
+| Topic-ID | Name | Severities | Verhalten |
+| :--- | :--- | :--- | :--- |
+| 25009 | Kritisch | `critical`, `high` + alles Unerwartete (fail-open) | laut, trägt Ack-Deep-Link-Button, **nie stummschalten** |
+| 25010 | Warnung | `warning` | laut, eigener Per-Topic-Mute-Schalter |
+| 25011 | Info | `info`, `low` | sichtbar, default stumm-bar |
+
+Das **Kritisch-Gate ist bewusst fail-open** (`severity not in ['warning','info','low']`): es fängt `critical`/`high` UND jede unerwartete oder leere Severity (Grafana `labels.severity` ist ein Freitextfeld) -- nichts fällt lautlos durch. Stummschalten ist Telegram-nativer, gerätelokaler Per-Topic-Mute beim Empfänger; es steht nicht in Keep und ist nicht versioniert.
+
+::: warning Restrisiko -- ein Token für alles
+Seit dem Cutover sendet ausschliesslich der batch-Bot. Ein revozierter/abgelaufener batch-Token legt damit auch den Notfall-Kanal lahm. Die Erkennung bleibt über den Kuma-Push-Pfad bestehen, die Telegram-Zustellung hängt aber an diesem einen Token. Die ganze Gruppe darf deshalb **nie** gemutet werden -- nur das Info-Topic.
+:::
 
 ## Drei Bots
 
-- **batch** -- `batch_ackermann_bot`. Standard-Schiene für alle Severitäten. Postet in den Forum-Channel `Homelab Alerts` (chat-id `-1003971798942`) und sortiert per `message_thread_id` in das passende Topic. Hohe Frequenz erwartbar.
-- **vip** -- `top_uptime_ackermann_bot`. Eskalations-Schiene für `critical | high | page`. Postet zusätzlich zur batch-Nachricht im 1:1-Chat (chat-id `813893907`) für sofortige Sichtbarkeit unabhängig vom Channel-Notification-Setting. Pro Tag idealerweise null Nachrichten -- jede eingehende ist ernst.
-- **default** -- `uptime_ackermann_bot`. Legacy-Bot für Direct-Pushes aus Skripten oder ad-hoc Notifications. **Nicht** Teil der Keep-Routing-Workflows. Wird vom Telegram-Relay (Apprise-Bridge) genutzt.
+- **batch** -- `batch_ackermann_bot`. Alleiniger Sender im Regelbetrieb. Admin der Gruppe `Homelab Alerts` (`can_manage_topics`), postet per `topic_id` (literaler Integer, nicht `message_thread_id`) in das Severity-Topic.
+- **vip** -- `top_uptime_ackermann_bot`. Seit 2026-06-09 **idle** -- kein Workflow und kein Keep-unabhängiger Sender (Dead-Man-Switch, Kuma-Watchdogs) zielt noch auf ihn. Bewusst nicht deinstalliert, falls ein zweiter Token-Pfad künftig wieder gebraucht wird.
+- **default** -- `uptime_ackermann_bot`. Legacy-Bot für Direct-Pushes aus Skripten. **Nicht** Teil des Keep-Routings. Wird vom Telegram-Relay (Apprise-Bridge) genutzt.
 
-Alle drei Bots sind als Provider in Keep installiert (`telegram-homelab-batch`, `telegram-homelab-vip`, `telegram-homelab-default`); aktiv im Routing sind nur batch und vip.
+## Keep-unabhängige Sender (auch über batch -> Kritisch)
 
-## Forum-Topics
+Drei Pfade alarmieren absichtlich an Keep vorbei, damit ein stiller Keep-Ausfall sichtbar wird -- alle drei posten seit dem Cutover über den batch-Bot ins Kritisch-Topic (25009):
 
-Source-Cluster -> Topic-Mapping liegt in den [Keep-Workflows](keep.md#routing-workflows):
+- **Dead-Man-Switch** (`keep-heartbeat-watch.nomad`) -- alle 3 min Kuma-Heartbeat + Watch auf stale-firing Incidents; meldet Keep-interne Fehler direkt.
+- **Kuma-Watchdog-Tier** -- drei Uptime-Kuma-Instanzen (in-cluster Monitor `keep-heartbeat`, `wd-home`, `wd-nana`) mit einem Custom-Template, das die Kuma-Standardmeldung um eine `Kuma-Watchdog`-Kennzeile und den Uptime-Link ergänzt, damit die Herkunft auf einen Blick klar ist.
 
-| Topic-ID | Name | Quellen |
-| :--- | :--- | :--- |
-| 3 | monitoring | gatus, kuma, uptime, grafana, checkmk, prometheus, telegraf, loki, test, keep |
-| 4 | security | authentik, crowdsec, security |
-| 5 | ci-cd | gitea, github, runner, ci |
-| 6 | backup | borg, restic, duplicati, backup, pbs |
-| 7 | downloader | sonarr, radarr, sabnzbd, prowlarr, jellyseerr, downloader, notifiarr, lazylibrarian |
-| 8 | immo | immo, scraper, immoscraper |
+Details siehe [Keep](keep.md#dead-man-switch-und-watchdog-tier).
 
 ## Telegram-Relay (Apprise-Bridge)
 
-Der Telegram-Relay (`nomad-jobs/services/telegram-relay.nomad`) ist ein kleiner HTTP-Endpoint `POST /notify`, der Apprise-`json://` Payloads entgegennimmt und über den default-Bot weiterleitet. Er existiert noch für Skripte und Tools die Apprise reden, aber nicht direkt zu Keep. Im Regelbetrieb soll alles über Keep laufen -- der Relay ist die letzte Bridge für Legacy-Anbindungen.
+Der Telegram-Relay (`nomad-jobs/services/telegram-relay.nomad`) ist ein HTTP-Endpoint `POST /notify`, der Apprise-`json://`-Payloads über den default-Bot weiterleitet. Er existiert noch für Skripte und Tools, die Apprise reden, aber nicht direkt zu Keep.
 
-- **Endpoint** -- `telegram-relay.service.consul/notify` (Port via Consul-Service-Discovery, SRV-Record)
-- **Body** -- mindestens `text`, optional `title` (wird vorangestellt). Apprise-`message`-Feld wird als Fallback für `text` akzeptiert.
-- **Bot** -- nutzt den default-Bot, postet in den 1:1-Chat von Samuel.
+- **Endpoint** -- `telegram-relay.service.consul/notify` (Port via Consul-SRV)
+- **Body** -- mindestens `text`, optional `title`; Apprise-`message` als Fallback für `text`
+- **Bot** -- default-Bot, postet in den 1:1-Chat
 
-Wenn ein Tool sowohl Webhooks als auch Apprise kann, **immer Webhook nach Keep** bevorzugen, nicht den Relay.
+Wenn ein Tool sowohl Webhooks als auch Apprise kann, **immer Webhook nach Keep** bevorzugen.
 
 ## Secrets
 
-Bot-Tokens und Chat-IDs liegen in 1Password unter dem Item `Monitoring Telegram Bots` im Privat-Vault:
+Bot-Tokens und Chat-IDs liegen in 1Password unter `Monitoring Telegram Bots` im Privat-Vault:
 
+- `batch_bot_token`, `batch_chat_id` (`-1003971798942`)
+- `vip_bot_token`, `vip_chat_id` (idle)
 - `default_bot_token`, `default_chat_id`
-- `vip_bot_token`, `vip_chat_id`
-- `batch_bot_token`, `batch_chat_id`, `batch_topics` (JSON-Map mit Topic-ID-Lookup)
 
-Der Vault-Pfad `kv/data/telegram` und `kv/data/telegram-relay` enthält nur die Tokens, die der Telegram-Relay-Job zur Laufzeit braucht.
+Den batch-Token zieht Keep zur Laufzeit aus Vault `kv/keep` (`telegram_batch_token`); der Dead-Man-Switch und die Kuma-Watchdogs lesen denselben Token. Die Topic-IDs (25009/25010/25011) stehen literal in den Workflows bzw. der Watchdog-Konfiguration.
 
 ## Neue Quelle anbinden
 
 Drei Muster, abhängig vom Service:
 
-1. **Service hat Webhook-Mechanismus** (Grafana, Gatus, Authentik, Sonarr/Radarr/Prowlarr, CheckMK, Notifiarr) -- Webhook auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Source-Name bestimmt Topic-Routing in Keep. Severity im Body bestimmt Bot.
-2. **Service liefert nur Logs** (UniFi Syslog, App-Stdout) -- Alloy nimmt auf, Loki speichert, Grafana hat LogQL-Alert-Rule, Rule postet als Webhook nach Keep.
-3. **Service liefert nur Metriken** (SNMP, Prometheus-Scrape, Exec) -- Telegraf scraped, InfluxDB speichert, Grafana hat InfluxQL-Alert-Rule, Rule postet als Webhook nach Keep.
+1. **Service hat Webhook-Mechanismus** (Grafana, Gatus, Authentik, Sonarr/Radarr/Prowlarr, CheckMK) -- Webhook auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Keep korreliert zu einem Incident; die Incident-Severity bestimmt das Topic.
+2. **Service liefert nur Logs** -- Alloy nimmt auf, Loki speichert, Grafana hat LogQL-Alert-Rule, Rule postet als Webhook nach Keep.
+3. **Service liefert nur Metriken** -- Telegraf scraped, InfluxDB speichert, Grafana hat InfluxQL-Alert-Rule, Rule postet als Webhook nach Keep.
 
-Direkter Telegram-Bot-Aufruf aus dem Service (alter Stil) ist **nicht** mehr der gewünschte Pfad. Der Telegram-Relay bleibt nur für Apprise-Tools, die nichts anderes können.
+Direkter Telegram-Bot-Aufruf aus dem Service (alter Stil) ist **nicht** mehr der gewünschte Pfad. Der Telegram-Relay bleibt nur für Apprise-Tools.
 
 ## Verwandte Seiten
 
-- [Keep](keep.md) -- Hub für Routing, Severity-Eskalation und Dedup
+- [Keep](keep.md) -- Hub für Korrelation, Incident-Workflows und Severity-Routing
 - [Monitoring](index.md) -- Stack-Übersicht und Datenflüsse
-- [Notifiarr](../media-tools/index.md#notifiarr) -- Media-Stack-Benachrichtigungen (Webhook nach Keep)
 - [Authentik Alerting](../authentik/betrieb.md) -- Security-Event-Pipeline
 - [Vault](../vault/index.md) -- Secret-Storage für Bot-Tokens
