@@ -79,6 +79,83 @@ HSLU -> HOMELAB: blockiert { class: blocked }
 HOMELAB -> HSLU: blockiert { class: blocked }
 ```
 
+## Subnet-Router-Topologie
+
+Drei physische Standorte sind über Tailscale verbunden. Jeder Standort hat mindestens einen Subnet-Router, der das lokale Netz ins Tailnet advertisiert.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+direction: right
+
+classes: {
+  standort: {
+    style.stroke-dash: 4
+  }
+  router: {
+    style.border-radius: 8
+  }
+  tailnet: {
+    style.border-radius: 8
+  }
+}
+
+TAILNET: Tailnet derever@github {
+  class: tailnet
+}
+
+LENZBURG: Standort Lenzburg {
+  class: standort
+  TRF1: vm-traefik-01 {
+    class: router
+    tooltip: "tag:homelab; 100.101.37.122; Exit-Node; advertisiert 10.0.0.0/22"
+  }
+  TRF2: vm-traefik-02 {
+    class: router
+    tooltip: "tag:homelab; 100.91.238.106; Exit-Node; advertisiert 10.0.0.0/22"
+  }
+  PVE00: pve00 {
+    class: router
+    tooltip: "tag:homelab; 100.89.174.31; advertisiert 10.0.0.0/21, 10.0.10.0/23, 10.0.100.0/23, 10.0.200.0/23"
+  }
+}
+
+DOTTIKON: Standort Dottikon {
+  class: standort
+  NANA: pve-01-nana {
+    class: router
+    tooltip: "tag:homelab; 100.81.116.122; advertisiert 192.168.2.0/23"
+  }
+}
+
+LUZERN: Standort Luzern {
+  class: standort
+  PVELU: pve-lu-01 {
+    class: router
+    tooltip: "tag:homelab; 100.112.213.18; advertisiert 172.16.0.0/24"
+  }
+  ATV: apple-tv {
+    class: router
+    tooltip: "tag:admin; 100.106.104.34; advertisiert 172.16.0.0/24 (redundant)"
+  }
+}
+
+LENZBURG.TRF1 -> TAILNET: "10.0.0.0/22"
+LENZBURG.TRF2 -> TAILNET: "10.0.0.0/22"
+LENZBURG.PVE00 -> TAILNET: "10.0.0.0/21\n10.0.10.0/23\n10.0.100.0/23\n10.0.200.0/23"
+DOTTIKON.NANA -> TAILNET: "192.168.2.0/23"
+LUZERN.PVELU -> TAILNET: "172.16.0.0/24"
+LUZERN.ATV -> TAILNET: "172.16.0.0/24"
+```
+
+::: warning SNAT durch Subnet-Router
+Hosts, die via Tailscale über einen Subnet-Router auf ein lokales Netz zugreifen, erscheinen im Zielnetz mit der Source-IP des Routers (z.B. `10.0.2.21` für `vm-traefik-01`), nicht mit ihrer eigenen Tailscale-IP. Das betrifft z.B. SSH-Verbindungen aus dem Tailnet ins Homelab-LAN.
+:::
+
 ## Tag-Schema
 
 `tag:hslu` (3 Hosts):
@@ -93,14 +170,14 @@ HOMELAB -> HSLU: blockiert { class: blocked }
 - `vm-traefik-02` -- gleiche Routes wie vm-traefik-01
 - `pve-01-nana` -- externer Watchdog ausserhalb des Heimnetzes, Subnet-Router für 192.168.2.0/23
 - `pve-lu-01` -- Standalone-Proxmox am Standort Luzern, Subnet-Router für 172.16.0.0/24
-- `pve00` -- bringt die Lenzburg-VLAN-Subnetze (`10.0.10.0/23`, `10.0.100.0/23`, `10.0.200.0/23`) sowie `10.0.0.0/21` ins Tailnet. Diese Routes sind manuell approved (nicht über `autoApprovers`) und werden über den `tag:admin`-Vollzugriff genutzt -- der `tag:homelab`-Grant selbst deckt nur `10.0.0.0/22`.
+- `pve00` -- bringt die Lenzburg-VLAN-Subnetze (`10.0.10.0/23`, `10.0.100.0/23`, `10.0.200.0/23`) sowie `10.0.0.0/21` ins Tailnet. Der `tag:homelab`-Grant deckt nur `10.0.0.0/22` -- die VLAN-Subnetze sind via `tag:admin`-Vollzugriff genutzt.
 
 Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
 
 - `pdm` -- Proxmox Datacenter Manager
-- `checkmk-homelab` -- Monitoring-Server
+- `checkmk-homelab` -- Monitoring-Server, `tag:homelab`, `accept-routes` aktiv (Details: [Routing-Sonderregel](#checkmk-routing-sonderregel))
 - `pve01`, `pve02` -- Cluster-Nodes
-- `homeassistant` -- HA-Luzern-VM (LAN 172.16.0.163), Client-Node fuer den Config-Git-Push nach Gitea (`accept-routes`, `tag:homelab`). Details: [Gitea -- Config-Anbindung HA-Luzern](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)
+- `homeassistant` -- HA-Luzern-VM (LAN 172.16.0.163), Client-Node für den Config-Git-Push nach Gitea (`accept-routes`, `tag:homelab`). Details: [Gitea -- Config-Anbindung HA-Luzern](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)
 
 `tag:admin` (4 Hosts):
 
@@ -108,6 +185,16 @@ Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
 - `copper-1` -- Zweitlaptop (macOS)
 - `boson` -- iPhone (iOS)
 - `apple-tv` -- Wohnzimmer Apple-TV, Subnet-Router für 172.16.0.0/24
+
+## CheckMK Routing-Sonderregel
+
+::: warning Routing-Sonderregel checkmk-homelab (10.0.2.150)
+`checkmk-homelab` hat `accept-routes` aktiviert und liegt selbst in `10.0.2.0/24` -- einem Subnetz innerhalb von `10.0.0.0/22`. Ohne Gegenmassnahme würde Tailscale den Reply-Traffic zu LAN-Nachbarn in `10.0.0.x` (HA 10.0.0.100, Synology-NAS 10.0.0.200/.210, UDM 10.0.0.1) über `tailscale0` umleiten, statt direkt über `eth0`. Das ergibt asymmetrisches Routing -- SNMP- und Agent-Checks brechen.
+
+Lösung: Eine höherprioritäre ip-Regel erzwingt für alle Ziele in `10.0.0.0/22` die `main`-Tabelle (eth0), unabhängig von Tailscales table 52.
+
+Konfiguration: `ip rule prio 100 to 10.0.0.0/22 lookup main`, persistiert via `/etc/network/if-up.d/tailscale-route-override`. Die Routen für andere Standorte (`192.168.2.0/23`, `172.16.0.0/24`) in table 52 bleiben unberührt -- `nana-nas` und `pve-lu-01` sind weiterhin erreichbar.
+:::
 
 ## ACL-Pattern
 
@@ -117,7 +204,13 @@ Die Policy benutzt das moderne `grants`-Schema (nicht das deprecated `acls`). Dr
 - `tag:hslu -> tag:hslu, 10.180.0.0/16, 147.88.0.0/16, 147.88.202.0/24, 192.168.50.0/24` -- HSLU-Hosts sehen nur sich selbst und HSLU-Subnets
 - `tag:homelab -> tag:homelab, 10.0.0.0/22, 192.168.2.0/23, 172.16.0.0/24` -- Homelab-Hosts sehen nur sich selbst und Homelab-Subnets (inkl. Luzern 172.16.0.0/24, damit PDM `pve-lu-01` über die lokale IP erreichen kann)
 
-`autoApprovers.routes` hält zentral fest, welcher Tag welche Subnets ohne manuelles Approval advertisieren darf. So bleiben Subnet-Routes bei einem Re-Auth oder Tag-Wechsel automatisch enabled.
+`autoApprovers.routes` legt fest, welcher Tag welche Subnetze ohne manuelles Approval advertisieren darf. So bleiben Subnet-Routes bei einem Re-Auth oder Tag-Wechsel automatisch enabled. Der aktuelle Stand umfasst:
+
+- `10.0.0.0/22`, `10.0.0.0/21`, `10.0.10.0/23`, `10.0.100.0/23`, `10.0.200.0/23` -- `tag:homelab` (Lenzburg-LAN + VLANs via vm-traefik-01/02 und pve00)
+- `192.168.2.0/23` -- `tag:homelab` (Dottikon via pve-01-nana)
+- `172.16.0.0/24` -- `tag:homelab` und `tag:admin` (Luzern via pve-lu-01 und apple-tv)
+
+Die vollständigen Einträge sind kanonisch in [`derever-labs/infra/tailscale-policy/policy.hujson`](https://github.com/derever-labs/infra/blob/main/tailscale-policy/policy.hujson) -- keine Duplikation hier.
 
 ## Externe Proxmox-Nodes
 
@@ -141,9 +234,9 @@ Konkret bei `pve-lu-01`: Die Route `172.16.0.0/24` wird vom `apple-tv` advertisi
 
 ## Apply-Workflow
 
-Heute manuell -- es gibt keinen GitOps-Sync, deshalb ist `policy.hujson` die Wahrheit im Git, die Tailscale Admin Console die ausgeführte Wahrheit.
+Die Policy wird als GitOps gepflegt: [`derever-labs/infra/tailscale-policy/policy.hujson`](https://github.com/derever-labs/infra/blob/main/tailscale-policy/policy.hujson) ist die einzige Source of Truth. Änderungen erfolgen via PR gegen dieses Repo.
 
-Bei kleineren Änderungen ohne neue Tags reicht ein direkter API-Apply der Policy. Bei Schema-Änderungen mit neuen Tags muss zuerst eine Stage-1-Policy mit den `tagOwners`-Einträgen apply'd werden, bevor Devices den Tag akzeptieren -- Details und Sequenz: [`tailscale-policy/README`](https://github.com/derever-labs/infra/blob/main/tailscale-policy/README.md).
+Es gibt keinen automatischen GitOps-Sync -- nach einem Merge muss die Policy manuell in der Tailscale Admin-Console applied werden. Bei kleineren Änderungen ohne neue Tags reicht ein direkter API-Apply. Bei Schema-Änderungen mit neuen Tags muss zuerst eine Stage-1-Policy mit den `tagOwners`-Einträgen apply'd werden, bevor Devices den Tag akzeptieren -- Details und Sequenz: [`tailscale-policy/README`](https://github.com/derever-labs/infra/blob/main/tailscale-policy/README.md).
 
 Der API-Key liegt im 1Password-Item `Tailscale` im `PRIVAT Agent`-Vault.
 
