@@ -1,0 +1,104 @@
+# Build-Alarm: Workflow-Failure -> Keep -> Telegram (Keep-v2-Incident-Pfad).
+#
+# workflow_run ist repo-scoped: dieser Watcher deckt nur die Workflows von
+# homelab-wiki ab (aktuell "VitePress Build"). Zentrales Muster, Vorlage aus
+# homelab-nomad-jobs/.github/workflows/notify-keep-on-failure.yml.
+#
+# Endpoint: Keep akzeptiert auf /alerts/event/<provider> nur implementierte
+# Provider-Formate. Der generische "webhook"-Provider wirft in 0.52.1
+# NotImplementedError -- daher das GRAFANA-Webhook-Format: name aus dem
+# TOP-LEVEL-Feld "title", severity aus alerts[0].labels.severity. severity=
+# warning -> Warnung-Topic (Build-Failure ist kein Betriebsnotfall).
+#
+# Auth: /alerts/event/* ist via Traefik (keep-webhook@file) public ohne Auth --
+# kein Secret noetig. Erreichbarkeit: keep.ackermannprivat.ch ist intern, der
+# Runner ist [self-hosted, homelab] (homelab-runner-0, org-scope) -> erreichbar.
+
+name: Keep-Alarm bei Workflow-Fehler
+
+on:
+  workflow_run:
+    workflows:
+      - "VitePress Build"
+    types: [completed]
+
+jobs:
+  alert:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: [self-hosted, homelab]
+    steps:
+      - name: Failure-Event an Keep posten
+        env:
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          WF_REPO: ${{ github.event.workflow_run.repository.full_name }}
+          WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WF_URL: ${{ github.event.workflow_run.html_url }}
+          WF_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          curl -fsS --max-time 15 --retry 3 \
+            -X POST "https://keep.ackermannprivat.ch/alerts/event/grafana" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"status\": \"firing\",
+              \"title\": \"CI Build Failure: ${WF_NAME}\",
+              \"alerts\": [{
+                \"status\": \"firing\",
+                \"labels\": {
+                  \"alertname\": \"CI Build Failure: ${WF_NAME}\",
+                  \"severity\": \"warning\",
+                  \"repo\": \"${WF_REPO}\",
+                  \"branch\": \"${WF_BRANCH}\"
+                },
+                \"annotations\": {
+                  \"summary\": \"Workflow ${WF_NAME} in ${WF_REPO} (Branch ${WF_BRANCH}) fehlgeschlagen: ${WF_URL}\"
+                },
+                \"startsAt\": \"${NOW}\",
+                \"fingerprint\": \"ci-${WF_RUN_ID}\"
+              }]
+            }"
+
+  # Entwarnung: success direkt nach einem Failure -> resolved-Event.
+  # Keep matcht ueber den Label-Hash (calculate_fingerprint aus labels) --
+  # identische labels resolven den firing-Alert, der resolve-Workflow schickt
+  # die Telegram-Entwarnung. Ohne das blieben CI-Incidents ewig firing.
+  resolve:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, homelab]
+    steps:
+      - name: Entwarnung an Keep posten (nur nach vorherigem Failure)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          WF_REPO: ${{ github.event.workflow_run.repository.full_name }}
+          WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WF_ID: ${{ github.event.workflow_run.workflow_id }}
+        run: |
+          PREV=$(gh api "repos/${WF_REPO}/actions/workflows/${WF_ID}/runs?per_page=2&status=completed&branch=${WF_BRANCH}" \
+            --jq '.workflow_runs[1].conclusion' 2>/dev/null || echo unknown)
+          if [ "$PREV" != "failure" ]; then
+            echo "Vorheriger Run: ${PREV} -- keine Entwarnung noetig"
+            exit 0
+          fi
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          curl -fsS --max-time 15 --retry 3 \
+            -X POST "https://keep.ackermannprivat.ch/alerts/event/grafana" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"status\": \"resolved\",
+              \"title\": \"CI Build Failure: ${WF_NAME}\",
+              \"alerts\": [{
+                \"status\": \"resolved\",
+                \"labels\": {
+                  \"alertname\": \"CI Build Failure: ${WF_NAME}\",
+                  \"severity\": \"warning\",
+                  \"repo\": \"${WF_REPO}\",
+                  \"branch\": \"${WF_BRANCH}\"
+                },
+                \"annotations\": {
+                  \"summary\": \"Workflow ${WF_NAME} in ${WF_REPO} (Branch ${WF_BRANCH}) wieder gruen.\"
+                },
+                \"startsAt\": \"${NOW}\",
+                \"endsAt\": \"${NOW}\"
+              }]
+            }"
