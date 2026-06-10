@@ -117,6 +117,18 @@ Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../ba
 Watchtower wurde am 2026-04-14 vollständig zurückgebaut. Renovate erstellt Pull Requests für veraltete Images statt sie direkt zu aktualisieren. Patch-Updates werden automatisch gemerged, Major-Updates und stateful Services (Datenbanken, Authentik) erfordern manuelles Review. Details: [Renovate](./renovate.md)
 :::
 
+### Monitoring
+
+| Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
+|:----|:----|:---------|:------|:----------------|:---------------|
+| `iperf3-to-influxdb` | batch | Alle 30 Min | WAN-Bandbreite (Up + Down) zu `speedtest.init7.net` messen, Ergebnis nach InfluxDB schreiben | `vm-nomad-client-0[456]` (regexp), Affinität client-04 | raw_exec, Vault Secrets, Measurement `iperf3` (Fields: `upload_bps`, `download_bps`) |
+| `storage-benchmark-to-influxdb` | batch | Stündlich | Storage-Performance (seq Write/Read + random IOPS) gegen NFS-Pfade messen | `vm-nomad-client-0[456]` (regexp) | raw_exec, Vault Secrets, Measurement `raid_benchmark` |
+| `dns-performance` | batch | Konfigurierbar | DNS-Antwortzeiten messen | `vm-nomad-client-0[456]` (regexp) | raw_exec |
+
+::: info iperf3-to-influxdb: Nur ein Node gleichzeitig
+Der Job hat `prohibit_overlap = true` -- falls ein Lauf länger als 30 Minuten dauert (z.B. Netzwerkproblem), wird der nächste Lauf übersprungen. So vermeidet der Job parallele Messungen über denselben WAN-Link.
+:::
+
 ## Reihenfolge und Abhängigkeiten
 
 Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewusst gewählt: zuerst Bereinigung, dann Snapshots, danach Datenbanken, anschliessend Neustarts und zuletzt Updates. Die konkreten Zeiten stehen in den Tabellen oben und im Zeitplan-Diagramm.

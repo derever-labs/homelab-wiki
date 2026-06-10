@@ -292,9 +292,12 @@ Das physische Inventar (Aggregation-Switch USL8A, PoE- und Flex-Mini-Switches, A
 | Attribut | Wert |
 |----------|------|
 | Modell | UniFi Dream Machine Pro (UDMPRO) |
-| WAN | SFP+ (eth9) via ISP-Router, öffentliche IP dynamisch |
+| WAN | SFP+ (eth9) via ISP-Router, öffentliche IP statisch |
+| RJ45-WAN (eth8) | Nicht angeschlossen |
 | LAN-Ports | 8x RJ45 1G, 1x RJ45 WAN (nicht verbunden), 1x SFP+ WAN (aktiv), 1x SFP+ LAN |
 | Controller | Integriert (UniFi Network), Spezifika: [UniFi](../unifi/) |
+
+Der UDM Pro ist nicht direkt am Glasfaser-Endpunkt angeschlossen, sondern per SFP+ an einen vorgelagerten ISP-Router, der die PPPoE-Session terminiert. Die öffentliche IP ist statisch. Port-Forwards (Traefik, NAS, Jellyfin) sind in der [UniFi Referenz -- Port-Forwards](../unifi/referenz.md#port-forwards) dokumentiert. WAN-Bandbreite und ISP-Provider sind nicht im Wiki geführt -- aktuelle Messwerte liefert das [Grafana-Dashboard](../monitoring/index.md) via `iperf3-to-influxdb` (Nomad Batch Job in `monitoring/iperf3-to-influxdb.nomad`).
 
 ### Verkabelung
 
