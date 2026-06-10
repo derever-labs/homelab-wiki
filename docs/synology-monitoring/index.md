@@ -85,7 +85,7 @@ Das Dashboard `synology-nas-health` ist in drei Zonen aufgebaut, nach dem Prinzi
 
 - **Zone A -- Alarm:** Status-Bar mit 8 Stat-Panels (RAID, Volume, Bad Sectors, IO Wait, Hintergrund-Jobs, System-Temperatur, Uptime, SSD Remaining Life)
 - **Zone B -- Kontext:** Performance-Timeseries (Disk Latenz, Throughput, CPU, RAM, Load, Netzwerk und Service Connections)
-- **Zone C -- Detail:** Disk Health und Kapazität (SMART Health Table, Disk-Utilization, Disk-Temperatur, SSD Cache I/O, Volume Trend) sowie eine collapsed RAID-Benchmark-Row
+- **Zone C -- Detail:** Disk Health und Kapazität (SMART Health Table, Disk-Utilization, Disk-Temperatur, SSD Cache I/O, Volume Trend) sowie die Row "Storage-Benchmark & Reshape" (siehe unten)
 
 Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisioning bereitgestellt (read-only).
 
@@ -100,9 +100,28 @@ Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisionin
 | Disk Temperatur | > 55 C | 5 min | Warning |
 | SMART Reallocated Sectors | > 0 | 5 min | Warning |
 
-## RAID Benchmark
+## Storage-Benchmark & Reshape
 
-Ein optionales fio-Script auf dem NAS misst die RAID-Performance (Sequential Read und Random 4K Read) und schreibt die Ergebnisse direkt an InfluxDB. Die Ergebnisse erscheinen in zwei dedizierten Dashboard-Panels.
+Ein stündlicher, **NAS-autonomer** Benchmark misst die echte Disk-Performance beider NAS und schreibt direkt an InfluxDB. Ein DSM-Aufgabenplaner-Task führt lokal `fio --direct=1 --fallocate=none` aus (seq write/read + random 4K), liest den RAID-Reshape-Fortschritt aus `/proc/mdstat` und den realen Durchsatz via `iostat`. Kein Nomad-Job, kein SSH-Inbound, kein Vault-Key zur Laufzeit -- die NAS pusht selbst.
+
+Quelle: `nomad-jobs/monitoring/nas-storage-benchmark/` (Script, Deploy-Tool `dsm-schedule.py`, README).
+
+Mess-Physik (empirisch belegt):
+
+- `--direct=1` umgeht den Page-Cache. Eine Messung über NFS wäre eine Cache-Illusion (NAS-async-Export puffert auch bei client-seitigem `--direct=1`).
+- `--fallocate=none` ist kritisch: sonst präallokiert fio die Testdatei und read/randread lesen leere Blöcke statt echte Daten (gemessen: 1006 MB/s read auf reshapender RAID5 -- physikalisch unmöglich).
+
+Measurements (Tag `target` = `media-210` / `docker-200`):
+
+- `raid_benchmark` -- `bw_bytes`, `iops`, `lat_us` pro Test (seqwrite/seqread/randread)
+- `reshape_status` -- `pct`, `sync_speed_kbs`, `eta_min`, `degraded`, `disks_active/total`
+- `disk_io` -- `read_mb_s`, `write_mb_s`, `util_pct`, `r_await_ms`, `w_await_ms`
+
+Der Reshape-Fortschritt (`pct`) kommt ausschliesslich aus `/proc/mdstat` -- SNMP/CheckMK können ihn nicht liefern. Im Dashboard: Row "Storage-Benchmark & Reshape" (Reshape-%-Gauge + ETA/Sync-Speed, fio-Durchsatz/IOPS/Latenz, iostat-Durchsatz/util), alle nach NAS getrennt.
+
+::: tip DSM-Web-API zum Anlegen des Tasks
+`dsm-schedule.py` legt den Task über `SYNO.Core.TaskScheduler.Root` an (Root-Tasks brauchen ein `SynoConfirmPWToken`; list/delete laufen über die normale API v3). Details in der README im Repo.
+:::
 
 ## Verwandte Seiten
 
