@@ -10,7 +10,7 @@ tags:
 
 # Keep Master-Template
 
-Vereinheitlichtes Telegram-Nachrichtenformat für alles, was Keep in den Channel `Homelab Alerts` schreibt. Die Vereinheitlichung passiert auf **Incident-Ebene**: jede Quelle (Gatus, Grafana, Uptime Kuma, CheckMK) wird zuerst zu einem Incident korreliert, und die vier Incident-Workflows (notify/escalate/ack/resolve) rendern alle dasselbe kompakte Format. Es gibt keine Source-Spezialfälle und keine `display_*`-Wrapper mehr -- das frühere HTML-Master-Template-Konzept wurde zugunsten dieses einfacheren, quellen-agnostischen Formats verworfen.
+Vereinheitlichtes Telegram-Nachrichtenformat für alles, was Keep in den Channel `Homelab Alerts` schreibt. Die Vereinheitlichung passiert auf **Incident-Ebene**: jede Quelle (Grafana, Uptime Kuma, CheckMK) wird zuerst zu einem Incident korreliert, und die vier Incident-Workflows (notify/escalate/ack/resolve) rendern alle dasselbe kompakte Format. Es gibt keine Source-Spezialfälle und keine `display_*`-Wrapper mehr -- das frühere HTML-Master-Template-Konzept wurde zugunsten dieses einfacheren, quellen-agnostischen Formats verworfen.
 
 ## Zweck
 

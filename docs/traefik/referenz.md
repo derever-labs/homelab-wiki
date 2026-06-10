@@ -50,7 +50,7 @@ Die Authentik-Route selbst verwendet keine der obigen Chains, sondern direkt: `l
 
 ### Sonderfall: Alerting Webhooks (keep-webhook)
 
-Die `keep-webhook`-Chain (`intern-noauth → keep-webhook-headers`) injiziert ein synthetisches Service-Account-Header-Paar. Alert-Quellen (Grafana, Kuma, Gatus) können keinen Authentik-Login durchlaufen, Keep prüft im OAUTH2PROXY-Modus aber `x-forwarded-email` auf jedem Request. Kein Banner-Inject, da die Webhook-Calls Machine-to-Machine ohne User-Browser sind.
+Die `keep-webhook`-Chain (`intern-noauth → keep-webhook-headers`) injiziert ein synthetisches Service-Account-Header-Paar. Alert-Quellen (Grafana, Kuma) können keinen Authentik-Login durchlaufen, Keep prüft im OAUTH2PROXY-Modus aber `x-forwarded-email` auf jedem Request. Kein Banner-Inject, da die Webhook-Calls Machine-to-Machine ohne User-Browser sind.
 
 ### Legacy (entfernt)
 

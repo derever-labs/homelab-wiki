@@ -9,7 +9,7 @@ tags:
 
 # CheckMK
 
-CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es überwacht Hardwaremetriken und Systemdienste auf allen Infrastruktur-Nodes und ergänzt damit Grafana/Loki (Metriken/Logs) und Gatus (Endpoint-Verfügbarkeit).
+CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es überwacht Hardwaremetriken und Systemdienste auf allen Infrastruktur-Nodes und ergänzt damit Grafana/Loki (Metriken/Logs) und Uptime Kuma (Endpoint-Verfügbarkeit).
 
 ## Übersicht
 
@@ -84,6 +84,6 @@ Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden
 ## Verwandte Seiten
 
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Uptime Kuma und Alloy für Metriken und Logs
-- [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
+- [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring für Endpoint-Verfügbarkeit
 - [SMTP Relay](../smtp-relay/index.md) -- Mail-Versand für CheckMK-Alerts
 - [Proxmox Backup Server](../backup/referenz.md) -- VM-Backup von CheckMK

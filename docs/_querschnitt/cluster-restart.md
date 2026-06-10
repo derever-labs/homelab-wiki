@@ -90,7 +90,7 @@ ZOT ist Image-Quelle für fast alle anderen Jobs. Erst ZOT, dann warten bis es r
 **Verifikation:**
 - `nomad job status` -- Überblick über alle Jobs, keine `dead` Jobs die `running` sein sollten
 - Nomad UI: unter "Jobs" alle als `running` markierten Jobs prüfen
-- [Gatus Status-Seite](https://status.ackermannprivat.ch) -- alle Endpoints grün
+- [Uptime Kuma](https://uptime.ackermannprivat.ch) -- alle Monitore grün (Kern-Infra-Gruppen Plattform / Netz / Auth / Storage & Backup)
 
 ## Notfall-Szenario: Split Brain
 

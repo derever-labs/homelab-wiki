@@ -114,7 +114,7 @@ Den batch-Token zieht Keep zur Laufzeit aus Vault `kv/keep` (`telegram_batch_tok
 
 Drei Muster, abhängig vom Service:
 
-1. **Service hat Webhook-Mechanismus** (Grafana, Gatus, Authentik, Sonarr/Radarr/Prowlarr, CheckMK) -- Webhook auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Keep korreliert zu einem Incident; die Incident-Severity bestimmt das Topic.
+1. **Service hat Webhook-Mechanismus** (Grafana, Uptime Kuma, Authentik, Sonarr/Radarr/Prowlarr, CheckMK) -- Webhook auf `https://keep.ackermannprivat.ch/alerts/event/<source>`. Keep korreliert zu einem Incident; die Incident-Severity bestimmt das Topic.
 2. **Service liefert nur Logs** -- Alloy nimmt auf, Loki speichert, Grafana hat LogQL-Alert-Rule, Rule postet als Webhook nach Keep.
 3. **Service liefert nur Metriken** -- Telegraf scraped, InfluxDB speichert, Grafana hat InfluxQL-Alert-Rule, Rule postet als Webhook nach Keep.
 

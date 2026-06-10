@@ -127,7 +127,6 @@ Alle hier gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinz
 | 1514 | TCP | Syslog | `alloy` | Log-Collector (bridge mode) |
 | 3001 | TCP | Uptime Kuma | `uptime-kuma` | Monitoring, hinter Traefik |
 | 3100 | TCP | Loki | `loki` | Log-Aggregation |
-| 8080 | TCP | Gatus | `gatus` | Health Dashboard, hinter Traefik |
 | 8086 | TCP | InfluxDB | `influxdb` | Metriken-Datenbank |
 
 ## Verwandte Seiten
