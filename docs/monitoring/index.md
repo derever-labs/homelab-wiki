@@ -1,6 +1,6 @@
 ---
 title: Monitoring Stack
-description: Übersicht des Monitoring Stacks -- Grafana, InfluxDB, Loki, Alloy, Telegraf, CheckMK, Uptime Kuma und Gatus
+description: Übersicht des Monitoring Stacks -- Grafana, InfluxDB, Loki, Alloy, Telegraf, CheckMK und Uptime Kuma
 tags:
   - service
   - monitoring
@@ -31,8 +31,7 @@ Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung 
 | **Loki** | Zentrales Log-Storage | [loki.ackermannprivat.ch](https://loki.ackermannprivat.ch) |
 | **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
 | **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
-| **Uptime Kuma** | Verfügbarkeits-Checks | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
-| **Gatus** | Öffentliche Status-Seite | [status.ackermannprivat.ch](https://status.ackermannprivat.ch) |
+| **Uptime Kuma** | Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push) | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 
 ## Grafana
 ### Datenquellen
@@ -135,7 +134,6 @@ classes: {
 # --- Quellen mit Direct-Webhook (Pfad 1) ---
 direct: Direct-Webhook (Pfad 1) {
   class: container
-  gatus: Gatus {class: svc}
   kuma: Uptime Kuma {class: svc}
   authentik: Authentik {class: svc}
   arr: Sonarr/Radarr/Prowlarr {class: svc}
@@ -176,7 +174,6 @@ homelab_alerts: Homelab Alerts\nForum-Channel\n(chat-id -1003971798942) {
 }
 
 # Pfad 1: Direct-Webhook
-direct.gatus -> keep: webhook
 direct.kuma -> keep: webhook
 direct.authentik -> keep: webhook
 direct.arr -> keep: webhook
@@ -229,14 +226,14 @@ Silences werden über die Alertmanager-API gesetzt, nicht über die UI -- so ble
 Silences müssen einen ClickUp-Task referenzieren und eine Laufzeit (14--30 Tage) haben. Ohne Laufzeit-Limit verlieren sich Silences im Noise. Wenn ein Silence ausläuft bevor die Ursache gefixt ist, erzeugt der erneute Alert den Druck, den Fix zu priorisieren.
 :::
 
-## Verfügbarkeits-Monitoring (Gatus + Uptime Kuma)
+## Verfügbarkeits-Monitoring (Uptime Kuma)
 
-Das Homelab hat **zwei** Verfügbarkeits-Monitore, bewusst mit Aufgabenteilung statt Überlappung:
+Uptime Kuma ist seit dem Gatus-Rückbau (2026-06-10) die einzige Synthetic-Monitoring-Schicht:
 
-- **Gatus** -- Nur Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher). Jeder Endpoint alarmiert sofort via `custom`-Provider → `telegram-relay` → Topic `monitoring`. Details: [Gatus](../gatus/index.md).
-- **Uptime Kuma** -- Alles andere (Media, Productivity, AI, IoT, Apps) plus Push-Monitore für Batch-Jobs. Single-Notifier "Keep" mit Default Enabled, Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
+- **Kern-Infrastruktur** (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher) -- jeder Endpoint alarmiert sofort, gruppiert in `Plattform` / `Netz` / `Auth` / `Storage & Backup`.
+- **Flächenabdeckung** (Media, Productivity, AI, IoT, Apps) plus Push-Monitore für Batch-Jobs.
 
-Die Kern-Infra wird zusätzlich als zweite Meinung in Kuma dupliziert -- fällt Gatus aus, bleibt die Sicht auf die Basisdienste bestehen. Der SOLL-Zustand dieser Kopie ist in [Uptime Kuma](../uptime-kuma/index.md#kern-infra-mindestabdeckung) gepflegt. Beide Tools schicken via Keep, nicht direkt an Telegram.
+Alle Monitore senden via Single-Notifier "Keep" mit Default Enabled; Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
 
 ## Backup-Monitoring
 
@@ -285,7 +282,6 @@ Collectors: Collector-Layer {
   Telegraf: "Telegraf\n(Nomad Job)"
   CMK: "CheckMK Agent"
   Kuma: "Uptime Kuma"
-  Gatus: Gatus
 }
 
 Storage: Storage-Layer {
@@ -311,7 +307,6 @@ Collectors.Alloy -> Storage.Loki
 Collectors.Telegraf -> Storage.Influx
 Collectors.CMK -> Storage.CheckMK
 Collectors.Kuma -> GRAF: "HTTP/TCP-Checks"
-Collectors.Gatus -> GRAF: "Public Status"
 
 Storage.Loki -> GRAF
 Storage.Influx -> GRAF
@@ -388,7 +383,7 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 - [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (batch-Bot + Severity-Topics; vip idle)
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
 - [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
-- [Gatus](../gatus/index.md) -- Öffentliche Status-Seite für Endpoint-Verfügbarkeit
+- [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push)
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs

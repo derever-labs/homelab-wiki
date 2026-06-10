@@ -149,7 +149,7 @@ Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. S
 | Tailscale-Mesh | Homelab | L4 | missing | Direct-Cron | tailscale status -json via Cron |
 | Cloudflare DDNS x2 | Homelab | L4 | partial | Loki + Direct | Pattern + IP-Vergleich-Cron |
 | Keepalived (VRRP) | Homelab | L4 | live | Direct | bestehend |
-| Internet-Reachability | Homelab | L4 | missing | UK-Probe | Gatus-Probes |
+| Internet-Reachability | Homelab | L4 | missing | UK-Probe | Uptime-Kuma-Probes |
 | Nomad / Consul / Vault Cluster | Homelab | L5 | partial | Telegraf | inputs.nomad / consul / Sealed-Probe |
 | Postgres (DRBD Single) | Homelab | L5 | partial | Telegraf | inputs.postgresql |
 | Authentik Server + Outposts | Homelab | L6 | partial | Telegraf + Loki + UK | bestehend, identisch DCLab |
@@ -157,7 +157,7 @@ Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. S
 | LE-Cert ackermannprivat.ch / ackermann.systems | Homelab | L6 | missing | UK-Probe | Cert-Days |
 | Vault Audit Backend / Sealed-State | Homelab | L6 | partial | Direct-Cron + UK-Probe | Audit-File-Watch + sys/health |
 | Tailscale Cross-Tailnet | Homelab | L6 | missing | Direct-Cron | Member-Diff-Cron |
-| Loki / InfluxDB / Grafana / Telegraf / Alloy / Keep / CheckMK / UK / Gatus Self Homelab | Homelab | L7 | partial | Telegraf + UK | absent + cardinality + volume-fill + extern-probe |
+| Loki / InfluxDB / Grafana / Telegraf / Alloy / Keep / CheckMK / UK Self Homelab | Homelab | L7 | partial | Telegraf + UK | absent + cardinality + volume-fill + extern-probe |
 | External Watchdog Platform pve-01-nana | Homelab | L7 | partial | Direct | Stack-Deployment ausstehend [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
 
 Die vollständige Item-Tabelle steht in [Monitoring: Coverage](coverage.md) -- diese Sektion ist die kondensierte Best-Path-Sicht.
@@ -224,7 +224,7 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 - Vault-Sealed-State (`sys/health`)
 - Externe Watchdog-Probes (Grafana, Keep, CheckMK-Site)
 - Backup-Heartbeats (linstor-snapshot, postgres-backup, etc.)
-- Internet-Reachability (Gatus-Probes)
+- Internet-Reachability (Uptime-Kuma-Probes)
 
 ### Direct-Cron / Direct-Webhook
 

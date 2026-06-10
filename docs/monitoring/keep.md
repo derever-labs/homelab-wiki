@@ -10,7 +10,7 @@ tags:
 
 # Keep
 
-Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Gatus, Grafana, Uptime Kuma, CheckMK sowie einzelne Apps) schicken ihre Events an **einen** Endpoint, statt jede Quelle einzeln mit Telegram zu verdrahten. Keep reichert die Alerts an, korreliert sie zu **Incidents**, dedupliziert und routet anschliessend nach Severity in drei Forum-Topics des Telegram-Channels `Homelab Alerts`. Acknowledgen, Eskalieren und Entwarnen laufen über vier Incident-Workflows.
+Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Grafana, Uptime Kuma, CheckMK sowie einzelne Apps) schicken ihre Events an **einen** Endpoint, statt jede Quelle einzeln mit Telegram zu verdrahten. Keep reichert die Alerts an, korreliert sie zu **Incidents**, dedupliziert und routet anschliessend nach Severity in drei Forum-Topics des Telegram-Channels `Homelab Alerts`. Acknowledgen, Eskalieren und Entwarnen laufen über vier Incident-Workflows.
 
 ## Zweck
 
@@ -40,7 +40,6 @@ classes: {
 
 sources: Alert-Quellen {
   class: layer
-  gatus: Gatus { class: svc }
   grafana: Grafana\n(Loki + InfluxDB) { class: svc }
   kuma: Uptime Kuma { class: svc }
   checkmk: CheckMK { class: svc }
@@ -60,8 +59,7 @@ topics: Homelab Alerts {
   info: Info (25011) { class: sink }
 }
 
-sources.gatus -> keep.ident: "/alerts/event/<source>"
-sources.grafana -> keep.ident
+sources.grafana -> keep.ident: "/alerts/event/<source>"
 sources.kuma -> keep.ident
 sources.checkmk -> keep.ident
 keep.ident -> keep.corr -> keep.act
@@ -77,7 +75,7 @@ Drei Schichten, alle drei müssen sitzen: **Identification** (jeder Alert bekomm
 Quellen erreichen Keep auf einem von drei Wegen, je nachdem ob sie eigenes Alerting mitbringen oder nur Rohdaten liefern. Alle drei münden im selben Hub.
 
 ::: info 1. Direct-Webhook
-Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Gatus, einzelne Apps.
+Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Uptime Kuma, einzelne Apps.
 :::
 
 ::: info 2. Log-basiert über Loki

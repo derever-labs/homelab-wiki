@@ -75,7 +75,6 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | Thema | Beschreibung |
 | :--- | :--- |
 | [Monitoring Stack](./monitoring/) | Grafana, InfluxDB, Loki, Alloy |
-| [Gatus](./gatus/) | Öffentliche Status Page |
 | [CheckMK](./checkmk/) | Infrastructure Monitoring |
 | [CrowdSec](./crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |

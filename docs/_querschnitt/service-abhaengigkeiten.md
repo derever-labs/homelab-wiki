@@ -62,7 +62,6 @@ Mon: Monitoring {
   INFLUX: InfluxDB { shape: cylinder; style.border-radius: 8 }
   ALLOY: Alloy { style.border-radius: 8 }
   UK: Uptime Kuma { style.border-radius: 8 }
-  GATUS: Gatus { style.border-radius: 8 }
 }
 
 Prod: Productivity {
@@ -177,7 +176,7 @@ Der Fluss von Logs und Metriken bis zur Visualisierung:
 2. Alloy schreibt die Logs in Loki (Log-Storage).
 3. Grafana (Dashboards) visualisiert Logs aus Loki und Metriken aus InfluxDB.
 
-Uptime Kuma und Gatus überwachen Service-Verfügbarkeit unabhängig.
+Uptime Kuma überwacht die Service-Verfügbarkeit (Kern-Infra und Flächenabdeckung) unabhängig von der Metrik-/Log-Pipeline.
 
 ## Verwandte Seiten
 

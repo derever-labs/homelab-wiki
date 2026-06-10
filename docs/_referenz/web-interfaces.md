@@ -69,7 +69,6 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | Grafana | `https://graf.ackermannprivat.ch` | Dashboards und Metriken |
 | Keep | `https://keep.ackermannprivat.ch` | Alert-Aggregation und Routing |
 | Uptime Kuma | `https://uptime.ackermannprivat.ch` | Availability Monitoring |
-| Gatus | `https://status.ackermannprivat.ch` | Status Page (öffentlich) |
 | CheckMK | `https://monitoring.ackermannprivat.ch` | Infrastructure Monitoring |
 | Loki | `https://loki.ackermannprivat.ch` | Log-Aggregation |
 | InfluxDB | `https://influx.ackermannprivat.ch` | Zeitreihen-Datenbank |

@@ -22,7 +22,7 @@ Die folgende Tabelle nennt pro Verzeichnis repräsentative Jobs; die vollständi
 | identity/ | Authentik (Identity Provider) |
 | infrastructure/ | SMTP Relay, Zot Registry, GitHub Runner, Nebula Sync |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Gatus, Keep, iperf3-to-influxdb |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, iperf3-to-influxdb |
 | services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, PocketBase, Directus-Gravel, Immo-Monitor, Immoscraper, Telegram-Relay |
 | system/ | Alloy (Log-Collector), Linstor CSI |
 | volumes/ | CSI-Volume-Definitionen (HCL) |

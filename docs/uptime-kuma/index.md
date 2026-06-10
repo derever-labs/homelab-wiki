@@ -9,7 +9,7 @@ tags:
 
 # Uptime Kuma
 
-Uptime Kuma überwacht alle Services, die **nicht** zur Kern-Infrastruktur gehören (Media, Productivity, AI, IoT, Dashboards etc.) sowie Push-Monitore für Batch-Jobs. Die Kern-Infrastruktur liegt bei [Gatus](../gatus/index.md) -- die beiden Tools decken sich bewusst nicht.
+Uptime Kuma ist seit dem Gatus-Rückbau (2026-06-10) die **einzige** Synthetic-Monitoring-Schicht des Homelabs. Es überwacht sowohl die Kern-Infrastruktur (Ingress, SSO, DNS, Nomad/Consul/Vault, Storage) als auch alle übrigen Services (Media, Productivity, AI, IoT, Dashboards etc.) und führt zusätzlich Push-Monitore für Batch-Jobs.
 
 ## Übersicht
 
@@ -23,13 +23,11 @@ Uptime Kuma überwacht alle Services, die **nicht** zur Kern-Infrastruktur gehö
 
 ## Rolle im Stack
 
-Uptime Kuma ist das **Flächen-Monitoring**. Es deckt alle Services ab, die für den End-User spürbar sind. Batch-Jobs (Backups, Scheduled Tasks) senden zusätzlich Heartbeats an Kuma-Push-Monitore -- damit lässt sich "Hat der Job heute morgen gelaufen?" ohne Log-Parsing beantworten. Die Kern-Infrastruktur dagegen liegt bei [Gatus](../gatus/index.md), das jeden Endpoint sofort alarmiert.
+Uptime Kuma deckt die gesamte Synthetic-Überwachung ab: die Kern-Infrastruktur (jeder Endpoint alarmiert sofort), das **Flächen-Monitoring** aller End-User-spürbaren Services und die **Push-Monitore** für Batch-Jobs (Backups, Scheduled Tasks). Damit lässt sich "Hat der Job heute morgen gelaufen?" ohne Log-Parsing beantworten.
 
 Alle Monitore alarmieren via Single-Notifier "Keep" mit Default Enabled (siehe [Alerting](#alerting)). Die Severity-Klasse ergibt sich aus dem Monitor selbst (Down = `critical`); das Topic-Routing entscheidet Keep.
 
-::: warning Keine Überlappung
-Ein Service liegt entweder in Gatus **oder** in Uptime Kuma, nie in beiden. Wird ein Service kritisch genug für sofortige Alerts, wandert er von Kuma nach Gatus. Duplikate im Wiki (`uptime-kuma/` und `gatus/`) sind explizit nicht erwünscht -- wer einen Service sucht, verlinkt zur System-Seite.
-:::
+Die Monitore sind in sieben thematische Gruppen organisiert (Plattform, Netz, Storage & Backup, Auth, Monitoring, Media, Apps & Tools); die Gruppierung ist in `nomad-jobs/monitoring/group-kuma-monitors.py` reproduzierbar abgelegt.
 
 ## Push-Monitore (Batch Jobs)
 
@@ -44,7 +42,7 @@ Aktuell bekannte Push-Monitore:
 
 ## Kern-Infra-Mindestabdeckung
 
-Zusätzlich zu den App-Monitoren führt Uptime Kuma eine Kopie der Gatus-Kern-Infrastruktur-Prüfungen als **unabhängige zweite Meinung**. Die kanonische Quelle der Kern-Check-Liste ist das Gatus-Nomad-Template (siehe [Gatus](../gatus/index.md)); Kuma-Monitore sind mit dem Tag `Infrastruktur` (tag_id=1) gruppiert.
+Uptime Kuma überwacht die Kern-Infrastruktur direkt -- jeder Endpoint alarmiert sofort. Die Monitore liegen in den Gruppen `Plattform` (Nomad/Consul/Vault/Linstor), `Netz` (Pi-hole, Traefik, Keepalived), `Auth` (Authentik) und `Storage & Backup` (NAS-TCP, PBS, Linstor, Backup-Jobs).
 
 ### Nomad / Consul / Vault Stack
 
@@ -58,7 +56,7 @@ Server- und Client-VMs werden getrennt gemonitort -- die Server-VMs `vm-nomad-se
 - `Nomad Token -- vm-nomad-client-04/05/06` -- Push-Monitor vom Client-Agent
 
 ::: warning Kuma-CRUD nur per Direkt-SQL
-Kuma v2 bietet keinen Admin-API-Endpunkt für Monitor-Create/Update. Das UI arbeitet über Socket.IO mit Session-Cookie. Bulk-Änderungen (z.B. Nachziehen wenn Gatus eine Kernliste umbaut) laufen per MariaDB-`INSERT`/`UPDATE` gegen die Datenbank `uptime_kuma` (`mariadb.service.consul`), anschliessend `docker restart` des Kuma-Containers für Cache-Reload. Vor Bulk-Änderungen `mariadb-dump` der Tabellen `monitor`, `monitor_tag`, `tag` als Backup nach `/app/data/`.
+Kuma v2 bietet keinen Admin-API-Endpunkt für Monitor-Create/Update. Das UI arbeitet über Socket.IO mit Session-Cookie. Skript-getriebene Änderungen laufen über die `uptime-kuma-api`-Lib (Socket.IO, siehe `group-kuma-monitors.py`); Bulk-Änderungen alternativ per MariaDB-`INSERT`/`UPDATE` gegen die Datenbank `uptime_kuma` (`mariadb.service.consul`), anschliessend `docker restart` des Kuma-Containers für Cache-Reload. Vor Bulk-Änderungen `mariadb-dump` der Tabellen `monitor`, `monitor_tag`, `tag` als Backup nach `/app/data/`.
 :::
 
 ## Alerting
@@ -73,19 +71,17 @@ Uptime Kuma nutzt **genau einen** Webhook-Notifier "Keep" mit aktivem `Default E
 
 Severity-Klasse, Topic-Wahl und Bot-Routing entscheidet Keep (siehe [Keep](../monitoring/keep.md)). Discord, Email oder andere Notifier in Uptime Kuma sind nicht Teil der Architektur und werden nicht angelegt.
 
-::: info Redundanz Gatus + Uptime Kuma
-Beide Tools senden via Keep (Gatus über `telegram-relay` mit Webhook-Backend, Kuma über den `Keep`-Notifier). Fällt eines der Tools aus, alarmiert das andere weiter über den gleichen Keep-Hub -- ein Single-Point-of-Failure im Alerting wird so vermieden.
+::: info Keep-unabhängiger Watchdog
+Damit ein stiller Keep-Ausfall sichtbar bleibt, existiert zusätzlich die Notification "Keep-Watchdog (direkt, Keep-unabhängig)", die den Push-Monitor `keep-heartbeat` direkt nach Telegram alarmiert -- nicht über Keep. Details siehe [Keep](../monitoring/keep.md).
 :::
 
 ## Entscheidungslog
 
-- **Gatus als zusätzliche Status-Seite**, Uptime Kuma bleibt für Flächenabdeckung + Push-Monitore. Gründe: Gatus ist config-basiert (GitOps), Uptime Kuma ist click-driven und eignet sich besser für Experimente und kurzfristige Monitore.
-- **Kein zentraler Alert-Kanal**, die Redundanz zwischen Gatus und Kuma ist Feature. Ein Ausfall eines Tools kaschiert keine Kern-Probleme.
+- **Gatus zurückgebaut** (2026-06-10) -- die separate Gatus-Status-Seite entfiel; Uptime Kuma übernimmt die Kern-Infra-Checks direkt. Grund: Zwei Synthetic-Tools nebeneinander erzeugten doppelte Pflege und ein zweites Alert-Schema, ohne echten Redundanzgewinn (beide liefen auf demselben Cluster). Die Kern-Endpoints sind jetzt reproduzierbar in `group-kuma-monitors.py` gruppiert.
 - **Metrics-Endpoint mit API-Key**, nicht per Authentik -- dadurch kann der API-Key für Read-only-Scraper unabhängig rotiert werden.
 
 ## Verwandte Seiten
 
-- [Gatus](../gatus/index.md) -- Kern-Infra-Status-Seite, alarmiert sofort
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, InfluxDB, Alloy
 - [Telegram-Bots](../monitoring/telegram-bots.md) -- Telegram-Relay-Architektur
 - [Backup-Strategie](../backup/index.md) -- Push-Monitore für Backup-Jobs

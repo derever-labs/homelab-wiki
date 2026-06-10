@@ -61,7 +61,6 @@ Services die nicht mit den Shared-Clustern kompatibel sind.
 | :--- | :--- | :--- |
 | Jellyfin | SQLite auf NFS | `media/jellyfin.nomad` |
 | AudioBookShelf | SQLite auf NFS | `media/audiobookshelf.nomad` |
-| Gatus | In-Memory (stateless) | `monitoring/gatus.nomad` |
 
 ## PostgreSQL Cluster Details
 
