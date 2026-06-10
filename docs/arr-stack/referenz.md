@@ -118,4 +118,4 @@ Upgrade-Pfad: WEB-DL 4K (initial) -> HQ Encode -> IMAX Enhanced (final, optional
 
 - [Arr Stack](./index.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
 - [Jellyfin](../jellyfin/index.md) -- Media Server der die Inhalte abspielt
-- [Notifiarr](../media-tools/index.md#notifiarr) -- Synchronisiert Quality Profiles über Arr-Apps
+- [Profilarr](./profilarr.md) -- Synchronisiert Quality Profiles und Custom Formats (ersetzt notifiarr seit 2026-06-05)

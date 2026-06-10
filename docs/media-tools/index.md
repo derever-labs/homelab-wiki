@@ -19,7 +19,7 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | Janitorr | Automatische Mediathek-Bereinigung | `media/janitorr.nomad` |
 | Handbrake | Video-Transcoding (deprecated) | `media/handbrake.nomad.deprecated` |
 | LazyLibrarian | E-Book-/Hörbuch-Verwaltung | `media/lazylibrarian.nomad` |
-| Notifiarr | Notification-Aggregator | `services/notifiarr.nomad` |
+| Profilarr | Quality-Profile-/Custom-Format-Sync für Sonarr/Radarr | `services/profilarr.nomad` -- [Eigene Seite](../arr-stack/profilarr.md) |
 
 ## Jellystat
 
@@ -117,25 +117,9 @@ Automatisierte Suche und Verwaltung von E-Books und Hörbüchern. Vergleichbar m
 
 ---
 
-## Notifiarr
+## Profilarr
 
-| Attribut | Wert |
-|----------|------|
-| URL | [notifiarr.ackermannprivat.ch](https://notifiarr.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `services/notifiarr.nomad` |
-| Storage | NFS `/nfs/docker/notifiarr/config` (Config und BoltDB, kein SQL-Backend) |
-| Auth | `intern-auth@file` (UI), `intern-noauth@file` (API) |
-| Secrets | Vault `kv/data/notifiarr` (`ui_password`) |
-
-### Rolle
-
-Notification-Aggregator für den Media Stack. Notifiarr bündelt Benachrichtigungen aus Radarr, Sonarr und weiteren Arr-Apps und leitet sie an Discord, Telegram oder andere Kanäle weiter. Zusätzlich synchronisiert es Konfigurationen wie Quality Profiles und Custom Formats über die Arr-Apps hinweg mit dem Notifiarr-Cloud-Service.
-
-### Besonderheiten
-
-- Zwei Traefik-Router: UI-Router (`notifiarr`) mit `intern-auth@file`, API-Router (`notifiarr-api`) mit `intern-noauth@file` und API-Key-Bedingung in der Router-Rule für Arr-Callbacks (Details: [Traefik Middlewares](../traefik/referenz.md))
-- Mountet `/var/run/utmp` und `/etc/machine-id` vom Host für System-Monitoring (Disk-, CPU-, Memory-Reports)
-- Affinität für `vm-nomad-client-05/06`
+Profilarr ist seit 2026-06-05 der Nachfolger von notifiarr für die Quality-Profile-Synchronisation. Dokumentiert auf der [Profilarr-Seite](../arr-stack/profilarr.md).
 
 ## Verwandte Seiten
 
