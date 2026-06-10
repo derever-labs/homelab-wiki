@@ -74,7 +74,12 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 | pve-01-nana zfs-scrub | pve-01-nana | direct | missing | P1 | scrub-fail silent | `zpool status`-Cron |
 | pve-01-nana pveproxy-api | pve-01-nana:8006 | uptime | missing | P1 | API-Down silent | HTTP-Probe `:8006` über Tailscale-IP |
 | pve-01-nana host-metrics | pve-01-nana | checkmk + influx | partial | P0 | komplett silent, CheckMK-Agent + Alloy + Telegraf noch nicht deployed | Host als `cmk-agent` angelegt am 2026-05-01. Ansible-Plays `06-checkmk-agent.yml` + `deploy-alloy-proxmox.yml` mit `--limit pve-01-nana` über Inventory-Gruppe `proxmox_external` ausstehend [`86c9kwvtg`](https://app.clickup.com/t/86c9kwvtg) |
-| pve-lu-01 (Luzern Standalone) | 172.16.0.200 / 100.112.213.18 (Tailscale) | none | missing | P1 | Node-Down + hostende VM silent, ausserhalb Homelab-Monitoring-Reach | Acer Revo RB610, Standalone-Node Standort Luzern (kein Cluster/Quorum/DRBD), ZFS lokal, PBS-Backup. Hostet `homeassistant-luzern` (VM100). Kein CheckMK-Agent/Telegraf/ICMP-Probe -- analog `pve-01-nana` (Dottikon) nachziehen. Erfasst beim Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc) |
+| pve-lu-01 NVMe SMART | 172.16.0.200 / 100.112.213.18 (Tailscale) | influx | missing | P0 | silent disk-failure auf WD SN740 (Standalone Luzern) | `inputs.smart` aktivieren -- analog pve-01-nana; erreichbar nur via Tailscale-Routing [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
+| pve-lu-01 hwmon Temp | pve-lu-01 | influx | missing | P1 | thermal-throttle silent | `inputs.temp + hwmon` -- analog pve-01-nana [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
+| pve-lu-01 zfs-rpool | pve-lu-01 | none | missing | P1 | DEGRADED/FAULTED silent auf Standalone-Node Luzern | ZED-Mail + zpool-status-Cron [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
+| pve-lu-01 zfs-scrub | pve-lu-01 | direct | missing | P1 | scrub-fail silent | `zpool status`-Cron [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
+| pve-lu-01 pveproxy-api | pve-lu-01:8006 | uptime | missing | P1 | API-Down silent | HTTP-Probe `:8006` über Tailscale-IP 100.112.213.18 [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
+| pve-lu-01 host-metrics | pve-lu-01 | checkmk + influx | missing | P0 | Node-Down + VM100 homeassistant-luzern silent; kein CheckMK-Agent/Telegraf deployt | Acer Revo RB610, Standalone Luzern, kein Cluster/Quorum/DRBD. Analog `pve-01-nana` nachziehen: Ansible-Plays `06-checkmk-agent.yml` + `deploy-alloy-proxmox.yml` mit `--limit pve-lu-01` (Inventory-Gruppe `proxmox_external`). Hostet VM 100 homeassistant-luzern. [`86ca4r0ex`](https://app.clickup.com/t/86ca4r0ex) |
 
 ## Layer 3 -- Storage (DRBD / Linstor / NAS / Backup)
 
