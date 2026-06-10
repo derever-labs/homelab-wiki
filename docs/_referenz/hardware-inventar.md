@@ -123,7 +123,7 @@ Einer der beiden leistungsstarken Nodes. Mit pve02 über Thunderbolt verbunden.
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| VMs | vm-proxy-dns-01, checkmk, datacenter-manager, vm-nomad-server-05, vm-nomad-client-05 |
+| VMs | checkmk, datacenter-manager, vm-nomad-server-05, vm-nomad-client-05, vm-traefik-01 |
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
@@ -139,7 +139,7 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| VMs | vm-vpn-dns-01, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06 |
+| VMs | pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06, vm-traefik-02 |
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
