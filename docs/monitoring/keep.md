@@ -75,7 +75,7 @@ Drei Schichten, alle drei müssen sitzen: **Identification** (jeder Alert bekomm
 Quellen erreichen Keep auf einem von drei Wegen, je nachdem ob sie eigenes Alerting mitbringen oder nur Rohdaten liefern. Alle drei münden im selben Hub.
 
 ::: info 1. Direct-Webhook
-Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Uptime Kuma, einzelne Apps.
+Die Quelle hat eigenes Alerting und postet direkt an `keep.ackermannprivat.ch/alerts/event/<source>`. Beispiele: Grafana Unified Alerting, CheckMK Notifications, Uptime Kuma, einzelne Apps. Backup- und Snapshot-Jobs senden bei Fehler zusätzlich einen expliziten Down-Push mit der Fehlerursache an Uptime Kuma -- der Monitor wird nicht erst nach Ablauf des Heartbeat-Intervalls rot, sondern sofort mit dem konkreten Fehlergrund.
 :::
 
 ::: info 2. Log-basiert über Loki

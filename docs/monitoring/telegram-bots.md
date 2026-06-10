@@ -97,6 +97,7 @@ Der Telegram-Relay (`nomad-jobs/services/telegram-relay.nomad`) ist ein HTTP-End
 - **Endpoint** -- `telegram-relay.service.consul/notify` (Port via Consul-SRV)
 - **Body** -- mindestens `text`, optional `title`; Apprise-`message` als Fallback für `text`
 - **Bot** -- default-Bot, postet in den 1:1-Chat
+- **Routing-Konfig** -- `topics.json` in Vault `kv/shared/telegram-relay`; alle Kategorien zeigen auf die Severity-Topics (ci-cd/backup/downloader/immo -> Info 25011; security/monitoring -> Warnung 25010). Zuvor zeigten sechs Einträge auf tote Threads (stiller Verlust), bereinigt 2026-06-09.
 
 Wenn ein Tool sowohl Webhooks als auch Apprise kann, **immer Webhook nach Keep** bevorzugen.
 

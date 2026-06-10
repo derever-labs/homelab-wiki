@@ -15,7 +15,7 @@ Vereinheitlichtes Telegram-Nachrichtenformat für alles, was Keep in den Channel
 ## Zweck
 
 - **Lesbarkeit auf Mobilgeräten** -- die erste Zeile ist die Scan-Zeile (Severity-Emoji + Severity + Kurzname). Wer durch ein Topic scrollt, entscheidet in unter einer Sekunde, ob er reagieren muss.
-- **Quellen-Agnostik** -- das Format kennt keine Source-Spezialfälle. Es liest generische Incident-Felder (`rule_fingerprint`, `alerts_count`, `status`) plus den ersten Alert für die Problemzeile.
+- **Quellen-Agnostik** -- das Format kennt keine Source-Spezialfälle. Es liest generische Incident-Felder (`service`, `rule_fingerprint` als Fallback-Header, `alerts_count`, `status`) — eine quellen-spezifische zweite Schaltfläche wurde bewusst verworfen (Quellen rendern als Listen-Repr und wären unlesbar).
 - **Lifecycle-Sichtbarkeit** -- notify / escalate / ack / resolve haben je einen eigenen Indikator, sodass im Topic-Verlauf auf einen Blick klar ist, was firing, eskaliert, quittiert oder behoben ist.
 - **Verifizierbarkeit** -- kritische Meldungen tragen einen Ack-Deep-Link-Button (`m.keep`), der direkt auf die Incident-Seite springt.
 
@@ -25,41 +25,40 @@ Die Nachrichten werden **ohne `parse_mode`** gesendet (kein HTML, kein MarkdownV
 
 ## Format je Lifecycle-Phase
 
-Die Felder stammen aus dem korrelierten Incident: `rule_fingerprint` (der Gruppierungs-Wert -- Dienstname, Grafana-Alertname oder beim Catch-all ein Hash), die Problemzeile aus dem ersten Alert (`output`, mit Fallback auf `description`) plus dessen `providerType`, sowie `alerts_count` und `status.value`.
+Die Felder stammen aus dem korrelierten Incident: Zeile 1 enthält Severity-Emoji, Severity und den Header — primär `service` (Dienstname), Fallback `rule_fingerprint` (Grafana-Alertname oder beim Catch-all ein Hash). Zeile 2 ist die `description` des Incidents als Kernwert — nur bei notify und escalate enthalten. Zeile 3 zeigt `alerts_count` und `status.value`. Die Schaltfläche ist ein `reply_markup`-Button (kein Link im Text).
 
 **Notify (events:[created]) -- nach Severity ins Topic:**
 
 ```
-🔴 critical · vault-sealed
-Vault is sealed (grafana)
-3 Alert(s) · firing
-Acken im Keep-UI:
-[ Im Keep öffnen / acken ]
+Severity-Emoji Severity · service-name
+description (Kernwert)
+N Alert(s) · firing
+[ Im Keep öffnen ]
 ```
 
-Erste Zeile mit Severity-Emoji; zweite Zeile Problem + Quelle; dritte Zeile Anzahl + Status. Nur das Kritisch-Topic trägt die vierte Zeile + den Ack-Button.
+Beispiel: Zeile 1 `🔴 critical · vault-sealed`, Zeile 2 die CheckMK-Problemzeile oder Grafana-description, Zeile 3 `3 Alert(s) · firing`. Nur das Kritisch-Topic trägt den Ack-Button.
 
 **Escalate (events:[updated]) -- warning -> critical, ins Kritisch-Topic:**
 
 ```
-⏫ nomad-client-down eskaliert
-Allocation failed (grafana)
-auf critical · 5 Alert(s) · firing
-[ Im Keep öffnen / acken ]
+⏫ service-name eskaliert
+description (Kernwert)
+auf critical · N Alert(s) · firing
+[ Im Keep öffnen ]
 ```
 
 **Ack (events:[updated]) -- Quittung, ins Kritisch-Topic:**
 
 ```
-🔵 vault-sealed quittiert
-War: critical · 3 Alert(s) · Eskalation gestoppt
+🔵 service-name quittiert
+War: critical · N Alert(s) · Eskalation gestoppt
 ```
 
 **Resolve (events:[updated]) -- Entwarnung im selben Topic wie die Meldung:**
 
 ```
-✅ vault-sealed behoben
-War: critical · 3 Alert(s) · resolved
+✅ service-name behoben
+War: critical · N Alert(s) · resolved
 ```
 
 ## Severity-Indikatoren
@@ -79,8 +78,8 @@ Visueller Anker pro Lifecycle-Phase, sofort in der Mobile-Vorschau erkennbar:
 
 ## Felder & Fallbacks
 
-- **Problemzeile** -- Mustache-Section auf `incident.alerts.0.output`, mit Fallback auf `incident.alerts.0.description` wenn `output` leer ist. Quellen ohne brauchbares Detail fallen sauber auf die `description` zurück.
-- **`rule_fingerprint`** -- bei Service-/Grafana-/CheckMK-Incidents lesbar (Dienst-/Alertname), beim Catch-all ein Hash. `incident.services` ist im Body bewusst weggelassen (oft `None`).
+- **Header (Zeile 1)** -- primär `service` des Incidents (Dienstname aus der Enrichment-Schicht); Fallback `rule_fingerprint` (Grafana-Alertname, CheckMK-Service oder beim Catch-all ein Hash). `incident.services` ist bewusst weggelassen (oft `None`).
+- **Kernwert (Zeile 2)** -- `description` des Incidents, nur bei notify und escalate enthalten. CheckMK liefert die kompakte Problemzeile (`compact_detail`) als description; Grafana und Kuma die Alert-Beschreibung. Ack und Resolve haben keine Zeile 2.
 - **`status` immer über `.value`** -- sonst rendert der Enum-repr (`IncidentStatus.FIRING`).
 - **Deep-Link** -- `reply_markup`-Button auf `https://m.keep.ackermannprivat.ch/incidents/<id>` (mobile PWA, nicht `keep.`).
 
