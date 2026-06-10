@@ -125,7 +125,7 @@ Das NAS ist seit 2026-05-01 nach demselben Pattern wie die DCLab-NAS gehärtet -
 - **Crypto:** moderne Cipher/KEX/MAC-Suites ersetzen die DSM-Defaults (3DES, SHA1) über einen `managed-by-claude-ssh-hardening`-Marker-Block am Anfang von `/etc/ssh/sshd_config` (OpenSSH first-obtained-value-wins)
 
 ::: warning Boot-Persistenz
-Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederhergestellt. Ein Boot-up-Task `ssh-hardening-reapply` im DSM Task Scheduler (User root) ruft `/usr/local/sbin/ssh-hardening-reapply.sh` und reapplied den Hardening-Block idempotent.
+Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederhergestellt. Ein Boot-up-Task `ssh-hardening-reapply` im DSM Task Scheduler (User root) ruft `/volume1/scripts/ssh-hardening-reapply.sh` und reapplied den Hardening-Block idempotent. Das Skript liegt bewusst auf dem Daten-Volume und nicht auf der System-Partition (`/usr/local/sbin`) -- dort übersteht es DSM-Updates und Geräte-Migrationen.
 :::
 
 ## Wartung
