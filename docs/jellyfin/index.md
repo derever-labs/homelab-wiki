@@ -148,7 +148,7 @@ Damit entfällt der ursprüngliche `banner-inject`-Grund des Streaming-Bypass ob
 
 ## Täglicher Restart
 
-Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet Jellyfin täglich um 04:00 Uhr neu. Das behebt Memory-Leaks und räumt temporäre Daten auf. Siehe [Batch Jobs](../_querschnitt/batch-jobs.md).
+Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet Jellyfin täglich um 05:00 Uhr neu, sofern keine aktiven Streams laufen. Das behebt Memory-Leaks und räumt temporäre Daten auf. Siehe [Batch Jobs](../_querschnitt/batch-jobs.md).
 
 ## Private Kurator-Playlists
 
