@@ -51,6 +51,14 @@ Die DRBD/LINSTOR-Volumes werden **nicht LINSTOR-nativ** gesichert. Sie sind durc
 Die frühere LINSTOR-S3-Backup-Schicht (lokale Snapshots + Shipping nach Garage, Schedule `backup-daily`, Master-Key-Auto-Unlock) wurde entfernt -- sie war redundant zu PBS und bei grossen Volumes (z. B. zot ~46 GiB) unzuverlässig. Details: [Linstor Betrieb](../linstor-storage/betrieb.md).
 :::
 
+## Verschlüsselung (age)
+
+Alle Nomad-Backup-Job-Outputs werden mit [age](https://age-encryption.org/) verschlüsselt. Der öffentliche Recipient-Key ist direkt im Nomad-Job hinterlegt. Der private Schlüssel liegt in Vault und zusätzlich in 1Password als DR-Fallback -- Schlüsselwerte gehören nicht ins Wiki.
+
+::: tip Restore-Vorbereitung
+Vor jedem Restore muss das Backup-Archiv zuerst mit age entschlüsselt werden. Details zum Ablauf: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
+
 ## Monitoring
 
 ### Uptime Kuma Push-Monitore

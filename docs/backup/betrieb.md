@@ -16,6 +16,10 @@ tags:
 
 Dump-Pfad: `/nfs/backup/postgres/daily/postgres-all-YYYYMMDD-HHMM.sql.gz`
 
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
+
 Voraussetzungen:
 
 - NFS-Mount `/nfs/backup/` auf dem Ziel-Host vorhanden
@@ -54,6 +58,10 @@ Der Dump enthält `DROP ... IF EXISTS`-Statements (Flag `--clean` im Backup-Job)
 
 Dump-Pfad: `/nfs/backup/mariadb/daily/mariadb-all-YYYYMMDD-HHMM.sql.gz`
 
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
+
 MariaDB-Version aus Dump-Header: `zcat <dump> | head -5`
 
 ```text
@@ -75,6 +83,10 @@ docker rm -f mariadb-restore
 ### InfluxDB
 
 Backup-Pfad: `/nfs/backup/influxdb/daily/influxdb-YYYYMMDD-HHMM.tar.gz`
+
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
 
 Das Archiv enthält das native InfluxDB-Backup-Format (bolt, sqlite, TSM-Shards).
 
@@ -122,6 +134,10 @@ rm -rf /tmp/influx-restore
 ### Vault
 
 Snapshot-Pfad: `/nfs/backup/vault/daily/vault-YYYYMMDD-HHMM.snap`
+
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
 
 Die `.snap`-Dateien sind gzip-komprimiert (Vault API liefert gzip direkt). Der Befehl `vault operator raft snapshot restore` erwartet die Datei direkt — nicht vorher dekomprimieren.
 
@@ -188,6 +204,10 @@ Für einen echten Prod-Restore: Vault auf allen Nodes stoppen, Raft-Daten lösch
 
 Snapshot-Pfad: `/nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap`
 
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
+
 ```text
 # Struktur prüfen (kein Container nötig)
 docker run --rm \
@@ -215,6 +235,10 @@ docker rm -f consul-restore
 ### Nomad
 
 Snapshot-Pfad: `/nfs/backup/nomad/daily/nomad-YYYYMMDD-HHMM.snap`
+
+::: info age-Verschlüsselung
+Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
+:::
 
 Integritätsprüfung via `nomad operator snapshot inspect` (kein Cluster nötig, lokal auf dem Node):
 
