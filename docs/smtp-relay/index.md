@@ -38,7 +38,7 @@ Services: Nomad Services {
   PL: Paperless
 }
 
-SMTP: smtp-relay (Nomad Job) { tooltip: "boky/postfix, 10.0.0.0/8 ohne Auth" }
+SMTP: smtp-relay (Nomad Job) { tooltip: "boky/postfix, 10.0.2.0/24 ohne Auth" }
 EXT: mail.netzone.ch { tooltip: "Port 587" }
 
 Infra.PVE -> SMTP: smtp.service.consul:25
@@ -66,8 +66,12 @@ Datei: `infrastructure/smtp-relay.nomad`
 | `RELAYHOST_USERNAME` | SASL Username (aus Vault) |
 | `RELAYHOST_PASSWORD` | SASL Passwort (aus Vault) |
 | `ALLOWED_SENDER_DOMAINS` | Erlaubte Absender-Domains (`ackermann.systems ackermannprivat.ch homenet.local`) |
-| `MYNETWORKS` | Netze ohne Auth (`10.0.0.0/8 172.16.0.0/12 127.0.0.0/8`) |
+| `MYNETWORKS` | Netze ohne Auth (`10.0.2.0/24 127.0.0.0/8`) |
 | `POSTFIX_smtp_sasl_mechanism_filter` | SASL-Mechanismen (`plain,login`) |
+
+::: tip Warum nur das Management-Subnetz?
+`MYNETWORKS` ist auf `10.0.2.0/24` (Management-VLAN) eingeschränkt. Das verhindert, dass beliebige Hosts aus dem LAN (`10.0.0.0/8`) den Relay ohne Authentifizierung nutzen können. Alle legitimen Sender (PVE-Nodes, PBS, CheckMK, Nomad-Services) laufen im Management-VLAN.
+:::
 | `POSTFIX_smtp_tls_security_level` | TLS erzwungen (`encrypt`) |
 | `POSTFIX_inet_protocols` | Nur IPv4 (kein IPv6-Routing im Homelab) |
 | `POSTFIX_sender_canonical_classes` | Rewrite-Geltungsbereich (`envelope_sender,header_sender`) |

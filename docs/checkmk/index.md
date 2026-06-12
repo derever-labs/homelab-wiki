@@ -29,7 +29,7 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Nomad Clients:** vm-nomad-client-04/05/06 -- CPU, RAM, Disk, Docker-Daemon
 - **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
 - **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS1825+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
-- **Home Assistant:** Verfügbarkeit und Systemzustand
+- **Home Assistant:** Kein CheckMK-Agent (HAOS ist immutable, kein Agent installierbar). Metriken via Telegraf/Alloy + Proxmox-Special-Agent von pve02.
 - **Nomad-Container:** Alle laufenden Allocs via Docker Piggyback-Mechanismus auf den Client-Nodes
 - **Netzwerk:** Erreichbarkeit kritischer Endpunkte
 
@@ -43,10 +43,22 @@ Der Docker-Plugin auf den Nomad Client-Nodes übergibt Container-Checks als Pigg
 
 Der CheckMK Agent läuft auf jedem überwachten Host und kommuniziert über TCP Port 6556 (siehe [Ports und Dienste](../_referenz/ports-und-dienste.md)). Der Agent wird als Paket (`check-mk-agent`) installiert und meldet bei Abfrage durch den CheckMK Server die aktuellen Systemmetriken.
 
-Die Installation erfolgt über Ansible:
+Die Installation erfolgt über Ansible (`ansible/playbooks/checkmk-agent-deploy.yml` im Repo `homelab-hashicorp-stack`):
 - **Standard-Agent:** `playbooks/checkmk-agent-deploy.yml`
 - **Docker-Plugin:** `playbooks/checkmk-docker-plugin.yml` -- aktiviert Piggyback für Nomad-Container
 - **Linstor Local Checks:** `playbooks/checkmk-linstor-checks.yml` -- deploys Linstor/DRBD-spezifische Local Checks auf die `drbd_storage`-Gruppe (vm-nomad-client-05/06)
+
+### TLS-Registrierung (pull-agent)
+
+Alle Agents laufen im TLS-gesicherten Pull-Modus. Drei Architektur-Entscheidungen:
+
+- **Registrierung via `agent_registration`-User:** Die TLS-Registrierung (`cmk-agent-ctl register`) läuft mit einem dedizierten CheckMK-User ohne Management-Rechte. Damit hat der Registrierungsprozess keine Schreibrechte auf Monitoring-Konfiguration.
+
+- **`--trust-cert` bei der Registrierung:** Das CheckMK-Site-CA-Zertifikat ist selbstsigniert (keine externe CA). Beim ersten Registrierungsaufruf wird `--trust-cert` übergeben, damit der Agent das CA-Zertifikat vertraut, ohne es manuell importieren zu müssen.
+
+- **`allow_legacy_pull=false` nach Registrierung:** Nach erfolgreicher TLS-Registrierung wird der unsichere Legacy-Pull-Modus (unkryptierter Port 6556) clientseitig deaktiviert. Der Agent akzeptiert danach ausschliesslich TLS-Verbindungen.
+
+Proxmox-Hosts (pve00/01/02) und externe Standalone-Nodes (pve-01-nana, pve-lu-01) werden über denselben `deb`-Paket-Weg deployt -- kein separater Deploymentpfad für Hypervisoren.
 
 ### Linstor Local Checks
 

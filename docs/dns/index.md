@@ -187,6 +187,12 @@ Rekursiver Resolver mit DNSSEC-Validierung. Löst Anfragen direkt gegen die Root
 | Modus | Rekursiv (kein Forwarding) |
 | Config | `/etc/unbound/unbound.conf.d/pi-hole.conf` |
 
+::: info Warum kein DNS-over-TLS / kein Cloud-Resolver?
+Unbound läuft bewusst im vollrekursiven Modus ohne Forwarding an Cloudflare, Quad9 oder andere Cloud-Resolver. Damit sieht kein externer Anbieter alle ausgehenden Queries des Homelabs -- DNSSEC-Validierung bleibt durch direkte Rekursion gegen die Root-Server gewährleistet, ohne auf eine externe Vertrauensanker-Instanz angewiesen zu sein. Das entspricht der Self-Hosted-Linie: keine Cloud-Abhängigkeit in der DNS-Auflösung.
+
+Aktive Hardening-Optionen: `harden-below-nxdomain`, `harden-algo-downgrade` und `aggressive-nsec`. Details und vollständige Konfiguration: `ansible/roles/pihole/` im Repo `homelab-hashicorp-stack`.
+:::
+
 ### Consul DNS
 
 Service Discovery für den HashiCorp-Cluster. Alle drei Consul Server (vm-nomad-server-04/05/06) stellen DNS auf Port 8600 bereit -- Adressen siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) und [HashiCorp Stack](../nomad/index.md).
