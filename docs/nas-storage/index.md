@@ -115,6 +115,10 @@ Die SMART-Kadenz folgt dem Konsens von TrueNAS/Backblaze/smartmontools (kurzer S
 
 Die HSLU-DCLab- und ARCH-NAS folgen demselben Muster, behalten aber bewusst den DSM-Port `:8443` (wird für den Authentik-Login-Flow gebraucht) -- diese Geräte sind im DCLab-Wiki dokumentiert.
 
+## Erweiterungskarte (10GbE + NVMe)
+
+Der HomeServer ist mit einer Synology E10M20-T1 bestückt (ein 10GbE-Port plus zwei M.2-NVMe-Slots). Die Karte ist nicht auf der Kompatibilitätsliste der DS1825+ und wird von DSM darum standardmässig gesperrt -- der 10GbE-Port liefe sonst als `notsup0`, die NVMe blieben im Storage Manager unsichtbar. Sie wird über einen Aufgabenplaner-Task (Auslöser Herunterfahren) freigeschaltet, analog zum SSH-Hardening. Hintergrund, Patch-Umfang und Persistenz: [E10M20-T1 Freischaltung](./e10m20-freischaltung.md).
+
 ## SSH-Zugang und Hardening
 
 Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../_referenz/ssh-zugang.md) und [Zugangsdaten](../_referenz/credentials.md). Login als `admin` mit Public-Key (`SSH Homelab`) und `sudo` über das Admin-Passwort -- einheitlich auf allen Homelab-Synology (HomeServer, MediaServer, DS1525+, Nana). Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
