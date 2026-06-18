@@ -68,7 +68,7 @@ dottikon: Standort Dottikon {
   tooltip: "Aussenstelle Nana, 192.168.2.0/23"
   dogw: UDM Ultra { class: node; tooltip: "Gateway, 192.168.2.1" }
   dopve: pve-01-nana { class: node; tooltip: "192.168.2.41, externer Watchdog" }
-  donas: NanaServer { class: node; tooltip: "Synology, 192.168.2.200" }
+  donas: NanaServer { class: node; tooltip: "Synology, 192.168.3.181" }
   doha: Home Assistant { class: node; tooltip: "homeassistant-dottikon, VM auf pve-01-nana" }
 
   dogw -> dopve
