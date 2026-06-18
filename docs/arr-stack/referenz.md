@@ -1,121 +1,97 @@
 ---
-title: Radarr Qualitätsprofile
-description: Konfigurierte Quality Profiles basierend auf TRaSH Guides
+title: Qualitätsprofile
+description: Radarr- und Sonarr-Quality-Profiles, verwaltet über Profilarr aus den TRaSH Guides
 tags:
   - service
   - media
   - radarr
+  - sonarr
 ---
 
-# Radarr Qualitätsprofile
+# Qualitätsprofile
 
-Diese Dokumentation beschreibt alle konfigurierten Quality Profiles in Radarr und gibt Empfehlungen basierend auf den [TRaSH Guides](https://trash-guides.info/).
+Diese Seite beschreibt die in Radarr und Sonarr konfigurierten Quality Profiles und ihre Unterschiede. Die Profile stammen aus den [TRaSH Guides](https://trash-guides.info/) und werden über [Profilarr](./profilarr.md) verwaltet. Persönliche Anpassungen (z.B. die bevorzugte Audio- und HDR-Wertung) liegen als User-Layer-Overrides und überleben Upstream-Updates.
 
-## Übersicht
+::: tip Zielformat fürs Heimkino
+Die Wiedergabekette (Apple TV mit Infuse, Hisense-C1-Beamer, Sonos) spielt **Dolby Vision Profil 8.1** und **Dolby Atmos** voll aus. Deshalb bevorzugen die 4K-Profile DV/HDR sowie verlustfreies bzw. Atmos-Audio. **Dolby Vision Profil 7** (das Dual-Layer-Format der UHD-Blu-ray-Remuxes) wird von Apple TV/Infuse nur als HDR10 wiedergegeben — für diese Kette sind gute **4K-Encodes in DV Profil 8.1** wertvoller als ein P7-Remux. Wiedergabe-Details: siehe [Jellyfin](../jellyfin/index.md).
+:::
 
-| Profil | Ziel-Qualität | Sprache | Empfohlen für |
-|--------|---------------|---------|---------------|
-| min HD-720p English | 720p-1080p | Englisch | Ältere Filme, begrenzte Bandbreite |
-| HD-1080p English | 1080p | Englisch | Standard-Nutzung, gute Qualität |
-| 4K English | 2160p UHD | Englisch | 4K TV/Projektor, beste Qualität |
-| HD-1080p Deutsch | 1080p | Deutsch | Deutsche Synchro bevorzugt |
-| HD-1080p French | 1080p | Französisch | Französische Filme |
-| max Remux-1080p English | Remux 1080p | Englisch | Höchste 1080p Qualität, viel Speicher |
-| max Remux-1080p Deutsch | Remux 1080p | Deutsch | Höchste 1080p Qualität mit dt. Audio |
-| min HD-720p Any Language | 720p-1080p | Alle | Internationale Filme |
-| min HD-720p Original Language | 720p-1080p | Original | Originalsprache bevorzugt |
-| min HD-720p German | 720p-1080p | Deutsch | Deutsche Synchro, flexibel |
-| All Quality Original | Alle (SD-4K) | Original | Seltene Filme, Archiv |
-| 4K Original Language | 2160p UHD | Original | 4K in Originalsprache |
-| HD-1080p Original | 1080p | Original | Standard mit Originalsprache |
-| SQP-5 | UHD Remux | Multi | Premium 4K, IMAX Enhanced |
-| SQP-1 (1080p) | Bluray 1080p | Multi | Beste 1080p Bluray Releases |
-| SQP-1 WEB (1080p) | WEB 1080p | Multi | Beste WEB-DL 1080p |
-| SQP-2 | UHD Remux/Bluray | Multi | Hohe 4K Qualität |
-| SQP-3 | UHD Remux/WEB | Multi | 4K mit WEB Fallback |
-| SQP-4 | WEB 2160p | Multi | 4K WEB-DL (weniger Speicher) |
+::: info Profile steuern die Akquise, nicht den Bestand
+Ein Profil bestimmt, welche Releases künftig geladen oder als Upgrade ersetzt werden — bestehende Dateien werden dadurch nicht umgewandelt. Ein Wechsel der Auflösungs-Strategie löst also einen erneuten Download aus, keine lokale Konvertierung.
+:::
 
----
+## Radarr — Übersicht
 
-## Standard-Profile (Eigene Konfiguration)
+| Profil | Ziel-Qualität | HDR/DV | Audio | Sprache | Status |
+|--------|---------------|--------|-------|---------|--------|
+| SQP-1 (1080p) | 1080p WEB/Bluray | — | verlustfrei bevorzugt | Englisch | Hauptprofil 1080p |
+| SQP-5 | 1080p-Remux + 4K WEB/Bluray-Encode | DV + breites HDR | Atmos + verlustfrei | Englisch | aktiv (4K) |
+| SQP-3 | Remux 1080p/2160p + 4K WEB | DV + breites HDR | Atmos + verlustfrei | Englisch | aktiv (wenige Titel) |
+| HD-1080p English | 1080p HDTV/WEB/Bluray | leicht | leicht | Englisch | aktiv (wenige) |
+| 4K English | bis 2160p (inkl. Remux) | leicht | leicht | Englisch | aktiv (wenige) |
+| SQP-1 WEB (1080p) | 1080p WEB/Bluray | — | verlustfrei | Englisch | konfiguriert, ungenutzt |
+| SQP-2 | 4K Remux + UHD Bluray + WEB | DV granular | — | — | konfiguriert, ungenutzt |
+| SQP-4 | 4K WEB | DV granular | — | — | konfiguriert, ungenutzt |
+| HD-1080p Deutsch / French | 1080p | leicht | leicht | Deutsch / Französisch | konfiguriert, ungenutzt |
+| min HD-720p English / German / Original Language | 720p–1080p | — | — | je Variante | konfiguriert, ungenutzt |
 
-### min HD-720p [Sprache]
+## Radarr — die aktiven Profile im Detail
 
-Flexibles Profil das mit 720p startet und automatisch auf 1080p upgradet wenn verfügbar. Für ältere Filme, begrenzte Speicherkapazität oder Bandbreitenbeschränkungen beim Streaming.
+### SQP-1 (1080p) — das 1080p-Hauptprofil
 
----
+Das Standardprofil für die grosse Mehrheit der Filme. Auflösung 720p–1080p (WEB + Bluray-Encode), kein 4K und kein Remux. Verlustfreies und objektbasiertes Audio (TrueHD, DTS-HD MA, FLAC/PCM) wird hoch bewertet, es gibt aber **kein HDR-Scoring** (1080p trägt praktisch kein HDR). `x265 (HD)` ist geblockt, weil 1080p-HEVC fast immer ein minderwertiger Re-Encode ist. Renommierte HD-Bluray- und WEB-Tiers steuern die Release-Wahl.
 
-### HD-1080p [Sprache]
+### SQP-5 — 4K mit Dolby Vision und Atmos
 
-Standard 1080p Profil -- der beste Kompromiss zwischen Qualität und Speicherplatz. Tägliche Nutzung, Full HD Fernseher.
+Das aktive 4K-Profil. Auflösung Remux-1080p, 1080p-WEB und 2160p (WEB + UHD-Bluray-Encode), aber kein 4K-Remux. Volles Atmos-Scoring (TrueHD ATMOS, DTS X, DD+ ATMOS) sowie `DV Boost` + breites `HDR` + `HDR10+ Boost`. `x264` und 4K-HEVC ohne HDR/DV sind geblockt — so kommen nur hochwertige HDR/DV-Encodes durch. Zielanwendung: Filme, bei denen 4K mit gutem HDR/Dolby Vision den Speicher wert ist.
 
----
+### SQP-3 — wie SQP-5, aber mit 4K-Remux statt UHD-Encode-Tier
 
-### max Remux-1080p [Sprache]
+Inhaltlich nahe an SQP-5 (gleiche Audio- und DV-Haltung), aber die Quellen-Mischung unterscheidet sich: SQP-3 erlaubt **Remux-2160p**, dafür ohne die UHD-Bluray-Encode-Tiers. Aktuell nur für wenige Titel im Einsatz.
 
-Höchstmögliche 1080p Qualität mit Remux-Support (verlustfreie Kopie der Bluray). Für Heimkino-Enthusiasten mit 1080p Projektor und Archivierung in bestmöglicher 1080p Qualität.
+## Radarr — die einfachen Sprachprofile
 
----
+`HD-1080p [Sprache]`, `4K English` und `min HD-720p [Sprache]` sind ältere, nur leicht gescorte Profile (z.B. HDR und Atmos 7.1 mit kleinen Boni, fester Cutoff auf Bluray-1080p bzw. -2160p) und an eine Sprache gebunden. Sie dienen gezielten Sprach- oder Spezialfällen und sind seit der Umstellung auf die SQP-Profile grösstenteils ungenutzt.
 
-### 4K [Sprache]
+## Radarr — konfiguriert, aber ungenutzt
 
-UHD 4K Profil mit HDR/Dolby Vision Support. Für 4K HDR Fernseher oder Projektor, Dolby Vision fähige Geräte.
+`SQP-1 WEB`, `SQP-2` und `SQP-4` sind angelegt, aber keinem Film zugewiesen. `SQP-2` und `SQP-4` nutzen ein **volles granulares DV-Schema** (DV, DV HDR10, DV HLG, DV SDR je hoch bewertet); die aktiven Profile sind bewusst auf `DV Boost` + breites `HDR` umgestellt, weil das im trash-pcd-Vokabular wartbar und syncbar bleibt.
 
----
+## Sonarr — Übersicht
 
-### All Quality Original
+| Profil | Ziel-Qualität | HDR/DV | Audio | Sprache | Status |
+|--------|---------------|--------|-------|---------|--------|
+| WEB-1080p | 1080p WEB | — | — | keine | Hauptprofil Serien |
+| WEB-2160p | 2160p WEB | DV granular + HDR | — | keine | aktiv (4K-Serien) |
 
-Akzeptiert jede verfügbare Qualität von SD bis 4K in Originalsprache. Für seltene oder obskure Filme sowie Archivzwecke wo Verfügbarkeit wichtiger als Qualität ist.
+### WEB-1080p
 
----
+Standard für die meisten Serien. Nur WEB-1080p, kein HDR- und kein Audio-Scoring (Serien-WEB trägt kein verlustfreies Audio), `x265 (HD)` geblockt, Auswahl über die WEB-Tiers.
 
-## SQP Profile (TRaSH Guides Special Quality Profiles)
+### WEB-2160p
 
-Die SQP Profile sind speziell konfigurierte Profile basierend auf den [TRaSH Guides](https://trash-guides.info/SQP/). Sie nutzen Custom Formats mit präzisen Scores um die beste Release-Qualität zu identifizieren. Die genauen Scores und Custom Format Definitionen leben in der Recyclarr-Config im Repo und folgen den TRaSH Guide Updates.
+Für 4K-Serien aus Streaming-Quellen. Volles DV-Scoring (DV-Varianten und HDR10+/HDR hoch bewertet) und `x265 (no HDR/DV)` geblockt — das **erzwingt HDR/DV bei 4K**. Kein Audio-Scoring.
 
-> **Hinweis:** Die detaillierten SQP Guides sind nur im [TRaSH Guides Discord](https://trash-guides.info/discord) verfügbar.
+::: warning Kein Sprachfilter bei Sonarr
+Beide Sonarr-Profile haben keine Sprach-Einschränkung gesetzt — im Gegensatz zu Radarr, wo jedes Profil explizit auf Englisch, Deutsch, Französisch oder Originalsprache steht.
+:::
 
-### SQP-1 (1080p) / SQP-1 WEB (1080p)
+## Codec- und HDR-Grundsätze
 
-Optimiert für höchste 1080p Qualität mit Fokus auf renommierte Release-Gruppen. Für qualitätsbewusste Sammler wenn 4K nicht verfügbar oder nicht benötigt.
-
----
-
-### SQP-2
-
-UHD Profil mit Remux und Bluray Encode Support. Balanciert Qualität und Speicherplatz für 4K HDR Setup. Upgrade-Pfad: WEB -> Encode -> Remux.
-
----
-
-### SQP-3
-
-UHD Remux-fokussiert mit WEB Fallback. Priorisiert Remux über Encodes. Für Heimkino mit verlustfreiem Audio und Dolby Vision + Atmos Setup.
-
----
-
-### SQP-4
-
-WEB-DL 2160p fokussiert -- kleinste Dateigrössen bei 4K Qualität. Für limitierten Speicherplatz oder Streaming-Dienst Qualität.
-
----
-
-### SQP-5
-
-Premium UHD Profil mit IMAX Enhanced Support. Höchste verfügbare Qualität für Premium Heimkino mit Dolby Atmos fähigem Audio-System.
-
-Upgrade-Pfad: WEB-DL 4K (initial) -> HQ Encode -> IMAX Enhanced (final, optional).
-
----
+- **x265 nur dort, wo es gut ist:** Bei 1080p geblockt (HEVC dort meist minderwertige Re-Encodes), bei 4K nur mit HDR/DV erlaubt. Hintergrund: [TRaSH x265 / 4K](https://trash-guides.info/Misc/x265-4k/).
+- **Dolby Vision als Profil 8.1 bevorzugen:** spielt auf DV-Geräten als DV und fällt auf allen anderen sauber auf HDR10 zurück.
+- **Auflösung ist eine Akquise-Entscheidung:** 4K bringt vor allem über DV/HDR Mehrwert, kostet aber ein Vielfaches an Speicher — lohnt also nicht für jeden Titel.
 
 ## Quellen
 
-- [TRaSH Guides - Quality Profiles](https://trash-guides.info/Radarr/radarr-setup-quality-profiles/)
-- [TRaSH Guides - Custom Formats](https://trash-guides.info/Radarr/Radarr-collection-of-custom-formats/)
-- [TRaSH Guides - SQP (Discord)](https://trash-guides.info/SQP/)
-- [Recyclarr Config Templates](https://github.com/recyclarr/config-templates)
+- [TRaSH Guides — Radarr Quality Profiles](https://trash-guides.info/Radarr/radarr-setup-quality-profiles/)
+- [TRaSH Guides — Sonarr Quality Profiles](https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/)
+- [TRaSH Guides — Custom Formats](https://trash-guides.info/Radarr/Radarr-collection-of-custom-formats/)
+- [TRaSH Guides — SQP](https://trash-guides.info/SQP/)
+- [TRaSH Guides — x265 / 4K](https://trash-guides.info/Misc/x265-4k/)
 
 ## Verwandte Seiten
 
 - [Arr Stack](./index.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
-- [Jellyfin](../jellyfin/index.md) -- Media Server der die Inhalte abspielt
-- [Profilarr](./profilarr.md) -- Synchronisiert Quality Profiles und Custom Formats (ersetzt notifiarr seit 2026-06-05)
+- [Profilarr](./profilarr.md) -- verwaltet diese Profile und synchronisiert sie nach Radarr/Sonarr
+- [Jellyfin](../jellyfin/index.md) -- Media Server, der die Inhalte abspielt (Wiedergabe-/Client-Kompatibilität)
