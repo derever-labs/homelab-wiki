@@ -234,7 +234,8 @@ Das Default-Brand hat den Titel `ackermannprivat.ch` und verwendet das Custom-CS
 - Labels, Sprachauswahl, Authentik-Footer und Pflichtfeld-Sternchen ausgeblendet
 - Placeholder-Texte auf "E-Mail" und "Passwort" vereinfacht (per `::after` pseudo-element)
 - Recovery-Link sitzt dezent zentriert innerhalb des Login-Cards (kein separater Passkey-Link mehr -- Passkey wird via Conditional UI automatisch angeboten)
-- Stage-Konsistenz: Avatar-Banner, "Nicht Sie?"-Link, Helper-Texte und Secondary-Buttons werden in TOTP-, MFA- und E-Mail-Stages ausgeblendet, damit alle Stages gleich aussehen wie der Login
+- Stage-Konsistenz: Avatar-Banner, "Nicht Sie?"-Link, Helper-Texte und nicht benötigte Secondary-Buttons werden in TOTP-, MFA- und E-Mail-Stages ausgeblendet, damit alle Stages gleich aussehen wie der Login
+- MFA mit mehreren Methoden (seit dem Passkey-Weg): Bietet die Authenticator-Validate-Stage mehrere Methoden an (Passkey, TOTP, Recovery-Codes), passen die Sub-Stages (`-code`/`-webauthn`) und der Geräte-Picker (`.authenticator-button`) in die Login-Card. Der "Andere Authentifizierungsmethode auswählen"-Wechsel-Button bleibt hier bewusst sichtbar (Outline-Stil); die generische Secondary-Hide-Regel greift nur auf die Eltern-Stage `:host(ak-stage-authenticator-validate)`, nicht auf deren Sub-Komponenten
 - Recovery-Sent-Stage zeigt den Bestätigungstext via `:host(ak-stage-email)::before`; der "E-Mail erneut senden"-Button ist als Textlink optisch zurückgenommen
 - Akzent-Farbe `#4f6ef7` (Indigo-Blau)
 - Background `#f0f2f5` (Hellgrau)
