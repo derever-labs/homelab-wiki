@@ -20,9 +20,17 @@ Hostname, VM ID und Host der PBS-VM sind in [Hosts und IPs](../_referenz/hosts-u
 
 ## Was wird gesichert
 
-PBS sichert alle VMs und Container des Proxmox-Clusters täglich. Die Backup-Jobs werden direkt in Proxmox VE konfiguriert; jede PVE-Node sendet die Backups ihrer lokalen VMs an PBS. Übersicht aller Backup-Ebenen inklusive applikationsspezifischer Backups: [Backup](./index.md).
+PBS sichert alle VMs und Container des Proxmox-Clusters täglich. Die Backup-Jobs werden direkt in Proxmox VE konfiguriert; jede PVE-Node sendet die Backups ihrer lokalen VMs an PBS. Der nächtliche vzdump-Job läuft im Snapshot-Modus mit aktiviertem **Fleecing** (Fleecing-Storage `rpool`). Fleecing legt während des Backups ein temporäres Auffang-Image an, sodass schreibende Gäste nicht auf die Fertigstellung der Backup-Blöcke warten müssen -- ein hängender QMP-Aufruf beim Backup kann den Gast so nicht mehr einfrieren. Übersicht aller Backup-Ebenen inklusive applikationsspezifischer Backups: [Backup](./index.md).
+
+::: info Zusammenhang mit den QMP-Backup-Alerts
+Fleecing adressiert dieselbe Fehlerklasse, die die log-basierte Alert-Regel `Proxmox QMP Call Failed` überwacht (siehe [Monitoring](../monitoring/index.md#alerting-unified-alerting)): QMP-Timeouts während vzdump/PBS-Backup, die ohne Fleecing zu eingefrorener VM-I/O führen können.
+:::
 
 Auch die externen [Standalone-Nodes](../proxmox/index.md#externe-standalone-nodes) `pve-lu-01` (Luzern) und `pve-01-nana` (Dottikon) sichern ihre VMs auf denselben PBS -- der Backup-Push läuft über Tailscale. PBS wird dabei über die **lokale IP** (`10.0.2.50`) als Storage eingebunden (VPN-agnostisch), mit dediziertem Token `root@pam!pve-backup` (Rolle `DatastoreBackup`).
+
+### DRBD-Datendisk des Storage-Nodes c06 ausgenommen
+
+Die 300-GB-DRBD-Datendisk der VM `vm-nomad-client-06` (Storage-Node c06) ist vom vzdump-Backup ausgenommen (`backup=0` auf der Disk); das VM-Backup dieser VM umfasst nur die Systemdisk. Die Datensicherung der DRBD-Volumes dieser Disk läuft nicht über das VM-Backup, sondern über die DRBD-Replikation auf den Partner-Node c05 sowie über die applikationsspezifischen Backup-Jobs (Details: [Backup](./index.md#linstor-volumes)). Auf dem Partner-Node c05 bleibt die entsprechende Datendisk im VM-Backup enthalten.
 
 ## Retention Policy
 
