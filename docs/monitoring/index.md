@@ -69,12 +69,17 @@ Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet n
 | LVM Thin Pool > 75% | `data_percent > 75` | 5min | Warning |
 | LVM Thin Pool > 85% | `data_percent > 85` | 2min | Critical |
 | LVM Metadata > 75% | `metadata_percent > 75` | 5min | Warning |
-| DRBD Out-of-Sync | `outofsync_bytes > 0` | 10min | Warning |
-| DRBD Disconnected | `Connected != 1` | 5min | Critical |
+| DRBD Verbindung getrennt | `drbd_connection_state` nicht mehr `Connected` | 10min | Critical |
+| DRBD Replica Disk degradiert | `drbd_device_state` = `Failed` oder `Outdated` | 10min | Critical |
+| DRBD Node unbeabsichtigt Diskless | Replica ungewollt `Diskless` | 10min | Critical |
+| DRBD Degraded Replica | weniger als 2 Replicas `UpToDate` je Ressource | 5min | Critical |
+| DRBD Split-Brain | mehr als eine Replica `Primary` je Ressource | sofort | Critical |
 | CSI Stale Mounts | `csi_mounts.stale_count > 0` | 10min | Warning |
 | CSI-Plugin-Socket weg | `csi_plugin.socket_alive == 0` | 5min | Critical |
 | Nomad Restart-Storm | `non_negative_difference(nomad_alloc_restarts.count) > 5` in 10min (per Alloc) | 2min | Warning |
 | Nomad Reschedule-Storm | `nomad_job_health.failed_10m > 5` (per Job, Host) | 5min | Critical |
+
+Die DRBD-Überwachung ist seit 2026-07-05 zustandsbasiert: Alarmiert wird auf die One-Hot-kodierten Zustände von Verbindung, Disk und Rolle (`drbd_connection_state`, `drbd_device_state`, `drbd_resource_role`), nicht mehr auf Out-of-Sync-Bytes. Der frühere byteweise Out-of-Sync-Alarm wurde entfernt: Der periodische `drbd-verify` erzeugt auf aktiven Thin-LVM-Volumes systembedingt Out-of-Sync-Spikes, obwohl die Replica `UpToDate` ist -- jede Byte-Schwelle löste dabei falsch aus. Echte Degradierung deckt die zustandsbasierte Regel `DRBD Degraded Replica` ab.
 
 **Log-basierte Alert Rules (Loki):**
 
@@ -84,6 +89,9 @@ Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet n
 | Traefik 5xx Spike | `>20 HTTP-5xx in 5min` | sofort | Warning |
 | Nomad Alloc Failed | `"alloc failed" in 10min` | sofort | Critical |
 | Vault Permission Denied | `>10 "permission denied" in 5min` | sofort | Warning |
+| EXT4 Filesystem Error | `"EXT4-fs error" im Journal` | sofort | Critical |
+| Proxmox QMP Call Failed | `"qmp_call failed" bzw. "qmp command ... failed"` (Gast- und Host-Log) | sofort | Critical |
+| Out of Memory Killer | `"Out of memory: Kill" im Journal` | sofort | Critical |
 
 **Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
 
