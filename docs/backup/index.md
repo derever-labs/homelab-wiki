@@ -44,8 +44,8 @@ Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYY
 
 Die DRBD/LINSTOR-Volumes werden **nicht LINSTOR-nativ** gesichert. Sie sind durch zwei Mechanismen geschützt:
 
-- **Proxmox Backup Server** sichert die Storage-VMs (client-05/client-06) inkl. der LINSTOR-Daten-Disk als Block.
-- **DRBD-Replikation** hält jedes Volume 2× live (client-05 + client-06, Diskless-TieBreaker client-04).
+- **Proxmox Backup Server** sichert die Storage-VMs als Block. Beim Storage-Node c06 (`vm-nomad-client-06`) ist die DRBD-Datendisk vom VM-Backup ausgenommen (`backup=0`, gesichert wird nur die Systemdisk); die Datendisk des Partner-Node c05 bleibt im VM-Backup enthalten. Details: [Backup Referenz](./referenz.md#was-wird-gesichert).
+- **DRBD-Replikation** hält jedes Volume 2× live (client-05 + client-06, Diskless-TieBreaker client-04) -- die Daten der ausgenommenen c06-Disk sind damit weiterhin auf c05 vorhanden.
 
 ::: info S3-Schicht zurückgebaut (2026-05-31)
 Die frühere LINSTOR-S3-Backup-Schicht (lokale Snapshots + Shipping nach Garage, Schedule `backup-daily`, Master-Key-Auto-Unlock) wurde entfernt -- sie war redundant zu PBS und bei grossen Volumes (z. B. zot ~46 GiB) unzuverlässig. Details: [Linstor Betrieb](../linstor-storage/betrieb.md).
