@@ -33,11 +33,11 @@ Die Monitore sind in sieben thematische Gruppen organisiert (Plattform, Netz, St
 
 Batch-Jobs senden nach erfolgreichem Lauf einen HTTP GET an `https://uptime.ackermannprivat.ch/api/push/<token>`. Der `intern-noauth@file`-Middleware-Bypass auf dem Pfad-Prefix `/api/push/` umgeht Authentik, damit Jobs ohne OIDC-Handshake pushen können.
 
-Aktuell bekannte Push-Monitore:
+Beispiele aus der aktuellen Belegung (die gepflegte Gesamtliste steht in [Monitoring: Coverage](../monitoring/coverage.md)):
 
 - **Keepalived T-01 / T-02** -- Heartbeat aus dem Traefik-HA-Keepalived-Notify-Script
-- **Linstor Backup Monitor** -- Tägliche S3-Backup-Kontrolle, siehe [Monitoring Stack](../monitoring/index.md#backup-monitoring)
 - **PostgreSQL Backup** -- Tägliches pg_dumpall auf NFS, siehe [Monitoring Stack](../monitoring/index.md#backup-monitoring)
+- **Karakeep Backup** -- Tägliches App-Level-Backup (SQLite + Assets) in der Gruppe *Storage & Backup*, siehe [Karakeep Referenz](../karakeep/referenz.md#backup)
 - **InfluxDB Downsampling-Tasks** -- 6 Flux-Tasks mit Heartbeat pro Task, siehe [Monitoring Stack](../monitoring/index.md#influxdb-downsampling-tasks)
 
 ## Kern-Infra-Mindestabdeckung
