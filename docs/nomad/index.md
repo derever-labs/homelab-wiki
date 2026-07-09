@@ -129,9 +129,16 @@ Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#clu
 | Algorithmus | `spread` (gleichmässige Verteilung) |
 | Service Preemption | Aktiv (seit 01.04.2026) |
 | Batch Preemption | Aktiv |
+| System/SysBatch Preemption | Aktiv |
 | Memory Oversubscription | Aktiv |
 
 **Preemption** erlaubt Nomad, niedrigprioritäre Jobs zu verdrängen, um Platz für höherprioritäre zu schaffen. Es gilt ein Mindest-Delta von 10 Prioritätspunkten -- ein Job mit Priorität 100 kann nur Jobs mit Priorität 90 oder tiefer verdrängen.
+
+### Prioritäts-Schema und Resource-Sizing
+
+Seit dem Right-Sizing vom 09.07.2026 folgen alle Jobs einem festen Schema, damit bei einem Storage-Node-Ausfall (N-1) das Wichtige zuerst platziert wird: Kern-Infrastruktur 100, Monitoring/Alerting 80, Media-Konsum 70, wichtige Apps mit Media-Automation und Backups 60, normale Apps 50, AI und Wartung 30, Downloader 20.
+
+Sizing-Grundsatz: CPU-Claims sind p95-basiert (Soft-Gewichte, Bursting bleibt erlaubt, kein `cpu_hard_limit`), `memory` ist die ehrliche Arbeits-Reservation (Scheduling-Währung), `memory_max` der Burst-Deckel -- jeder Task hat einen. Die konkreten Werte pro Job stehen ausschliesslich im Repo `homelab-nomad-jobs` (SSOT).
 
 Konfiguration: `nomad operator scheduler get-config` zum Prüfen, `nomad operator scheduler set-config` zum Ändern. Die Einstellung wird über Raft repliziert. Details: [Betrieb](betrieb.md#automatisierung)
 
