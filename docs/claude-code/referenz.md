@@ -27,11 +27,10 @@ Sowohl `clickup-hslu` als auch `clickup-privat` brauchen den Privat-Token. Wer `
 
 ## Homelab-spezifische Skills
 
-Skills liegen im `agents/skills/`-Verzeichnis und sind per Symlink als `~/.claude/skills/` eingebunden. Neben den Team-Skills (`nomad-deploy`, `skill-creator`) werden im Homelab-Kontext zusätzlich diese Skills verwendet:
+`~/.claude` ist ein Symlink auf das `claude-config`-Repo. Die Skills darin liegen entweder direkt in diesem Repo oder sind Symlinks auf andere Repos: Team-Skills auf `agents/skills/`, private Skills auf `claude-skills-privat`. Neben den Team-Skills (`nomad-deploy`, `skill-creator`) werden im Homelab-Kontext zusätzlich diese Skills verwendet:
 
 | Skill | Zweck |
 |-------|-------|
-| `homegate-scan` | Immobilien-Scanner für Homegate, füttert das Immo-Monitor-Projekt |
 | `neubau-research` | Tiefenrecherche für Neubauprojekte (Archiv-Extraktion, historische Preise) |
 | `ics` | ICS-Kalender-Export aus unstrukturiertem Text |
 | `wiki-update` | Systematische Revision von Homelab- und IT-Wiki |
