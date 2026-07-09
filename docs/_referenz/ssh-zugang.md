@@ -44,6 +44,10 @@ Diese Konvention gilt standortübergreifend. Lenzburg ist im Homelab dokumentier
 
 ## Proxmox Nodes
 
+::: warning Zugriff aus dem Tailnet: native Tailscale-IP verwenden
+Hosts mit eigenem tailscaled verwerfen Tailnet-Pakete auf ihre LAN-IP ([Tailscale](../netzwerk/tailscale.md)). Aus dem Tailnet gelten: pve00 = `100.89.174.31`, pve01 = `100.107.162.51`, pve02 = `100.83.119.111`, vm-traefik-01 = `100.101.37.122`, vm-traefik-02 = `100.91.238.106`, checkmk = `100.114.224.117`. Die LAN-IPs unten gelten für Zugriff aus dem LAN.
+:::
+
 SSH-Zugang als `root` auf den Management-IPs.
 
 | Node | IP | Benutzer |

@@ -152,8 +152,12 @@ LUZERN.PVELU -> TAILNET: "172.16.0.0/24"
 LUZERN.ATV -> TAILNET: "172.16.0.0/24"
 ```
 
-::: warning SNAT durch Subnet-Router
-Hosts, die via Tailscale über einen Subnet-Router auf ein lokales Netz zugreifen, erscheinen im Zielnetz mit der Source-IP des Routers (z.B. `10.0.2.21` für `vm-traefik-01`), nicht mit ihrer eigenen Tailscale-IP. Das betrifft z.B. SSH-Verbindungen aus dem Tailnet ins Homelab-LAN.
+::: warning Quell-IPs hinter Subnet-Routern
+Die Homelab-Router `vm-traefik-01`/`-02` laufen mit deaktiviertem SNAT (`--snat-subnet-routes=false`, ADR-0003 im homelab-hashicorp-stack): Tailnet-Clients erscheinen im Homelab-LAN mit ihrer echten Tailscale-IP (`100.64.0.0/10`), die Rückroute übernimmt die UDM (statische Routen via .21/.22). Die Router der anderen Standorte (`pve-01-nana`, `pve-lu-01`) maskieren weiterhin mit ihrer lokalen IP.
+:::
+
+::: danger Tailnet-Nodes nie über ihre LAN-IP ansprechen
+tailscaled verwirft auf jedem Host Pakete mit Tailnet-Quelle (`100.64.0.0/10`), die nicht über das eigene `tailscale0`-Interface eintreffen (Anti-Spoofing-Regel in `ts-input`). Hosts mit eigenem tailscaled (`pve00/01/02`, `vm-traefik-02`, `checkmk`) sind aus dem Tailnet deshalb nur über ihre native Tailscale-IP erreichbar, nicht über die LAN-IP. Die Tailscale-IPs stehen in [SSH-Zugang](../_referenz/ssh-zugang.md).
 :::
 
 ## Tag-Schema
