@@ -76,7 +76,7 @@ scraper: Immoscraper (Nomad Batch) {
   }
   SF: Scrapfly API {
     class: node
-    tooltip: "ASP Anti-Bot Bypass | country=ch | Discovery Plan 30 USD/Mo"
+    tooltip: "ASP Anti-Bot Bypass | country=de | Discovery Plan 30 USD/Mo"
   }
   AI: Claude Haiku {
     class: node
@@ -284,7 +284,9 @@ p5.Stale -> p5.Enrich -> p5.Notify
 DataDome + Cloudflare auf Homegate blockieren Container-Traffic unabhängig vom Browserverhalten. Es liegt an IP-Reputation und TLS-Fingerprinting, nicht an Navigation oder Delays.
 :::
 
-Scrapfly löst dieses Problem serverseitig: Die API leitet Requests über ein Netzwerk von Residential-IPs mit korrekten TLS-Fingerprints. Der Scraper sendet einen einfachen HTTP GET mit den Parametern `asp=true` (Anti-Scraping Protection) und `country=ch`. Kein Browser, kein JavaScript-Rendering, kein Playwright.
+Scrapfly löst dieses Problem serverseitig: Die API leitet Requests über ein Netzwerk von Residential-IPs mit korrekten TLS-Fingerprints. Der Scraper sendet einen einfachen HTTP GET mit den Parametern `asp=true` (Anti-Scraping Protection) und `country=de`. Kein Browser, kein JavaScript-Rendering, kein Playwright.
+
+Der Länderparameter stand ursprünglich auf `ch`. Er musste auf `de` wechseln, weil Scrapflys Schweizer Residential-IPs von den Portalen gesperrt wurden. Deutsche IPs werden von Homegate und ImmoScout24 unverändert akzeptiert.
 
 Getestet und gescheitert (vor Scrapfly):
 - rebrowser-playwright-core, Headed Chrome + Xvfb, Stealth-Scripts
