@@ -33,6 +33,7 @@ Alle Service-Secrets liegen in Vault unter dem KV v2 Mount. Nomad Jobs authentif
 | n8n | `kv/data/n8n` | DB-Credentials, Encryption Key |
 | Metabase | `kv/data/metabase` | DB-Credentials |
 | Karakeep | `kv/data/karakeep` | NextAuth-Secret, Meilisearch-Master-Key, Backup-Push-URL |
+| Todo-Ingest | `kv/data/todo-ingest` | Claude-Code-OAuth-Token, ClickUp-Tokens (HSLU + Privat), Ingest-Bearer-Token, ntfy-Token, Anthropic-API-Key (optional) |
 
 Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 

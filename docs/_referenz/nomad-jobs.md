@@ -20,11 +20,12 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 | batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, fstrim, DNS Performance, Authentik Audit, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Downloader, Reddit Gallery DL, Reddit Gallery DL Backfill, PH Downloader |
 | databases/ | PostgreSQL (DRBD), MariaDB (DRBD), MariaDB Setup, DbGate, OpenLDAP (Legacy) |
 | identity/ | Authentik |
-| infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner |
+| infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner, ntfy |
 | media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Stash-Jellyfin-Proxy, Suggestarr, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, iperf3-to-InfluxDB |
 | services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly, Karakeep |
 | system/ | Alloy (Log-Collector), Linstor CSI |
+| tools/ | Todo-Ingest |
 | volumes/ | CSI-Volume-Spezifikationen (.hcl) |
 
 ## Abhängigkeiten

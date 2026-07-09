@@ -91,6 +91,8 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | immo-monitor | `https://immo.ackermannprivat.ch` | Immobilien-Monitoring |
 | Banner (Pocketbase) | `https://banner.ackermannprivat.ch` | Banner-Config-Backend und Admin-UI |
 | Karakeep | `https://kara.ackermannprivat.ch` | Bookmark-Manager (intern + Tailscale) |
+| Todo Ingest | `https://todo.ackermannprivat.ch` | To-do-Erfassung per iPhone-Diktat (öffentlich, Bearer-Auth) |
+| ntfy | `https://ntfy.ackermannprivat.ch` | Push-Benachrichtigungen (öffentlich, deny-all) |
 
 ## AI / LLM
 
