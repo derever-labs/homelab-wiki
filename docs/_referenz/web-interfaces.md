@@ -90,6 +90,7 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | Directus Gravel | `https://gravel.ackermannprivat.ch` | Gravel-Bike-Recherche-CMS (intern, Authentik) |
 | immo-monitor | `https://immo.ackermannprivat.ch` | Immobilien-Monitoring |
 | Banner (Pocketbase) | `https://banner.ackermannprivat.ch` | Banner-Config-Backend und Admin-UI |
+| Karakeep | `https://kara.ackermannprivat.ch` | Bookmark-Manager (intern + Tailscale) |
 
 ## AI / LLM
 

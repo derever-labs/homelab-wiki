@@ -32,6 +32,7 @@ Alle Service-Secrets liegen in Vault unter dem KV v2 Mount. Nomad Jobs authentif
 | solidtime | `kv/data/solidtime` | DB-Credentials |
 | n8n | `kv/data/n8n` | DB-Credentials, Encryption Key |
 | Metabase | `kv/data/metabase` | DB-Credentials |
+| Karakeep | `kv/data/karakeep` | NextAuth-Secret, Meilisearch-Master-Key, Backup-Push-URL |
 
 Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 
