@@ -42,26 +42,76 @@ classes: {
 
 direction: right
 
-Shortcut: "iOS-Kurzbefehl\n(Aktionstaste, natives Diktat)" { class: node }
+Shortcut: "iOS-Kurzbefehl\n(Aktionstaste: Diktat\n+ kommende Termine)" { class: node }
 
-Ingest: "todo-ingest\n(Hono, POST /api/dictate)" {
+Ingest: "todo-ingest (Hono)" {
   style.stroke-dash: 4
-  DB: "SQLite\n(Persistenz vor Verarbeitung)" { shape: cylinder; class: node }
-  AI: "Klassifikation\n(Claude, Structured Output)" { class: node }
-  SWEEP: "Sweeper\n(4h-Timeout, 15-min-Takt)" { class: node }
+  DB: "SQLite\n(Persistenz vor\nVerarbeitung)" { shape: cylinder; class: node }
+  CTX: "Kontext-Sammler" {
+    class: node
+    tooltip: Offene Tasks beider Ziel-Listen, soeben angelegte Tasks (24h), offene Rueckfragen (60 min) und mitgeschickte Termine -- als Daten deklariert (Injection-Haertung)
+  }
+  AI: "Klassifikation\n(Claude, seriell,\neine nach der anderen)" { class: node }
+  SWEEP: "Sweeper\n(15-min-Takt)" {
+    class: node
+    tooltip: Blockierende Rueckfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen still
+  }
 }
 
 ClickUp: "ClickUp\n(HSLU oder Privat)" { class: node }
-Ntfy: "ntfy\n(Bestaetigung, Rueckfrage)" { class: node }
+Ntfy: "ntfy\n(Push aufs iPhone)" { class: node }
 
-Shortcut -> Ingest.DB: "202 sofort"
+Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
-Ingest.AI -> ClickUp: "eindeutig"
-Ingest.AI -> Ntfy: "unklar: HSLU oder Privat"
-Ntfy -> Ingest: "Button: POST /api/resolve"
-Ingest.SWEEP -> ClickUp: "Timeout: Privat, Tag zuordnung-unklar"
-Ingest -> Ntfy: "Bestaetigung oder Fehler"
+Ingest.CTX -> Ingest.AI: "Duplikat- und\nAntwort-Kontext"
+Ingest.AI -> ClickUp: "neu anlegen / Kommentar /\nDuplikat ueberspringen" { style.stroke: "#16a34a" }
+Ingest.AI -> Ntfy: "Bestaetigung oder Rueckfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
+Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#2563eb" }
+Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
+Ingest.SWEEP -> ClickUp: "Timeout blockierender Fragen"
 ```
+
+## Bedienung
+
+Der Dienst ist auf freihändiges Erfassen ausgelegt -- diktieren, loslassen, der Rest passiert asynchron:
+
+- **Erfassen:** Aktionstaste drücken und drauflos diktieren. Mehrere To-dos in einem Diktat sind erwünscht, chaotische Reihenfolge und Füllwörter sind unkritisch -- der Dienst zerlegt, korrigiert offensichtliche Diktierfehler (auch Eigennamen) und klassifiziert. Je nach Kurzbefehl-Einstellung endet das Diktat bei einer Sprechpause oder per Tippen.
+- **Bestätigungen:** Jede Verarbeitung meldet sich per Push -- "Erfasst", "Ergänzt bei" (Ergänzung als Kommentar an einem bestehenden Task), "Übersprungen (existiert)" (Duplikat, mit Kommentar am bestehenden Task) oder eine Fehlermeldung.
+- **Rückfragen beantworten:** Zwei gleichwertige Wege -- den Button in der Push antippen, oder innert einer Stunde erneut die Aktionstaste drücken und die Antwort diktieren ("die Sache mit Chris ist privat", "bis Ende nächster Woche"). Jede angewandte Antwort wird quittiert. Ein Diktat ohne Bezug zu einer offenen Frage wird ganz normal als neues To-do behandelt.
+- **Nachvollziehen und korrigieren:** Das wörtliche Diktat steht als Ground-Truth in jeder Task-Beschreibung (Abschnitt "Diktat"). Fehlklassifikationen lassen sich so erkennen und der Task direkt in ClickUp anpassen.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+shape: sequence_diagram
+
+S: "Samuel"
+P: "iPhone-Push (ntfy)"
+T: "todo-ingest"
+
+S -> T: "Aktionstaste: Diktat (+ Termine)"
+T -> P: "Erfasst: Druckerpapier nachbestellen"
+T -> P: "Frage: Bis wann? (3 Buttons)"
+S -> T: "Button-Tap ODER Antwort-Diktat"
+T -> P: "Quittung: faellig 2026-07-17"
+```
+
+### Einrichtung auf dem iPhone
+
+Der Kurzbefehl wird programmatisch erzeugt und signiert (Verfahren: `docs/konzept.md` im Service-Repo) und enthält das Diktat (Deutsch Schweiz), eine Zwischenablage-Sicherung gegen Netzfehler, die kommenden Termine aller iPhone-Kalender und den POST mit Bearer-Token. Nach dem Import:
+
+- Aktionstaste in den iPhone-Einstellungen dem Kurzbefehl zuweisen.
+- Einstellungen, Apps, Kurzbefehle, Erweitert: "Teilen grosser Datenmengen erlauben" aktivieren -- sonst fragt iOS bei jedem Lauf um Freigabe. Danach einmal "Immer erlauben" bestätigen.
+- Im Kurzbefehl-Editor wählbar: Diktat-Stopp ("Bei Pause" für freihändig, "Bei Tippen" für lange Diktate) und welche Kalender die Termin-Aktion liest.
+
+::: warning Freigaben nach Bearbeitung
+Jede Bearbeitung des Kurzbefehls setzt die iOS-Freigaben zurück -- nach Änderungen fragt iOS die Berechtigungen (Netzwerk, Kalender, Diktat) einmalig neu ab.
+:::
 
 ## Verarbeitung (Dual-Mode)
 
