@@ -24,7 +24,7 @@ Karakeep Ingest ist eine schlanke Anreicherungs-Schicht über [Karakeep](../kara
 
 ## Rolle im Stack
 
-Karakeep Ingest ist die Erfassungs-Hilfe für zwei Fälle, die der Karakeep-eigene Crawler nicht sauber abdeckt: LinkedIn-Posts hinter der Auth-Wall und Web-Seiten mit Consent-Bannern oder fehlendem Vorschaubild. Er reichert nur an (Archiv, Vorschaubild, Metadaten) und ordnet nicht ein -- kein Tagging, keine Listen-Zuweisung. Die Organisation bleibt im wöchentlichen Karakeep-Batch. Stirbt Apify oder Scrapfly, funktioniert der manuelle Screenshot-Weg unverändert weiter; der Dienst ist bewusst degradierbar.
+Karakeep Ingest ist die Erfassungs-Hilfe für zwei Fälle, die der Karakeep-eigene Crawler nicht sauber abdeckt: LinkedIn-Posts hinter der Auth-Wall und Web-Seiten mit Consent-Bannern oder fehlendem Vorschaubild. Er reichert nur an (Archiv, Vorschaubild, Metadaten) und ordnet nicht ein -- keine organisierenden Tags und keine Listen-Zuweisung; für LinkedIn setzt er lediglich Herkunfts-Tags (Autor, erwähnte Firmen, Hashtags) automatisch. Die Organisation bleibt im wöchentlichen Karakeep-Batch. Stirbt Apify oder Scrapfly, funktioniert der manuelle Screenshot-Weg unverändert weiter; der Dienst ist bewusst degradierbar.
 
 Eingefügte URLs werden nach Domain aufgeteilt: LinkedIn läuft über die Apify-Pipeline (Volltext und Originalbilder), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Beide Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird.
 
@@ -66,8 +66,8 @@ Ingest.WEB -> Karakeep: "og-Meta + Archiv"
 
 Die Kosten sind gedeckelt: ein Tageslimit für Scrapfly-Requests und eine Bestätigungsschwelle bei grossen Batches (Details im Job und im Design). Karakeep bleibt der einzige Bestand -- der Ingest speichert nur seinen Betriebszustand.
 
-::: info LinkedIn-Pfad hält Jobs bis Apify aktiv ist
-Der Web-Pfad (Scrapfly) ist vollständig produktiv. Der LinkedIn-Pfad (Apify) ist im Dienst angelegt, aber noch nicht scharf geschaltet: eingereichte LinkedIn-URLs werden angenommen und bleiben mit dem Hinweis "wartet auf Apify-Pipeline" in der Warteschlange, bis das Apify-Token in Vault liegt und die Pipeline aktiviert wird. Das Job-Template zieht das Token dann automatisch nach.
+::: info LinkedIn- und Web-Pfad sind produktiv
+Beide Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real über den Apify-Actor `vulnv~linkedin-posts-scraper`: Volltext, Originalbilder (bei Dokument-Posts alle Seiten), dazu Autor und erwähnte Firmen als Herkunfts-Tags. Eingereichte LinkedIn-URLs werden gebündelt und nach einem kurzen Sammelfenster als ein Lauf verarbeitet -- LinkedIn-Karten erscheinen deshalb mit einigen Minuten Verzögerung in Karakeep, Web-Karten sofort. Die Kosten- und Fenster-Parameter stehen im Job-Template und im Design (SSOT), nicht hier.
 :::
 
 ## Verwandte Seiten
