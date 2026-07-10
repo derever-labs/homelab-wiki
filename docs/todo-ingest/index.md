@@ -18,6 +18,7 @@ Todo Ingest nimmt diktierte To-dos vom iPhone entgegen und legt daraus die passe
 |----------|------|
 | URL | [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (API, öffentlich via Traefik) |
 | Web-Inbox | [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (hinter Authentik, Gruppe `admin`) |
+| Daily Digest | [inbox.ackermannprivat.ch/digest](https://inbox.ackermannprivat.ch/digest) (Morgen-Automation + on-demand) |
 | Deployment | Nomad Job `tools/todo-ingest.nomad`, Image aus [github.com/derever-labs/todo-ingest](https://github.com/derever-labs/todo-ingest) |
 | Storage | Linstor CSI: `todo-ingest-data` (SQLite, Betriebszustand) |
 | Auth | API: Bearer-Token im Service (kein Authentik); Inbox: Authentik-ForwardAuth plus HMAC-Aktions-Tokens |
@@ -119,6 +120,55 @@ Der Kurzbefehl wird programmatisch erzeugt und signiert (Verfahren: `docs/konzep
 ::: warning Freigaben nach Bearbeitung
 Jede Bearbeitung des Kurzbefehls setzt die iOS-Freigaben zurück -- nach Änderungen fragt iOS die Berechtigungen (Netzwerk, Kalender, Diktat) einmalig neu ab.
 :::
+
+## Daily Digest
+
+Der Dienst erstellt auf Abruf einen von Claude Opus formulierten Tagesüberblick: Headline zur Gesamtlage, "Heute zuerst" (Top-3), danach die vollständigen Sektionen Überfällig, Heute fällig, Diese Woche und Weitere offene, dazu die Termine von heute und morgen und der Systemstatus. Quellen sind die zwei persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks aller Workspaces (tiefer priorisiert, ausser dringend) und die vom Kurzbefehl mitgelieferten iPhone-Kalender. Ein Delta-Gedächtnis markiert "neu" und "seit N Tagen" überfällig. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+}
+
+direction: right
+
+Wecker: "Wecker aus\n(iOS-Automation)" { class: node }
+KB: "Kurzbefehl\nDaily Digest" {
+  class: node
+  tooltip: Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit; laeuft auch manuell (Home-Screen/Widget)
+}
+Svc: "todo-ingest" {
+  class: node
+  tooltip: Debounce 5 min, dann ClickUp-Erhebung (Listen + zugewiesene, Teilausfall toleriert), Opus formuliert Headline/Top-3/Item-Texte, der Server garantiert Vollstaendigkeit und baut alle Links deterministisch
+}
+Seite: "Digest-Seite\n(Inbox-Host, Authentik)" { class: node }
+Push: "ntfy-Ping\nDigest bereit" { class: node }
+
+Wecker -> KB: "sofort ausfuehren"
+KB -> Svc: "POST /api/digest\n(Kalender, 202)" { style.stroke: "#2563eb" }
+Svc -> Push: "fertig" { style.stroke: "#16a34a" }
+Push -> Seite: "Tap oeffnet" { style.stroke: "#2563eb" }
+KB -> Seite: "Safari-Open\n(Best-effort)" { style.stroke-dash: 4 }
+```
+
+- **Morgens:** Wecker ausschalten genügt. Der Kurzbefehl schickt die Kalenderdaten mit und der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Das direkte Safari-Öffnen durch den Kurzbefehl funktioniert nur am entsperrten Gerät (Best-effort).
+- **Tagsüber:** denselben Kurzbefehl manuell starten (mit frischen Terminen) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
+- **Kein Wecker (z.B. Wochenende):** kein automatischer Digest, on-demand jederzeit möglich. Werktags ohne Digest bis 09:00 erinnert eine ntfy-Warnung daran, dass die Automation nicht gefeuert hat.
+
+### Einrichtung der Morgen-Automation
+
+Die Wecker-Automation kann nicht als Datei importiert werden und wird einmalig von Hand angelegt:
+
+1. Kurzbefehl "Daily Digest" importieren (signierte Datei, danach aus Downloads löschen -- sie enthält den Bearer-Token) und einmal manuell ausführen, dabei die Freigaben (Kalender, Netzwerk) am entsperrten Gerät bestätigen.
+2. Kurzbefehle-App, Tab "Automation", neue private Automation: Auslöser "Wecker", Ereignis "Wird gestoppt", dann den Kurzbefehl "Daily Digest" wählen und "Sofort ausführen" aktivieren (kein "Vor Ausführen bestätigen").
+3. Snoozen löst die Automation nicht aus -- erst das endgültige Ausschalten des Weckers.
 
 ## Verarbeitung (Dual-Mode)
 
