@@ -16,10 +16,11 @@ Todo Ingest nimmt diktierte To-dos vom iPhone entgegen und legt daraus die passe
 
 | Attribut | Wert |
 |----------|------|
-| URL | [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (öffentlich via Traefik) |
+| URL | [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (API, öffentlich via Traefik) |
+| Web-Inbox | [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (hinter Authentik, Gruppe `admin`) |
 | Deployment | Nomad Job `tools/todo-ingest.nomad`, Image aus [github.com/derever-labs/todo-ingest](https://github.com/derever-labs/todo-ingest) |
 | Storage | Linstor CSI: `todo-ingest-data` (SQLite, Betriebszustand) |
-| Auth | Bearer-Token im Service (kein Authentik); extern `public-noauth@file` plus Rate-Limit, intern `intern-noauth@file` |
+| Auth | API: Bearer-Token im Service (kein Authentik); Inbox: Authentik-ForwardAuth plus HMAC-Aktions-Tokens |
 | Secrets | Vault `kv/todo-ingest` |
 
 ## Rolle im Stack
@@ -60,6 +61,10 @@ Ingest: "todo-ingest (Hono)" {
 
 ClickUp: "ClickUp\n(HSLU oder Privat)" { class: node }
 Ntfy: "ntfy\n(Push aufs iPhone)" { class: node }
+Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
+  class: node
+  tooltip: Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rueckfragen, zuletzt erstellte Tasks und die Diktat-Historie; Antworten und Reprocess laufen ueber HMAC-signierte Aktionen, Text-Erfassung ueber dieselbe Pipeline wie das Diktat
+}
 
 Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
@@ -68,6 +73,7 @@ Ingest.AI -> ClickUp: "neu anlegen / Kommentar /\nDuplikat ueberspringen" { styl
 Ingest.AI -> Ntfy: "Bestaetigung oder Rueckfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
 Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#2563eb" }
 Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
+Inbox -> Ingest: "via Authentik: antworten,\nreprocessen, erfassen" { style.stroke: "#0891b2" }
 Ingest.SWEEP -> ClickUp: "Timeout blockierender Fragen"
 ```
 
@@ -77,8 +83,9 @@ Der Dienst ist auf freihändiges Erfassen ausgelegt -- diktieren, loslassen, der
 
 - **Erfassen:** Aktionstaste drücken und drauflos diktieren. Mehrere To-dos in einem Diktat sind erwünscht, chaotische Reihenfolge und Füllwörter sind unkritisch -- der Dienst zerlegt, korrigiert offensichtliche Diktierfehler (auch Eigennamen) und klassifiziert. Je nach Kurzbefehl-Einstellung endet das Diktat bei einer Sprechpause oder per Tippen.
 - **Bestätigungen:** Jede Verarbeitung meldet sich per Push -- "Erfasst", "Ergänzt bei" (Ergänzung als Kommentar an einem bestehenden Task), "Übersprungen (existiert)" (Duplikat, mit Kommentar am bestehenden Task) oder eine Fehlermeldung.
-- **Rückfragen beantworten:** Zwei gleichwertige Wege -- den Button in der Push antippen, oder innert einer Stunde erneut die Aktionstaste drücken und die Antwort diktieren ("die Sache mit Chris ist privat", "bis Ende nächster Woche"). Jede angewandte Antwort wird quittiert. Ein Diktat ohne Bezug zu einer offenen Frage wird ganz normal als neues To-do behandelt.
-- **Nachvollziehen und korrigieren:** Das wörtliche Diktat steht als Ground-Truth in jeder Task-Beschreibung (Abschnitt "Diktat"). Fehlklassifikationen lassen sich so erkennen und der Task direkt in ClickUp anpassen.
+- **Rückfragen beantworten:** Drei gleichwertige Wege -- den Button in der Push antippen, innert einer Stunde erneut die Aktionstaste drücken und die Antwort diktieren ("die Sache mit Chris ist privat", "bis Ende nächster Woche"), oder die Web-Inbox öffnen. Jede angewandte Antwort wird quittiert. Ein Diktat ohne Bezug zu einer offenen Frage wird ganz normal als neues To-do behandelt.
+- **Web-Inbox:** [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (Login via Authentik) zeigt alle offenen Rückfragen mit Antwort-Buttons und einem Formular für eigene Werte (Bereich, Fälligkeit, Priorität), die zuletzt erstellten Tasks (Timeout-Anlagen markiert, Links nach ClickUp) und die Diktat-Historie -- fehlgeschlagene Diktate lassen sich dort per Knopfdruck erneut verarbeiten, neue To-dos per Textfeld erfassen. Ein Tap auf eine Rückfrage-Push öffnet die Inbox direkt. Für schnellen Zugriff die Seite in Safari via "Zum Home-Bildschirm" ablegen.
+- **Nachvollziehen und korrigieren:** Das wörtliche Diktat steht als Ground-Truth in jeder Task-Beschreibung (Abschnitt "Diktat"). Fehlklassifikationen lassen sich so erkennen und der Task direkt in ClickUp anpassen. Bereits abgelaufene (getimeoutete) Rückfragen sind in der Inbox nicht mehr beantwortbar -- der Task existiert dann schon und wird direkt in ClickUp korrigiert.
 
 ```d2
 vars: {
@@ -97,7 +104,7 @@ T: "todo-ingest"
 S -> T: "Aktionstaste: Diktat (+ Termine)"
 T -> P: "Erfasst: Druckerpapier nachbestellen"
 T -> P: "Frage: Bis wann? (3 Buttons)"
-S -> T: "Button-Tap ODER Antwort-Diktat"
+S -> T: "Button-Tap, Antwort-Diktat\nODER Web-Inbox"
 T -> P: "Quittung: faellig 2026-07-17"
 ```
 
@@ -158,6 +165,12 @@ Der Betriebszustand liegt in einer SQLite-Datenbank auf dem replizierten Linstor
 
 Der externe Router steht bewusst **nicht** hinter der Authentik-ForwardAuth-Kette, sondern nutzt `public-noauth@file` (CrowdSec plus Security-Header) zusammen mit einer Rate-Limit-Middleware. Der Grund: Der iOS-Kurzbefehl kann keinen SSO-Login durchlaufen -- eine Authentik-Weiterleitung würde den fire-and-forget-POST brechen. Die Authentifizierung übernimmt stattdessen der Dienst selbst über einen Bearer-Token. Das ist eine bewusste Abweichung vom App-Standard, abgesichert durch Bearer-Token, CrowdSec und Rate-Limit. Ein interner Router mit `intern-noauth@file` deckt den Zugriff aus den internen Netzen ab; `/api/health` läuft über einen eigenen, hoch priorisierten no-auth-Router für den Kuma-Monitor. Details zu den Ketten: [Traefik Referenz](../traefik/referenz.md).
 
+Die **Web-Inbox** hat einen eigenen Host mit ausschliesslich Authentik-Routern (`public-auth@file` extern, `intern-auth@file` intern) und der Authentik-Applikation `todo-inbox` (Gruppe `admin`). Der Dienst bindet die Inbox-Routen zusätzlich an den Host (`INBOX_HOST`): Über die Bearer-Router von todo.ackermannprivat.ch sind sie nicht erreichbar. Alle mutierenden Inbox-Aktionen tragen HMAC-Tokens (dieselbe Mechanik wie die ntfy-Buttons) plus einen exakten Origin-Check -- der Schutz hängt damit nicht am Cookie-Verhalten. Die Sicherheits-Herleitung inkl. adversarialem Challenge steht im Service-Repo (`docs/konzept.md`, Stufe 6).
+
+::: warning ForwardAuth zeigt auf den dedizierten Outpost
+Die Traefik-Middleware `authentik-forward-auth` spricht `authentik-proxy.service.consul:9010` an -- das ist der **dedizierte** Outpost `homelab-proxy`, nicht der Embedded Outpost des Authentik-Servers. Neue Proxy-Provider müssen diesem Outpost zugewiesen werden, sonst antwortet die Kette mit `400 no app for hostname`.
+:::
+
 ::: warning Claude-CLI serialisiert und braucht Speicher-Reserve
 Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Code CLI). Der Dienst serialisiert die CLI-Läufe (maximal einer gleichzeitig), und das Memory-Limit des Nomad-Jobs ist auf diesen Subprozess ausgelegt. Zu knapp gesetzter Speicher führte zu OOM-Kills (die CLI beendet sich mit exit null). Das Limit im Job daher nicht unter den dort dokumentierten Wert senken.
 :::
@@ -165,6 +178,7 @@ Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Cod
 ## Verwandte Seiten
 
 - [ntfy](../ntfy/index.md) -- Push-Rückkanal für Bestätigungen und Zuordnungs-Rückfragen
+- [Authentik](../authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die SQLite-Datenbank
 - [Homelab App-Standard](../app-standard/index.md) -- Build- und Deploy-Muster des Dienstes
