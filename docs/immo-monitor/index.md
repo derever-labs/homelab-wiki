@@ -1,6 +1,6 @@
 ---
 title: Immo Monitor
-description: Custom Web-App für das Monitoring von Mietinseraten rund um Dottikon AG
+description: SvelteKit-Web-App zur Bedienung und Auswertung des Dottikon-Mietmarkt-Monitorings
 tags:
   - service
   - immobilien
@@ -10,7 +10,7 @@ tags:
 
 # Immo Monitor
 
-Immo Monitor ist eine SvelteKit-App, die Mietinserate aus dem Homegate-Scraper visualisiert. Sie bietet Karten-, Listen- und Chart-Ansichten sowie Schreibzugriff auf Favoriten und Notizen.
+Immo Monitor ist die **Web-App** über dem Mietmarkt-Monitoring rund um Dottikon AG: die Bedienoberfläche für Inserate, Karte, Marktanalyse und Neubau-Recherche. Die dahinterliegende Datenpipeline (Scraper, Enrichment, Foto-Download, Frühsignal-Ingest) beschreibt [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- diese Seite behandelt das Frontend und seine Ableitungslogik.
 
 ## Übersicht
 
@@ -24,7 +24,7 @@ Immo Monitor ist eine SvelteKit-App, die Mietinserate aus dem Homegate-Scraper v
 
 ## Rolle im Stack
 
-Immo Monitor ersetzt die bisherige Kombination aus Metabase + Leaflet + NocoDB durch eine fokussierte Single-Page-App. Die App liest aus denselben Tabellen, die der Homegate-Scraper befüllt, und bietet Schreibzugriff ausschliesslich auf `listing_note` (Favoriten, Notizen, Ablehnungen).
+Immo Monitor ersetzt die frühere Kombination aus Metabase + Leaflet + NocoDB durch eine fokussierte SvelteKit-App. Sie liest aus denselben PostgreSQL-Tabellen, die der [Scraper](../immobilien-monitoring/index.md) befüllt, leitet daraus jedoch **jeden angezeigten Zustand selbst** ab (siehe Statusmodell) und schreibt ausschliesslich Nutzer-Daten zurück (Favoriten, Notizen, Ablehnungen, Kandidaten-Sichtung). Der Scraper liefert die Rohdaten, die App verantwortet Interpretation und Darstellung.
 
 ## Architektur
 
@@ -50,20 +50,24 @@ Traefik: Traefik {
   tooltip: "10.0.2.20"
   RI: "intern-auth@file (LAN/VPN)" { class: node }
   RE: "public-auth@file (extern)" { class: node }
-  RP: "Photo Route (ohne Auth, Priority 1000000)" { class: node }
+  RP: "Photo Route (ohne Auth, hohe Priority)" { class: node }
 }
 
 App: "Immo Monitor (SvelteKit)" {
   class: node
-  tooltip: "Drizzle ORM, Leaflet, shadcn-svelte"
+  tooltip: "Drizzle ORM, Leaflet, shadcn-svelte, sharp"
 }
 PG: "PostgreSQL immo" {
   shape: cylinder
-  tooltip: "Read-only ausser listing_note"
+  tooltip: "Lesen; Schreiben nur auf Nutzer-Tabellen"
 }
 NFS: "NFS Photo-Archiv" {
   shape: cylinder
-  tooltip: "/nfs/docker/immoscraper/photos/ | Read-only Mount"
+  tooltip: "Read-only Mount, Original-Fotos"
+}
+Cache: "Thumbnail-Cache" {
+  shape: cylinder
+  tooltip: "Schreibbarer Pfad ausserhalb des Read-only-Mounts"
 }
 Scraper: "immoscraper Batch-Job" { class: node }
 
@@ -73,8 +77,9 @@ Browser -> Traefik.RP: "Bilder /api/photos/*"
 Traefik.RI -> App
 Traefik.RE -> App
 Traefik.RP -> App: "Path-Traversal-Schutz im Endpoint"
-App -> PG: "Lesen (listing, listing_photo, ...)\nSchreiben (listing_note)"
-App -> NFS: "Bilder lesen"
+App -> PG: "Lesen (listing, project, project_candidate, ...)\nSchreiben (Favoriten, Notizen, Sichtung)"
+App -> NFS: "Original-Bilder lesen"
+App -> Cache: "Skalierte Varianten via sharp"
 Scraper -> PG: Schreibt Inseratedaten
 Scraper -> NFS: Schreibt Fotos
 ```
@@ -84,64 +89,100 @@ Scraper -> NFS: Schreibt Fotos
 - **Frontend:** SvelteKit (Svelte 5, Runes) mit adapter-node
 - **UI:** shadcn-svelte + Tailwind CSS v4 (Zinc + Amber)
 - **ORM:** Drizzle ORM auf PostgreSQL
-- **Karten:** Leaflet + CartoDB Positron + leaflet.heat
+- **Karten:** Leaflet + CartoDB Positron + `leaflet.markercluster`
+- **Bilder:** sharp (serverseitige Thumbnails)
 - **Charts:** Chart.js
+
+## Statusmodell: Lifecycle als SSOT
+
+Kein Frontend-Code wertet `is_active` roh aus. Die **einzige** Stelle, die den Zustand eines Inserats bestimmt, ist `deriveLifecycle` in `src/lib/server/lifecycle.ts`. Alle Ansichten -- Home-KPIs, Filter, Karte, Marktanalyse, Vergleichsmiete -- fragen dieselbe Ableitung, damit Zahl und Filter nie auseinanderlaufen.
+
+Der Zustand wird über zwei Achsen beschrieben:
+
+- **Zustand:** aktiv, abgegangen oder unbestimmt
+- **Konfidenz:** wie gut der Zustand belegt ist -- `beobachtet` (im Scan gesehen), `recherchiert` (aus externer Quelle) oder `unbestätigt`
+
+Sieben Präzedenz-Regeln lösen die beiden Achsen deterministisch auf. `src/lib/server/scanHealth.ts` liefert dazu das Scan-Alter pro Portal: Ist der Portal-Scan veraltet, degradiert ein "aktiv" bewusst zu "zuletzt bestätigt am" -- die App behauptet nur so viel Aktualität, wie der letzte erfolgreiche Scan hergibt.
+
+::: info Warum eine eigene Ableitung statt `is_active`
+Ein `NULL` in `is_active` rutschte historisch als "verfügbar" durch, obwohl es das nicht bedeutet. Und der Abgangszeitpunkt eines Inserats ist grundsätzlich unscharf: Zwischen zwei Scans liegt im Median rund eine Woche. Ein scharfes Punktdatum wäre Schein-Präzision. Deshalb zeigt die App einen Abgang nach Grösse der Scan-Lücke abgestuft: bis zwei Tage als Einzeldatum mit Tilde, bis sieben Tage als Spanne (der Regelfall), darüber als offene Scan-Lücke statt als scheinpräzise Spanne. Berechnete Dauern tragen zusätzlich eine Qualität (exakt, Untergrenze, Obergrenze). Erfundene Punktwerte gibt es nicht.
+:::
 
 ## Seiten
 
-- **Home** (`/`): Dashboard mit KPIs und Überblick-Charts (Preisverteilung, Zimmerverteilung, CHF/m² pro Gemeinde). Ersetzt die separate `/ueberblick`-Seite (redirected auf `/`).
-- **Projekte** (`/projekte`): Card-Grid der Neubauprojekte mit Status-Chips (Planung, Bau, Fertig, Bestand) und Sort-Dropdown. Zentrale Hub-Seite für Neubau-Recherche.
-- **Projekt-Detail** (`/projekte/[id]`): Zweispaltige Detail-Ansicht mit Unit-Tabelle, verknüpften Inseraten, Recherche-Notizen, Quellen, Sidebar (Eckdaten, Einheiten-Stats, Mini-Karte) und klickbaren Etappen-Unterprojekten.
-- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Reject/Vergleich, CHF/m²-Filter, "Nur Inserate" (ohne Research-Daten), Sort auf-/absteigend für Datum/CHF/m²/Miete/Fläche.
-- **Favoriten** (`/favoriten`): Gleicher Card-Grid wie Inserate, vorgefiltert auf `isFavorite`.
-- **Inserat-Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld, Preishistorie.
-- **Karte** (`/karte`): CartoDB Positron oder Swisstopo SWISSIMAGE (Satelliten-Toggle), farbkodierte CircleMarker (CHF/m²), Projekt-Marker mit Status-Farben, Bauzonen-WMS (Aargau), Heatmap-Toggle. Marker am gleichen Ort werden automatisch in einem Raster angeordnet (siehe "Grid-Clustering").
-- **Vergleich** (`/vergleich`): Side-by-Side Tabelle für max. 3 Inserate.
-- **About** (`/about`): Methoden-Transparenz -- Datenquellen, Farbskala, "vermietet"-Heuristik, Bauzonen-Layer.
+- **Home** (`/`): Dashboard mit KPIs und Überblick-Charts. Die KPIs laufen über dieselbe Lifecycle-Ableitung wie die Filter, nicht über rohe Zählungen.
+- **Inserate** (`/inserate`): Filterbarer Card-Grid mit Favorit/Ablehnung/Vergleich. Filter leben im URL-Querystring (teilbare Links), die Liste rendert gefenstert mit Scroll-Erhalt, Titel werden normalisiert.
+- **Inserat-Detail** (`/inserate/[id]`): Foto-Galerie, Kerndaten, Amenities, Notizfeld sowie Verlaufs-Timeline und Vergleichsmiete-Benchmark (siehe unten).
+- **Favoriten** (`/favoriten`): Gleicher Card-Grid wie Inserate, vorgefiltert auf Favoriten.
+- **Karte** (`/karte`): Einzelmarker-Karte mit Cluster nur bei echter Überlappung, farbkodiert nach CHF/m², Kartenausschnitt und Auswahl im URL-Hash, Bottom-Sheet auf Mobil (siehe unten).
+- **Marktanalyse** (`/markt`): Vermietungstempo und Preisdruck im Beobachtungsgebiet (siehe unten).
+- **Kandidaten** (`/kandidaten`): Frühsignal-Inbox für mögliche neue Projekte (siehe unten).
+- **Projekte** (`/projekte`) und **Projekt-Detail** (`/projekte/[id]`): Neubauprojekte mit Status-Chips, Unit-Tabelle, verknüpften Inseraten, Beteiligten und Etappen-Unterprojekten.
+- **Firmen/Personen** (`/firmen`, `/personen` und Detailseiten): Beteiligten-Netzwerk der Recherche (siehe Firmen- und Personen-Sektion).
+- **Vergleich** (`/vergleich`): Side-by-Side-Tabelle für bis zu drei Inserate; erreichbar über den Zähler-Button im Inserate-Header.
+- **About** (`/about`): Methoden-Transparenz -- Datenquellen, Farbskala, Statusherleitung, Bauzonen-Layer.
+
+## Marktanalyse (`/markt`)
+
+Die Marktanalyse verdichtet den Bestand zu Vermietungstempo und Preisdruck -- und macht ihre eigene Unsicherheit sichtbar, statt sie zu glätten.
+
+![Marktanalyse mobil: KPI-Kacheln und Anteil-vermietet-Kurve mit Unsicherheitsband](./screenshots/markt-vermietungstempo-mobil.png)
+
+- **Vermietungstempo:** Eine Kurve "Anteil vermietet nach X Tagen" (empirische Verteilungsfunktion) zeigt, wie schnell Inserate abgehen. Das eingezeichnete Band ist die Unsicherheit des Abgangszeitpunkts zwischen zwei Scans -- die Kurve ist absichtlich ein Korridor, keine scharfe Linie. Median-Dauer und Quartile stehen als Kacheln darüber, wahlweise über 30 / 90 Tage oder den ganzen Bestand.
+- **Nach Zimmerzahl und Gemeinde:** Median-Streifen je Klasse, damit einzelne Ausreisser die Aussage nicht dominieren.
+
+![Marktanalyse mobil: Zugänge und Abgänge pro Monat, unsichere Abgänge separat](./screenshots/markt-absorption-mobil.png)
+
+- **Absorption pro Monat:** Zugänge und Abgänge je Monat, wobei Abgänge mit nicht eingrenzbarem Zeitpunkt separat ausgewiesen werden. Fehlende Abgänge -- etwa weil ein Portal gerade keinen produktiven Scan hatte -- werden ehrlich als "keine Aussage" gekennzeichnet, nicht als Null.
+- **Preisdruck-Signale:** Mietsenkungen (mit Artefakt-Filter oberhalb von 25 %, um Datenfehler von echten Senkungen zu trennen), Wiederinserate, Langläufer über 90 Tage und Aktions-Angebote (mietfrei, Gratismonat -- erkannt über Stichworte in Titel und Beschreibung).
+
+## Frühsignal-Inbox (`/kandidaten`)
+
+Die Kandidaten-Inbox sammelt Frühsignale für mögliche neue Bauprojekte -- Baugesuche und Meldungen aus Lokalmedien, lange bevor ein Inserat erscheint. Der Nav-Eintrag trägt als einziger einen Zähler-Badge mit der Zahl ungesichteter Kandidaten.
+
+![Kandidaten-Inbox mobil: Karten mit Typ-Badge, Konfidenz, Quelle und Aktionen](./screenshots/kandidaten-inbox-mobil.png)
+
+Jeder Kandidat lässt sich **sichten**, **verwerfen** oder mit einem **bestehenden Projekt verknüpfen**. Die Segmente (neu, gesichtet, verworfen, mit Projekt) leben als URL-Filter, sind also teilbar. Die Signale kommen aus der `project_candidate`-Tabelle, die ein täglicher Ingest-Job befüllt -- Herkunft, Regel-Klassifikation und Konfidenz beschreibt die [Frühsignal-Pipeline](../immobilien-monitoring/index.md#fruehsignal-pipeline).
+
+Aus einem Kandidaten wird bewusst **kein** Projekt per Knopfdruck angelegt: Eine Neuanlage entsteht ausschliesslich über den Research-Skill mit seinen Geocode- und Duplikat-Guards, die Inbox verknüpft höchstens auf ein bereits recherchiertes Projekt. So bleibt der Projektbestand frei von ungeprüften Koordinaten und Doubletten.
+
+## Karte
+
+Die Karte zeigt Inserate und Projekte als Einzelmarker; benachbarte Marker werden erst bei echter Überlappung zu einem Cluster zusammengefasst und beim Klick animiert aufgefächert (Spiderfy). Inserate sind nach CHF/m² farbkodiert, Projekte tragen Status-Farben. Ein 7-km-Radius um Dottikon markiert das Beobachtungsgebiet. Darüber lassen sich weiterhin eine Heatmap (standardmässig aus) und zwei Aargauer WMS-Ebenen -- Bauzonen und Überbauungsstand -- als Overlays zuschalten.
+
+Zoom, Kartenmittelpunkt und die aktuelle Auswahl leben im **URL-Hash**: Ein Kartenausschnitt lässt sich damit teilen, und Vor/Zurück im Browser navigiert durch frühere Ausschnitte. Unter der `md`-Breite ersetzt ein Bottom-Sheet die Leaflet-Popups, damit die Detailinfos auf dem Telefon bedienbar bleiben.
+
+## Inserat-Detail: Timeline und Vergleichsmiete
+
+Die Detailseite eines Inserats fasst seinen Verlauf und seine Einordnung zusammen -- beides auf der Lifecycle-Ableitung, nie auf rohem `is_active`.
+
+- **Verlaufs-Timeline:** erstmalige Sichtung mit Quelle (recherchierter Vermarktungsstart, manueller Override oder Scraper-Datum), Preisänderungen und -- falls abgegangen -- das Abgangs-Intervall statt eines Punktdatums.
+- **Vergleichsmiete-Benchmark:** ordnet die CHF/m² gegen eine Vergleichsgruppe der gleichen Zimmerklasse im Beobachtungsgebiet ein, die aktiv oder in den letzten zwölf Monaten abgegangen ist. Liegen weniger als 15 Vergleichswerte vor, trifft die App bewusst **keine** Aussage, statt aus zu wenig Daten eine Scheinaussage zu bilden.
 
 ## Datenmodell: Listings vs. Projekte
 
-Zwei unabhängige Datenquellen werden nebeneinander geführt:
+Zwei unabhängige Datenquellen laufen nebeneinander:
 
-- **`listing`** wird vom Homegate-Scraper befüllt. `is_active` wird auf `false` gesetzt, sobald der Scraper das Inserat 5 Tage nicht mehr sieht.
-- **`project`** und **`project_unit`** werden manuell via Research-Skill oder direkte DB-Operationen gepflegt. Der Scraper aktualisiert diese Tabellen aktuell NICHT.
-- Die `project_listing`-Junction verknüpft Inserate mit Neubauprojekten (z.B. alle Mattenpark-Inserate zeigen auf project_id 1 und 45).
+- **`listing`** wird vom Scraper befüllt und über `is_active` verwaltet. Für die Anzeige ist nicht dieses Feld massgeblich, sondern die Lifecycle-Ableitung.
+- **`project`** und **`project_unit`** werden manuell über den Research-Skill gepflegt. Der Scraper aktualisiert diese Tabellen **nicht**.
+- Die `project_listing`-Junction verknüpft Inserate mit Neubauprojekten (etwa alle Mattenpark-Inserate mit ihren beiden Etappen-Projekten).
 
-::: warning Kein automatisches Status-Tracking
-Wenn ein Homegate-Listing inaktiv wird, bleibt der verknüpfte `project_unit.status` auf `available`. Die Ground Truth muss über Projekt-Websites nachgezogen werden.
+::: warning Kein automatisches Status-Tracking auf Projektebene
+Wird ein Inserat inaktiv, bleibt der verknüpfte `project_unit.status` unverändert. `project.status = completed` heisst "Bau fertig", nicht "vollvermietet". Die Ground Truth auf Unit-Ebene muss über die Projekt-Websites nachgezogen werden.
 :::
 
-### Unit-Status-Workflow
+### Status-Werte
 
-Mögliche Status pro `project_unit`:
-
-- `planned` -- geplant, noch nicht vermarktet
-- `available` -- aktiv vermietbar
-- `reserved` -- reserviert (nicht definitiv)
-- `rented` -- vermietet
-- `sold` -- verkauft (Eigentumswohnungen)
-
-### Projekt-Status-Workflow
-
-Mögliche Status pro `project`:
-
-- `planning` -- Baugesuch, noch nicht im Bau
-- `construction` -- im Bau
-- `completed` -- Bau fertig (bedeutet NICHT zwingend vollvermietet)
-- `established` -- Bestand, länger vermietet
+`project_unit.status`: `planned`, `available`, `reserved`, `rented`, `sold`.
+`project.status`: `planning`, `construction`, `completed`, `established`.
 
 ### Etappen via `parent_project_id`
 
-Mehrstufige Projekte werden als Parent + Kinder modelliert. Beispiele:
-
-- Mattenpark: Etappe 1 (Ho4/Ho6/Ho8, 40 MWG, vollvermietet seit Dez 2023) + Etappe 2 (Ho10/Ho12/Le6/Li2/Li4, 60 MWG, Bezug ab 2026)
-- Furter Areal Im Holzpark: Parent + Etappen 1-3 (bestand), Etappe 4 MFH (bezogen Sept 2024), Etappe 5 (Baugesuch Jan 2026)
-
-Die Detail-Seite zeigt Kinder-Projekte als klickbare Verknüpfung.
+Mehrstufige Projekte werden als Parent mit Kindern modelliert; die Detailseite zeigt Kinder-Projekte als klickbare Verknüpfung. Beispiele sind das Mattenpark-Areal (zwei Etappen) und das Furter Areal Im Holzpark (Parent mit Bestands- und Neubau-Etappen).
 
 ## Firmen- und Personen-Sektion
 
-Die Routes `/firmen`, `/firmen/[id]`, `/personen` und `/personen/[id]` derselben App bilden beteiligte Firmen und Personen ab, bidirektional mit Projekten verknüpft. Auslöser war die Tiefenrecherche zum Furter-Areal in Dottikon: Die textuellen `developer`/`architect`/`general_contractor`-Felder pro Projekt skalieren nicht, weil eine Firma in mehreren Projekten auftaucht (und als Freitext mehrfach mit Tippfehlern existieren würde) und eine Person mehrere Firmen-Mandate hat. Der eigentliche Recherche-Wert ist die Netzwerk-Analyse -- wer sitzt mit wem im VR. Beispiel: Alexander Furter Renold ist gleichzeitig Partner bei ffbk und VR-Präsident bei Furter Immotrade; Schäfer Holzbautechnik AG ist Holzbauer auf allen Furter-Projekten, hat aber auch eigene Projekte (Museum Setz, Fussgängerbrücke Dottikon, Kita la maison). Mit `company`- und `person`-Entitäten lassen sich diese Beziehungen sauber abbilden und auf eigenen Detailseiten visualisieren.
+Die Routes `/firmen`, `/firmen/[id]`, `/personen` und `/personen/[id]` bilden beteiligte Firmen und Personen ab, bidirektional mit Projekten verknüpft. Auslöser war die Tiefenrecherche zum Furter-Areal in Dottikon: Die textuellen `developer`/`architect`/`general_contractor`-Felder pro Projekt skalieren nicht, weil eine Firma in mehreren Projekten auftaucht und eine Person mehrere Firmen-Mandate hält. Der eigentliche Recherche-Wert ist die Netzwerk-Analyse -- wer sitzt mit wem im Verwaltungsrat. Mit `company`- und `person`-Entitäten lassen sich diese Beziehungen sauber abbilden und auf eigenen Detailseiten visualisieren.
 
 ### Relationen-Datenmodell
 
@@ -149,95 +190,71 @@ Sieben Tabellen in `src/lib/server/db/schema.ts` ergänzen das Listing-/Projekt-
 
 - **`company`** -- Stammdaten einer Firma (Name, Slug, UID, Kategorie, Adresse, Gründungsjahr, optionale `parent_company_id`).
 - **`company_source`** -- Quellen-URLs pro Firma (Moneyhouse, Zefix, eigene Website, Presse).
-- **`person`** -- Personen mit Name, Slug, Beschreibung. Keine privaten Daten -- nur Handelsregister-Öffentlichkeit.
-- **`person_company`** -- Rolle einer Person in einer Firma mit optionalem Zeitraum (`start_year`, `end_year`, `active`).
-- **`project_company`** -- Rolle einer Firma in einem Projekt (z.B. `architect`, `holzbau`).
-- **`project_person`** -- Direkte Personen-Referenz pro Projekt, falls die Person nicht über eine Firma im Projekt steckt.
-- **`project_photo`** -- Projekt-Fotos ohne Umweg über `listing_photo`, kategorisiert nach `etappe`, `typologie` und `category` (exterior, interior, floorplan, site, rendering, historical); wird von einem HTTP-Downloader mit Wayback-Fallback parallel zur DB-Migration befüllt.
+- **`person`** -- Personen mit Name, Slug, Beschreibung. Nur Handelsregister-Öffentlichkeit, keine privaten Daten.
+- **`person_company`** -- Rolle einer Person in einer Firma mit optionalem Zeitraum.
+- **`project_company`** -- Rolle einer Firma in einem Projekt.
+- **`project_person`** -- direkte Personen-Referenz pro Projekt.
+- **`project_photo`** -- Projekt-Fotos ohne Umweg über `listing_photo`, kategorisiert nach Etappe, Typologie und Kategorie.
 
-Zusätzlich bekommt `project` das Feld `estimated_total_cost_chf` für die Bausummen-Recherche.
-
-::: info Freitext mit Konstanten-Liste
-`company.category`, `person_company.role` und `project_company.role` sind `text`-Felder mit einer kuratierten Wertetabelle in `src/lib/constants/roles.ts`. Neue Werte können ohne Migration hinzugefügt werden; unbekannte Werte werden mit einem Default-Badge gerendert, damit sie im UI sichtbar bleiben.
+::: info Freitext mit kuratierter Wertetabelle
+`company.category`, `person_company.role` und `project_company.role` sind `text`-Felder mit einer kuratierten Wertetabelle in `src/lib/constants/roles.ts`. Neue Werte kommen ohne Migration hinzu; unbekannte Werte werden mit einem Default-Badge gerendert, damit sie im UI sichtbar bleiben. Die `value`-Schlüssel sind die in der DB gespeicherten Enum-Werte und dürfen nicht "korrigiert" werden -- sonst fallen alle Rollen stumm auf "Andere" zurück.
 :::
-
-### Firmen- und Personen-Routes
-
-- **`/firmen`** -- Grid aller Firmen mit aggregierter Projekt- und Personen-Zahl, sortiert nach den meisten Projekten. Filter-Chips werden dynamisch aus den verwendeten `category`-Werten generiert und wie Kategorie-Badges eingefärbt.
-- **`/firmen/[id]`** -- Firmen-Detail: Steckbrief, Beschreibung, Research-Notizen, Projekte nach Rolle gruppiert, Personen mit Rollen und Zeiträumen, Quellen. Für die zentralen Firmen (`furter-immotrade-ag`, `schaefer-holzbautechnik-ag`, `schaefer-generalunternehmung-ag`) wird zusätzlich ein D2-Verflechtungsdiagramm eingeblendet.
-- **`/personen`** und **`/personen/[id]`** -- analoge Struktur; die Detail-Seite zeigt alle Mandate (Firmen + Rollen, aktive zuerst) und direkt verknüpfte Projekte.
-- **`/projekte/[id]`** -- eine "Beteiligte"-Box zwischen Header und Unit-Tabelle gruppiert Firmen nach Rolle (verlinkt auf `/firmen/[id]`) und Personen (auf `/personen/[id]`). Die textuellen Fallback-Felder `project.developer` etc. bleiben im Sidebar-Steckbrief, falls ein Projekt noch keine Relation hat.
 
 ### Netzwerk-Diagramme
 
-Fünf D2-Diagramme in `src/lib/diagrams/` werden statisch zu SVG gerendert (`static/diagrams/`) und als `<img src="/diagrams/..."/>` eingebunden -- das vermeidet Client-side-Rendering und zusätzliche Laufzeit-Abhängigkeiten:
-
-- **`furter-netzwerk.d2`** -- die komplette Furter-/ffbk-Gruppe mit Baar-Cluster, verbindenden Personen und Revisoren.
-- **`schaefer-netzwerk.d2`** -- Schäfer-Gruppe (Holzbautechnik + Generalunternehmung + Zimmerei Aarau) mit VR und Geschäftsleitung.
-- **`furter-schaefer-verflechtung.d2`** -- der zentrale Graph zur Frage, wie Schäfer und Furter zusammenhängen: Furter Immotrade ist Grundeigentümerin, Schäfer ist Mieter und bevorzugter Holzbauer; Auslöser war die Übergabe von Severin Furter 2013 (gesundheitliche Gründe), 2015 Umfirmierung Furter Systembau zu Schäfer Generalunternehmung (selbe UID CHE-109.389.986).
-- **`furter-timeline.d2`** -- Zeitstrahl 1905 bis 2026 mit den vier Generationen Emil, Josef, Severin, Alexander und den wichtigsten Firmengründungen/Umfirmierungen.
-- **`furter-holzpark-etappen.d2`** -- Etappen-Übersicht der Wohnsiedlung Im Holzpark (Gebäude A/B/C/D + Silo + Etappe 4 MFH).
-
-Gerendert wird mit der d2 CLI; das Repo-Script `scripts/build-diagrams.sh` rendert alle `.d2`-Files aus `src/lib/diagrams/` nach `static/diagrams/`.
-
-### Seeds und Research-Scraper
-
-Idempotente Seed-Scripts unter `scripts/seed/` befüllen Firmen, Personen, Verknüpfungen und Projekt-Fotos; Details im Repo-README. Der Research-Scraper `scripts/research/scrape.ts` nutzt Playwright mit Browser-User-Agent statt curl+grep, weil Quellen wie ffbk.ch oder archive.org JS-gerendert sind.
-
-## Karte: Grid-Clustering
-
-Projekte mit identischen Koordinaten (auf 5 Dezimalstellen gerundet) werden beim Rendern automatisch in einem ceil(sqrt(N)) × ceil(N/cols) Raster um den Original-Punkt versetzt -- typischerweise rund 10m Spacing. Die DB-Koordinaten bleiben unverändert. Beispiel: Die 4 Furter-Etappen (Parent + 3 Kinder) werden als 2×2-Raster dargestellt.
-
-## Externe Datenquellen
-
-- **Homegate** via Scrapfly-Scraper (Job `immoscraper`) -- aktive Mietinserate
-- **Projekt-Websites** und **Architektenseiten** via Research-Skill und WebFetch -- Units, Quellen, Details
-- **Swisstopo Geocoding API** (`api3.geo.admin.ch`) -- Koordinaten-Lookup bei Projekt-Einträgen
-- **Swisstopo WMTS** -- Satelliten-Layer auf der Karte
-
-## Photo-Archivierung
-
-Die Fotos werden nicht mehr direkt vom Homegate-CDN geladen, sondern als lokale Kopie auf der Synology NFS-Share ausgeliefert. Der Immo-Monitor-Container mountet `/nfs/docker/immoscraper/photos/` read-only und liefert die Bilder über eine dedizierte API-Route `/api/photos/*` aus.
-
-::: info Warum lokal archivieren
-Homegate-CDN-URLs enthalten signierte Query-Parameter, die nach einigen Tagen ablaufen. Deaktivierte Inserate (vermietet, zurückgezogen) verlieren damit rückwirkend ihre Fotos. Die NFS-Kopie garantiert, dass historische Inserate und Preisverläufe auch nach Monaten noch mit Bildern angezeigt werden können.
-:::
-
-Die Fotos werden pro Listing unter `{listing_id}/{sort_order:03d}.jpg` abgelegt. Zusätzlich gibt es das Verzeichnis `projects/<slug>/NNN.jpg` für generische Projektbilder (Visualisierungen, Drohnenaufnahmen, Baufortschritt), die als Fallback für deaktivierte Listings mit abgelaufenen CDN-URLs genutzt werden.
-
-### Traefik-Route ohne Authentik
-
-Die Route `/api/photos/*` läuft **ohne** Authentik-Middleware, weil Authentik bei jedem Bild-Request einen OIDC-Flow anstossen würde (langsam, bricht bei externem Embedding). Stattdessen kommt der Zugriffsschutz aus zwei Quellen:
-
-1. **Path-Traversal-Schutz im Endpoint**: Die SvelteKit-Route lehnt alle Pfade mit `..` ab und verhindert damit das Ausbrechen aus dem NFS-Mount.
-2. **Keine Directory-Listing**: Der Endpoint liefert nur existierende Dateien, kein Index.
-
-::: warning Traefik Router Priority
-Die Photo-Route muss eine höhere `priority` haben als die Host-basierten Default-Router (Path-Prefix-Router sonst überstimmt). Im Nomad Job ist `priority=1000000` gesetzt -- sonst greift die Authentik-Kette und Bilder werden mit 302 Redirects auf den Login geleitet.
-:::
+Fünf D2-Diagramme in `src/lib/diagrams/` werden über `scripts/build-diagrams.sh` statisch zu SVG nach `static/diagrams/` gerendert und als Bild eingebunden -- das vermeidet Client-seitiges Rendering. Sie zeigen die Furter-/ffbk-Gruppe, die Schäfer-Gruppe, die Verflechtung zwischen beiden, einen Zeitstrahl über vier Generationen und die Etappen-Übersicht des Holzparks.
 
 ## Vermarktungsstart-Tracking
 
-Homegate setzt bei Re-Listings (gleiche Wohnung, neue externe ID) einen neuen `createdAt`-Zeitstempel. Der Scraper-`first_seen_at` entspricht damit nicht dem tatsächlichen Vermarktungsstart -- ein Inserat, das seit 1.5 Jahren auf dem Markt ist, wirkt im Monitor wie eine brandneue Listung.
+Homegate vergibt bei Re-Listings (gleiche Wohnung, neue externe ID) einen neuen `createdAt`-Zeitstempel. Der Scraper-`first_seen_at` entspricht damit nicht dem tatsächlichen Vermarktungsstart -- ein seit Monaten laufendes Inserat wirkt sonst brandneu.
 
-Die Lösung ist eine Prioritätskette mit drei Quellen für das "erstmals gesehen"-Datum:
+Eine Prioritätskette löst das "erstmals gesehen"-Datum auf:
 
-1. **`listing_external_id_history`** -- manuell recherchierter echter Vermarktungsstart (Projekt-Websites, Wayback Machine, Aargauer Zeitung). Ohne `min.`-Prefix, exakter Wert.
-2. **`listing.first_seen_at_override`** -- schneller manueller Override pro Inserat ohne Recherche-Eintrag.
-3. **`listing.first_seen_at`** -- Homegate `createdAt` als Fallback. Im Frontend mit `min.`-Prefix markiert, weil der echte Wert älter sein kann.
+1. **`listing_external_id_history`** -- recherchierter echter Vermarktungsstart (Projekt-Websites, Wayback Machine, Presse). Exakter Wert.
+2. **`listing.first_seen_at_override`** -- schneller manueller Override pro Inserat.
+3. **`listing.first_seen_at`** -- Scraper-`createdAt` als Fallback, im Frontend mit `min.`-Prefix markiert, weil der echte Wert älter sein kann.
 
-Die Kette wird im Server-Load über eine SQL-Subquery aufgelöst und als `firstSeenSource` (`history` / `override` / `scraper`) an die Frontend-Komponenten weitergereicht. Diese zeigen den `min.`-Prefix nur dann, wenn die Quelle `scraper` ist.
+Die Quelle wird als `firstSeenSource` (`history` / `override` / `scraper`) an die Komponenten weitergereicht; der `min.`-Prefix erscheint nur bei `scraper`. Für Projekt-Units greift zusätzlich `project.marketing_started_at`, sodass sich ganze Etappen auf einmal datieren lassen.
 
-Für Projekt-Units aus der `project_unit`-Tabelle greift zusätzlich `project.marketing_started_at`, sofern das Feld im Projekt-Datensatz gesetzt ist. Damit lassen sich ganze Etappen (z.B. Mattenpark Etappe 1: 2022-10-27, Etappe 2: 2025-07-01) auf einmal datieren.
+## Foto-Auslieferung
+
+Die Fotos werden nicht vom Homegate-CDN geladen, sondern als lokale Kopie auf der Synology-NFS-Share ausgeliefert. Der Container mountet das Foto-Archiv read-only und liefert die Bilder über die dedizierte Route `/api/photos/*` aus.
+
+::: info Warum lokal archivieren
+Homegate-CDN-URLs enthalten signierte Query-Parameter, die nach einigen Tagen ablaufen. Deaktivierte Inserate verlören damit rückwirkend ihre Fotos. Die NFS-Kopie garantiert, dass historische Inserate und Preisverläufe auch nach Monaten mit Bildern angezeigt werden.
+:::
+
+### Thumbnails via sharp
+
+Statt jedes Bild in Originalgrösse auszuliefern, skaliert die App on-the-fly mit sharp. Der Query-Parameter `?w=` wählt eine von vier festen Breiten (160, 480, 960, 1600 px); das Frontend hängt für Listen- und Detailbilder ein `srcset` mit 1x/2x-Variante an. Die feste Grössenpalette verhindert einen unbegrenzt wachsenden Cache.
+
+Skalierte Varianten landen nach Breite getrennt in einem Disk-Cache. Weil der Foto-Mount `/photos` im Container read-only (NFS) ist, setzt der Nomad-Job den Cache-Pfad (`PHOTOS_CACHE_DIR`) auf ein schreibbares Verzeichnis ausserhalb des Mounts. Der Cache-Write ist best-effort und atomar (temporäre Datei + rename): Schlägt er fehl, wird die skalierte Variante trotzdem ausgeliefert. Fällt sharp für ein Bild ganz aus, liefert der Endpoint unverändert das Original -- die Bildauslieferung bricht nie ab.
+
+### Traefik-Route ohne Authentik
+
+Die Route `/api/photos/*` läuft **ohne** Authentik-Middleware, weil Authentik bei jedem Bild-Request einen OIDC-Flow anstossen würde. Der Zugriffsschutz kommt stattdessen aus dem Endpoint selbst: Pfade mit `..` werden abgewiesen (Path-Traversal-Schutz, auch für den Cache-Pfad), und es gibt kein Directory-Listing.
+
+::: warning Router-Priority der Photo-Route
+Die Photo-Route braucht eine höhere `priority` als die Host-basierten Default-Router. Ist sie zu niedrig, greift die Authentik-Kette und Bilder werden mit 302 auf den Login umgeleitet. Der Wert ist im Nomad Job gesetzt.
+:::
+
+## Mobile-Navigation
+
+Auf dem Telefon trägt die Bottom-Leiste sechs Ziele: fünf Tabs (Home, Inserate, Favoriten, Karte, Projekte) und ein "Mehr"-Sheet. Das Sheet bündelt die sekundären Routen (Marktanalyse, Kandidaten, Firmen, Personen, About) -- die Marktanalyse ist mobil bewusst kein siebter Tab, sondern lebt im Sheet und als Kachel auf der Home-Seite. Der Vergleich sitzt als Icon-Button mit Zähler im Inserate-Header.
+
+## Betrieb: Schema und Deploy
+
+Schemaänderungen laufen über den Drizzle-Migrationsverlauf: `schema.ts` anpassen, `npm run db:generate`, die erzeugte SQL prüfen, dann `npm run db:migrate`. `drizzle-kit push` wird bewusst nicht gegen die Produktionsdatenbank gefahren -- es protokolliert nichts und entfernt, was es nicht kennt; genau daraus sind frühere stille Schema-Drifts entstanden.
+
+Vor dem Deploy greift ein CI-Gate: `lint` (prettier + eslint) und `check` (svelte-check) müssen grün sein, bevor der Nomad-Job neu ausgerollt wird.
 
 ## Datenbank
 
-Die App nutzt eine eigene PostgreSQL-Datenbank `immo`, in der der DB-User `immo` volle Rechte hat. Verbindungsdaten, User und Vault-Pfad sind kanonisch in [Datenbanken](../_referenz/datenbanken.md) hinterlegt.
+Die App nutzt die PostgreSQL-Datenbank `immo`, in der der DB-User `immo` volle Rechte hat. Verbindungsdaten, User und Vault-Pfad sind kanonisch in [Datenbanken](../_referenz/datenbanken.md) hinterlegt.
 
 ## Verwandte Seiten
 
-- [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Scraper und Datenbank-Schema
-- [NAS Storage](../nas-storage/index.md) -- NFS-Share für Photo-Archiv
-- [n8n](../n8n/index.md) -- Shared PostgreSQL-Datenbank
-- [Metabase](../metabase/index.md) -- Alternatives BI-Dashboard
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
+- [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Datenpipeline: Scraper, Enrichment, Foto-Download, Frühsignal-Ingest und DB-Schema
+- [NAS Storage](../nas-storage/index.md) -- NFS-Share für das Photo-Archiv
+- [Metabase](../metabase/index.md) -- alternatives BI-Dashboard auf denselben Daten
+- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für die Authentifizierung
