@@ -268,3 +268,4 @@ Die Traefik-Route ist in der Traefik Dynamic Config definiert (`/nfs/docker/trae
 - [Nomad](../nomad/) -- Container-Orchestrierung auf den VMs
 - [Consul](../consul/) -- Service Discovery und KV Store
 - [Vault](../vault/) -- Secrets Management
+- [VM-Firewall](../vm-firewall/index.md) -- Least-Privilege-Filterung der Stack-VMs (input DROP)
