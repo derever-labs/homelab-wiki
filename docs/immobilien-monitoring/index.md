@@ -11,7 +11,7 @@ tags:
 
 # Immobilien-Monitoring
 
-Vollautomatisches Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Scrapfly umgeht Anti-Bot-Schutzmassnahmen serverseitig, ein Nomad Batch-Job orchestriert den gesamten Scan-Prozess, Claude Haiku reichert Listings mit strukturierten Daten an, und Telegram liefert Zusammenfassungen nach jedem Lauf.
+Vollautomatisches Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Scrapfly umgeht Anti-Bot-Schutzmassnahmen serverseitig, ein Nomad Batch-Job orchestriert den gesamten Scan-Prozess, Claude Haiku reichert Listings mit strukturierten Daten an, und Telegram liefert Zusammenfassungen nach jedem Lauf. Diese Seite beschreibt die **Datenpipeline und ihren Betrieb**; die Web-App darüber -- Bedienung, Karte, Marktanalyse -- ist [Immo Monitor](../immo-monitor/index.md).
 
 ## Übersicht
 
@@ -416,6 +416,31 @@ Der Workflow triggert bei Änderungen in `services/n8n-workflows/scraper/` oder 
 Der Discovery Plan bietet 200.000 Credits/Monat für $30 -- die geschätzte Auslastung liegt bei ~6%.
 
 Jeder Scrapfly-Request liefert den Credit-Verbrauch in der API-Response zurück. Der Scraper summiert diese pro Lauf und schreibt den Gesamtwert in `scraper_runs`. Die Telegram-Notification zeigt den Verbrauch ebenfalls an.
+
+## Frühsignal-Pipeline {#fruehsignal-pipeline}
+
+Neben dem Inserate-Scraper läuft eine zweite, unabhängige Pipeline, die Neubauprojekte erkennt, **bevor** sie als Inserat auftauchen. Ein eigener Nomad-Job scannt täglich um 08:00 Uhr öffentliche Frühindikatoren und legt Treffer als Kandidaten ab; die Kandidaten-Inbox im [Immo-Monitor-Frontend](../immo-monitor/index.md) arbeitet sie manuell ab. Der Zeitpunkt liegt bewusst ausserhalb des Fensters, in dem sich die Vault-Templates der übrigen Batch-Jobs erneuern, damit der Job nicht mit deren Secret-Renewal kollidiert.
+
+### Quellen (Stufe 1)
+
+- **Gemeinde-RSS** -- Baugesuchs- und Gemeinde-Feeds (Dottikon, Fischbach-Göslikon)
+- **Lokalmedien** -- RSS-Feeds regionaler Zeitungen (Wohler Anzeiger)
+
+Google News ist bewusst **keine** Quelle: Die robots.txt von news.google.com sperrt die Such-Feeds für generische Abrufe, und diese Regel wird nicht für eine bessere Abdeckung aufgeweicht. Die geografische Lücke schliesst der gemeindeweise Ausbau der Quellen.
+
+### Regel-Klassifikation (kein LLM)
+
+Die Treffer werden **regelbasiert** eingeordnet, ohne Sprachmodell. Jeder Kandidat bekommt eine Klassifikation (`neubau`, `baugesuch`, `sonstiges`, `unklar`) und eine Konfidenz zwischen 0.00 und 1.00, die sich aus der gewichteten Zahl der Treffer-Signale ergibt. Die Inbox sortiert danach und zeigt Quelle, Klassifikation und Konfidenz pro Kandidat.
+
+Die Kandidaten liegen in der Tabelle **`project_candidate`** (im Frontend-Schema via Drizzle-Migration verwaltet): Quelle und stabiler Quellen-Schlüssel, Titel, URL (unique), Veröffentlichungsdatum, Gemeinde, Textausschnitt, Klassifikation, Konfidenz, Status (`neu` / `gesichtet` / `verworfen` / `projekt_erstellt`) und eine optionale Referenz auf ein recherchiertes `project`. Aus einem Kandidaten wird **kein** Projekt automatisch angelegt -- die Neuanlage bleibt dem Research-Skill mit seinen Geocode- und Duplikat-Guards vorbehalten.
+
+### Dead-Man-Monitoring
+
+Der Job meldet nach jedem Lauf einen Heartbeat an einen Uptime-Kuma Push-Monitor. Bleibt der Push aus, schlägt Kuma Alarm -- ein stiller Ausfall der Pipeline fällt so auf.
+
+::: info Vault-Cross-Job-Leseausnahme
+Der Frühsignal-Job liest Secrets, deren Pfad nicht seinem eigenen Job-Namen entspricht. Weil die `nomad-workload`-Policy per Template auf den eigenen Job-Namen zugeschnitten ist, braucht dieser Cross-Job-Zugriff eine statische Leseausnahme in der Policy. Sie ist im `homelab-hashicorp-stack`-Repo gepflegt; hier nur der Hinweis, dass sie existiert.
+:::
 
 ## Datenbank-Schema
 

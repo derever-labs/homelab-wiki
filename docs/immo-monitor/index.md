@@ -93,9 +93,9 @@ Scraper -> NFS: Schreibt Fotos
 - **Bilder:** sharp (serverseitige Thumbnails)
 - **Charts:** Chart.js
 
-## Statusmodell: Lifecycle als SSOT
+## Statusmodell: die eine Zustands-Ableitung
 
-Kein Frontend-Code wertet `is_active` roh aus. Die **einzige** Stelle, die den Zustand eines Inserats bestimmt, ist `deriveLifecycle` in `src/lib/server/lifecycle.ts`. Alle Ansichten -- Home-KPIs, Filter, Karte, Marktanalyse, Vergleichsmiete -- fragen dieselbe Ableitung, damit Zahl und Filter nie auseinanderlaufen.
+Ob ein Inserat aktiv oder weg ist, entscheidet **eine einzige** Funktion -- `deriveLifecycle` in `src/lib/server/lifecycle.ts` -- und kein Frontend-Code liest das rohe `is_active`-Feld selbst. Alle Ansichten (Home-KPIs, Filter, Karte, Marktanalyse, Vergleichsmiete) fragen dieselbe Ableitung, damit Kennzahl und Filter nie auseinanderlaufen.
 
 Der Zustand wird über zwei Achsen beschrieben:
 
@@ -105,7 +105,7 @@ Der Zustand wird über zwei Achsen beschrieben:
 Sieben Präzedenz-Regeln lösen die beiden Achsen deterministisch auf. `src/lib/server/scanHealth.ts` liefert dazu das Scan-Alter pro Portal: Ist der Portal-Scan veraltet, degradiert ein "aktiv" bewusst zu "zuletzt bestätigt am" -- die App behauptet nur so viel Aktualität, wie der letzte erfolgreiche Scan hergibt.
 
 ::: info Warum eine eigene Ableitung statt `is_active`
-Ein `NULL` in `is_active` rutschte historisch als "verfügbar" durch, obwohl es das nicht bedeutet. Und der Abgangszeitpunkt eines Inserats ist grundsätzlich unscharf: Zwischen zwei Scans liegt im Median rund eine Woche. Ein scharfes Punktdatum wäre Schein-Präzision. Deshalb zeigt die App einen Abgang nach Grösse der Scan-Lücke abgestuft: bis zwei Tage als Einzeldatum mit Tilde, bis sieben Tage als Spanne (der Regelfall), darüber als offene Scan-Lücke statt als scheinpräzise Spanne. Berechnete Dauern tragen zusätzlich eine Qualität (exakt, Untergrenze, Obergrenze). Erfundene Punktwerte gibt es nicht.
+Ein leeres `is_active` (`NULL`) galt historisch fälschlich als "verfügbar". Und der Abgangszeitpunkt ist ohnehin unscharf: Zwischen zwei Scans liegt im Median rund eine Woche, ein taggenaues Datum wäre also Schein-Präzision. Darum zeigt die App einen Abgang abgestuft -- bis zwei Tage als Datum mit Tilde, bis sieben Tage als Spanne, darüber als offene Scan-Lücke -- und versieht Dauern mit einer Qualität (exakt, Unter- oder Obergrenze). Erfundene Punktwerte gibt es nicht.
 :::
 
 ## Seiten
@@ -128,7 +128,7 @@ Die Marktanalyse verdichtet den Bestand zu Vermietungstempo und Preisdruck -- un
 
 ![Marktanalyse mobil: KPI-Kacheln und Anteil-vermietet-Kurve mit Unsicherheitsband](./screenshots/markt-vermietungstempo-mobil.png)
 
-- **Vermietungstempo:** Eine Kurve "Anteil vermietet nach X Tagen" (empirische Verteilungsfunktion) zeigt, wie schnell Inserate abgehen. Das eingezeichnete Band ist die Unsicherheit des Abgangszeitpunkts zwischen zwei Scans -- die Kurve ist absichtlich ein Korridor, keine scharfe Linie. Median-Dauer und Quartile stehen als Kacheln darüber, wahlweise über 30 / 90 Tage oder den ganzen Bestand.
+- **Vermietungstempo:** Eine Kurve "Anteil vermietet nach X Tagen" zeigt, wie schnell Inserate abgehen. Das eingezeichnete Band ist die Unsicherheit des Abgangszeitpunkts zwischen zwei Scans -- die Kurve ist absichtlich ein Korridor, keine scharfe Linie. Median-Dauer und Quartile stehen als Kacheln darüber, wahlweise über 30 / 90 Tage oder den ganzen Bestand.
 - **Nach Zimmerzahl und Gemeinde:** Median-Streifen je Klasse, damit einzelne Ausreisser die Aussage nicht dominieren.
 
 ![Marktanalyse mobil: Zugänge und Abgänge pro Monat, unsichere Abgänge separat](./screenshots/markt-absorption-mobil.png)
@@ -148,7 +148,7 @@ Aus einem Kandidaten wird bewusst **kein** Projekt per Knopfdruck angelegt: Eine
 
 ## Karte
 
-Die Karte zeigt Inserate und Projekte als Einzelmarker; benachbarte Marker werden erst bei echter Überlappung zu einem Cluster zusammengefasst und beim Klick animiert aufgefächert (Spiderfy). Inserate sind nach CHF/m² farbkodiert, Projekte tragen Status-Farben. Ein 7-km-Radius um Dottikon markiert das Beobachtungsgebiet. Darüber lassen sich weiterhin eine Heatmap (standardmässig aus) und zwei Aargauer WMS-Ebenen -- Bauzonen und Überbauungsstand -- als Overlays zuschalten.
+Die Karte zeigt Inserate und Projekte als Einzelmarker; benachbarte Marker werden erst bei echter Überlappung zu einem Cluster zusammengefasst und beim Klick animiert aufgefächert (Spiderfy). Inserate sind nach CHF/m² farbkodiert, Projekte tragen Status-Farben. Ein 7-km-Radius um Dottikon markiert das Beobachtungsgebiet. Als zuschaltbare Ebenen liegen darüber eine Heatmap (Dichte-Einfärbung, standardmässig aus) und zwei Aargauer Fachkarten -- Bauzonen und Überbauungsstand -- vom kantonalen Kartendienst.
 
 Zoom, Kartenmittelpunkt und die aktuelle Auswahl leben im **URL-Hash**: Ein Kartenausschnitt lässt sich damit teilen, und Vor/Zurück im Browser navigiert durch frühere Ausschnitte. Unter der `md`-Breite ersetzt ein Bottom-Sheet die Leaflet-Popups, damit die Detailinfos auf dem Telefon bedienbar bleiben.
 
@@ -226,9 +226,9 @@ Homegate-CDN-URLs enthalten signierte Query-Parameter, die nach einigen Tagen ab
 
 ### Thumbnails via sharp
 
-Statt jedes Bild in Originalgrösse auszuliefern, skaliert die App on-the-fly mit sharp. Der Query-Parameter `?w=` wählt eine von vier festen Breiten (160, 480, 960, 1600 px); das Frontend hängt für Listen- und Detailbilder ein `srcset` mit 1x/2x-Variante an. Die feste Grössenpalette verhindert einen unbegrenzt wachsenden Cache.
+Statt jedes Bild in Originalgrösse auszuliefern, skaliert die App es beim ersten Abruf mit sharp. Der Query-Parameter `?w=` wählt eine von vier festen Breiten (160, 480, 960, 1600 px); das Frontend liefert dazu ein `srcset` -- die Varianten, aus denen der Browser die passende Auflösung wählt. Die feste Grössenpalette hält den Cache begrenzt.
 
-Skalierte Varianten landen nach Breite getrennt in einem Disk-Cache. Weil der Foto-Mount `/photos` im Container read-only (NFS) ist, setzt der Nomad-Job den Cache-Pfad (`PHOTOS_CACHE_DIR`) auf ein schreibbares Verzeichnis ausserhalb des Mounts. Der Cache-Write ist best-effort und atomar (temporäre Datei + rename): Schlägt er fehl, wird die skalierte Variante trotzdem ausgeliefert. Fällt sharp für ein Bild ganz aus, liefert der Endpoint unverändert das Original -- die Bildauslieferung bricht nie ab.
+Skalierte Varianten liegen in einem Disk-Cache. Weil der Foto-Mount `/photos` read-only ist, schreibt der Nomad-Job den Cache auf einen separaten, beschreibbaren Pfad (`PHOTOS_CACHE_DIR`). Schlägt das Schreiben fehl oder fällt sharp für ein Bild aus, liefert der Endpoint die Variante beziehungsweise das Original trotzdem aus -- die Bildauslieferung bricht nie ab. Details in `src/routes/api/photos/[...path]/+server.ts`.
 
 ### Traefik-Route ohne Authentik
 
