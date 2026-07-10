@@ -152,6 +152,12 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die 
 
 Rate-Limiting für Login-Endpunkte (Authentik). Definiert in `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
 
+### api-ratelimit
+
+Rate-Limiting für API-Endpunkte: im Schnitt 100 Requests pro Minute (`average` 100, `period` 1m) mit einem kurzfristigen Burst-Puffer von 200 (`burst` 200). Grosszügiger als `login-ratelimit` (50 pro Minute), da API-Clients höhere legitime Frequenzen fahren. Definiert in `standalone-stacks/traefik-proxy/configurations/middlewares.yml`.
+
+Wird nicht über eine der obigen Chains eingebunden, sondern als einzelne Middleware direkt am Router-Label angehängt. Verwendet von den API-Routern `authentik-api` und `tandoor-api` (jeweils zusammen mit `crowdsec@file` und `secure-headers@file`) sowie vom öffentlichen `todo-ingest`-Router (`public-noauth@file,api-ratelimit@file`).
+
 ### ipAllowList
 
 Ersetzt das frühere `ipWhiteList` (in Traefik v3 umbenannt). Funktional identisch -- nur der Schlüsselname hat sich geändert.
