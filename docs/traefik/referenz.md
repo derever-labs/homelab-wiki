@@ -136,6 +136,10 @@ Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit
 
 Variante von `error-pages`, die zusätzlich 401 und 403 auf die Maintenance-Page umleitet. Nur für Apps einsetzen, deren Backend-401/403-Responses UI-kaputt oder JSON-only sind (z.B. yt-dlp-Container liefert rohes "403 Forbidden"-Plain-HTML). Verwendet in den Chains `intern-auth-strict` und `public-auth-strict`.
 
+### error-pages-callback
+
+Variante von `error-pages`, die zusätzlich 400 abfängt. Ausschliesslich am Router `authentik-callback` (`auth-routes.yml`) eingesetzt: Der Authentik-Go-Outpost liefert bei state/session-Mismatch im OAuth-Callback (typisch nach Session-Ablauf) einen leeren HTTP 400 ohne Content-Type -- zusammen mit `contentTypeNosniff` bot Safari diese Antwort als Datei-Download "callback" an. Der Callback-Router spricht nie ein App-Backend mit eigenen 400-JSON-Bodies an, darum ist 400 dort gefahrlos abfangbar (in den App-Chains bleibt 400 bewusst ausgenommen).
+
 ::: warning Nicht global einsetzen
 API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-Renewal-Trigger). Strict-Chain würde diese Semantik brechen. Deshalb gezielt nur für die vier Media-Tool-Apps aktiviert.
 :::
