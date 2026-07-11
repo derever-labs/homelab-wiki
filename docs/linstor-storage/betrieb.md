@@ -27,7 +27,7 @@ Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client
 - `nomad-csi-reeval.timer` auf client-05/client-06: Löst blockierte CSI-Evaluations nach Boot auf
 - Linstor Consul Registration Script: Registriert den aktiven Controller bei Consul
 - fstrim (`batch-jobs/fstrim.nomad`, sysbatch client-05/client-06, wöchentlich So 06:00): Gibt ungenutzte Blöcke an den LVM-Thin-Pool zurück (Voraussetzung seit `noatime` statt `discard`)
-- drbd-verify (`batch-jobs/drbd-verify.nomad`, periodic So 07:00): Sequenzielles `drbdadm verify` über alle replizierten Ressourcen als Bit-Rot-Schutz; Kuma-Push am Run-Ende
+- drbd-verify (`batch-jobs/drbd-verify.nomad`, periodic So 07:00): Sequenzielles `drbdadm verify` über alle replizierten Ressourcen ausser `linstor_db` (eigene io-error-Quorum-Policy) als Bit-Rot-Schutz; Kuma-Push am Run-Ende
 
 ## Bekannte Einschränkungen
 

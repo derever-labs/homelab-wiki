@@ -171,13 +171,13 @@ Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
 - `DrbdOptions/Net/max-buffers` = 8000
 - `DrbdOptions/Net/max-epoch-size` = 8000
 
-**Disk Tuning (sicher weil ZFS darunter):**
-- `DrbdOptions/Disk/disk-flushes` = no (ZFS hat eigene Barrier-Logik)
-- `DrbdOptions/Disk/md-flushes` = no
+**Disk Tuning:**
+- `DrbdOptions/Disk/disk-flushes` = yes (Consumer-NVMe ohne Power-Loss-Protection)
+- `DrbdOptions/Disk/md-flushes` = yes
 - `DrbdOptions/Disk/al-extents` = 6433 (mehr parallele Write-Hotspots auf NVMe)
 
-::: warning disk-flushes deaktivieren
-`disk-flushes no` ist nur sicher wenn ZFS als unterliegendes Dateisystem genutzt wird. Bei LVM/ext4 als Backend NICHT deaktivieren -- Datenverlust-Risiko bei Stromausfall.
+::: danger disk-flushes müssen aktiv bleiben
+Im Homelab sind `disk-flushes` und `md-flushes` bewusst auf `yes` gesetzt. Die Storage-Nodes laufen auf Consumer-NVMe ohne Power-Loss-Protection (PLP): Ohne Flushes bestätigt DRBD Schreibvorgänge, die bei einem Stromausfall noch im flüchtigen Disk-Cache stehen und dann verloren gehen. Der ansible-verwaltete Default (`linstor_disk_flushes`) steht auf `yes`; nur das DClab überschreibt ihn per group_vars auf `no`, weil dort Enterprise-NVMe mit PLP verbaut ist. Die DClab-Einstellung `no` darf nicht ins Homelab übernommen werden -- das riskiert Datenverlust.
 :::
 
 **Connection Timing (tolerant gegen CPU-Kontention):**
