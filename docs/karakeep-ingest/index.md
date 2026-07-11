@@ -1,6 +1,6 @@
 ---
 title: Karakeep Ingest
-description: Anreicherungs-Ingest für Karakeep -- LinkedIn-Posts über Apify, Web-Links über Scrapfly
+description: Anreicherungs-Ingest für Karakeep -- LinkedIn-Posts über Apify, YouTube-Videos gratis über oEmbed, Web-Links über Scrapfly
 tags:
   - service
   - productivity
@@ -24,9 +24,9 @@ Karakeep Ingest ist eine schlanke Anreicherungs-Schicht über [Karakeep](../kara
 
 ## Rolle im Stack
 
-Karakeep Ingest ist die Erfassungs-Hilfe für zwei Fälle, die der Karakeep-eigene Crawler nicht sauber abdeckt: LinkedIn-Posts hinter der Auth-Wall und Web-Seiten mit Consent-Bannern oder fehlendem Vorschaubild. Er reichert nur an (Archiv, Vorschaubild, Metadaten) und ordnet nicht ein -- keine organisierenden Tags und keine Listen-Zuweisung; für LinkedIn setzt er lediglich Herkunfts-Tags (Autor, erwähnte Firmen, Hashtags) automatisch. Die Organisation bleibt im wöchentlichen Karakeep-Batch. Stirbt Apify oder Scrapfly, funktioniert der manuelle Screenshot-Weg unverändert weiter; der Dienst ist bewusst degradierbar.
+Karakeep Ingest ist die Erfassungs-Hilfe für Fälle, die der Karakeep-eigene Crawler nicht sauber oder nicht kostenfrei abdeckt: LinkedIn-Posts hinter der Auth-Wall, YouTube-Videos als vollwertige Karte ohne Scrapfly-Kosten und Web-Seiten mit Consent-Bannern oder fehlendem Vorschaubild. Er reichert nur an (Archiv, Vorschaubild, Metadaten) und ordnet nicht ein -- keine organisierenden Tags und keine Listen-Zuweisung; für LinkedIn und YouTube setzt er lediglich Herkunfts-Tags (LinkedIn: Autor, erwähnte Firmen, Hashtags; YouTube: Quelle und Kanal) automatisch. Die Organisation bleibt im wöchentlichen Karakeep-Batch. Stirbt Apify oder Scrapfly, funktioniert der manuelle Screenshot-Weg unverändert weiter; der Dienst ist bewusst degradierbar.
 
-Eingefügte URLs werden nach Domain aufgeteilt: LinkedIn läuft über die Apify-Pipeline (Volltext und Originalbilder), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Beide Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird.
+Eingefügte URLs werden nach Herkunft aufgeteilt: LinkedIn läuft über die Apify-Pipeline (Volltext und Originalbilder), YouTube-Videos über einen kostenlosen Pfad (oEmbed-Metadaten und das Vorschaubild aus dem Thumbnail-CDN, ohne Scrapfly), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Alle Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird. Nur echte YouTube-Videos (Watch-Links, Shorts, youtu.be) nehmen den gratis-Pfad; Kanäle, Playlists und die übrigen YouTube-Seiten bleiben im Web-Pfad.
 
 ```d2
 vars: {
@@ -47,27 +47,31 @@ UI: "Paste-Seite\n(URL-Eingabe)" { class: node }
 Ingest: "karakeep-ingest\n(Hono-BFF + In-Prozess-Queue)" {
   style.stroke-dash: 4
   LI: "LinkedIn-Pfad\n(Apify)" { class: node }
+  YT: "YouTube-Pfad\n(oEmbed, gratis)" { class: node }
   WEB: "Web-Pfad\n(Scrapfly)" { class: node }
 }
 
 Karakeep: "Karakeep\n(einziger Bestand)" { class: node }
 
 UI -> Ingest.LI: "linkedin.com"
+UI -> Ingest.YT: "YouTube-Video"
 UI -> Ingest.WEB: "andere Quellen"
 Ingest.LI -> Karakeep: "Volltext + Bilder"
+Ingest.YT -> Karakeep: "oEmbed + Thumbnail"
 Ingest.WEB -> Karakeep: "og-Meta + Archiv"
 ```
 
 ## Nutzungsregel
 
 - LinkedIn-Post-URL: immer über den Ingest. Der Karakeep-eigene Crawler läuft in die Auth-Wall.
+- YouTube-Video-URL: über den Ingest. Er baut die Karte kostenlos aus oEmbed und dem Thumbnail-CDN, statt Scrapfly-Credits zu verbrauchen.
 - Alle anderen Quellen: weiterhin Karakeep-nativ (Extension, Share-Sheet). Der Ingest ist der zweite Versuch, wenn die Karte ohne Bild bleibt oder das Archiv einen Consent-Banner zeigt.
 - Backlog: die My-Items-Seite im eingeloggten Browser öffnen, URLs kopieren und als Block in die Paste-Seite einfügen.
 
 Die Kosten sind gedeckelt: ein Tageslimit für Scrapfly-Requests und eine Bestätigungsschwelle bei grossen Batches (Details im Job und im Design). Karakeep bleibt der einzige Bestand -- der Ingest speichert nur seinen Betriebszustand.
 
-::: info LinkedIn- und Web-Pfad sind produktiv
-Beide Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real über den Apify-Actor `vulnv~linkedin-posts-scraper`: Volltext, Originalbilder (bei Dokument-Posts alle Seiten), dazu Autor und erwähnte Firmen als Herkunfts-Tags. Eingereichte LinkedIn-URLs werden gebündelt und nach einem kurzen Sammelfenster als ein Lauf verarbeitet -- LinkedIn-Karten erscheinen deshalb mit einigen Minuten Verzögerung in Karakeep, Web-Karten sofort. Die Kosten- und Fenster-Parameter stehen im Job-Template und im Design (SSOT), nicht hier.
+::: info LinkedIn-, YouTube- und Web-Pfad sind produktiv
+Alle drei Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real über den Apify-Actor `vulnv~linkedin-posts-scraper`: Volltext, Originalbilder (bei Dokument-Posts alle Seiten), dazu Autor und erwähnte Firmen als Herkunfts-Tags. Eingereichte LinkedIn-URLs werden gebündelt und nach einem kurzen Sammelfenster als ein Lauf verarbeitet -- LinkedIn-Karten erscheinen deshalb mit einigen Minuten Verzögerung in Karakeep, YouTube- und Web-Karten sofort. Der YouTube-Pfad zieht Titel, Kanal und Vorschaubild kostenlos aus dem offiziellen oEmbed-Endpoint und dem Thumbnail-CDN und setzt Quelle und Kanal als Herkunfts-Tags; ist ein Video privat, gelöscht oder altersbeschränkt, endet der Job mit einer sprechenden Fehlermeldung. Die Kosten- und Fenster-Parameter stehen im Job-Template und im Design (SSOT), nicht hier.
 :::
 
 ## Verwandte Seiten
