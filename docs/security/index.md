@@ -75,7 +75,7 @@ Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Referenz](../authen
 
 ## Middleware Chains
 
-Alle Services werden über eine der vier Chains (`intern-api`, `intern-auth`, `public-auth`, `public-noauth`) geschützt. Die kanonische Chain-Definition inklusive Komponenten-Reihenfolge und IP-Allowlist-Ranges liegt in [Traefik Middlewares](../traefik/referenz.md).
+Services werden über Traefik Middleware Chains geschützt. Die vier Basis-Chains sind `intern-api`, `intern-auth`, `public-auth` und `public-noauth`; für Apps mit UI- oder JSON-untauglichen 401/403-Antworten kommen zusätzlich die strict-Varianten `intern-auth-strict` und `public-auth-strict` zum Einsatz. Die kanonische Chain-Definition inklusive Komponenten-Reihenfolge und IP-Allowlist-Ranges liegt in [Traefik Middlewares](../traefik/referenz.md).
 
 ## Konfiguration neuer Services
 
