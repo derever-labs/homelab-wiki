@@ -10,11 +10,13 @@ tags:
 
 # Backup - Betrieb
 
+Dieses Runbook greift im Restore-Fall: geplanter Wiederherstellungs-Drill oder echte Disaster-Recovery nach Daten- oder Node-Verlust. Vorbedingung sind ein erreichbarer NFS-Mount `/nfs/backup/` auf dem Ziel-Host, ein lauffähiger Docker-Daemon und der private age-Schlüssel (Vault `kv/backup/age-key` oder 1Password als DR-Fallback). Alle Backups liegen age-verschlüsselt vor und müssen vor jeder Verwendung entschlüsselt werden. Die Prod-Restore-Schritte für Vault und Nomad sind destruktiv und nur im echten DR-Fall auszuführen.
+
 ## Restore-Prozeduren
 
 ### Postgres
 
-Dump-Pfad: `/nfs/backup/postgres/daily/postgres-all-YYYYMMDD-HHMM.sql.gz`
+Dump-Pfad: `/nfs/backup/postgres/daily/postgres-all-YYYYMMDD-HHMM.sql.gz.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
@@ -24,7 +26,7 @@ Voraussetzungen:
 
 - NFS-Mount `/nfs/backup/` auf dem Ziel-Host vorhanden
 - Docker verfügbar
-- Postgres-Version aus dem Dump-Header lesen: `zcat <dump> | grep 'Dumped from'`
+- Postgres-Version aus dem Dump-Header lesen: `age -d -i "$KEYFILE" <dump> | zcat | grep 'Dumped from'`
 
 ```text
 # Wegwerf-Container starten (Version dem Dump anpassen, aktuell 16)
@@ -35,8 +37,10 @@ docker run -d --name pg-restore \
 
 # Warten bis Container bereit ist (ca. 10s)
 
-# Dump einspielen
-zcat /nfs/backup/postgres/daily/postgres-all-YYYYMMDD-HHMM.sql.gz \
+# Dump entschlüsseln und einspielen (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/postgres/daily/postgres-all-YYYYMMDD-HHMM.sql.gz.age \
+  | zcat \
   | docker exec -i pg-restore psql -U postgres -v ON_ERROR_STOP=0
 
 # Validierung: Datenbankliste prüfen
@@ -56,13 +60,13 @@ Der Dump enthält `DROP ... IF EXISTS`-Statements (Flag `--clean` im Backup-Job)
 
 ### MariaDB
 
-Dump-Pfad: `/nfs/backup/mariadb/daily/mariadb-all-YYYYMMDD-HHMM.sql.gz`
+Dump-Pfad: `/nfs/backup/mariadb/daily/mariadb-all-YYYYMMDD-HHMM.sql.gz.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
 :::
 
-MariaDB-Version aus Dump-Header: `zcat <dump> | head -5`
+MariaDB-Version aus Dump-Header: `age -d -i "$KEYFILE" <dump> | zcat | head -5`
 
 ```text
 docker run -d --name mariadb-restore \
@@ -71,7 +75,10 @@ docker run -d --name mariadb-restore \
 
 # Warten (ca. 15s)
 
-zcat /nfs/backup/mariadb/daily/mariadb-all-YYYYMMDD-HHMM.sql.gz \
+# Dump entschlüsseln und einspielen (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/mariadb/daily/mariadb-all-YYYYMMDD-HHMM.sql.gz.age \
+  | zcat \
   | docker exec -i mariadb-restore mariadb -u root -p<passwort>
 
 # Validierung
@@ -82,7 +89,7 @@ docker rm -f mariadb-restore
 
 ### InfluxDB
 
-Backup-Pfad: `/nfs/backup/influxdb/daily/influxdb-YYYYMMDD-HHMM.tar.gz`
+Backup-Pfad: `/nfs/backup/influxdb/daily/influxdb-YYYYMMDD-HHMM.tar.gz.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
@@ -93,7 +100,12 @@ Das Archiv enthält das native InfluxDB-Backup-Format (bolt, sqlite, TSM-Shards)
 ```text
 # Temporäres Verzeichnis
 mkdir -p /tmp/influx-restore
-tar -xzf /nfs/backup/influxdb/daily/influxdb-YYYYMMDD-HHMM.tar.gz \
+
+# Backup entschlüsseln, dann entpacken (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/influxdb/daily/influxdb-YYYYMMDD-HHMM.tar.gz.age \
+  > /tmp/influx-backup.tar.gz
+tar -xzf /tmp/influx-backup.tar.gz \
   -C /tmp/influx-restore/
 
 # Container starten
@@ -128,12 +140,12 @@ docker exec influx-restore curl -s http://localhost:8086/health
 
 # Cleanup
 docker rm -f influx-restore
-rm -rf /tmp/influx-restore
+rm -rf /tmp/influx-restore /tmp/influx-backup.tar.gz
 ```
 
 ### Vault
 
-Snapshot-Pfad: `/nfs/backup/vault/daily/vault-YYYYMMDD-HHMM.snap`
+Snapshot-Pfad: `/nfs/backup/vault/daily/vault-YYYYMMDD-HHMM.snap.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
@@ -158,7 +170,11 @@ disable_mlock = true
 EOF
 
 mkdir -p /tmp/vault-data
-cp /nfs/backup/vault/daily/vault-YYYYMMDD-HHMM.snap /tmp/vault-restore.snap
+
+# Snapshot entschlüsseln (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/vault/daily/vault-YYYYMMDD-HHMM.snap.age \
+  > /tmp/vault-restore.snap
 
 docker run -d --name vault-restore \
   --cap-add=IPC_LOCK \
@@ -196,22 +212,29 @@ sudo rm -rf /tmp/vault-data /tmp/vault-restore.snap /tmp/vault-config.hcl
 
 ::: info Standby nach Restore
 Nach dem Restore wechselt der Test-Node auf `standby`, weil der Snapshot die Produktions-Cluster-ID enthält. Das ist korrekt — der Test-Node ist kein Mitglied des Produktions-Clusters. In einer echten DR-Situation wird Vault auf den regulären Nodes in-place restored, nicht in einem fremden Container.
+:::
 
+::: danger Prod-Restore ist destruktiv
 Für einen echten Prod-Restore: Vault auf allen Nodes stoppen, Raft-Daten löschen, Vault neu starten, init überspringen und direkt snapshot restore ausführen. Unseal-Keys liegen unter `/etc/vault.d/unseal-keys` auf den Vault-Server-VMs.
 :::
 
 ### Consul
 
-Snapshot-Pfad: `/nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap`
+Snapshot-Pfad: `/nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
 :::
 
 ```text
+# Snapshot entschlüsseln (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap.age \
+  > /tmp/consul.snap
+
 # Struktur prüfen (kein Container nötig)
 docker run --rm \
-  -v /nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap:/snap:ro \
+  -v /tmp/consul.snap:/snap:ro \
   hashicorp/consul:latest \
   consul snapshot inspect /snap
 
@@ -222,7 +245,7 @@ docker run -d --name consul-restore \
 
 sleep 5
 
-docker cp /nfs/backup/consul/daily/consul-YYYYMMDD-HHMM.snap consul-restore:/tmp/consul.snap
+docker cp /tmp/consul.snap consul-restore:/tmp/consul.snap
 docker exec consul-restore consul snapshot restore /tmp/consul.snap
 
 # Validierung
@@ -230,11 +253,12 @@ docker exec consul-restore consul catalog services
 
 # Cleanup
 docker rm -f consul-restore
+rm -f /tmp/consul.snap
 ```
 
 ### Nomad
 
-Snapshot-Pfad: `/nfs/backup/nomad/daily/nomad-YYYYMMDD-HHMM.snap`
+Snapshot-Pfad: `/nfs/backup/nomad/daily/nomad-YYYYMMDD-HHMM.snap.age`
 
 ::: info age-Verschlüsselung
 Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüsseln -- privater Schlüssel in Vault und 1Password. Details: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
@@ -243,15 +267,21 @@ Backup-Outputs sind mit age verschlüsselt. Vor dem Restore zuerst entschlüssel
 Integritätsprüfung via `nomad operator snapshot inspect` (kein Cluster nötig, lokal auf dem Node):
 
 ```text
-nomad operator snapshot inspect /nfs/backup/nomad/daily/nomad-YYYYMMDD-HHMM.snap
+# Snapshot entschlüsseln (KEYFILE gemäss Runbook backup-restore.md)
+age -d -i "$KEYFILE" \
+  /nfs/backup/nomad/daily/nomad-YYYYMMDD-HHMM.snap.age \
+  > /tmp/nomad.snap
+nomad operator snapshot inspect /tmp/nomad.snap
 ```
 
+::: danger Prod-Restore ist destruktiv
 Ein vollständiger Nomad-Restore erfordert einen laufenden Nomad-Server mit Raft-Backend und Root-ACL-Token. Ablauf für Prod:
 
 - Nomad-Server auf allen Nodes stoppen
 - Raft-Daten löschen (`/opt/nomad/data/server/raft/`)
 - Nomad-Server neu starten
-- Snapshot restore: `nomad operator snapshot restore -address=https://<server>:4646 -token=<root-token> /path/to/snap`
+- Snapshot restore: `nomad operator snapshot restore -address=https://<server>:4646 -token=<root-token> /tmp/nomad.snap`
+:::
 
 Ein Voll-Restore in einem isolierten Test-Cluster wurde im Drill 2026-06-10 nicht durchgeführt (Aufwand unverhältnismässig, Integritätsnachweis via `inspect` ist hinreichend für Drill-Zweck).
 

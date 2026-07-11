@@ -26,7 +26,7 @@ Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen un
 
 ### Architektur
 
-Täglich um 03:00 UTC erstellt ein Nomad Batch Job (`batch-jobs/postgres-backup.nomad`) einen vollständigen Dump aller PostgreSQL-Datenbanken via `pg_dumpall`. Der Dump wird nach NFS geschrieben und nach GFS-Schema rotiert:
+Täglich um 03:00 (Europe/Zurich) erstellt ein Nomad Batch Job (`batch-jobs/postgres-backup.nomad`) einen vollständigen Dump aller PostgreSQL-Datenbanken via `pg_dumpall`. Der Dump wird nach NFS geschrieben und nach GFS-Schema rotiert:
 
 - `daily/` -- 7 Backups
 - `weekly/` -- 4 Backups
@@ -36,9 +36,9 @@ Nach erfolgreichem Dump wird ein Push an Uptime Kuma gesendet.
 
 ### Restore-Konzept
 
-Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYYYMMDD-HHMM.sql.gz`) aus dem NFS-Backup-Verzeichnis. Einzelne Datenbanken können aus dem Dump extrahiert werden.
+Ein PostgreSQL-Restore erfolgt durch Einspielen des SQL-Dumps (`postgres-all-YYYYMMDD-HHMM.sql.gz.age`, age-verschlüsselt) aus dem NFS-Backup-Verzeichnis. Einzelne Datenbanken können aus dem Dump extrahiert werden.
 
-**Vault Secrets:** `kv/data/postgres` (Passwort), `kv/data/uptime-kuma` (Push-URLs). Policies: `postgres`, `postgres-backup`.
+**Vault Secrets:** `kv/data/shared/postgres` (Passwort), `kv/data/uptime-kuma` (Push-URLs). Policies: `postgres`, `postgres-backup`.
 
 ## LINSTOR-Volumes
 
@@ -75,6 +75,7 @@ Das Interval von 26 Stunden gibt 2 Stunden Puffer, falls Backups länger dauern 
 
 ::: warning Kein Off-Site / 3-2-1 unvollständig
 Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.200`. Das NAS ist damit ein Single Point of Failure, und es gibt keine geografische Off-Site-Kopie. Das ist eine **bewusste Entscheidung** (kein volles 3-2-1) -- das NAS hat eine eigene Backup-Strategie.
+:::
 
 ## Verwandte Seiten
 
