@@ -90,7 +90,7 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 | vm-traefik-01 | 10.0.2.21 | 4011 | pve01 | Traefik HA (MASTER) + CrowdSec |
 | vm-traefik-02 | 10.0.2.22 | 4012 | pve02 | Traefik HA (BACKUP) + CrowdSec |
 | Traefik VIP | 10.0.2.20 | -- | Keepalived | VRRP Virtual IP |
-| checkmk | 10.0.2.150 | 2000 | pve01 | Monitoring System |
+| checkmk | 10.0.2.150 | 2000 | pve02 | Monitoring System |
 | pbs-backup-server | 10.0.2.50 | 99999 | pve02 | Proxmox Backup Server |
 | datacenter-manager | 10.0.2.60 | 99998 | pve01 | Management Tools |
 
@@ -108,7 +108,7 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 | :--- | :--- | :--- | :--- | :--- |
 | vm-nomad-client-04 | 10.0.2.124 | 3104 | pve00 | 2 CPU, 8 GB RAM |
 | vm-nomad-client-05 | 10.0.2.125 | 3105 | pve01 | 16 CPU, 74 GB RAM |
-| vm-nomad-client-06 | 10.0.2.126 | 3106 | pve02 | 16 CPU, 74 GB RAM |
+| vm-nomad-client-06 | 10.0.2.126 | 3106 | pve02 | 16 CPU, 68 GB RAM |
 
 ## IoT-VMs
 

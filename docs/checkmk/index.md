@@ -16,7 +16,7 @@ CheckMK ist die zentrale Host-Level-Monitoring-Lösung für das Homelab. Es übe
 | Attribut | Wert |
 |----------|------|
 | URL | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
-| Deployment | Eigenständige VM (ID: 2000) auf pve01 |
+| Deployment | Eigenständige VM (ID: 2000) auf pve02 |
 | Auth | CheckMK-eigene Benutzerverwaltung |
 | Storage | Lokaler ZFS auf Proxmox Node |
 
@@ -56,7 +56,7 @@ Alle Agents laufen im TLS-gesicherten Pull-Modus. Drei Architektur-Entscheidunge
 
 - **`--trust-cert` bei der Registrierung:** Das CheckMK-Site-CA-Zertifikat ist selbstsigniert (keine externe CA). Beim ersten Registrierungsaufruf wird `--trust-cert` übergeben, damit der Agent das CA-Zertifikat vertraut, ohne es manuell importieren zu müssen.
 
-- **`allow_legacy_pull=false` nach Registrierung:** Nach erfolgreicher TLS-Registrierung wird der unsichere Legacy-Pull-Modus (unkryptierter Port 6556) clientseitig deaktiviert. Der Agent akzeptiert danach ausschliesslich TLS-Verbindungen.
+- **`allow_legacy_pull=false` als separater Rollout-Abschluss:** Die Registrierungs-Automation schliesst den unsicheren Legacy-Pull-Modus (unverschlüsselter Port 6556) nicht automatisch nach jeder Registrierung. Er wird erst nach vollständigem Rollout in einem separaten Schritt deaktiviert, sobald alle Hosts TLS-registriert sind -- dieser Abschluss-Schritt ist nicht in der Repo-Automation abgebildet.
 
 Proxmox-Hosts (pve00/01/02) und externe Standalone-Nodes (pve-01-nana, pve-lu-01) werden über denselben `deb`-Paket-Weg deployt -- kein separater Deploymentpfad für Hypervisoren.
 

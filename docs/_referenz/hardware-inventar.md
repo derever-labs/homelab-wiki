@@ -38,17 +38,17 @@ rack: Lenzburg Rack {
 
   pve00: pve00 {
     class: node
-    tooltip: "Minisforum DeskMini N100\nBIOS: DNB20 V0.07 (2024-07-31)\nRAM: 16 GB DDR4-3200\nStorage: 512 GB NVMe HighRel"
+    tooltip: "Minisforum DeskMini N100\nRAM: 16 GB DDR4-3200\nStorage: 512 GB NVMe HighRel"
   }
 
   pve01: pve01 {
     class: node
-    tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+    tooltip: "Minisforum MS-01 (Venus Series)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
   }
 
   pve02: pve02 {
     class: node
-    tooltip: "Minisforum MS-01 (Venus Series)\nBIOS: 1.26 (2024-10-14)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+    tooltip: "Minisforum MS-01 (Venus Series)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
   }
 
   pve01 <-> pve02: 2x Thunderbolt 4 Bond
@@ -105,6 +105,7 @@ Kleinster Node im Cluster. Dient primär als Quorum-Geber für die Proxmox-Clust
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- DeskMini Series (Board DNBOE) |
 | Seriennummer | YY047LU10PCCMPE00322 |
+| BIOS | DNB20 V0.07 (2024-07-31) |
 | CPU | Intel N100, 4 Kerne / 4 Threads, 1 Socket |
 | RAM | 1× 16 GB DDR4-3200 (Part: DDR4 NB 16GB 3200MHZ) |
 | Lokaler Storage | 512 GB NVMe -- HighRel 512GB SSD (FW: SN14665) |
@@ -119,11 +120,12 @@ Einer der beiden leistungsstarken Nodes. Mit pve02 über Thunderbolt verbunden.
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
 | Seriennummer | MD126US129QQMQG00027 |
+| BIOS | 1.26 (2024-10-14) |
 | CPU | Intel i9-12900H, 14 Kerne (20 Threads), 1 Socket |
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| VMs | checkmk, datacenter-manager, vm-nomad-server-05, vm-nomad-client-05, vm-traefik-01 |
+| VMs | datacenter-manager, vm-nomad-server-05, vm-nomad-client-05, vm-traefik-01 |
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 
@@ -135,11 +137,12 @@ Zweiter leistungsstarker Node. Mit pve01 über Thunderbolt verbunden.
 | :--- | :--- |
 | Hersteller/Modell | Micro Computer (HK) -- Venus Series / MS-01 (Board AHWSA) |
 | Seriennummer | MF146VS129EDMHA00010 |
+| BIOS | 1.26 (2024-10-14) |
 | CPU | Intel i9-12900H, 14 Kerne (20 Threads), 1 Socket |
 | RAM | 2× 48 GB DDR5-5600 @4800 (Micron CT48G56C46S5.M16B1) |
 | Lokaler Storage | 2× 4 TB NVMe -- Kingston FURY Renegade SFYRDK4000G (FW: EIFK31.7) |
 | NICs | 2× Intel X710 10G SFP+, Intel I226-V 2.5G, Intel I226-LM 2.5G, MediaTek MT7922 Wi-Fi 6E |
-| VMs | pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06, vm-traefik-02 |
+| VMs | checkmk, pbs-backup-server, homeassistant, vm-nomad-server-06, vm-nomad-client-06, vm-traefik-02 |
 
 Thunderbolt-IP: [Hosts und IPs](./hosts-und-ips.md#thunderbolt-netzwerk).
 

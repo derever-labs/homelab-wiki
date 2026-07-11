@@ -65,15 +65,15 @@ workers: Nomad Clients {
 
   C04: vm-nomad-client-04 {
     class: node
-    tooltip: "10.0.2.124 | 4 CPU, 14 GB RAM, Klasse: worker"
+    tooltip: "10.0.2.124 | Klasse: worker"
   }
   C05: vm-nomad-client-05 {
     class: node
-    tooltip: "10.0.2.125 | 16 CPU, 74 GB RAM, Klasse: storage, iGPU"
+    tooltip: "10.0.2.125 | Klasse: storage, iGPU"
   }
   C06: vm-nomad-client-06 {
     class: node
-    tooltip: "10.0.2.126 | 16 CPU, 74 GB RAM, Klasse: storage, iGPU"
+    tooltip: "10.0.2.126 | Klasse: storage, iGPU"
   }
 }
 
