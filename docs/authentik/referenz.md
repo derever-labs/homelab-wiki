@@ -32,7 +32,8 @@ Der Default-Flow wurde für Passwortmanager-Kompatibilität optimiert:
 - **Single-Page Login** -- Password Stage ist direkt in der Identification Stage referenziert (`password_stage` Feld), E-Mail und Passwort erscheinen auf einer Seite
 - **Nur E-Mail** -- `user_fields=["email"]`, damit das Label auf "E-Mail" reduziert bleibt. Username-Login ist im Haupt-Flow nicht mehr möglich; Notzugang via `admin-local-login`
 - **Recovery-Link** -- die Identification Stage referenziert `default-recovery-flow` über `recovery_flow`. Auf der Login-Seite erscheint dezent "Passwort vergessen?"
-- **Passkey-Autofill** -- Die Identification-Stage hat ein `webauthn_stage`-Feld, das auf `passkey-autofill-validate` zeigt. Der Browser bietet beim Fokussieren des E-Mail-Felds automatisch einen registrierten Passkey an (Conditional UI / `autocomplete="email webauthn"`). Ein separater "Mit Passkey anmelden"-Link existiert nicht mehr; `passwordless_flow` der Identification-Stage ist leer
+- **Passkey-Autofill** -- Die Identification-Stage hat ein `webauthn_stage`-Feld, das auf `passkey-autofill-validate` zeigt. Der Browser bietet beim Fokussieren des E-Mail-Felds automatisch einen registrierten Passkey an (Conditional UI / `autocomplete="email webauthn"`)
+- **Passkey-Button** -- zusätzlich zum Autofill zeigt die Login-Maske einen expliziten "Mit Passkey anmelden"-Button (`passwordless_flow` der Identification-Stage zeigt auf den `passwordless-flow`, Button-Styling im Brand Custom CSS). Klick-getriggert und damit race-frei, robuster als das Autofill, das in Safari unzuverlässig bleibt
 - **Fixe 7-Tage-Session** -- Login-Stage hat `session_duration=days=7`, `remember_me_offset=seconds=0`. Die "Angemeldet bleiben"-Checkbox wird nicht mehr gerendert, jede Session läuft automatisch 7 Tage
 - **Terminate other sessions** -- Login-Stage beendet vorhandene Sessions des gleichen Users bei einem Neulogin
 
@@ -43,7 +44,7 @@ Fallback-Flow für Passkey-Besitzer, erreichbar über eine direkte URL. Zwei Sta
 1. `passwordless-authenticator-validate` -- dedizierte Authenticator-Validate-Stage mit `device_classes=["webauthn"]`, `not_configured_action=deny`, `webauthn_user_verification=required`
 2. Default User-Login-Stage
 
-Im normalen `default-authentication-flow` übernimmt Conditional UI (via `passkey-autofill-validate` als `webauthn_stage` der Identification-Stage) den Passkey-Login automatisch -- der `passwordless-flow` ist nur als direkter Einstieg relevant, falls der Browser kein Conditional Mediation unterstützt.
+Im normalen `default-authentication-flow` bieten sich zwei Passkey-Wege: Conditional UI (via `passkey-autofill-validate` als `webauthn_stage`) als automatischer Autofill, und der explizite "Mit Passkey anmelden"-Button (via `passwordless_flow`), der genau diesen `passwordless-flow` öffnet. Der Button ist der zuverlässige Weg, weil er durch den Klick ausgelöst wird und nicht vom Conditional-Mediation-Verhalten des Browsers abhängt (in Safari unzuverlässig).
 
 Die WebAuthn Setup-Stage ist mit `user_verification=required` und `resident_key_requirement=required` konfiguriert, damit registrierte Passkeys echte FIDO2-Resident-Keys sind und Passwordless zuverlässig funktioniert.
 
