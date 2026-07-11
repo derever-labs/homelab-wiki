@@ -121,7 +121,7 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 |-------------|-------------|
 | Integrated Storage (Raft) statt Consul-Backend | Weniger Abhängigkeiten: Vault verwaltet seinen eigenen Zustand |
 | Shamir Seal statt Cloud-/Transit-Auto-Unseal | Self-Hosted ohne externen KMS -- die Seal-Keys bleiben lokal auf den Nodes, keine Abhängigkeit von einem Cloud-Anbieter. Das Entsiegeln nach einem Neustart übernimmt ein lokaler Boot-Service (siehe [Betrieb](betrieb.md#unseal-nach-reboot)), kein herstellerseitiges Auto-Unseal. |
-| Kein permanenter Root-Token | Ein dauerhaft gültiger Root-Token wäre ein stehendes Vollzugriff-Secret. Root-Zugang wird nur im Notfall per `vault operator generate-root` aus den Shamir-Keys erzeugt und danach widerrufen (siehe [Betrieb](betrieb.md#recovery-break-glass)). |
+| Permanenter Admin-Root-Token in 1Password | Das Ein-Personen-Homelab hält bewusst einen Root-Token als Admin- und Bootstrap-Zugang im zugriffsgeschützten Passwort-Manager (1Password), nicht als stehendes Secret auf einem Node. Pragmatischer Kompromiss statt Best-Practice-Ideal. Break-Glass bei Token-Verlust: `vault operator generate-root` aus den Shamir-Keys (siehe [Betrieb](betrieb.md#root-zugang)). |
 | HTTP statt TLS | Bewusste Homelab-Entscheidung im isolierten Netz: kein Zertifikats-Expiry-Risiko. In einer produktiven Umgebung wäre TLS zwingend. |
 | KV v2 Secret Engine | Versionierung von Secrets, Soft-Delete möglich |
 
