@@ -139,10 +139,10 @@ classes: {
 
 direction: right
 
-Wecker: "Wecker aus\n(iOS-Automation)" { class: node }
-KB: "Kurzbefehl\nDaily Digest" {
+Wecker: "Ladegeraet getrennt\n(iOS-Automation)" { class: node }
+KB: "Kurzbefehl\nDaily Digest (Morgen)" {
   class: node
-  tooltip: Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit; laeuft auch manuell (Home-Screen/Widget)
+  tooltip: Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit; die Morgen-Variante laeuft nur 04:00-10:59, die manuelle Variante jederzeit (Home-Screen/Widget)
 }
 Svc: "todo-ingest" {
   class: node
@@ -151,24 +151,26 @@ Svc: "todo-ingest" {
 Seite: "Digest-Seite\n(Inbox-Host, Authentik)" { class: node }
 Push: "ntfy-Ping\nDigest bereit" { class: node }
 
-Wecker -> KB: "sofort ausfuehren"
+Wecker -> KB: "sofort ausfuehren\n(nur 04:00-10:59)"
 KB -> Svc: "POST /api/digest\n(Kalender, 202)" { style.stroke: "#2563eb" }
 Svc -> Push: "fertig" { style.stroke: "#16a34a" }
 Push -> Seite: "Tap oeffnet" { style.stroke: "#2563eb" }
-KB -> Seite: "Safari-Open\n(Best-effort)" { style.stroke-dash: 4 }
+KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
 ```
 
-- **Morgens:** Wecker ausschalten genügt. Der Kurzbefehl schickt die Kalenderdaten mit und der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Das direkte Safari-Öffnen durch den Kurzbefehl funktioniert nur am entsperrten Gerät (Best-effort).
-- **Tagsüber:** denselben Kurzbefehl manuell starten (mit frischen Terminen) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
-- **Kein Wecker (z.B. Wochenende):** kein automatischer Digest, on-demand jederzeit möglich. Werktags ohne Digest bis 09:00 erinnert eine ntfy-Warnung daran, dass die Automation nicht gefeuert hat.
+- **Morgens:** das iPhone vom Ladegerät nehmen genügt. Als Wecker dient Sleep Cycle, dessen Alarm-Stopp iOS-Automationen nicht auslösen kann (der Trigger "Wecker wird gestoppt" feuert nur bei der nativen Uhr-App) -- darum ist das nächtliche Laden der Anker. Der Kurzbefehl "Daily Digest Morgen" schickt die Kalenderdaten mit, läuft nur zwischen 04:00 und 10:59 und öffnet kein Safari; der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Mehrfaches Ab- und Anstecken fängt das Server-Debounce (5 min) ab.
+- **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
+- **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** kein automatischer Digest, on-demand jederzeit möglich. Werktags ohne Digest bis 09:00 erinnert eine ntfy-Warnung daran, dass die Automation nicht gefeuert hat.
 
 ### Einrichtung der Morgen-Automation
 
-Die Wecker-Automation kann nicht als Datei importiert werden und wird einmalig von Hand angelegt:
+Es gibt zwei signierte Kurzbefehl-Dateien: "Daily Digest" (manuell, mit Safari-Open) und "Daily Digest Morgen" (Automation, Zeitfenster 04:00-10:59, ohne Safari-Open). Beide enthalten den Bearer-Token und werden nach dem Import aus Downloads gelöscht. Die Automation selbst kann nicht als Datei importiert werden und wird einmalig von Hand angelegt:
 
-1. Kurzbefehl "Daily Digest" importieren (signierte Datei, danach aus Downloads löschen -- sie enthält den Bearer-Token) und einmal manuell ausführen, dabei die Freigaben (Kalender, Netzwerk) am entsperrten Gerät bestätigen.
-2. Kurzbefehle-App, Tab "Automation", neue private Automation: Auslöser "Wecker", Ereignis "Wird gestoppt", dann den Kurzbefehl "Daily Digest" wählen und "Sofort ausführen" aktivieren (kein "Vor Ausführen bestätigen").
-3. Snoozen löst die Automation nicht aus -- erst das endgültige Ausschalten des Weckers.
+1. Beide Kurzbefehle importieren, danach die Dateien löschen.
+2. "Daily Digest" einmal manuell ausführen und die Freigaben (Kalender, Netzwerk) am entsperrten Gerät bestätigen.
+3. "Daily Digest Morgen" einmal manuell ausführen -- wichtig: **innerhalb des Zeitfensters 04:00-10:59**, sonst läuft er leer durch und fragt keine Freigaben ab (Freigaben gelten pro Kurzbefehl). Ohne diesen Schritt blockiert der erste Automations-Lauf am gesperrten Gerät an den Freigabe-Dialogen.
+4. Kurzbefehle-App, Tab "Automation", neue private Automation: Auslöser "Ladegerät", Option "Wird getrennt", dann den Kurzbefehl "Daily Digest Morgen" wählen und "Sofort ausführen" aktivieren (kein "Vor Ausführen bestätigen").
+5. Abstecken ausserhalb des Zeitfensters (z.B. Nachladen am Schreibtisch) tut nichts -- das Zeitfenster steckt im Kurzbefehl, weil iOS-Automationen selbst keine Zeitbedingung kennen.
 
 ## Verarbeitung (Dual-Mode)
 
