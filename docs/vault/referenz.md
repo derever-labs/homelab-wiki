@@ -15,9 +15,12 @@ tags:
 |-------------|------|
 | Auth Method | `jwt-nomad` |
 | JWKS URL | `https://nomad.service.consul:4646/.well-known/jwks.json` |
+| Audience | `vault.io` |
 | Default Role | `nomad-workloads` |
 
 Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JWT-Signatur gegen diesen Endpunkt und stellt bei erfolgreicher Prüfung ein Vault-Token mit der Policy `nomad-workloads` aus.
+
+Dieselbe Auth Method trägt auch die CD-Pipeline-Rolle `github-runner-deploy`, über die sich der GitHub-Runner authentifiziert. Details: [github-runner Referenz](../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ## Policies
 
@@ -38,6 +41,15 @@ Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste
 | `kv/traefik` | Cloudflare API-Credentials für DNS Challenge |
 | `kv/ssh` | SSH-Credentials |
 
+## Secret Engines
+
+| Mount | Typ | Zweck |
+|-------|-----|-------|
+| `kv/` | KV v2 | Versionierte Service-Secrets, Pfad-Konvention `kv/<job_id>` |
+| `nomad/` | Nomad Secret Engine | Stellt kurzlebige Nomad-Client-Tokens für die CD-Pipeline aus (Rolle `github-deploy`) |
+
+Die Nomad Secret Engine ersetzt statische Deploy-Tokens: Der GitHub-Runner holt pro Deployment über `nomad/creds/github-deploy` einen Token mit begrenzter TTL und widerruft ihn am Ende des Workflows. Verfahren und Policies: [github-runner Referenz](../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
+
 ## Audit Logging
 
 Alle Vault-Zugriffe werden protokolliert.
@@ -56,8 +68,7 @@ Das Audit Log erfasst jeden API-Aufruf an Vault, einschliesslich Auth-Versuche, 
 |------|------------|
 | `/opt/vault` | Vault Daten |
 | `/opt/vault/audit/vault-audit.log` | Audit Log |
-| `/etc/vault.d/unseal-keys` | Auto-Unseal Keys (chmod 600, manuell angelegt) |
-| `/root/vault-keys.json` | Vault-Init-Output (Root-Token + Shamir-Keys) |
+| `/etc/vault.d/unseal-keys` | Shamir Unseal Keys (eine pro Zeile, chmod 600); Quelle für den Boot-Unseal-Service und für generate-root |
 
 ## Vault Service Discovery
 
