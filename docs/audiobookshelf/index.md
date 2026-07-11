@@ -17,7 +17,7 @@ Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediat
 |----------|------|
 | URL | [audio.ackermannprivat.ch](https://audio.ackermannprivat.ch) |
 | Deployment | Nomad Job `media/audiobookshelf.nomad` |
-| Storage | NFS `/nfs/docker/audiobookshelf/` (Config, Metadata) |
+| Storage | Linstor CSI `audiobookshelf-config` (`/config`), `audiobookshelf-metadata` (`/metadata`) |
 | Mediathek | NFS `/nfs/jellyfin/media/books/` |
 | Auth | Intern: `intern-noauth@file` / Extern: `public-auth@file` |
 
@@ -50,9 +50,13 @@ Nomad: Nomad Cluster {
   ABS: Audiobookshelf { style.border-radius: 8 }
 }
 
+CSI: Linstor CSI {
+  style.stroke-dash: 4
+  CFG: "config + metadata" { shape: cylinder }
+}
+
 NFS: NAS {
   style.stroke-dash: 4
-  CFG: "/nfs/docker/audiobookshelf/ config + metadata" { shape: cylinder }
   BOOKS: "/nfs/jellyfin/media/books/" { shape: cylinder }
 }
 
@@ -61,12 +65,12 @@ Client.APP -> Traefik.EXT: HTTPS extern
 Client.WEB -> Traefik.EXT: HTTPS
 Traefik.INT -> Nomad.ABS
 Traefik.EXT -> Nomad.ABS
-Nomad.ABS -> NFS.CFG
+Nomad.ABS -> CSI.CFG
 Nomad.ABS -> NFS.BOOKS
 ```
 
 ## Verwandte Seiten
 
 - [Jellyfin](../jellyfin/index.md) -- Media Player, teilt die Bücher-Mediathek
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Mediathek und Config
+- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Mediathek
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung

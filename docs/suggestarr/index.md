@@ -18,7 +18,7 @@ SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisier
 |----------|------|
 | URL | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `media/suggestarr.nomad` |
-| Storage | NFS `/nfs/docker/suggestarr/config/` |
+| Storage | Linstor CSI `suggestarr-data` (`/app/config/config_files`) |
 | Auth | `intern-noauth@file` |
 
 ## Rolle im Stack
@@ -75,7 +75,7 @@ Ollama-API (`/v1/chat/completions`), lokal im Cluster, OpenAI-kompatibel.
 
 Der Health-Endpunkt unter `/api/health` gibt den Status aller Abhängigkeiten zurück (`db`, `llm`, `seer`, `tmdb`). Über das Web-UI kann mit dem Button "Force Run" ein manueller Lauf ausgelöst werden. Der Tab "AI Search" ermöglicht natürlichsprachige Suchanfragen (z.B. "ein Dokumentarfilm im Stil von David Attenborough").
 
-Das Anwendungs-Log liegt unter `/nfs/docker/suggestarr/config/app.log`.
+Das Anwendungs-Log (`app.log`) liegt im Config-Verzeichnis auf dem CSI-Volume `suggestarr-data` (Container-Pfad `/app/config/config_files/`).
 
 ### Bekannte Einschränkungen
 

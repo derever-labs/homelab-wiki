@@ -19,7 +19,7 @@ DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bie
 | URL | [dbgate.ackermannprivat.ch](https://dbgate.ackermannprivat.ch) |
 | Deployment | Nomad Job `databases/dbgate.nomad` |
 | Auth | `intern-auth@file` (Authentik ForwardAuth) |
-| Storage | NFS `/nfs/docker/dbgate/data` |
+| Storage | Linstor CSI `dbgate-data` (`/root/.dbgate`) |
 
 ## Architektur
 
@@ -45,17 +45,17 @@ User: Admin User { class: node }
 Traefik: "Traefik\nintern-auth" { class: node }
 DbGate: "DbGate\n(host network)" { class: node }
 PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
-NFS: "NFS Storage" { shape: cylinder }
+CSI: "Linstor CSI\ndbgate-data" { shape: cylinder }
 
 User -> Traefik: HTTPS
-Traefik -> DbGate
+Traefik -> DbGate: HTTP :3002
 DbGate -> PG: localhost:5432
-DbGate -> NFS: Verbindungsdaten
+DbGate -> CSI: Verbindungsdaten
 ```
 
 ## Datenbankzugriff
 
-DbGate läuft im `host` Network Mode auf denselben Nodes wie PostgreSQL (`vm-nomad-client-05` / `vm-nomad-client-06`). Dadurch ist der PostgreSQL Cluster über `localhost:5432` erreichbar -- es wird kein externer Netzwerkzugriff auf die Datenbank exponiert.
+DbGate läuft im `host` Network Mode auf denselben Nodes wie PostgreSQL (`vm-nomad-client-05` / `vm-nomad-client-06`). Dadurch ist der PostgreSQL Cluster über `localhost:5432` erreichbar.
 
 ::: tip Warum Host Network?
 Der Host Network Mode vermeidet, dass PostgreSQL über das Netzwerk exponiert werden muss. DbGate greift direkt über `127.0.0.1:5432` zu -- gleich wie die anderen Services auf dem Node.
@@ -63,7 +63,7 @@ Der Host Network Mode vermeidet, dass PostgreSQL über das Netzwerk exponiert we
 
 ## Persistenz
 
-Verbindungskonfigurationen und gespeicherte Queries werden im Container unter `/root/.dbgate` persistiert (NFS-Mount, siehe Storage-Zeile in der Übersicht).
+Verbindungskonfigurationen und gespeicherte Queries werden im Container unter `/root/.dbgate` persistiert (Linstor-CSI-Volume, siehe Storage-Zeile in der Übersicht).
 
 ## Verwandte Seiten
 

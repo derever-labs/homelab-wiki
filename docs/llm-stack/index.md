@@ -30,7 +30,7 @@ Zwei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 | URL | [chat.ackermannprivat.ch](https://chat.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/open-webui.nomad` |
 | Datenbank | PostgreSQL via Consul DNS (`postgres.service.consul`, DB `open_webui`) |
-| Storage | NFS `/nfs/docker/open-webui` (Uploads, Vektor-Store) |
+| Storage | Linstor CSI `open-webui-data` (`/app/backend/data`, Uploads/Vektor-Store) |
 | Auth | Natives OIDC via Authentik + `intern-noauth@file` |
 
 ## Architektur
@@ -63,14 +63,14 @@ Nomad: "Nomad Cluster" {
 }
 
 NFS: "NFS /nfs/docker/ollama" { shape: cylinder }
-NFS_OW: "NFS /nfs/docker/open-webui" { shape: cylinder }
+CSI_OW: "Linstor CSI\nopen-webui-data" { shape: cylinder }
 
 User.Browser -> Traefik.RC: HTTPS
 Traefik.RC -> Nomad.OW
 Nomad.OW -> Nomad.OL: "HTTP :11434\nvia Consul DNS"
 Traefik.RO -> Nomad.OL
 Nomad.OL -> NFS
-Nomad.OW -> NFS_OW
+Nomad.OW -> CSI_OW
 ```
 
 ## Rolle im Stack
@@ -111,4 +111,4 @@ Open WebUI authentifiziert über OIDC direkt gegen Authentik (Provider `open-web
 
 - [Traefik Reverse Proxy](../traefik/index.md) -- Ingress und Middleware-Chains für Ollama und Open WebUI
 - [Authentik](../authentik/index.md) -- OIDC-Provider für Open WebUI
-- [Storage NAS](../nas-storage/index.md) -- NFS-Speicher für Ollama-Modelle und Open WebUI Daten
+- [Storage NAS](../nas-storage/index.md) -- NFS-Speicher für Ollama-Modelle

@@ -18,7 +18,7 @@ ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachri
 |----------|------|
 | URL | [change.ackermannprivat.ch](https://change.ackermannprivat.ch) |
 | Deployment | Nomad Job `services/changedetection.nomad` |
-| Storage | NFS `/nfs/docker/changedetection/datastore` |
+| Storage | Linstor CSI `changedetection-data` (rg-replicated, `/datastore`) |
 | Auth | `intern-auth@file` |
 
 ## Rolle im Stack
@@ -67,7 +67,7 @@ External: Externe Websites {
 }
 
 USER -> Traefik.R1: HTTPS
-Traefik.R1 -> Nomad.CD
+Traefik.R1 -> Nomad.CD: HTTP :5000
 Nomad.CD -> Nomad.PW: WebSocket
 Nomad.PW -> External.WEB: HTTP/JS
 ```
@@ -83,4 +83,3 @@ Ein Browserless-Chrome-Container läuft als Nomad Sidecar-Task und stellt über 
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Nutzt ChangeDetection für Webseiten-Überwachung
 - [n8n](../n8n/index.md) -- Workflow-Automation für Benachrichtigungen
 - [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Watches und Snapshots
