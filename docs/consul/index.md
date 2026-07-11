@@ -124,15 +124,7 @@ Consul läuft auf denselben VMs wie Nomad und Vault: drei Server bilden den Raft
 
 ## Service Discovery
 
-Nomad registriert jeden Service mit der `service` Stanza automatisch in Consul. Traefik nutzt den Consul Catalog Provider, um diese Services als Backends zu erkennen und Routen zu konfigurieren.
-
-Der typische Fluss:
-
-1. Nomad startet einen Container auf einem Worker-Node
-2. Der lokale Consul-Agent registriert den Service
-3. Consul führt Health Checks durch
-4. Traefik liest den Consul Catalog und erstellt automatisch Routen
-5. Der Service ist unter seiner Domain erreichbar
+Nomad registriert jeden Service mit der `service` Stanza automatisch in Consul. Traefik nutzt den Consul Catalog Provider, um diese Services als Backends zu erkennen und Routen zu konfigurieren. Der Ablauf -- Container-Start, Service-Registrierung durch den lokalen Agent, Health Checks, Catalog-Auswertung durch Traefik -- läuft ohne manuellen Eingriff.
 
 ## DNS-Integration
 
@@ -148,14 +140,9 @@ Der Consul KV Store ist kein Secrets-Store. Sensible Daten gehören in [Vault](.
 
 ## Security
 
-| Massnahme | Status |
-|-----------|--------|
-| Gossip Encryption | Aktiv |
-| ACLs | Deaktiviert |
-| TLS | Deaktiviert (Homelab-Entscheidung) |
-| Connect (Service Mesh) | Deaktiviert |
+Gossip Encryption verschlüsselt den gesamten Cluster-Traffic mit einem symmetrischen, auf allen Nodes identischen Key. Consul Connect (Service Mesh mit mTLS und Sidecar-Proxies) ist bewusst nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery.
 
-Gossip Encryption verschlüsselt den gesamten Cluster-Traffic mit einem symmetrischen, auf allen Nodes identischen Key. Consul Connect (Service Mesh mit mTLS und Sidecar-Proxies) ist bewusst nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery. Begründung zu deaktiviertem TLS und ACLs: [Consul Betrieb](./betrieb.md).
+Status und Begründung der übrigen Sicherheitsmassnahmen -- kein TLS sowie das aktive ACL-System mit permissiver Default-Policy (`allow`) -- sind unter [Consul Betrieb](./betrieb.md) dokumentiert.
 
 ## Verwandte Seiten
 

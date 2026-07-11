@@ -30,7 +30,8 @@ Folgende Vorgänge laufen im Normalbetrieb vollständig automatisch ab:
 Bewusste Homelab-Entscheidungen, die vom Produktions-Best-Practice abweichen:
 
 - **Kein TLS:** Die Kommunikation zwischen Consul-Nodes und zur API ist nicht TLS-verschlüsselt. Begründung: Kein Zertifikat-Expiry-Risiko, Gossip Encryption schützt den Cluster-Traffic trotzdem. Nur im internen Netz exponiert.
-- **ACLs deaktiviert:** Alle Consul-Operationen (API, DNS, KV) sind ohne Token möglich. Im Homelab akzeptabel, da kein Mehrmandanten-Betrieb.
+- **ACL-System mit permissiver Default-Policy:** Das ACL-System ist aktiv und gebootstrappt, die Default-Policy steht jedoch auf `allow` -- Anfragen ohne Token werden erlaubt (API, DNS, KV). Als permissive Übergangskonfiguration akzeptiert, solange nur vertrauenswürdige interne Clients auf den Cluster zugreifen. Der Umstieg auf `default_policy = deny` mit Workload-Identity-Tokens je Service ist als Härtungsschritt vorgesehen, sobald die Soll-Liste der Intentions und Service-Tokens vollständig gegen den Ist-Zustand verifiziert ist.
+- **Consul Connect deaktiviert:** Das Service Mesh (mTLS, Sidecar-Proxies) ist nicht konfiguriert; das Homelab nutzt einfaches Service-Discovery.
 - **Single Datacenter:** Kein WAN-Federation mit anderen Datacentern. Port 8302 (Serf WAN) ist nicht aktiv genutzt.
 
 ::: info Bewusste Entscheidungen
