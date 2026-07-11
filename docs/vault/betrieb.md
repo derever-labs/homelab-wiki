@@ -38,7 +38,7 @@ Das Raft-Protokoll erstellt automatisch interne Snapshots zur Zustandssicherung.
 
 ## Recovery und Break-Glass {#recovery-break-glass}
 
-Zwei Notfälle erfordern manuellen Eingriff: Vault bleibt nach einem Neustart versiegelt, oder es wird administrativer Root-Zugang gebraucht. Beide Verfahren stützen sich auf dieselben Shamir-Key-Shares aus `/etc/vault.d/unseal-keys` (Speicherort und Zugang: [Credentials](../_referenz/credentials.md)).
+Dieser Abschnitt behandelt den administrativen Root-Zugang und die manuellen Eingriffe, wenn die Automatik versagt -- etwa wenn Vault nach einem Neustart versiegelt bleibt. Das Entsiegeln von Hand und der Break-Glass-Weg für einen neuen Root-Token stützen sich auf dieselben Shamir-Key-Shares aus `/etc/vault.d/unseal-keys` (Speicherort und Zugang: [Credentials](../_referenz/credentials.md)).
 
 ### Vault bleibt versiegelt
 
@@ -50,16 +50,20 @@ Schlägt der Boot-Service fehl und meldet `vault status` weiter `Sealed: true`, 
 
 Jeder Node wird einzeln entsiegelt. Das Cluster-Quorum stellt sich her, sobald mindestens 2 Nodes entsiegelt und erreichbar sind.
 
-### Root-Zugang im Notfall
+### Administrativer Root-Zugang {#root-zugang}
 
-Es gibt bewusst keinen permanenten Root-Token (siehe [Designentscheide](index.md#designentscheide)). Wird echter Root-Zugang gebraucht -- etwa um eine Policy oder eine Auth Method zu reparieren -- wird ein temporärer Root-Token aus den Shamir-Keys erzeugt:
+Für Admin- und Setup-Aufgaben, die echten Root-Zugriff brauchen -- etwa das erstmalige Einrichten der Nomad-Vault-Integration oder das Reparieren einer Policy oder Auth Method -- hält dieses Homelab bewusst einen permanenten Admin-Root-Token vor. Er liegt in 1Password (Item "Vault Token Privat", Vault "PRIVAT Agent"), nicht als stehendes Secret auf einem Node oder in einer Repo-Datei.
+
+Das ist eine bewusste, pragmatische Entscheidung für ein Ein-Personen-Homelab: Der Root-Token bleibt im verschlüsselten, zugriffsgeschützten Passwort-Manager statt dauerhaft auf einem Server zu liegen. Kein Best-Practice-Ideal, aber ein verbreiteter und vertretbarer Kompromiss zwischen Betriebsaufwand und Sicherheit bei einem einzelnen Operator.
+
+### Break-Glass: Root-Token neu erzeugen
+
+Ist der 1Password-Token verloren oder unbrauchbar, lässt sich aus den Shamir-Key-Shares ein neuer Root-Token erzeugen:
 
 1. Das Verfahren mit `vault operator generate-root -init` starten -- Vault gibt ein One-Time-Password (OTP) und eine Nonce aus.
 2. Für jeden Key-Share aus `/etc/vault.d/unseal-keys` einen `vault operator generate-root`-Schritt mit derselben Nonce durchführen, bis der Threshold erreicht ist.
 3. Vault liefert daraufhin den verschlüsselten Root-Token; das OTP entschlüsselt ihn zum nutzbaren Token.
-4. Nach erledigter Notfall-Aufgabe den temporären Root-Token mit `vault token revoke` widerrufen -- er darf nicht bestehen bleiben.
-
-So existiert zu keinem Zeitpunkt ein dauerhaft gültiger Root-Token als stehendes Vollzugriff-Secret.
+4. Den neuen Root-Token wieder sicher in 1Password ("Vault Token Privat") ablegen. War es nur eine einmalige Notfall-Aufgabe, den temporären Token stattdessen mit `vault token revoke` widerrufen.
 
 ## Bekannte Einschränkungen
 
@@ -76,10 +80,10 @@ Sind 2 von 3 Nodes offline, verliert Vault sein Raft-Quorum und ist vollständig
 
 ## Schlüssel und Zugang
 
-Die Shamir Unseal Keys liegen auf den Server-Nodes unter `/etc/vault.d/unseal-keys`; Speicherort und Zugang sind in [Credentials](../_referenz/credentials.md) dokumentiert. Einen permanenten Root-Token gibt es nicht -- Root-Zugang wird bei Bedarf per generate-root erzeugt (siehe [Recovery und Break-Glass](#recovery-break-glass)).
+Die Shamir Unseal Keys liegen auf den Server-Nodes unter `/etc/vault.d/unseal-keys`; der permanente Admin-Root-Token liegt in 1Password (Item "Vault Token Privat"). Speicherort und Zugang beider sind in [Credentials](../_referenz/credentials.md) dokumentiert. Ist der 1Password-Token nicht verfügbar, lässt sich Root-Zugang per generate-root aus den Unseal Keys neu erzeugen (siehe [Administrativer Root-Zugang](#root-zugang)).
 
 ::: danger Sicherheitskritisch
-Die Unseal Keys ermöglichen zusammen (Threshold 2 von 3) das Entsiegeln und -- über generate-root -- vollen administrativen Zugriff auf alle Secrets. Speicherort und Zugang ausschliesslich über den verlinkten Credentials-Eintrag.
+Sowohl der Admin-Root-Token als auch die Unseal Keys (Threshold 2 von 3, über generate-root) ermöglichen vollen administrativen Zugriff auf alle Secrets. Speicherort und Zugang ausschliesslich über den verlinkten Credentials-Eintrag.
 :::
 
 ## Verwandte Seiten

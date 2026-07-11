@@ -51,12 +51,13 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 | :--- | :--- | :--- | :--- |
 | UniFi | PRIVAT Agent | Ubiquiti Unifi Konto Ackermann | UI.com SSO + SSH-Passwort (UDM Pro) |
 | Directus Gravel | PRIVAT Agent | Directus Gravel | Admin-Login + Service-Keys (DB, S3, Encryption) |
+| Vault (Admin) | PRIVAT Agent | Vault Token Privat | Admin-Root-Token (Admin-/Bootstrap-Zugang) + Offline-Backup der Shamir-Recovery-Keys |
 
 ## Vault Authentifizierung
 
 | Methode | Beschreibung |
 | :--- | :--- |
-| Root-Zugang (Notfall) | Kein permanenter Root-Token -- bei Bedarf per generate-root aus den Unseal Keys erzeugt und danach widerrufen (siehe [Vault Betrieb](../vault/betrieb.md#recovery-break-glass)) |
+| Admin-Root-Token | Permanenter Root-Token als Admin-/Bootstrap-Zugang, abgelegt in 1Password (Item "Vault Token Privat", siehe 1Password-Tabelle oben). Break-Glass bei Verlust: per generate-root aus den Unseal Keys neu erzeugen (siehe [Vault Betrieb](../vault/betrieb.md#root-zugang)) |
 | Workload Identity (JWT) | Nomad Jobs authentifizieren sich automatisch über `jwt-nomad` Auth Method |
 
 ## Verwandte Seiten
