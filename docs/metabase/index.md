@@ -17,7 +17,7 @@ Metabase ist die Business-Intelligence-Plattform f√ºr Datenvisualisierung. Prim√
 |----------|------|
 | URL | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/metabase.nomad` |
-| Storage | NFS `/nfs/docker/metabase/plugins` |
+| Storage | Linstor CSI `metabase-data` (`/plugins`) |
 | Auth | `intern-auth@file` (Authentik ForwardAuth + IP-Allowlist), siehe [Traefik Middlewares](../traefik/referenz.md) |
 
 ## Rolle im Stack
