@@ -56,7 +56,7 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 
 | Methode | Beschreibung |
 | :--- | :--- |
-| Root Token | Initialer Admin-Zugang (nur für Notfälle) |
+| Root-Zugang (Notfall) | Kein permanenter Root-Token -- bei Bedarf per generate-root aus den Unseal Keys erzeugt und danach widerrufen (siehe [Vault Betrieb](../vault/betrieb.md#recovery-break-glass)) |
 | Workload Identity (JWT) | Nomad Jobs authentifizieren sich automatisch über `jwt-nomad` Auth Method |
 
 ## Verwandte Seiten

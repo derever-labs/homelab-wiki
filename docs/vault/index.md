@@ -17,6 +17,10 @@ Vault ist das zentrale Secrets Management. Alle Passwörter, Tokens und API-Keys
 | Attribut | Wert |
 |----------|------|
 | Deployment | Ansible + Systemd (3-Node Raft Cluster) |
+| Storage | Integrated Storage (Raft), repliziert über alle 3 Nodes |
+| Seal | Shamir (3 Key-Shares, Threshold 2) |
+| API-Zugang | HTTP über `vault.service.consul:8200` (kein TLS) |
+| Workload-Auth | Nomad Workload Identity (JWT), kein statischer Token |
 
 ## Rolle im Stack
 
@@ -116,8 +120,9 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 | Entscheidung | Begründung |
 |-------------|-------------|
 | Integrated Storage (Raft) statt Consul-Backend | Weniger Abhängigkeiten: Vault verwaltet seinen eigenen Zustand |
-| TLS deaktiviert | Homelab-Entscheidung: kein Expiry-Risiko |
-| Auto-Unseal Service | Minimiert manuelle Eingriffe nach Neustarts oder Stromausfällen |
+| Shamir Seal statt Cloud-/Transit-Auto-Unseal | Self-Hosted ohne externen KMS -- die Seal-Keys bleiben lokal auf den Nodes, keine Abhängigkeit von einem Cloud-Anbieter. Das Entsiegeln nach einem Neustart übernimmt ein lokaler Boot-Service (siehe [Betrieb](betrieb.md#unseal-nach-reboot)), kein herstellerseitiges Auto-Unseal. |
+| Kein permanenter Root-Token | Ein dauerhaft gültiger Root-Token wäre ein stehendes Vollzugriff-Secret. Root-Zugang wird nur im Notfall per `vault operator generate-root` aus den Shamir-Keys erzeugt und danach widerrufen (siehe [Betrieb](betrieb.md#recovery-break-glass)). |
+| HTTP statt TLS | Bewusste Homelab-Entscheidung im isolierten Netz: kein Zertifikats-Expiry-Risiko. In einer produktiven Umgebung wäre TLS zwingend. |
 | KV v2 Secret Engine | Versionierung von Secrets, Soft-Delete möglich |
 
 ## Workload Identity
