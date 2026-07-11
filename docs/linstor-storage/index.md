@@ -171,13 +171,13 @@ Globale DRBD-Properties (via Linstor Controller, gelten für alle Resources):
 - `DrbdOptions/Net/max-buffers` = 8000
 - `DrbdOptions/Net/max-epoch-size` = 8000
 
-**Disk Tuning (sicher weil ZFS darunter):**
-- `DrbdOptions/Disk/disk-flushes` = no (ZFS hat eigene Barrier-Logik)
-- `DrbdOptions/Disk/md-flushes` = no
+**Disk Tuning:**
+- `DrbdOptions/Disk/disk-flushes` = yes (Consumer-NVMe ohne Power-Loss-Protection)
+- `DrbdOptions/Disk/md-flushes` = yes
 - `DrbdOptions/Disk/al-extents` = 6433 (mehr parallele Write-Hotspots auf NVMe)
 
-::: warning disk-flushes deaktivieren
-`disk-flushes no` ist nur sicher wenn ZFS als unterliegendes Dateisystem genutzt wird. Bei LVM/ext4 als Backend NICHT deaktivieren -- Datenverlust-Risiko bei Stromausfall.
+::: danger disk-flushes müssen aktiv bleiben
+Im Homelab sind `disk-flushes` und `md-flushes` bewusst auf `yes` gesetzt. Die Storage-Nodes laufen auf Consumer-NVMe ohne Power-Loss-Protection (PLP): Ohne Flushes bestätigt DRBD Schreibvorgänge, die bei einem Stromausfall noch im flüchtigen Disk-Cache stehen und dann verloren gehen. Der ansible-verwaltete Default (`linstor_disk_flushes`) steht auf `yes`; nur das DClab überschreibt ihn per group_vars auf `no`, weil dort Enterprise-NVMe mit PLP verbaut ist. Die DClab-Einstellung `no` darf nicht ins Homelab übernommen werden -- das riskiert Datenverlust.
 :::
 
 **Connection Timing (tolerant gegen CPU-Kontention):**
@@ -200,13 +200,9 @@ Auf den i9-12900H-Hosts (`pve01`/`pve02`, 16 pCPU) ist die Ratio unkritisch -- d
 
 Pool-Property auf c05/c06 (Homelab) von Default 5 auf 30 gesetzt. Verhindert, dass stark overcommittete Thin Pools neue Resource-Creates blockieren. Im DClab gilt dieselbe Einstellung auf c02/c03 -- die DClab-spezifische Topologie und Konfiguration ist im DClab-Wiki dokumentiert.
 
-## Schedule-Engine (Backup)
+## Backup
 
-Die Linstor Schedule-Engine (`backup-daily`) erstellt einen ephemeren DRBD-Snapshot, schickt ihn als Vollbackup nach Garage S3 und löscht den Snapshot nach dem Shipping (KEEP_LOCAL=0). Ein Dead-Man's-Switch pusht den Erfolg an Uptime Kuma. Zeitplan, Scope, KEEP-Parameter und Bucket: siehe [Linstor Betrieb](./betrieb.md).
-
-::: danger Garage-Bug: kein Incremental
-Linstor + Garage hat einen `listObjectsV2`-Timeout-Bug bei Incremental-Backups. Ausschliesslich Full-Only-Modus aktiv.
-:::
+Die DRBD/LINSTOR-Volumes werden nicht LINSTOR-nativ gesichert, sondern als Block über den Proxmox Backup Server, der die Storage-VMs sichert; hinzu kommen app-konsistente DB-Dumps. Die frühere Linstor-Schedule-Engine (ephemerer Snapshot plus Shipping nach Garage S3) wurde am 2026-05-31 zurückgebaut -- sie war redundant zu PBS und lief wegen eines `listObjectsV2`-Timeout-Bugs in der Kombination Linstor + Garage ohnehin nur im Full-Only-Modus (Incremental-Backups unmöglich). Strategie, Retention und Restore: [Backup](../backup/).
 
 ## Encryption und Auto-Unlock
 
