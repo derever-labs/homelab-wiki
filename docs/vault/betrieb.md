@@ -56,10 +56,6 @@ Für Admin- und Setup-Aufgaben, die echten Root-Zugriff brauchen -- etwa das ers
 
 Das ist eine bewusste, pragmatische Entscheidung für ein Ein-Personen-Homelab: Der Root-Token bleibt im verschlüsselten, zugriffsgeschützten Passwort-Manager statt dauerhaft auf einem Server zu liegen. Kein Best-Practice-Ideal, aber ein verbreiteter und vertretbarer Kompromiss zwischen Betriebsaufwand und Sicherheit bei einem einzelnen Operator.
 
-::: tip Verbesserungspotenzial
-Heute ist der 1Password-Token ein voller Root-Token. Enger wäre ein Admin-Token mit einer eingeschränkten Policy statt vollem Root -- gleicher Nutzen im Alltag, kleinerer Blast Radius. Verbesserungspotenzial ohne akuten Handlungsbedarf.
-:::
-
 ### Break-Glass: Root-Token neu erzeugen
 
 Ist der 1Password-Token verloren oder unbrauchbar, lässt sich aus den Shamir-Key-Shares ein neuer Root-Token erzeugen:
