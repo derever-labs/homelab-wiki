@@ -68,7 +68,7 @@ Backup: Backup {
   style.stroke-dash: 4
   DUMP: pg_dumpall 03:00 UTC { style.border-radius: 8 }
   NFS: NFS Backup GFS 7d/4w/3m { shape: cylinder; style.border-radius: 8 }
-  S3: Garage linstor-backups Snapshots { shape: cylinder; style.border-radius: 8 }
+  PBS: Proxmox Backup Server VM-Block { shape: cylinder; style.border-radius: 8 }
 }
 
 Services.RADAR -> Database.PG
@@ -88,7 +88,7 @@ Services.GR -> Database.PG: read-only Datasource { style.stroke-dash: 5 }
 Database.PG -> Storage.DRBD
 Database.PG -> Backup.DUMP
 Backup.DUMP -> Backup.NFS
-Storage.DRBD -> Backup.S3
+Storage.DRBD -> Backup.PBS
 ```
 
 ## DRBD-Replikation
@@ -133,11 +133,9 @@ Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
 | :--- | :--- | :--- | :--- |
 | pg_dumpall | Täglich 03:00 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/postgres/` |
 | mariadb-dump | Täglich 03:15 UTC | GFS: 7d/4w/3m | NFS `/nfs/backup/mariadb/` |
-| Linstor Snapshots | Täglich 02:00 Uhr | 7 Snapshots | Lokal auf DRBD |
-| Linstor S3 Shipping | Täglich | GFS: 7d/4w/3m | Garage `linstor-backups` |
 
 ## Verwandte Seiten
 
 - [Datenbanken](../_referenz/datenbanken.md) -- Service-zu-Datenbank-Zuordnung, Vault-Pfade, Nomad Jobs
-- [Backup](../backup/) -- PostgreSQL Dumps, DRBD Snapshots und Retention
+- [Backup](../backup/) -- PostgreSQL Dumps, PBS-VM-Backups und Retention
 - [Linstor Storage](../linstor-storage/) -- DRBD-Storage und Linstor CSI

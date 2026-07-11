@@ -61,14 +61,13 @@ Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
 | Bucket | Zweck | Verwendet von |
 | :--- | :--- | :--- |
-| `linstor-backups` | Linstor S3 Shipping (Daily/Weekly/Monthly) | drbd_storage Cron |
 | `gravel-recherche` | Bilder + Files Directus Gravel-Bike-Recherche | Directus Gravel |
 
 Jeder Bucket hat einen dedizierten Per-Bucket-Access-Key (kein globaler Admin-Account). Neue Buckets werden über die `garage`-CLI im Container angelegt.
 
-### Linstor Remote
-
-Linstor adressiert Garage über das Remote `nas-backup`. Die S3-Konfiguration (Endpoint, Credentials, Bucket, Region) ist im Linstor-Controller hinterlegt; das Setup-Playbook ist in [`infra/homelab-hashicorp-stack/ansible/playbooks/setup-backup-infrastructure.yml`](https://github.com/derever-labs/homelab-hashicorp-stack/blob/main/ansible/playbooks/setup-backup-infrastructure.yml) dokumentiert.
+::: info Linstor-S3-Shipping zurückgebaut
+Garage diente früher als Ziel der Linstor-S3-Backup-Schicht (Remote `nas-backup`, Bucket `linstor-backups`). Scheduling und Deployment wurden am 2026-05-31 zurückgebaut -- Off-Node-Backup läuft seither über den Proxmox Backup Server plus app-konsistente DB-Dumps. Details: [Backup](../backup/).
+:::
 
 ### Eigenschaften
 
@@ -142,7 +141,7 @@ Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederher
 
 - [Server-Hardware](../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
 - [Datenstrategie](../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
-- [Backup-Strategie](../backup/index.md) -- pg_dumpall und Linstor Snapshots auf NFS/Garage
+- [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
 - [Synology NAS Monitoring](../synology-monitoring/index.md) -- Telegraf SNMP, Grafana Dashboard, Alerting
