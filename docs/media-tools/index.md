@@ -1,6 +1,6 @@
 ---
 title: Media-Hilfstools
-description: Jellystat, Handbrake und LazyLibrarian als Ergänzung zum Media Stack
+description: Jellystat, Handbrake, LazyLibrarian und Profilarr als Ergänzung zum Media Stack
 tags:
   - service
   - media

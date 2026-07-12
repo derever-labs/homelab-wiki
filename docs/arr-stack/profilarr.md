@@ -50,4 +50,4 @@ Manuell gesetzte Score-Anpassungen in Sonarr/Radarr werden von Profilarr bei jed
 
 - [Medien-Verwaltung (Arr-Stack)](./index.md) -- Sonarr, Radarr, Prowlarr, SABnzbd
 - [Radarr Qualitätsprofile](./referenz.md) -- SQP-Profile und Custom Format Konfiguration
-- [Media-Hilfstools](../media-tools/index.md) -- Jellystat, Janitorr und weitere Ergänzungstools
+- [Media-Hilfstools](../media-tools/index.md) -- Jellystat, LazyLibrarian und weitere Ergänzungstools

@@ -67,7 +67,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Stash](./stash/) | Media Organizer |
 | [AudioBookShelf](./audiobookshelf/) | Hörbücher und E-Books |
 | [Video Download](./video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./media-tools/) | Jellystat, Janitorr, Handbrake, LazyLibrarian, Notifiarr |
+| [Media Tools](./media-tools/) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
 | [SuggestArr](./suggestarr/) | AI-Empfehlungen für Jellyfin via Jellyseerr |
 
 ## Monitoring
