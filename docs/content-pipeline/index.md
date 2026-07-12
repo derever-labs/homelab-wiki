@@ -11,7 +11,7 @@ tags:
 
 # Content Pipeline
 
-Fünf Komponenten bilden die automatisierte Content-Akquisition-Pipeline: vier periodische Batch Jobs laden Inhalte herunter und ein Telegram Bot ermöglicht die Steuerung per Chat.
+Vier Komponenten bilden die automatisierte Content-Akquisition-Pipeline: drei periodische Batch Jobs laden Inhalte herunter und ein Telegram Bot ermöglicht die Steuerung per Chat.
 
 ## Übersicht
 
@@ -21,9 +21,8 @@ Fünf Komponenten bilden die automatisierte Content-Akquisition-Pipeline: vier p
 | ph-downloader | Nomad Job `batch-jobs/ph_downloader.nomad` (Periodic Batch) |
 | phdler-telegram-bot | Nomad Job `services/phdler-telegram-bot.nomad` (Service, headless) |
 | reddit_gallery_dl | Nomad Job `batch-jobs/reddit_gallery_dl.nomad` (Periodic Batch) |
-| reddit_gallery_dl_backfill | Nomad Job `batch-jobs/reddit_gallery_dl_backfill.nomad` (Periodic Batch) |
 
-Die beiden gallery-dl-Jobs laden Reddit-Galerien via gallery-dl; `reddit_gallery_dl_backfill` ist die Backfill-Variante für historische Inhalte.
+Der Job `reddit_gallery_dl` lädt Reddit-Galerien via gallery-dl.
 
 ## Workflow
 
@@ -46,6 +45,7 @@ Batch: Batch Jobs {
   style.stroke-dash: 4
   RD: "reddit-downloader (BDFR)" { style.border-radius: 8 }
   PH: "ph-downloader (phdler.py + yt-dlp)" { style.border-radius: 8 }
+  GDL: "reddit-gallery-dl (gallery-dl)" { style.border-radius: 8 }
 }
 
 Stash: Stash (Media Organizer) {
@@ -66,18 +66,22 @@ Notify: Benachrichtigung {
 }
 
 Trigger.CRON1 -> Batch.RD
+Trigger.CRON1 -> Batch.GDL
 Trigger.CRON2 -> Batch.PH
 Trigger.TG -> Bot.TGBOT
 Bot.TGBOT -> Batch.PH: Nomad API: force periodic
 Bot.TGBOT -> Storage.NFS: phdler.py: add/list
 Batch.RD -> Storage.NFS
 Batch.PH -> Storage.NFS
+Batch.GDL -> Storage.NFS
 Batch.RD -> Stash.API: bei neuen Downloads
 Batch.PH -> Stash.API
+Batch.GDL -> Stash.API: bei neuen Downloads
 Stash.API -> Stash.SCAN
 Stash.SCAN -> Stash.GEN
 Batch.RD -> Notify.TGAPI
 Batch.PH -> Notify.TGAPI
+Batch.GDL -> Notify.TGAPI
 ```
 
 ## Komponenten
@@ -94,7 +98,7 @@ Das Redgifs-Modul ist wegen 429-Rate-Limits deaktiviert. Bei Rate-Limit-Probleme
 
 | Pfad | Keys |
 | :--- | :--- |
-| `kv/data/reddit` | `client_secret`, `user_token` |
+| `kv/data/shared/reddit` | `client_secret`, `user_token` |
 | `kv/data/shared/stash` | `api_key` |
 
 Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service (eigener Bot Token in Vault), der downloader liest selbst kein Telegram-Secret.

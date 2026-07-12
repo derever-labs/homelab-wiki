@@ -73,7 +73,7 @@ Nomad.CDB -> Storage.LINSTOR
 
 ### Storage
 
-CouchDB-Daten liegen auf einem replizierten Linstor-CSI-Volume (`obsidian-livesync-data`) mit DRBD-Replikation. CouchDB verwendet die eingebauten Defaults -- eine separate `local.ini` wird nicht eingebunden.
+CouchDB-Daten liegen auf einem replizierten Linstor-CSI-Volume (`obsidian-livesync-data`) mit DRBD-Replikation. Der Job bindet zusätzlich zur image-generierten `docker.ini` eine eigene Konfigurationsdatei `zz-obsidian-livesync.ini` in `/opt/couchdb/etc/local.d/` ein. Sie setzt `single_node = true` (legt die System-Datenbanken `_users`/`_replicator`/`_global_changes` beim Start an), `require_valid_user = true`, `require_valid_user_except_for_up = true` (hält `/_up` ohne Auth erreichbar, damit der Consul-Health-Check ohne Credential auskommt) und ein `max_document_size` von 50 MB. Details: `services/obsidian-livesync.nomad`.
 
 Der Job ist auf `vm-nomad-client-05` / `vm-nomad-client-06` eingeschränkt (Constraint), da nur diese Nodes Linstor-Storage bereitstellen.
 

@@ -37,7 +37,7 @@ Die Freischaltung trägt das Modell `DS1825+` in die beiden Adapter-Karten-Konfi
 | `/usr/syno/etc.defaults/adapter_cards.conf` + `/usr/syno/etc/adapter_cards.conf` | `DS1825+=yes` in `[E10M20-T1_sup_nic]` und `[E10M20-T1_sup_nvme]` |
 | `/etc.defaults/model.dtb` + `/etc/model.dtb` | `E10M20-T1` aktiviert |
 
-Umgesetzt wird das mit dem Community-Script `syno_enable_m2_card.sh` von 007revad. Das Script, das Wrapper-Script für den Aufgabenplaner und die genaue Vorgehensweise liegen im Repo: siehe [`infra/scripts/nas/`](https://github.com/derever-labs/infra/tree/main/scripts/nas).
+Umgesetzt wird das mit dem Community-Script `syno_enable_m2_card.sh` von 007revad. Als Drittanbieter-Tool ist es nicht im Repo eingecheckt, sondern liegt auf dem NAS unter `/volume1/scripts/syno_enable_m2_card.sh`. Im Repo liegen nur das Wrapper-Script für den Aufgabenplaner und die genaue Vorgehensweise: siehe [`infra/scripts/nas/`](https://github.com/derever-labs/infra/tree/main/scripts/nas).
 
 Nach der Freischaltung und einem Neustart läuft der 10GbE-Port als reguläres Interface (`eth2`, 10 Gbit) statt als `notsup0`.
 

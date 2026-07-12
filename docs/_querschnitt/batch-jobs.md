@@ -77,7 +77,7 @@ t06 -> Container.cr
 
 | Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
 |:----|:----|:---------|:------|:----------------|:---------------|
-| `daily_cleanup` | sysbatch | Täglich 05:00 | APT-Bereinigung, Journal-Vacuum, Jellyfin-Caches, /tmp, Docker Prune | Alle Nodes (count=3, distinct_hosts) | raw_exec, Priorität 100 |
+| `daily_cleanup` | sysbatch | Täglich 05:00 | APT-Bereinigung, Journal-Vacuum, Jellyfin-Caches, /tmp, Docker Prune | Alle Nodes (count=3, distinct_hosts) | raw_exec, Priorität 30 |
 | `docker_prune` | sysbatch | Täglich 01:00 | Docker System Prune (Images, Volumes, Container) | Alle Nodes | raw_exec, aggressiv (`-a --volumes`) |
 
 ::: warning Überlappung daily_cleanup und docker_prune
@@ -88,7 +88,7 @@ t06 -> Container.cr
 
 | Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
 |:----|:----|:---------|:------|:----------------|:---------------|
-| `daily_container_restart` | sysbatch | Täglich 06:00 | Jellyfin via `nomad job restart` neustarten | Alle Nodes | raw_exec, Priorität 100 |
+| `daily_container_restart` | sysbatch | Täglich 06:00 | Jellyfin via `nomad job restart` neustarten | Alle Nodes | raw_exec, Priorität 30 |
 | `daily_restart_jellyfin` | batch | Täglich 05:00 | Jellyfin via `nomad job restart` neustarten, wenn keine aktiven Streams laufen | `vm-nomad-client-0[1-4]` (regexp) | raw_exec, prüft aktive Streams per curl vor dem Restart |
 
 ::: info Jellyfin-Neustart: mehrere Jobs aktiv

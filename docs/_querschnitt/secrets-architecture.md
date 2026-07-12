@@ -83,7 +83,7 @@ Kein laufender Cluster-Service liest mehr aktiv aus 1P. Phishing-/1P-Compromise-
 
 ## Monitoring (Layered Approach)
 
-**Layer 1 -- umgesetzt 2026-04-30:** 10 Loki-Recording-Rules in Grafana Unified Alerting (`monitoring/grafana.nomad`) decken die wichtigsten Failure-Modes der Phase 1+2+3 ab:
+**Layer 1 -- umgesetzt 2026-04-30:** 11 Loki-Recording-Rules in Grafana Unified Alerting (`monitoring/grafana.nomad`) decken die wichtigsten Failure-Modes der Phase 1+2+3 ab:
 
 - Pre-Drain-Handler exit 2 (NOMAD_TOKEN missing) -- critical
 - Pre-Drain-Handler exit 5 (Vault unreachable) -- warning
@@ -91,6 +91,7 @@ Kein laufender Cluster-Service liest mehr aktiv aus 1P. Phishing-/1P-Compromise-
 - Drain-Timeout (>5min) -- critical
 - nomad-boot-enable.service failed -- critical
 - vault-unseal.service failed -- critical
+- linstor-unlock.service failed (Controller-Failover) -- critical
 - Vault Restart-Loop -- warning
 - ZOT auth-failure -- warning
 - ZOT pull-failure spike -- warning

@@ -49,7 +49,7 @@ Die Dashboards sind die Einstiegspunkte ins Homelab: Flame Public liefert die ö
 
 ## Zweck und Unterschied
 
-Beide Flame-Instanzen (Public und Intra) verwenden das gleiche Docker-Image, aber getrennte Linstor CSI Volumes und unterschiedliche Traefik-Middleware-Chains. Homepage (`gethomepage/homepage`) ist ein moderneres Dashboard mit Service-Widget-Integration (z.B. Live-Status, CPU-Auslastung) und als möglicher Ersatz für Flame Intra deployed.
+Beide Flame-Instanzen (Public und Intra) verwenden das gleiche Docker-Image, aber getrennte Linstor CSI Volumes und unterschiedliche Traefik-Middleware-Chains. Homepage (`gethomepage/homepage`) ist ein moderneres Dashboard und als möglicher Ersatz für Flame Intra deployed. Aktuell sind nur ein Begrüssungs- sowie ein Datums- und Uhrzeit-Widget konfiguriert (`services/homepage-intra.nomad`).
 
 ::: warning Gleiche Domain
 Flame Intra und Homepage verwenden beide `intra.ackermannprivat.ch`. Nur einer der beiden kann gleichzeitig aktiv geroutet werden. Im Nomad-Cluster entscheidet der aktive Job, welcher Service den Traffic erhält.

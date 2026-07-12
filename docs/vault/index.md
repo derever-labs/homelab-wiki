@@ -197,7 +197,7 @@ KV -> Task: 5. Secret-Werte {
 Jeder Task, der Vault-Secrets benötigt, braucht eine `vault {}` Stanza und einen `identity` Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](referenz.md)
 
 ::: warning Pfad-Konvention
-Secrets für einen Nomad-Job liegen immer unter `kv/<job_id>`. Der Job `postgres-linstor` liest also aus `kv/postgres`. Diese Konvention ist in der Policy festgelegt und darf nicht abgeändert werden.
+Der Normalfall ist ein Secret-Pfad pro Job unter `kv/<job_id>`. Secrets, die sich mehrere Jobs teilen, liegen dagegen unter einem gemeinsamen `kv/shared/<name>`-Pfad -- der Job `postgres` etwa liest aus `kv/shared/postgres` (Template-Pfad `kv/data/shared/postgres`). Welche Pfade ein Job lesen darf, ist in der Policy festgelegt.
 :::
 
 ## Verwandte Seiten
