@@ -69,7 +69,7 @@ InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu L
 
 | Bucket | Schreibt wer | Retention | Inhalt |
 | :--- | :--- | :--- | :--- |
-| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten + CheckMK | 90 Tage | Nomad-Prometheus, Linstor, DRBD, Media-Stats, CheckMK-Service-Metriken; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health` |
+| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten + CheckMK | 90 Tage | Nomad-Prometheus, Linstor, DRBD, Media-Stats, CheckMK-Service-Metriken; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health`/`nomad_blocked_evals` |
 | `proxmox` | Proxmox VE (nativ) | 90 Tage | VM/Container CPU, RAM, Disk, Netzwerk |
 | `telegraf_1y` | InfluxDB Task | 1 Jahr | 5-Min Durchschnitte (Downsampling) |
 | `telegraf_5y` | InfluxDB Task | 5 Jahre | 1h Durchschnitte (Downsampling) |
@@ -105,8 +105,10 @@ Die Node-Storage- und Job-Health-Measurements stammen **nicht** vom zentralen Te
 | :--- | :--- | :--- | :--- |
 | `csi-health-metrics.sh` | client-05/06 | `csi_mounts`, `csi_plugin` | `csi_health_<host>.influx` |
 | `lvm-thinpool-metrics.sh` | client-05/06 | `lvm_thinpool` | `lvm_thinpool_<host>.influx` |
-| `nomad-job-health-metrics.sh` | client-04/05/06 | `nomad_alloc_restarts`, `nomad_job_health` | `nomad_health_<host>.influx` |
+| `nomad-job-health-metrics.sh` | client-04/05/06 | `nomad_alloc_restarts`, `nomad_job_health`, `nomad_blocked_evals` (nur client-04) | `nomad_health_<host>.influx` |
 | `csi-write-monitor.sh` | client-05/06 | `csi_write` | `csi_write_<host>.influx` (bleibt in `telegraf-host`) |
+
+`nomad_blocked_evals` (Anzahl Evaluations im Zustand `blocked`, gelesen über die Nomad-REST-API) ist ein Cluster-Wert, kein Node-Wert. Nur client-04 schreibt ihn; client-05/06 überspringen ihn per `SKIP_BLOCKED_EVALS=1`, sonst läge derselbe Wert dreifach im Bucket.
 
 ::: danger NFS-Selbstreferenz vermieden (2026-05-29)
 Bis 2026-05-29 schrieben die drei Skripte nach `/nfs/docker/telegraf/metrics/` und der **zentrale** Telegraf las sie via `inputs.file`. Bei totem NAS-`nfsd` blockierten `stat` und `mv` im uninterruptiblen D-State; jede Minute starteten neue Crons, die nie endeten (~11k Prozesse, load ~12500, Node-Wedge). Der lokale Pfad plus idempotentes `mkdir -p` entkoppelt die Crons vom NFS -- ein NAS-Ausfall kann die Nodes nicht mehr lahmlegen. Routing pro Measurement steuern `namepass`/`namedrop` an den beiden `outputs.influxdb_v2` der `telegraf-host`-Konfiguration; so landet alles dashboard-stabil im gewohnten Bucket `telegraf` ohne Doppel-Write.
