@@ -64,7 +64,7 @@ pr -> deploy: "Merge (squash)"
 deploy -> nomad
 ```
 
-Der Bump-PR wird bewusst manuell gemergt (kein Auto-Merge), damit der Image-Wechsel ein sichtbarer, einzelner Schritt bleibt. Der Merge startet den Nomad-Deploy; schlaegt der Health-Check fehl, rollt `auto_revert` auf die letzte gesunde Version zurueck.
+Der Bump-PR wird von der CI selbst per Squash gemergt (`gh pr merge --squash`, bis zu drei Versuche gegen den GitHub-Mergeability-Flake). Kein Auto-Merge meint hier allein GitHubs natives `--auto`-Flag, das auf dem GitHub-Free-Plan für private Repos nicht verfügbar ist (`allow_auto_merge=false`). Der maschinelle SHA-Bump-Diff braucht kein menschliches Review. Der Merge startet den Nomad-Deploy. Schlägt der Health-Check fehl, rollt `auto_revert` auf die letzte gesunde Version zurück.
 
 ## Auth-Muster fuer SPAs hinter Authentik
 
