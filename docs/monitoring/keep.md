@@ -143,7 +143,7 @@ Stilles Verstummen/Expiry erzeugt **kein** Workflow-Event und damit kein Auto-Re
 
 ## Dead-Man-Switch und Watchdog-Tier
 
-Wenn Keep selbst tot ist, geht jeder Alert verloren. Drei Keep-**unabhängige** Pfade machen das sichtbar -- alle posten über den batch-Bot direkt ins Kritisch-Topic (umgehen die Keep-Engine):
+Wenn Keep selbst tot ist, geht jeder Alert verloren. Zwei Keep-**unabhängige** Mechanismen machen das sichtbar -- der Dead-Man-Switch und das Uptime-Kuma-Watchdog-Tier mit seinen drei Instanzen. Beide posten über den batch-Bot direkt ins Kritisch-Topic und umgehen damit die Keep-Engine:
 
 ```d2
 direction: right
