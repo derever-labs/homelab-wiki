@@ -17,13 +17,13 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 
 | Verzeichnis | Jobs |
 | :--- | :--- |
-| batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, fstrim, DNS Performance, Authentik Audit, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Downloader, Reddit Gallery DL, Reddit Gallery DL Backfill, PH Downloader |
-| databases/ | PostgreSQL (DRBD), MariaDB (DRBD), MariaDB Setup, DbGate, OpenLDAP (Legacy) |
+| batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, Zot Consistency Check, fstrim, DNS Performance, Authentik Audit, Authentik SHM Check, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Downloader, Reddit Gallery DL, PH Downloader |
+| databases/ | PostgreSQL (DRBD), MariaDB (DRBD), DbGate, OpenLDAP (Legacy) |
 | identity/ | Authentik |
 | infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner, ntfy |
-| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, Stash-Jellyfin-Proxy, Suggestarr, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, iperf3-to-InfluxDB |
-| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly, Karakeep |
+| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, JellyStat, Stash, Stash-Secure, Stash-Jellyfin-Proxy, Suggestarr, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
+| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, Keep Mobile, Keep DB Retention, Keep Escalate Stale, Keep Heartbeat Watch, Metrics Deadman, Stale-Crit-Melder, iperf3-to-InfluxDB |
+| services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Profilarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly, Immoscraper Frühsignal, Karakeep, Karakeep Ingest |
 | system/ | Alloy (Log-Collector), Linstor CSI |
 | tools/ | Todo-Ingest |
 | volumes/ | CSI-Volume-Spezifikationen (.hcl) |

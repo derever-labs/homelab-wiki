@@ -69,7 +69,7 @@ Services die nicht mit den Shared-Clustern kompatibel sind.
 | **Nomad Job** | `databases/postgres-drbd.nomad` |
 | **Consul Service** | `postgres.service.consul:5432` |
 | **Storage** | Linstor CSI Volume `postgres-data` |
-| **Replikation** | DRBD via Thunderbolt (pve01/pve02) |
+| **Replikation** | DRBD via Thunderbolt (client-05/06, Affinity: client-05) |
 | **Superuser** | `postgres` |
 | **Vault Secret** | `kv/data/postgres` (Key: `password`) |
 
