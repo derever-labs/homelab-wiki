@@ -99,7 +99,7 @@ Die Enrichment-Schicht läuft beweisbar **vor** dem Workflow-Trigger und der Cor
 
 ## Correlation -- zwei Rules
 
-Statt einer einzigen Catch-all-Rule (die früher 545 Incidents in einen Eimer warf) korrelieren zwei disjunkte Rules (`setup-topology.py`, beide `resolveOn: all_resolved`):
+Statt einer einzigen Catch-all-Rule (die früher 545 Incidents in einen Eimer warf) korrelieren zwei disjunkte Rules (`nomad-jobs/monitoring/keep-bootstrap/setup-topology.py`, beide `resolveOn: all_resolved`):
 
 | Rule | Bedingung (CEL) | Gruppierung |
 | :--- | :--- | :--- |
