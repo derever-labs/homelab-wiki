@@ -14,7 +14,7 @@ Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet
 
 ## Übersicht
 
-**stash** (Haupt-Instanz, Priorität 95):
+**stash** (Haupt-Instanz, Priorität 70):
 
 | Attribut | Wert |
 |----------|------|
@@ -24,7 +24,7 @@ Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet
 | Media-Storage | NFS (shared mit Downloadern) |
 | Auth | Authentik ForwardAuth (`intern-auth`) |
 
-**stash-secure** (Separate Instanz, Priorität 95):
+**stash-secure** (Separate Instanz, Priorität 70):
 
 | Attribut | Wert |
 |----------|------|
@@ -101,7 +101,7 @@ Batch.RD -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
 
 ### Priorität und Preemption
 
-Beide Instanzen laufen mit Nomad-Priorität **95** (kritischer Service), gleich wie Jellyfin. Hintergrund: alle teilen sich den Constraint auf die Linstor-Storage-Nodes (`vm-nomad-client-05/06`). Fällt eine der beiden Nodes aus, müssen die Services auf der verbleibenden Node zusammenlaufen. Die hohe Priorität schützt sie davor, von niedriger priorisierten Jobs bei Ressourcen-Knappheit verdrängt zu werden.
+Beide Instanzen laufen mit Nomad-Priorität **70**, gleich wie Jellyfin. Hintergrund: alle teilen sich den Constraint auf die Linstor-Storage-Nodes (`vm-nomad-client-05/06`). Fällt eine der beiden Nodes aus, müssen die Services auf der verbleibenden Node zusammenlaufen. Die gegenüber dem Default (50) erhöhte Priorität schützt sie davor, von niedriger priorisierten Jobs bei Ressourcen-Knappheit verdrängt zu werden.
 
 ::: warning Metadata-Generierung läuft auf CPU
 Die Metadata-Generierung (Preview-Clips, Sprites, Thumbnails, perceptual Hashes) läuft architekturbedingt immer auf der CPU. Damit bleibt das CPU-Budget der Haupt-Instanz der limitierende Faktor für die Preview-Generierung nach Batch-Downloads (Details: Nomad-Job `media/stash.nomad`).
@@ -109,7 +109,7 @@ Die Metadata-Generierung (Preview-Clips, Sprites, Thumbnails, perceptual Hashes)
 
 ### Stash API
 
-Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizierung erfolgt über einen API-Key aus Vault (`kv/data/stash`).
+Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizierung erfolgt über einen API-Key aus Vault (`kv/data/shared/stash`).
 
 | Endpunkt | Zweck |
 | :--- | :--- |
@@ -120,11 +120,11 @@ Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizi
 
 | Pfad | Keys |
 | :--- | :--- |
-| `kv/data/stash` | `api_key` |
+| `kv/data/shared/stash` | `api_key` |
 
 ## stash-jellyfin-proxy
 
-Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, sodass die Jellyfin-App auf dem Apple TV die Stash-Mediathek durchsuchen und abspielen kann. Er ist stateless, läuft fest auf `vm-nomad-client-06` (statischer Port 8098) und ist ausschliesslich über Tailscale erreichbar -- kein Traefik-Router, kein Internet-Zugang. Deployment: Nomad Job `media/stash-jellyfin-proxy.nomad`, Secrets in Vault (`kv/data/stash-jellyfin-proxy`).
+Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, sodass die Jellyfin-App auf dem Apple TV die Stash-Mediathek durchsuchen und abspielen kann. Er ist stateless und läuft fest auf `vm-nomad-client-06` (statischer Port 8098). Das Routing läuft über den Traefik-File-Provider (`stash-jellyfin-proxy.yml`), da der Consul-Catalog-Provider mit diesem Service ein ungelöstes Problem hat. Deployment: Nomad Job `media/stash-jellyfin-proxy.nomad`, Secrets in Vault (`kv/data/stash-jellyfin-proxy`).
 
 ## Verwandte Seiten
 
