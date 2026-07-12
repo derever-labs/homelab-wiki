@@ -28,8 +28,8 @@ Für Out-of-Band-Management AMT-fähiger Hardware: Zugriff auf Power-State und B
 
 MeshCommander ist vollständig stateless -- es werden keine Daten persistiert. Die Verbindungsdaten zu AMT-Geräten werden bei jeder Session neu eingegeben.
 
-::: info Nomad Priority 100
-MeshCommander hat die höchste Nomad-Priority (100), da es für Out-of-Band-Management kritischer Infrastruktur benötigt wird. Auch bei Ressourcenknappheit im Cluster bleibt der Service verfügbar.
+::: info Nomad Priority 50
+MeshCommander läuft mit Nomad-Priority 50 (Nomad-Standardwert). Bei Ressourcenknappheit im Cluster kann der Service damit von höher priorisierten Jobs verdrängt werden.
 :::
 
 ## Verwandte Seiten
