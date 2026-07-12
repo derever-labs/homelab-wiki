@@ -125,7 +125,11 @@ Vier `type:incident`-Workflows unter `nomad-jobs/monitoring/keep-workflows/`, al
 | notify | `created` | 25009 / 25010 / 25011 | je Incident genau eine Meldung, nach Severity ins Topic; Kritisch trägt Ack-Button |
 | escalate | `updated` | 25009 | echte Hoch-Eskalation (warning -> critical) pagt nach (schliesst G1) |
 | ack | `updated` | 25009 | Quittung wenn ein Incident im Keep-UI acknowledged wird |
-| resolve | `updated` | 25009 / 25010 / 25011 | Entwarnung im selben Topic wie die Meldung, genau einmal (Flag-Dedup) |
+| resolve | `updated` | 25010 / 25011 | Entwarnung, genau einmal (Flag-Dedup); kritische Entwarnungen gehen ins Warnung-Topic |
+
+::: info Entwarnungen laufen ins Warnung-Topic (seit 2026-07-08)
+`resolve` schickt die Entwarnung eines kritischen Incidents nicht ins Kritisch-Topic 25009 zurück, sondern gemeinsam mit den warning-Entwarnungen ins Warnung-Topic 25010; info und low bleiben im Info-Topic 25011. Grund: Entwarnungen fluteten das Kritisch-Topic einzeln (rund 30 bis 35 pro Tag, Spiegel der Firing-Rate). Das Kritisch-Topic trägt damit nur noch neue kritische Incidents (`notify`) und Eskalationen (`escalate`); eine Entwarnung ist selten zeitkritisch und über das Warnung-Topic weiterhin auffindbar.
+:::
 
 Wichtige Engine-Eigenheiten, die das Design tragen:
 
