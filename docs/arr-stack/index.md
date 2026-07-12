@@ -71,7 +71,7 @@ Deshalb nutzen diese Services **Traefik-URLs** (`*.ackermannprivat.ch`) für die
 ## Verwandte Seiten
 
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management (leitet Anfragen an Sonarr/Radarr weiter)
-- [Media-Hilfstools](../media-tools/index.md) -- Janitorr (Cleanup), Jellystat (Statistiken)
+- [Media-Hilfstools](../media-tools/index.md) -- Jellystat (Statistiken), LazyLibrarian (E-Books)
 - [Jellyfin](../jellyfin/index.md) -- Media Server
 - [Radarr Quality Profiles](./referenz.md) -- Detaillierte Profil-Konfiguration
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

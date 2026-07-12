@@ -56,6 +56,7 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | Stash | `https://s.ackermannprivat.ch` | Media Organizer |
 | Stash Secure | `https://secure.ackermannprivat.ch` | Separate Stash-Instanz (Authentik ForwardAuth) |
 | JellyStat | `https://jellystat.ackermannprivat.ch` | Jellyfin Statistiken |
+| Profilarr | `https://profilarr.ackermannprivat.ch` | Quality-Profile-Sync für Sonarr/Radarr |
 | Suggestarr | `https://suggest.ackermannprivat.ch` | Film/Serien-Empfehlungen aus Watch-History |
 | YouTube-DL | `https://download.ackermannprivat.ch` | Video Download |
 | Video-Grabber | `https://grab.ackermannprivat.ch` | Video Download Frontend |
@@ -84,7 +85,6 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | n8n | `https://n8n.ackermannprivat.ch` | Workflow Automation |
 | ChangeDetection | `https://change.ackermannprivat.ch` | Website-Änderungsüberwachung |
 | Obsidian LiveSync | `https://obsidian-sync.ackermannprivat.ch` | Obsidian Synchronisation |
-| Notifiarr | `https://notifiarr.ackermannprivat.ch` | Benachrichtigungsservice |
 | Metabase | `https://metabase.ackermannprivat.ch` | Business Intelligence |
 | MeshCommander | `https://mesh.ackermannprivat.ch` | Intel AMT Management |
 | Directus Gravel | `https://gravel.ackermannprivat.ch` | Gravel-Bike-Recherche-CMS (intern, Authentik) |

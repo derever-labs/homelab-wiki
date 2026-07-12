@@ -46,8 +46,7 @@ Media: Media Stack {
   PROWLARR: Prowlarr { style.border-radius: 8 }
   SAB: SABnzbd { style.border-radius: 8 }
   JSTAT: JellyStat { style.border-radius: 8 }
-  MAINT: Maintainerr { style.border-radius: 8 }
-  JANI: Janitorr { style.border-radius: 8 }
+  PROF: Profilarr { style.border-radius: 8 }
   STASH: Stash { style.border-radius: 8 }
   ABS: AudioBookShelf { style.border-radius: 8 }
   YTDL: YouTube-DL { style.border-radius: 8 }
@@ -71,7 +70,6 @@ Prod: Productivity {
   TD: Tandoor { style.border-radius: 8 }
   CD: ChangeDetection { style.border-radius: 8 }
   OBS: Obsidian LiveSync { style.border-radius: 8 }
-  NOTIF: Notifiarr { style.border-radius: 8 }
   GITEA: Gitea { style.border-radius: 8 }
   N8N: n8n { style.border-radius: 8 }
   META: Metabase { style.border-radius: 8 }
@@ -101,13 +99,12 @@ Media.JS -> Core.PG
 Media.JSTAT -> Core.PG
 Media.JS -> Media.JF
 Media.JSTAT -> Media.JF
-Media.MAINT -> Media.JF
 Media.SONARR -> Media.SAB
 Media.RADARR -> Media.SAB
 Media.SONARR -> Media.PROWLARR
 Media.RADARR -> Media.PROWLARR
-Media.JANI -> Media.SONARR
-Media.JANI -> Media.RADARR
+Media.PROF -> Media.SONARR: Profile-Sync
+Media.PROF -> Media.RADARR: Profile-Sync
 Media.VG -> Media.SYDL
 
 Prod.VW -> Core.PG
@@ -129,8 +126,6 @@ AI.OWUI -> AI.OLLAMA
 AI.HOLLA -> AI.OLLAMA
 Prod.N8N -> Prod.SOLID
 IoT.Z2M -> IoT.MOSQ
-Prod.NOTIF -> Media.SONARR
-Prod.NOTIF -> Media.RADARR
 ```
 
 ## Abhängigkeits-Gruppen
@@ -166,7 +161,7 @@ Der Fluss eines Inhalts vom Request bis zur Wiedergabe:
 3. Sonarr/Radarr beauftragen SABnzbd mit dem Download.
 4. Jellyfin stellt den fertigen Inhalt zur Wiedergabe bereit.
 
-Janitorr und Maintainerr automatisieren die Bereinigung (Janitorr löscht, Maintainerr verwaltet Sammlungen).
+Profilarr hält die Quality Profiles und Custom Formats in Sonarr/Radarr synchron und bestimmt damit, welche Releases als upgradewürdig gelten.
 
 ### Monitoring-Pipeline
 

@@ -1,6 +1,6 @@
 ---
 title: Media-Hilfstools
-description: Jellystat, Janitorr, Handbrake und LazyLibrarian als Ergänzung zum Media Stack
+description: Jellystat, Handbrake, LazyLibrarian und Profilarr als Ergänzung zum Media Stack
 tags:
   - service
   - media
@@ -16,7 +16,6 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | Tool | Zweck | Deployment |
 |------|-------|------------|
 | Jellystat | Jellyfin-Statistik-Dashboard | `media/jellystat.nomad` |
-| Janitorr | Automatische Mediathek-Bereinigung | `media/janitorr.nomad` |
 | Handbrake | Video-Transcoding (deprecated) | `media/handbrake.nomad.deprecated` |
 | LazyLibrarian | E-Book-/Hörbuch-Verwaltung | `media/lazylibrarian.nomad` |
 | Profilarr | Quality-Profile-/Custom-Format-Sync für Sonarr/Radarr | `services/profilarr.nomad` -- [Eigene Seite](../arr-stack/profilarr.md) |
@@ -44,26 +43,6 @@ Statistik- und Analyse-Dashboard für Jellyfin. Zeigt Wiedergabe-Historie, belie
 
 ---
 
-## Janitorr
-
-| Attribut | Wert |
-|----------|------|
-| URL | Keine Web-UI (nur Health-Endpoint auf Port 8081) |
-| Deployment | Nomad Job `media/janitorr.nomad` |
-| Storage | NFS `/nfs/jellyfin` (liest die Mediathek), Config via Nomad Template; kein Traefik (`traefik.enable=false`) |
-
-### Rolle
-
-Automatische Bereinigung der Mediathek. Janitorr entfernt nicht angesehene oder veraltete Medien aus Jellyfin, Radarr und Sonarr basierend auf konfigurierbaren Regeln. Die Konfiguration (`application.yml`) ist als Nomad Template direkt im Job eingebettet.
-
-### Besonderheiten
-
-- Kein Traefik-Routing, läuft rein intern
-- Greift auf die gesamte Jellyfin-Mediathek zu (`/nfs/jellyfin`)
-- Kommuniziert mit Radarr, Sonarr und Jellyfin über deren APIs
-
----
-
 ## Handbrake
 
 ::: warning Deprecated
@@ -73,7 +52,7 @@ Der Nomad-Job liegt nur noch als `media/handbrake.nomad.deprecated` vor und wird
 | Attribut | Wert |
 |----------|------|
 | URL | [handbrake.ackermannprivat.ch](https://handbrake.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
-| Deployment | Nomad Job `media/handbrake.nomad` |
+| Deployment | Nomad Job `media/handbrake.nomad.deprecated` |
 | Storage | NFS `/nfs/docker/handbrake/config/` |
 | Auth | `intern-auth@file` |
 
@@ -91,7 +70,7 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 
 ### Besonderheiten
 
-- Hoher Ressourcenbedarf -- Affinität für `vm-nomad-client-05/06` (Details: `media/handbrake.nomad`)
+- Hoher Ressourcenbedarf -- Affinität für `vm-nomad-client-05/06` (Details: `media/handbrake.nomad.deprecated`)
 
 ---
 
@@ -124,6 +103,6 @@ Profilarr ist seit 2026-06-05 der Nachfolger von notifiarr für die Quality-Prof
 ## Verwandte Seiten
 
 - [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr
-- [Jellyfin](../jellyfin/index.md) -- Media Player, dessen Mediathek Janitorr und Handbrake nutzen
+- [Jellyfin](../jellyfin/index.md) -- Media Player, dessen Mediathek Handbrake nutzt
 - [Audiobookshelf](../audiobookshelf/index.md) -- Hörbuch-Server, ergänzt durch LazyLibrarian
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für alle Media-Tools
