@@ -124,7 +124,7 @@ Stash bietet eine GraphQL-API, die von den Batch Jobs genutzt wird. Authentifizi
 
 ## stash-jellyfin-proxy
 
-Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, sodass die Jellyfin-App auf dem Apple TV die Stash-Mediathek durchsuchen und abspielen kann. Er ist stateless und läuft fest auf `vm-nomad-client-06` (statischer Port 8098). Das Routing läuft über den Traefik-File-Provider (`stash-jellyfin-proxy.yml`), da der Consul-Catalog-Provider mit diesem Service ein ungelöstes Problem hat. Deployment: Nomad Job `media/stash-jellyfin-proxy.nomad`, Secrets in Vault (`kv/data/stash-jellyfin-proxy`).
+Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, sodass die Jellyfin-App auf dem Apple TV die Stash-Mediathek durchsuchen und abspielen kann. Er ist stateless und läuft fest auf `vm-nomad-client-06` (statischer Port 8098). Traefik veröffentlicht ihn nicht: Der Service trägt keine Traefik-Router-Tags für den Consul-Catalog-Provider, und im File-Provider existiert kein Router für ihn. Der Zugriff läuft also direkt auf Port 8098 im internen Netz, von aussen nur über Tailscale -- eine öffentliche Domain hat der Proxy nicht. Deployment: Nomad Job `media/stash-jellyfin-proxy.nomad`, Secrets in Vault (`kv/data/stash-jellyfin-proxy`).
 
 ## Verwandte Seiten
 
