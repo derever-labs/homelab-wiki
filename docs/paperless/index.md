@@ -20,7 +20,7 @@ Paperless-ngx ist das zentrale Dokumenten-Management-System mit OCR, automatisch
 | Deployment | Nomad Job `services/paperless-simple.nomad` |
 | Storage | Linstor CSI `paperless-data-r2` (Symlinks nach `/paperless-storage/`); NFS nur für AI-Sidecars |
 | Auth | `intern-auth@file` |
-| Secrets | Vault `kv/data/paperless-simple` |
+| Secrets | Vault `kv/data/paperless` |
 
 ## Rolle im Stack
 
