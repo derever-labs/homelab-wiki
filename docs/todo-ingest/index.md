@@ -216,11 +216,28 @@ Seit dem Ausbau vom Juli 2026 klassifiziert der Dienst kontextbewusst (Design-En
 
 Der Betriebszustand liegt in einer SQLite-Datenbank auf dem replizierten Linstor-CSI-Volume `todo-ingest-data` (Rohtext, offene Rückfragen mit HMAC-Token und Deadline, angelegte Task-IDs). Ein Hash aus Diktattext und Zeitstempel dedupliziert die Anlage, sodass Kurzbefehl-Retries keine Duplikate erzeugen. Beim Start nimmt der Dienst unterbrochene Verarbeitungen aus der Datenbank wieder auf.
 
+## Instanzen und Mandanten
+
+Todo Ingest ist **nicht multi-tenant**. Statt mehrere Personen innerhalb einer Instanz zu trennen, läuft pro Person eine eigene Instanz -- ein eigener Nomad-Job mit eigener SQLite-Datenbank, eigenen Hosts, eigenen Secrets und eigenem ntfy-Topic. Geteilt wird allein das Claude-Abo, serverseitig also derselbe OAuth-Token. Der Grund für diesen Schnitt: Die Web-Inbox kennt kein User-Konzept -- die Datentrennung entsteht ausschliesslich durch getrennte Instanzen, nicht durch Rollen oder Konten innerhalb einer Instanz.
+
+### Single-Workspace-Modus
+
+Wie viele ClickUp-Ziel-Listen eine Instanz bedient, steuert ihr Verhalten bei der Zuordnung. Sind zwei Listen konfiguriert (wie bei Sam mit HSLU und Privat), läuft die unter [Zuordnung und Rückkanal](#zuordnung-und-ruckkanal) beschriebene Klassifikation mit ihren HSLU/Privat-Rückfragen unverändert. Ist nur **eine** Ziel-Liste konfiguriert, schaltet der Dienst in den Single-Workspace-Modus: Die Workspace-Klassifikation entfällt vollständig, es gibt keine HSLU/Privat-Rückfragen und kein Claude-Label -- jeder Task geht direkt in die eine Liste. Der Modus ergibt sich allein aus der Zahl der konfigurierten Ziel-Listen (Ableitung `deriveSingleWorkspace` in `src/config.ts` des Service-Repos).
+
+### Instanz Sam und Instanz Dani
+
+- **Sam** (in Betrieb): Hosts [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (API/Kurzbefehl, Bearer) und [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (Web-Inbox, Authentik). Dual-Workspace über die persönlichen Listen HSLU und Privat.
+- **Dani** (vorbereitet): Hosts todo-dani.ackermannprivat.ch und inbox-dani.ackermannprivat.ch, Single-Workspace (nur Privat), eigenes ntfy-Topic. Deployment als Nomad-Job `tools/todo-dani.nomad` im nomad-jobs-Repo.
+
+::: info Instanz Dani in Vorbereitung
+Die zweite Instanz ist angelegt und konfiguriert; der Go-Live steht noch aus.
+:::
+
 ## Exposition und Authentifizierung
 
 Der externe Router steht bewusst **nicht** hinter der Authentik-ForwardAuth-Kette, sondern nutzt `public-noauth@file` (CrowdSec plus Security-Header) zusammen mit einer Rate-Limit-Middleware. Der Grund: Der iOS-Kurzbefehl kann keinen SSO-Login durchlaufen -- eine Authentik-Weiterleitung würde den fire-and-forget-POST brechen. Die Authentifizierung übernimmt stattdessen der Dienst selbst über einen Bearer-Token. Das ist eine bewusste Abweichung vom App-Standard, abgesichert durch Bearer-Token, CrowdSec und Rate-Limit. Ein interner Router mit `intern-noauth@file` deckt den Zugriff aus den internen Netzen ab; `/api/health` läuft über einen eigenen, hoch priorisierten no-auth-Router für den Kuma-Monitor. Details zu den Ketten: [Traefik Referenz](../traefik/referenz.md).
 
-Die **Web-Inbox** hat einen eigenen Host mit ausschliesslich Authentik-Routern (`public-auth@file` extern, `intern-auth@file` intern) und der Authentik-Applikation `todo-inbox` (Gruppe `admin`). Der Dienst bindet die Inbox-Routen zusätzlich an den Host (`INBOX_HOST`): Über die Bearer-Router von todo.ackermannprivat.ch sind sie nicht erreichbar. Alle mutierenden Inbox-Aktionen tragen HMAC-Tokens (dieselbe Mechanik wie die ntfy-Buttons) plus einen exakten Origin-Check -- der Schutz hängt damit nicht am Cookie-Verhalten. Die Sicherheits-Herleitung inkl. adversarialem Challenge steht im Service-Repo (`docs/konzept.md`, Stufe 6).
+Die **Web-Inbox** hat einen eigenen Host mit ausschliesslich Authentik-Routern (`public-auth@file` extern, `intern-auth@file` intern) und der Authentik-Applikation `todo-inbox` (Gruppe `admin`). Der Dienst bindet die Inbox-Routen zusätzlich an den Host (`INBOX_HOST`): Über die Bearer-Router von todo.ackermannprivat.ch sind sie nicht erreichbar. Jede Instanz bringt dabei ihren eigenen Inbox-Host mit -- weil die Authentik-Proxy-Provider pro Hostname greifen, gehört zu jedem weiteren Host eine eigene Applikation; die vorbereitete Instanz Dani nutzt inbox-dani.ackermannprivat.ch. Alle mutierenden Inbox-Aktionen tragen HMAC-Tokens (dieselbe Mechanik wie die ntfy-Buttons) plus einen exakten Origin-Check -- der Schutz hängt damit nicht am Cookie-Verhalten. Die Sicherheits-Herleitung inkl. adversarialem Challenge steht im Service-Repo (`docs/konzept.md`, Stufe 6).
 
 ::: warning ForwardAuth zeigt auf den dedizierten Outpost
 Die Traefik-Middleware `authentik-forward-auth` spricht `authentik-proxy.service.consul:9010` an -- das ist der **dedizierte** Outpost `homelab-proxy`, nicht der Embedded Outpost des Authentik-Servers. Neue Proxy-Provider müssen diesem Outpost zugewiesen werden, sonst antwortet die Kette mit `400 no app for hostname`.
