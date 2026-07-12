@@ -141,6 +141,16 @@ Wichtige Engine-Eigenheiten, die das Design tragen:
 
 Stilles Verstummen/Expiry erzeugt **kein** Workflow-Event und damit kein Auto-Resolve -- Schweigen ist keine Entwarnung. Das fängt der Dead-Man-Switch als Report-Digest.
 
+## Zeit-Eskalation unbeantworteter Incidents
+
+Der Notify-Pfad ist rein ereignisgetrieben: `notify` feuert genau einmal pro Incident. Bleibt ein warning-Incident danach unbeantwortet firing, meldet sich nie wieder jemand -- real am 30.06.2026: eine Meldung ins Warnung-Topic, danach acht Tage Stille bei durchgehend firing. Diese Lücke schliesst der periodische Job `keep-escalate-stale` (`nomad-jobs/monitoring/keep-escalate-stale.nomad`, alle 30 min, scharf seit 09.07.2026) von aussen: er sucht firing-Incidents, die älter als 24 Stunden sind und unterhalb des Kritisch-Tiers liegen, meldet sie ins Kritisch-Topic und hebt ihre Severity dauerhaft auf `critical`.
+
+Er läuft bewusst **ausserhalb** der Keep-Engine: ein interval-getriggerter Workflow kann Incidents gar nicht abfragen (der Keep-Provider kennt nur Alerts), keine Workflow-Action ändert die Severity-Spalte, und der Keep-Scheduler ist single-threaded -- ein hängender interval-Workflow würde den Event-Dispatch der Alert-Ingestion blockieren. Idempotenz läuft über das Marker-Enrichment `stale_escalated`; `MAX_ESCALATIONS_PER_RUN` begrenzt, was ein defekter Marker maximal anrichten kann. Da der Severity-Wechsel ein `updated`-Event feuert, setzt der Job zusätzlich `escalation_notified`, damit `escalate` denselben Incident nicht ein zweites Mal pagt.
+
+::: warning Keine Keep-Ausfall-Erkennung
+`keep-escalate-stale` fragt die Keep-API ab und ist damit **nicht** Teil des Dead-Man-Switch: ist Keep tot, findet er nichts. Er deckt den anderen Fall ab -- Keep lebt, aber niemand reagiert.
+:::
+
 ## Dead-Man-Switch und Watchdog-Tier
 
 Wenn Keep selbst tot ist, geht jeder Alert verloren. Zwei Keep-**unabhängige** Mechanismen machen das sichtbar -- der Dead-Man-Switch und das Uptime-Kuma-Watchdog-Tier mit seinen drei Instanzen. Beide posten über den batch-Bot direkt ins Kritisch-Topic und umgehen damit die Keep-Engine:
