@@ -45,6 +45,7 @@ Batch: Batch Jobs {
   style.stroke-dash: 4
   RD: "reddit-downloader (BDFR)" { style.border-radius: 8 }
   PH: "ph-downloader (phdler.py + yt-dlp)" { style.border-radius: 8 }
+  GDL: "reddit-gallery-dl (gallery-dl)" { style.border-radius: 8 }
 }
 
 Stash: Stash (Media Organizer) {
@@ -65,18 +66,22 @@ Notify: Benachrichtigung {
 }
 
 Trigger.CRON1 -> Batch.RD
+Trigger.CRON1 -> Batch.GDL
 Trigger.CRON2 -> Batch.PH
 Trigger.TG -> Bot.TGBOT
 Bot.TGBOT -> Batch.PH: Nomad API: force periodic
 Bot.TGBOT -> Storage.NFS: phdler.py: add/list
 Batch.RD -> Storage.NFS
 Batch.PH -> Storage.NFS
+Batch.GDL -> Storage.NFS
 Batch.RD -> Stash.API: bei neuen Downloads
 Batch.PH -> Stash.API
+Batch.GDL -> Stash.API: bei neuen Downloads
 Stash.API -> Stash.SCAN
 Stash.SCAN -> Stash.GEN
 Batch.RD -> Notify.TGAPI
 Batch.PH -> Notify.TGAPI
+Batch.GDL -> Notify.TGAPI
 ```
 
 ## Komponenten
