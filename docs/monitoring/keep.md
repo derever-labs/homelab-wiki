@@ -83,7 +83,7 @@ Die Quelle liefert nur Logs. Alloy nimmt sie auf, schreibt nach Loki, Grafana de
 :::
 
 ::: info 3. Metrik-basiert über InfluxDB
-Telegraf scraped (SNMP, Prometheus, Exec), schreibt Zeitreihen nach InfluxDB, Grafana hat InfluxQL-Alert-Rules. Beispiel: LVM Thin Pool, DRBD Out-of-Sync, Telegraf-Heartbeat-Absence.
+Telegraf scraped (Prometheus, Exec, HTTP), schreibt Zeitreihen nach InfluxDB, Grafana hat InfluxQL-Alert-Rules. Beispiel: LVM Thin Pool, DRBD Out-of-Sync, Telegraf-Heartbeat-Absence.
 :::
 
 Faustregel: Webhook-/Notifications-Mechanismus -> Pfad 1. Nur Logs -> Pfad 2. Nur Metriken -> Pfad 3. Schwellwerte und Alert-Logik liegen bei Pfad 2/3 ausschliesslich in Grafana.

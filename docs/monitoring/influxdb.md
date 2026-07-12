@@ -36,7 +36,7 @@ direction: right
 
 Sources: Quellen {
   style.stroke-dash: 4
-  NAS: "Synology NAS\n(SNMP)"
+  CheckMK: "CheckMK (Site homelab)\ninkl. NAS via SNMPv3"
   Nomad: "Nomad (6 Nodes)\n(Prometheus)"
   Linstor: "Linstor\n(Prometheus)"
   DRBD: "DRBD Reactor\n(Prometheus)"
@@ -49,10 +49,10 @@ TEL: "Telegraf\n(Nomad Job)" { style.border-radius: 8 }
 INFLUX: "InfluxDB" { shape: cylinder }
 GRAF: Grafana { style.border-radius: 8 }
 
-Sources.NAS -> TEL
 Sources.Nomad -> TEL
 Sources.Linstor -> TEL
 Sources.DRBD -> TEL
+Sources.CheckMK -> INFLUX: Forwarder
 Sources.Proxmox -> INFLUX: direkt (nativ)
 
 NodeCron -> TELHOST: File-Input (lokal, NFS-frei)
@@ -63,13 +63,13 @@ INFLUX -> GRAF
 
 ## Rolle im Stack
 
-InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu Loki (Logs). Telegraf ist der zentrale Collector, der SNMP-, Prometheus- und Exec-Quellen einsammelt; Proxmox und die Telegraf-Host-Agenten schreiben zusätzlich direkt nach InfluxDB. Grafana liest alle Buckets als Datasources und wertet die metrikbasierten Alert-Rules darauf aus. Einordnung im Gesamtbild siehe [Monitoring Stack](./index.md).
+InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu Loki (Logs). Telegraf ist der zentrale Collector, der Prometheus-, Exec- und HTTP-Quellen einsammelt; Proxmox, CheckMK und die Telegraf-Host-Agenten schreiben zusätzlich direkt nach InfluxDB. Grafana liest alle Buckets als Datasources und wertet die metrikbasierten Alert-Rules darauf aus. Einordnung im Gesamtbild siehe [Monitoring Stack](./index.md).
 
 ## Buckets
 
 | Bucket | Schreibt wer | Retention | Inhalt |
 | :--- | :--- | :--- | :--- |
-| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten | 90 Tage | SNMP, Nomad-Prometheus, Linstor, DRBD, Media-Stats; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health` |
+| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten + CheckMK | 90 Tage | Nomad-Prometheus, Linstor, DRBD, Media-Stats, CheckMK-Service-Metriken; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health` |
 | `proxmox` | Proxmox VE (nativ) | 90 Tage | VM/Container CPU, RAM, Disk, Netzwerk |
 | `telegraf_1y` | InfluxDB Task | 1 Jahr | 5-Min Durchschnitte (Downsampling) |
 | `telegraf_5y` | InfluxDB Task | 5 Jahre | 1h Durchschnitte (Downsampling) |
@@ -84,7 +84,6 @@ Retention Policies müssen manuell via InfluxDB UI gesetzt werden. Ohne explizit
 
 | Plugin | Quelle | Interval | Measurement |
 | :--- | :--- | :--- | :--- |
-| `inputs.snmp` | Synology NAS (SNMPv3) | 30s | `snmp.Synology.*` |
 | `inputs.prometheus` | Nomad Clients + Servers (6x) | 30s | `prometheus` (Fields: `nomad_*`) |
 | `inputs.prometheus` | Linstor (`linstor.ackermannprivat.ch/metrics`) | 60s | `prometheus` (Fields: `linstor_*`) |
 | `inputs.prometheus` | DRBD Reactor (client-05/06, Port 9942) | 60s | `prometheus` (Fields: `drbd_*`) |
@@ -115,7 +114,7 @@ Bis 2026-05-29 schrieben die drei Skripte nach `/nfs/docker/telegraf/metrics/` u
 
 ## CheckMK als zusätzliche Quelle
 
-Die CheckMK-Site `homelab` schreibt Service-Performance-Metriken aller monitored Hosts (`checkmk` selbst, Proxmox-Hosts, Nomad-Cluster, beide Synology-NAS) zusätzlich in den `telegraf`-Bucket. Damit landen Hardware-Metriken aus CheckMK (CPU/Mem/Filesystem/Disk-IO/Network) und Telegraf-SNMP-Metriken im selben Bucket und können in Grafana mit gleichen Datasources kombiniert werden.
+Die CheckMK-Site `homelab` schreibt Service-Performance-Metriken aller monitored Hosts (`checkmk` selbst, Proxmox-Hosts, Nomad-Cluster, beide Synology-NAS) zusätzlich in den `telegraf`-Bucket. Damit liegen die CheckMK-Hardware-Metriken (CPU/Mem/Filesystem/Disk-IO/Network) und die Telegraf-Metriken im selben Bucket und lassen sich in Grafana mit denselben Datasources kombinieren. Für die NAS-Hardware ist dieser Forwarder seit dem Cutover vom 2026-06-05 die einzige Quelle -- die Queries im NAS-Dashboard nutzen entsprechend das CheckMK-Schema (`host_name` / `service_description`), nicht mehr die SNMP-Tags.
 
 | Forwarder | CheckMK-Connection | Bucket | Endpoint |
 | :--- | :--- | :--- | :--- |
@@ -127,11 +126,7 @@ vm-checkmk Homelab nutzt `10.0.2.1` (`lxc-dns-01`, Pi-hole) als DNS-Server, der 
 
 ## Secrets-Verwaltung
 
-Alle Secrets werden via Vault injiziert (InfluxDB-Pfad siehe Übersicht-Tabelle):
-
-- **SNMP Credentials:** `kv/data/shared/telegraf-snmp` (Keys: `sec_name`, `auth_password`, `priv_password`)
-
-Die Telegraf-Config (`telegraf.conf`) verwendet Umgebungsvariablen (`${INFLUXDB_TOKEN}`, `${SNMP_SEC_NAME}` etc.), die via Nomad-Template aus Vault geladen werden.
+Alle Secrets werden via Vault injiziert (InfluxDB-Pfad siehe Übersicht-Tabelle). Die Telegraf-Config (`telegraf.conf`) verwendet Umgebungsvariablen (`${INFLUXDB_TOKEN}` etc.), die via Nomad-Template aus Vault geladen werden. Den früheren SNMP-Credentials-Pfad `kv/data/shared/telegraf-snmp` referenziert die Telegraf-Config seit dem NAS-Cutover auf CheckMK (2026-06-05) nicht mehr.
 
 ::: info Config-Deployment
 Die Telegraf-Config ist Single Source of Truth im Git-Repo (`nomad-jobs/monitoring/telegraf/telegraf.conf`). Änderungen müssen nach NFS kopiert werden (`/nfs/docker/telegraf/config/`).
@@ -163,6 +158,6 @@ Für InfluxQL-Zugriff existieren DBRP-Mappings (Database Retention Policy) für 
 ## Verwandte Seiten
 
 - [Monitoring Stack](./index.md) -- Grafana, Alerting, Loki
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- SNMP-Details und Dashboard
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- CheckMK-Hardware-Health, lokaler Telegraf, Dashboard
 - [USV (APC)](../ups/index.md) -- USV-Metriken via `inputs.upsd` und NUT
 - [Linstor/DRBD](../linstor-storage/index.md) -- Prometheus-Exporter für Linstor-Metriken
