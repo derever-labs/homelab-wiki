@@ -163,6 +163,7 @@ KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
 - **Morgens:** das iPhone vom Ladegerät nehmen genügt. Als Wecker dient Sleep Cycle, dessen Alarm-Stopp iOS-Automationen nicht auslösen kann (der Trigger "Wecker wird gestoppt" feuert nur bei der nativen Uhr-App) -- darum ist das nächtliche Laden der Anker. Der Kurzbefehl "Daily Digest Morgen" schickt die Kalenderdaten mit, läuft nur zwischen 04:00 und 10:59 und öffnet kein Safari; der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Mehrfaches Ab- und Anstecken fängt das Server-Debounce (5 min) ab.
 - **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
 - **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** kein automatischer Digest, on-demand jederzeit möglich. Werktags ohne Digest bis 09:00 erinnert eine ntfy-Warnung daran, dass die Automation nicht gefeuert hat.
+- **Inhalt:** Headline mit Gesamtlage, "Heute zuerst" (Top 3), danach die vollständigen Sektionen überfällig, heute fällig, diese Woche und weitere offene. Der Kurzbefehl liefert die Termine der nächsten sieben Tage mit: angezeigt werden heute und morgen, der ganze Horizont fliesst in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant"). Unter dem Digest stehen Dauer, Token-Verbrauch und das API-Kostenäquivalent des Laufs.
 
 ### Einrichtung der Morgen-Automation
 
