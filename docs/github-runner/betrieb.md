@@ -20,9 +20,7 @@ Neuen Image-Tag in der Job-Datei `nomad-jobs/infrastructure/github-runner.nomad`
 
 ### Classic PAT rotieren
 
-1. Neues PAT in GitHub generieren (Scopes: repo, workflow, admin:org)
-2. Neues Token in Vault speichern: `kv/github-runner`, Key `access_token`
-3. Runner-Job neu starten -- er liest den neuen Token automatisch aus Vault
+Der Runner registriert sich mit einem Classic PAT (Scopes: repo, workflow, admin:org) bei der Organisation. Das neue Token gehört nach `kv/github-runner`, Key `access_token`. Weil der Job den Wert per Vault-Template zur Startzeit einliest, greift die Rotation erst nach einem Neustart des Runner-Jobs.
 
 ## Troubleshooting
 
