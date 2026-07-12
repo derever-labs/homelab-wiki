@@ -13,7 +13,7 @@ tags:
 
 ## Übersicht
 
-Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes und Services ohne Authentifizierung entgegen (Netzwerk `10.0.0.0/8`) und leitet sie via TLS an `mail.netzone.ch` weiter. Ohne den Relay konnte kein Infrastruktur-Node E-Mails versenden, sodass kritische Alerts (Backup-Fehler, Disk-Warnungen, HA-Events) verloren gingen. Der Relay (`boky/postfix` als Nomad Job mit Vault-Credentials) schliesst diese Lücke.
+Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes und Services ohne Authentifizierung entgegen (Management-VLAN `10.0.2.0/24`) und leitet sie via TLS an `mail.netzone.ch` weiter. Ohne den Relay konnte kein Infrastruktur-Node E-Mails versenden, sodass kritische Alerts (Backup-Fehler, Disk-Warnungen, HA-Events) verloren gingen. Der Relay (`boky/postfix` als Nomad Job mit Vault-Credentials) schliesst diese Lücke.
 
 | Attribut | Wert |
 |----------|------|
@@ -66,17 +66,17 @@ Datei: `infrastructure/smtp-relay.nomad`
 | `RELAYHOST_USERNAME` | SASL Username (aus Vault) |
 | `RELAYHOST_PASSWORD` | SASL Passwort (aus Vault) |
 | `ALLOWED_SENDER_DOMAINS` | Erlaubte Absender-Domains (`ackermann.systems ackermannprivat.ch homenet.local`) |
-| `MYNETWORKS` | Netze ohne Auth (`10.0.2.0/24 127.0.0.0/8`) |
+| `POSTFIX_mynetworks` | Netze ohne Auth (`127.0.0.0/8 10.0.2.0/24`) |
 | `POSTFIX_smtp_sasl_mechanism_filter` | SASL-Mechanismen (`plain,login`) |
-
-::: tip Warum nur das Management-Subnetz?
-`MYNETWORKS` ist auf `10.0.2.0/24` (Management-VLAN) eingeschränkt. Das verhindert, dass beliebige Hosts aus dem LAN (`10.0.0.0/8`) den Relay ohne Authentifizierung nutzen können. Alle legitimen Sender (PVE-Nodes, PBS, CheckMK, Nomad-Services) laufen im Management-VLAN.
-:::
-| `POSTFIX_smtp_tls_security_level` | TLS erzwungen (`encrypt`) |
+| `POSTFIX_smtp_tls_security_level` | TLS + Cert-Verifikation erzwungen (`verify`) |
 | `POSTFIX_inet_protocols` | Nur IPv4 (kein IPv6-Routing im Homelab) |
 | `POSTFIX_sender_canonical_classes` | Rewrite-Geltungsbereich (`envelope_sender,header_sender`) |
 | `POSTFIX_sender_canonical_maps` | Sender-Rewrite-Map auf `services@ackermann.systems` |
 | `POSTFIX_myhostname` | SMTP-Hostname (`smtp-relay.ackermann.systems`) |
+
+::: tip Warum nur das Management-Subnetz?
+`POSTFIX_mynetworks` ist auf `10.0.2.0/24` (Management-VLAN) eingeschränkt. Das verhindert, dass beliebige Hosts aus dem LAN (`10.0.0.0/8`) den Relay ohne Authentifizierung nutzen können. Alle legitimen Sender (PVE-Nodes, PBS, CheckMK, Nomad-Services) laufen im Management-VLAN.
+:::
 
 ### Sender-Rewrite
 
@@ -84,7 +84,7 @@ Datei: `infrastructure/smtp-relay.nomad`
 
 ### Vault Secret
 
-Die Relay-Credentials liegen in Vault unter `kv/data/smtp-relay`. Der Job liest die Keys `host`, `port`, `username` und `password` aus und baut daraus `RELAYHOST`, `RELAYHOST_USERNAME` und `RELAYHOST_PASSWORD`.
+Die Relay-Credentials liegen in Vault unter `kv/data/smtp-relay`. Der Job liest die Keys `host`, `port`, `username`, `password` und `dkim_private_key` aus. Aus den ersten vier entstehen `RELAYHOST`, `RELAYHOST_USERNAME` und `RELAYHOST_PASSWORD`. Der Schlüssel `dkim_private_key` liefert den DKIM-Signierschlüssel (Selector `mail2026`) für beide Domains.
 
 ## Infrastruktur-Nodes (Ansible)
 
