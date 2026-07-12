@@ -64,9 +64,8 @@ Storage: {
 
 Input.SCAN -> Storage.CSI: Datei in /consume
 Traefik.R1 -> Nomad.PL
-Nomad.PL -> Storage.CSI: Consumer liest
+Nomad.PL -> Storage.CSI: "Consumer liest /consume,\nschreibt /media + /data"
 Nomad.PL -> Nomad.PG
-Nomad.PL -> Storage.CSI
 ```
 
 ## Konfiguration
