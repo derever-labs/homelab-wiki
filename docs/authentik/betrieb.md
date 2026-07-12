@@ -225,7 +225,7 @@ Voraussetzungen für Conditional UI: HTTPS, Discoverable/Resident-Key, gleicher 
 
 Nach erfolgreichem Passkey-Login wird die MFA-Validate-Stage übersprungen: Eine Skip-Policy (`auth_method == auth_webauthn_pwl`) ist am FlowStageBinding der MFA-Stage gebunden -- der Passkey zählt bereits als Besitz + User-Verification. Admins, die sich mit Passwort einloggen, durchlaufen die MFA-Stage weiterhin.
 
-Zusätzlich existiert ein dedizierter `passwordless-flow` (Slug unveränderter, via direkter URL erreichbar). Er startet direkt mit der WebAuthn-Validate-Stage und dient als Fallback, falls Conditional UI im Browser nicht greift. Der frühere "Mit Passkey anmelden"-Link auf der normalen Login-Seite existiert nicht mehr -- das `passwordless_flow`-Feld der Identification-Stage ist leer.
+Zusätzlich existiert ein dedizierter `passwordless-flow`, der direkt mit der WebAuthn-Validate-Stage startet. Er ist über das `passwordless_flow`-Feld der Identification-Stage verlinkt und erscheint auf der Login-Seite als Button "Mit Passkey anmelden" -- als zweiter Weg neben dem Autofill, falls Conditional UI im Browser nicht greift. Zu den Grenzen dieses Flows siehe [Referenz](./referenz.md#passwordless-flow).
 
 Damit der Flow funktioniert, muss der Passkey als **Resident Key** registriert sein (`resident_key_requirement=required` auf der WebAuthn-Setup-Stage). Nicht-Resident-Keys lassen sich zwar registrieren, können aber keinen Username resolven -- sie funktionieren nur als zweiter Faktor, nicht als primärer Login.
 
