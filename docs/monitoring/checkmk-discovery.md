@@ -80,10 +80,10 @@ Ausgeschlossen via `ignored_services`:
 - `Mount options of` -- generiert Flapping bei Remount, hat keinen Alert-Wert
 - `NTP Time` -- Systemd-Timesyncd ist Single-Source, NTP-Pool-Detail-Service ist Duplikat
 - `Temperature Zone N` -- VMs haben keine echten Sensoren
-- `^Postfix` -- Postfix nicht aktiv im Cluster (Loopback-only)
+- `^Postfix` -- kein vollwertiger MTA im Cluster: auf den Proxmox-Hosts, dem PBS und dem CheckMK-Host läuft Postfix ausschliesslich als loopback-only Satellite-Relay (`inet_interfaces = loopback-only`, Weiterleitung an `smtp.service.consul`), auf allen übrigen Hosts gar nicht -- der Check bringt keinen Alert-Wert
 - `Number of threads`, `Kernel Performance`, `TCP Connections` -- für die meisten Service-VMs ohne Alert-Wert
 - `Docker disk usage - buildcache/containers/volumes` -- doppelt durch `df` auf `/var/lib/docker`
-- `vault-unseal`-Service -- manueller Prozess nach Reboot, kein Alert-Wert (Memory `reference_vault_unseal_token_on_disk` -- Service ist absichtlich ManualStart)
+- `vault-unseal`-Service -- `Type=oneshot` mit `RemainAfterExit=yes`: die Unit ist enabled und unsealed Vault beim Boot automatisch (Token-on-Disk, Memory `reference_vault_unseal_token_on_disk`), sie ist danach dauerhaft `active (exited)`. Ein Systemd-Service-Check bildet einen solchen Einmal-Job nicht sinnvoll ab
 
 ### SNMP-Network-Devices (UDM Pro, UniFi Switches)
 
@@ -104,7 +104,7 @@ Diese Pattern-Filter greifen auf alle Hosts (host_name leer in der Rule):
 
 - `^Mount options of` -- generiert Flapping bei Remount
 - `^Temperature Zone` (auf VM-Hosts) -- keine echten Sensoren
-- `^Postfix` -- nicht aktiv im Cluster
+- `^Postfix` -- nur loopback-only Satellite-Relay auf Proxmox-Hosts, PBS und CheckMK, kein MTA mit Alert-Wert
 - `^NTP Time$` -- Single-Source via Systemd-Timesyncd
 - `^Interface [0-9]+$` -- alle numerischen SNMP-Interfaces (greift auf PVE und SNMP-Devices)
 
