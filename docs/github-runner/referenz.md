@@ -30,7 +30,7 @@ Der Runner-Job authentifiziert sich bei Vault über die JWT-Auth-Methode `jwt-no
 - **Auth-Method** -- `auth/jwt-nomad`
 - **Role** -- `github-runner-deploy`
   - `bound_claims.nomad_job_id` == `github-runner`
-  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`, `grafana-deploy-fetch`
+  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`, `grafana-deploy-fetch`, `github-runner-ci-fetch`
 - **Vault-Stanza im Job** -- `vault { role = "github-runner-deploy" }`
 
 Die Workload-Identity-Role ist damit zugleich die Brücke zur CD-Pipeline: Derselbe Runner erhält sowohl Zugriff auf seinen PAT als auch auf die Nomad Secret Engine.
@@ -132,13 +132,14 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/nomad-deploy-fetch
 
 ### Nomad ACL Policy `github-deploy`
 
-Minimale Permissions für den kurzlebigen Nomad-Token:
+Eng geschnittene Permissions für den kurzlebigen Nomad-Token:
 
 - `namespace.default` -- write mit Capabilities submit-job, dispatch-job, read-logs, read-job, list-jobs, csi-mount-volume, csi-register-plugin, csi-write-volume
+- `host_volume "nfs-logs"` -- mount-readonly, mount-readwrite. Zwingend für Jobs, die das Host-Volume `nfs-logs` (`/nfs/logs`) mounten. Fehlt die Capability, läuft `nomad job plan` durch, `nomad job run` quittiert aber mit 403
 - `node` -- read
 - `agent` -- read
 - `plugin` -- read (CSI-Plugin-Zugriff, für Jobs mit CSI-Volume-Claims zwingend)
-- Bewusst kein `alloc-exec`, kein `operator`, kein `sentinel-override`
+- Bewusst kein `alloc-exec`, kein `operator`, kein `sentinel-override`, kein `quota-write`
 
 Policy-Datei: `homelab-hashicorp-stack/nomad-configs/policies/github-deploy.hcl`
 
