@@ -11,21 +11,7 @@ tags:
 
 ## Verzeichnisstruktur
 
-Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichnisse gruppiert.
-
-Die folgende Tabelle nennt pro Verzeichnis repräsentative Jobs; die vollständige Liste ist im Repo unter `nomad-jobs/`.
-
-| Verzeichnis | Inhalt |
-|-------------|--------|
-| batch-jobs/ | Renovate, Docker Prune, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Reddit Downloader, PH Downloader, PostgreSQL Backup, MariaDB Backup, InfluxDB Backup, Vault Backup, Consul/Nomad Snapshot, DRBD Verify, CSI GC, fstrim |
-| databases/ | PostgreSQL (DRBD), MariaDB (DRBD), DbGate, OpenLDAP (Legacy) |
-| identity/ | Authentik (Identity Provider) |
-| infrastructure/ | SMTP Relay, Zot Registry, GitHub Runner, Nebula Sync |
-| media/ | Jellyfin, Sonarr, Radarr, Prowlarr, SABnzbd, Jellyseerr, Janitorr, JellyStat, Stash, Stash-Secure, AudioBookShelf, LazyLibrarian, YouTube-DL, Special-YouTube-DL, Special-YT-DLP, Video-Grabber |
-| monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, iperf3-to-influxdb |
-| services/ | VitePress Wiki, Paperless, Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Notifiarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, PocketBase, Directus-Gravel, Immo-Monitor, Immoscraper, Telegram-Relay |
-| system/ | Alloy (Log-Collector), Linstor CSI |
-| volumes/ | CSI-Volume-Definitionen (HCL) |
+Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichnisse gruppiert. Die vollständige Zuordnung Verzeichnis zu Jobs steht in der kanonischen Job-Übersicht: [Nomad Jobs](../_referenz/nomad-jobs.md).
 
 ## Job-Konfigurationsmuster
 
@@ -140,6 +126,7 @@ Deaktivierung würde CSI-Storage und alle Maintenance-Batch-Jobs brechen.
 
 - [Nomad Übersicht](index.md) -- Cluster-Architektur und Rolle im Stack
 - [Nomad Betrieb](betrieb.md) -- Deployment, Node Drain, Troubleshooting
+- [Nomad Jobs](../_referenz/nomad-jobs.md) -- Kanonische Übersicht aller Jobs pro Verzeichnis
 - [Traefik Middlewares](../traefik/referenz.md) -- Middleware Chains für Service-Zugriffskontrolle
 - [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Vollständiges Abhängigkeitsdiagramm
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
