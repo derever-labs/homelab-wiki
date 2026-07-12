@@ -63,7 +63,7 @@ INFLUX -> GRAF
 
 ## Rolle im Stack
 
-InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu Loki (Logs). Telegraf ist der zentrale Collector, der Prometheus-, Exec- und HTTP-Quellen einsammelt; Proxmox, CheckMK und die Telegraf-Host-Agenten schreiben zusätzlich direkt nach InfluxDB. Grafana liest alle Buckets als Datasources und wertet die metrikbasierten Alert-Rules darauf aus. Einordnung im Gesamtbild siehe [Monitoring Stack](./index.md).
+InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu Loki (Logs). Telegraf ist der zentrale Collector, der Prometheus-, Exec- und HTTP-Quellen einsammelt. Proxmox, CheckMK und die Telegraf-Host-Agenten schreiben zusätzlich direkt nach InfluxDB. Grafana liest alle Buckets als Datasources und wertet die metrikbasierten Alert-Rules darauf aus. Einordnung im Gesamtbild siehe [Monitoring Stack](./index.md).
 
 ## Buckets
 
@@ -108,7 +108,7 @@ Die Node-Storage- und Job-Health-Measurements stammen **nicht** vom zentralen Te
 | `nomad-job-health-metrics.sh` | client-04/05/06 | `nomad_alloc_restarts`, `nomad_job_health`, `nomad_blocked_evals` (nur client-04) | `nomad_health_<host>.influx` |
 | `csi-write-monitor.sh` | client-05/06 | `csi_write` | `csi_write_<host>.influx` (bleibt in `telegraf-host`) |
 
-`nomad_blocked_evals` (Anzahl Evaluations im Zustand `blocked`, gelesen über die Nomad-REST-API) ist ein Cluster-Wert, kein Node-Wert. Nur client-04 schreibt ihn; client-05/06 überspringen ihn per `SKIP_BLOCKED_EVALS=1`, sonst läge derselbe Wert dreifach im Bucket.
+`nomad_blocked_evals` (Anzahl Evaluations im Zustand `blocked`, gelesen über die Nomad-REST-API) ist ein Cluster-Wert, kein Node-Wert. Nur client-04 schreibt ihn. Client-05/06 überspringen ihn per `SKIP_BLOCKED_EVALS=1`, sonst läge derselbe Wert dreifach im Bucket.
 
 ::: danger NFS-Selbstreferenz vermieden (2026-05-29)
 Bis 2026-05-29 schrieben die drei Skripte nach `/nfs/docker/telegraf/metrics/` und der **zentrale** Telegraf las sie via `inputs.file`. Bei totem NAS-`nfsd` blockierten `stat` und `mv` im uninterruptiblen D-State; jede Minute starteten neue Crons, die nie endeten (~11k Prozesse, load ~12500, Node-Wedge). Der lokale Pfad plus idempotentes `mkdir -p` entkoppelt die Crons vom NFS -- ein NAS-Ausfall kann die Nodes nicht mehr lahmlegen. Routing pro Measurement steuern `namepass`/`namedrop` an den beiden `outputs.influxdb_v2` der `telegraf-host`-Konfiguration; so landet alles dashboard-stabil im gewohnten Bucket `telegraf` ohne Doppel-Write.
