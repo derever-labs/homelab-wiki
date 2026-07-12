@@ -42,8 +42,8 @@ Mögliche Ursachen:
 
 **Symptom:** CI/CD-Pipeline schlägt beim Image-Push fehl.
 
-- ZOT nicht erreichbar: Läuft der ZOT System Job auf demselben Node?
-- Host-Networking nicht aktiv: Ohne Host-Networking ist `localhost:5000` nicht erreichbar
+- ZOT nicht erreichbar: Läuft der ZOT-Job, und ist er im Consul-Catalog registriert?
+- Host-Networking nicht aktiv: Ohne Host-Networking greift der Consul-DNS-Resolver des Hosts nicht, `zot.service.consul:5000` bleibt unauflösbar
 - Docker API Inkompatibilität: `skopeo copy` statt `docker push` verwenden
 
 ### Workflow hängt in "queued"
