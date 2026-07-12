@@ -169,16 +169,19 @@ Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
 ### Blocklist
 
-Nur die CD-Pipeline-Bootstrap-Trägerschicht wird ausgeschlossen und muss manuell deployed werden. Grund: Wenn einer dieser Jobs kaputt deployed wird, kann die Pipeline selbst nicht mehr fixen (Bootstrap-Deadlock):
+Vier Jobs sind vom Auto-Deploy ausgeschlossen und müssen manuell deployed werden. Drei davon sind die CD-Pipeline-Bootstrap-Trägerschicht: Wird einer dieser Jobs kaputt deployed, kann die Pipeline sich selbst nicht mehr fixen (Bootstrap-Deadlock).
 
 - `infrastructure/zot-registry.nomad` -- Image-Registry, von der alle Nodes pullen
 - `infrastructure/github-runner.nomad` -- Runner, der den Workflow ausführt
 - `batch-jobs/renovate.nomad` -- Tool, das die PRs erzeugt
+- `identity/authentik.nomad` -- aus einem anderen Grund geblockt: Der Job lädt seine Blueprints via `file()` aus dem infra-Super-Repo. Im Auto-Deploy-CWD (dem nomad-jobs-Repo) ist dieser Pfad nicht auflösbar, `nomad job run` würde mit "no such file" fehlschlagen. Der Deploy muss aus dem infra-CWD erfolgen
 
-Alles andere -- Vault, Traefik, Datenbanken, Authentik, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
+Zusätzlich ist der Ordner `docs/` pauschal geblockt -- dort liegen mit `docs/templates/` und `docs/entwuerfe/` nur Muster und Entwürfe, nie deploybare Jobs.
+
+Alles andere -- Vault, Traefik, Datenbanken, CSI-Plugins, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
 
 ::: info Bewusste Entscheidung
-Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault/Traefik/Authentik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
+Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault oder Traefik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
 :::
 
 ## Workflow: `deploy-grafana-dashboards.yml`

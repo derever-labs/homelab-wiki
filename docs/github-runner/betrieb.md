@@ -88,7 +88,7 @@ Vault sieht nur das Workload-Token des Jobs `github-runner`, keine Repo-Namen. E
 
 ### Volumen- oder CSI-Plugin-Updates
 
-Volumen und CSI-Plugins sind in der Blocklist der CD-Pipeline und werden **nicht** automatisch deployed. Sie müssen manuell out-of-band aktualisiert werden.
+Das CSI-Plugin (`system/linstor-csi.nomad`) steht **nicht** auf der Blocklist: Ein Merge auf main deployt es automatisch, ein manuelles Gate gibt es nicht. Ein defektes Plugin-Update trifft damit alle Jobs mit CSI-Volume-Claims. Rollback wie bei jedem anderen Job über `nomad job revert` oder einen Revert-Commit auf main. Welche Jobs tatsächlich geblockt sind, steht in der [Referenz](./referenz.md#blocklist).
 
 ## Verwandte Seiten
 
