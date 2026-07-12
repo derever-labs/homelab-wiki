@@ -155,7 +155,7 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/grafana-deploy-fet
 
 Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
-- **Trigger** -- push auf `main`, paths-Filter auf `nomad-jobs/**/*.nomad`
+- **Trigger** -- push auf `main`, paths-Filter auf `**/*.nomad` (der Workflow liegt im nomad-jobs-Repo, die Pfade sind daher repo-relativ ohne Präfix). Zusätzlich getriggert von Dateien, die via `file()` in einen Job eingebettet sind -- die Keep-Workflow-YAMLs und die Keep-Python-Skripte -- weil deren Änderung sonst nie in den laufenden Job propagieren würde
 - **Concurrency-Group** -- `nomad-deploy-homelab` (verhindert parallele Deploys)
 - **Checkout** -- SHA-gepinnte `actions/checkout`
 
