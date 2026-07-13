@@ -21,7 +21,7 @@ Profilarr synchronisiert Quality Profiles und Custom Formats von einem zentralen
 
 ## Rolle im Stack
 
-Profilarr ist die Sync-Schicht für Qualitätsstandards im Arr-Stack. Es liest Profile-Definitionen aus dem konfigurierten Datenbank-Hub (TRaSH Guides via dictionarry-hub/trash-pcd) und schreibt sie in die verbundenen Sonarr- und Radarr-Instanzen. Das aktiv genutzte Profil ist **SQP-1** (1080p Bluray, details: [Radarr Qualitätsprofile](./referenz.md#sqp-profile-trash-guides-special-quality-profiles)).
+Profilarr ist die Sync-Schicht für Qualitätsstandards im Arr-Stack. Es liest Profile-Definitionen aus dem konfigurierten Datenbank-Hub (TRaSH Guides via dictionarry-hub/trash-pcd) und schreibt sie in die verbundenen Sonarr- und Radarr-Instanzen. Das aktiv genutzte Profil ist **SQP-1** (1080p Bluray, details: [SQP-Familie](./sqp-familie.md)).
 
 Profilarr ist für den laufenden Betrieb nicht kritisch: die bereits synchronisierten Profile in Sonarr/Radarr bleiben aktiv, auch wenn Profilarr nicht erreichbar ist.
 
