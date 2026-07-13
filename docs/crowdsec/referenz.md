@@ -1,5 +1,5 @@
 ---
-title: "CrowdSec: Referenz"
+title: CrowdSec Referenz
 description: Engine- und Bouncer-Parameter, Collections und lokale Whitelists
 tags:
   - platform
@@ -8,7 +8,7 @@ tags:
   - referenz
 ---
 
-# CrowdSec: Referenz
+# CrowdSec Referenz
 
 Diese Seite listet die Konfigurationsparameter von Engine und Bouncer, die verwendeten Collections und die lokalen Whitelists. Rolle, Architektur und Einbindung in Traefik stehen in [CrowdSec (Übersicht)](./index.md).
 
