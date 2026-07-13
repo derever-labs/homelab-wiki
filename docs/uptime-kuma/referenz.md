@@ -1,5 +1,5 @@
 ---
-title: "Uptime Kuma: Referenz"
+title: Uptime Kuma Referenz
 description: resendInterval-Semantik, Zertifikats-Monitore, API-Besonderheiten und Monitor-CRUD von Uptime Kuma
 tags:
   - service
@@ -8,7 +8,7 @@ tags:
   - referenz
 ---
 
-# Uptime Kuma: Referenz
+# Uptime Kuma Referenz
 
 Nachschlage-Details zu Uptime Kuma. Steckbrief, Architektur und Rolle im Stack stehen auf der [Übersichtsseite](./index.md).
 
