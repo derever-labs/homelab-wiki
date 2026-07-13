@@ -122,15 +122,9 @@ Solange die Sentinel-Datei existiert, setzt `nomad-boot-enable.service` die Elig
 3. `sudo systemctl is-active nomad-boot-enable.service` -- `active (exited)`
 4. Services auf dem Node laufen wieder (alloc-Liste gegenchecken)
 
-## Historische Iterationen
+## Entscheidungsweg
 
-::: info Designs v9 → v10.2
-- **v9** (bis 14.04.2026): kombinierte `nomad-smart-shutdown.service` mit `drain_on_shutdown` in `client.hcl`. Token hardcoded im Skript.
-- **v10.0** (14.04.2026): Token in EnvironmentFile, Token-Check im Skript. Lücke: `nomad-boot-enable.service` hatte kein `EnvironmentFile=` -- Ausfall am 22.04.2026 durch apt-daily-upgrade → `daemon-reexec` → nomad restart → boot-enable-Fail ("NOMAD_TOKEN nicht gesetzt") → Node ineligible.
-- **v10.1** (23.04.2026): `drain_on_shutdown` aus `client.hcl`, tgross-Pfad (`leave_on_interrupt=true + leave_on_terminate=false + KillSignal=SIGINT`). Scheiterte weil `drain_on_shutdown`-Flag das dominiert und bei jedem Agent-Stop Drain triggert. Verworfen.
-- **v10.1b** (23.04.2026): Separate `nomad-shutdown-drain.service` mit `Conflicts=shutdown.target`. Reboot-Test auf client-04 (24.04.2026) zeigte: ExecStop feuerte nicht. systemd-Timing-Issue mit `DefaultDependencies=no`.
-- **v10.2** (24.04.2026, aktueller Stand): ExecStop-Drop-in direkt auf `nomad.service`. Live-verifiziert im Reboot-Test. Ausgerollt auf allen Homelab- und DCLab-Clients.
-:::
+Der Weg zur heutigen Version (Iterationen v9 bis v10.2 mit den jeweils verworfenen Zwischenstaenden und ihren Fehlermodi) ist im [ADR: Smart-Shutdown-Entscheidungsweg](./adr-smart-shutdown.md) dokumentiert.
 
 ## Verwandte Seiten
 
