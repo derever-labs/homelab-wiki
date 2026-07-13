@@ -239,11 +239,7 @@ Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer e
 
 ## Historie
 
-| Datum | Änderung |
-|-------|-----------|
-| ~2025 | Initialer Stack: dnsmasq -> Pi-hole -> Unbound auf Docker (vm-proxy-dns-01/vm-vpn-dns-01) |
-| 22.02.2026 | 10.0.2.1: dnsmasq entfernt, Pi-hole v6 direkt auf Port 53 |
-| 02.04.2026 | Kompletter Neuaufbau: 2x LXC (bare-metal Pi-hole v6 + Unbound), Nebula-Sync, IaC-verwaltet |
+Die Migrations-Chronologie der DNS-Infrastruktur (dnsmasq -> Pi-hole -> Bare-Metal-LXC) ist in der [ADR DNS-Migration Bare-Metal](./adr-migration-bare-metal.md) dokumentiert.
 
 ## DNS-Performance-Monitoring
 
