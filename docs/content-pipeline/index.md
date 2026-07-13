@@ -94,14 +94,7 @@ Läuft täglich um 03:00 Uhr (CH) und nutzt [BDFR](https://github.com/aliparlakc
 
 Das Redgifs-Modul ist wegen 429-Rate-Limits deaktiviert. Bei Rate-Limit-Problemen bis zu 3 Versuche mit 10 Minuten Pause.
 
-**Vault Secrets:**
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/shared/reddit` | `client_secret`, `user_token` |
-| `kv/data/shared/stash` | `api_key` |
-
-Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service (eigener Bot Token in Vault), der downloader liest selbst kein Telegram-Secret.
+Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service (eigener Bot Token in Vault), der downloader liest selbst kein Telegram-Secret. Die Vault-Secrets-Zugriffe stehen in der [Content-Pipeline Referenz](./referenz.md).
 
 ### ph-downloader
 
@@ -109,27 +102,11 @@ Läuft täglich um 03:30 Uhr (CH), 30 Minuten nach dem reddit-downloader, um Res
 
 **Ablauf:** Download via `phdler.py` (Liste aus SQLite-Datenbank) -> Stash-Scan + Generate -> Telegram-Ergebnis-Report. Details siehe Job-Datei.
 
-**Vault Secrets:**
-
-| Pfad | Keys |
-| :--- | :--- |
-| `kv/data/shared/stash` | `api_key` |
-
-Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service, der downloader liest selbst kein Telegram-Secret.
+Telegram-Benachrichtigungen laufen über den `telegram-relay`-Service, der downloader liest selbst kein Telegram-Secret. Die Vault-Secrets-Zugriffe stehen in der [Content-Pipeline Referenz](./referenz.md).
 
 ### phdler-telegram-bot
 
-Ein dauerhaft laufender Service ohne Web-UI, der Telegram-Nachrichten per Long Polling empfängt und Befehle ausführt.
-
-**Befehle:**
-
-| Befehl | Beschreibung |
-| :--- | :--- |
-| `list` | Alle Items in der phdler-Datenbank anzeigen |
-| `add <url>` | Neue URL zur Download-Liste hinzufügen |
-| `start` | ph-downloader Batch Job sofort starten (Nomad Force-Run) |
-| `status` | Nomad Job-Status des ph-downloaders anzeigen |
-| `help` | Hilfe anzeigen |
+Ein dauerhaft laufender Service ohne Web-UI, der Telegram-Nachrichten per Long Polling empfängt und Befehle ausführt. Die vollständige Liste der Befehle steht in der [Content-Pipeline Referenz](./referenz.md).
 
 **Technische Details:**
 
@@ -154,5 +131,6 @@ Die Batch Jobs laufen gestaffelt (reddit-downloader 03:00 CH, ph-downloader 03:3
 
 ## Verwandte Seiten
 
+- [Content-Pipeline Referenz](./referenz.md) -- Vault-Secrets-Zugriffe und Telegram-Bot-Befehle
 - [Stash](../stash/index.md) -- Media Organizer, wird von den Batch Jobs über die API aktualisiert
 - [Video-Download-Tools](../video-download/index.md) -- Manuelle Download-UIs
