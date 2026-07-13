@@ -9,7 +9,7 @@ tags:
   - referenz
 ---
 
-# VitePress Wiki: Referenz
+# VitePress Wiki - Referenz
 
 Technische Referenz für das VitePress Wiki. Für den Steckbrief siehe [VitePress Wiki](./index.md), für Build- und Webhook-Automatik siehe [Betrieb](./betrieb.md).
 

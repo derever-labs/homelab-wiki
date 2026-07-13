@@ -9,7 +9,7 @@ tags:
   - betrieb
 ---
 
-# VitePress Wiki: Betrieb
+# VitePress Wiki - Betrieb
 
 Build-, Webhook- und Deploy-Automatik des VitePress Wikis. Für den Steckbrief siehe [VitePress Wiki](./index.md), für die technische Referenz siehe [Referenz](./referenz.md).
 
