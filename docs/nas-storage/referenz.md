@@ -29,7 +29,7 @@ Der frühere Export `/nfs/cert/` (TLS-Zertifikate der alten acme-Pipeline) wurde
 
 ## Garage S3
 
-Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+). Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
+Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+).
 
 Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
 
