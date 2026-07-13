@@ -1,5 +1,5 @@
 ---
-title: "NAS-Storage: Referenz"
+title: NAS-Storage Referenz
 description: NFS-Exports, Garage-S3-Endpunkte und Buckets sowie DSM-Konfiguration
 tags:
   - storage
@@ -9,7 +9,7 @@ tags:
   - referenz
 ---
 
-# NAS-Storage: Referenz
+# NAS-Storage Referenz
 
 ## NFS-Exports
 

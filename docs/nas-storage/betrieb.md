@@ -1,5 +1,5 @@
 ---
-title: "NAS-Storage: Betrieb"
+title: NAS-Storage Betrieb
 description: Troubleshooting, SSH-Hardening und Wartungsprozeduren des NAS
 tags:
   - storage
@@ -8,7 +8,7 @@ tags:
   - troubleshooting
 ---
 
-# NAS-Storage: Betrieb
+# NAS-Storage Betrieb
 
 ## Troubleshooting
 
