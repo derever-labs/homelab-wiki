@@ -30,13 +30,21 @@ Fällt ein zweiter Node aus, verliert der Cluster das Quorum und blockiert alle 
 - **PBS Backup-Zeitplan** -- inkrementelle VM-Snapshots laufen nach konfiguriertem Zeitplan und werden im PBS-Datastore versioniert aufbewahrt.
 - **DRBD Reactor** -- überwacht die DRBD-Replikation und reagiert auf Ressourcen-Ereignisse. Läuft auf beiden Storage-Nodes und hält die Linstor-Metadaten konsistent.
 
+## VM-Disk auf virtio-blk umstellen
+
+Prozedur zum Wechsel einer bestehenden VM-Disk von virtio-scsi auf virtio-blk (Ziel-Parameter und Flags: [Referenz -- VM Disk-Konfiguration](referenz.md#vm-disk-konfiguration)).
+
+::: warning Umstellung von scsi auf virtio
+Die VM muss gestoppt sein. Boot-Order auf `virtio0` setzen. `ssd=1` wird bei virtio-blk nicht unterstützt (und nicht nötig -- virtio-blk ist immer non-rotational).
+:::
+
 ## Bekannte Einschränkungen
 
 ::: warning NFS-Boot-Abhängigkeit
 Nomad-Client-VMs (client-05 und client-06) haben NFS-Mounts ohne `nofail`-Option konfiguriert. Ist der NFS-Server beim VM-Boot nicht erreichbar, blockiert systemd und das System fällt in den Emergency Mode.
 :::
 
-- **iGPU Full Passthrough** -- die integrierte GPU eines Nodes ist exklusiv einer einzigen VM zugewiesen. Ein zweiter paralleler GPU-Consumer ist ohne SR-IOV nicht möglich. SR-IOV ist auf der verbauten Hardware nicht verfügbar.
+- **iGPU Full Passthrough** -- die integrierte GPU eines Nodes ist exklusiv einer einzigen VM zugewiesen. Ein zweiter paralleler GPU-Consumer ist ohne SR-IOV nicht möglich. SR-IOV ist auf der verbauten Hardware nicht verfügbar. Konfigurationsdetails: [Referenz -- iGPU Passthrough](referenz.md#igpu-passthrough).
 
 ## Externe Standalone-Nodes
 
@@ -61,11 +69,12 @@ PDM nutzt bewusst **kein** `accept-routes`. Würde es die Homelab-Subnet-Route `
 
 ## Credentials
 
-Zugangsdaten: [Credentials](../_referenz/credentials.md). SSO via Authentik, Fallback `root@pam` -- Details: [Proxmox Übersicht](index.md#authentifizierung-sso).
+Zugangsdaten: [Credentials](../_referenz/credentials.md). SSO via Authentik, Fallback `root@pam` -- Details: [Proxmox Referenz -- Authentifizierung (SSO)](referenz.md#authentifizierung-sso).
 
 ## Verwandte Seiten
 
-- [Proxmox Übersicht](index.md) -- Komponenten, Architektur und SSO-Setup des Clusters
+- [Proxmox Übersicht](index.md) -- Komponenten, Architektur und Steckbrief des Clusters
+- [Proxmox Referenz](referenz.md) -- iGPU-Passthrough, VM-Disk-/ZFS-Tuning, SSO/OIDC-Felder und PDM-Konfiguration
 - [Backup](../backup/) -- PBS-Datastore und Backup-Strategie
 - [Linstor Storage](../linstor-storage/) -- DRBD-replizierter Block-Storage für VM-Disks
 - [Netzwerk](../netzwerk/) -- VLANs, VIPs und Routing im Homelab
