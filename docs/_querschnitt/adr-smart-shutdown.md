@@ -1,5 +1,5 @@
 ---
-title: "ADR: Smart-Shutdown-Entscheidungsweg"
+title: ADR Smart-Shutdown-Entscheidungsweg
 description: Design-Historie des Smart-Shutdown-Verfahrens fuer Nomad-Clients (v9 bis v10.2)
 tags:
   - adr
@@ -9,7 +9,7 @@ tags:
   - shutdown
 ---
 
-# ADR: Smart-Shutdown-Entscheidungsweg
+# ADR Smart-Shutdown-Entscheidungsweg
 
 Dieser Architecture Decision Record dokumentiert, wie das Smart-Shutdown-Verfahren fuer Nomad-Clients mit Linstor/DRBD Storage zu seiner heutigen Form gefunden hat. Er haelt die verworfenen Zwischenstaende und ihre Fehlermodi fest, damit bereits gepruefte Wege nicht erneut beschritten werden.
 
