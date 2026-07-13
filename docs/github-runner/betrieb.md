@@ -20,9 +20,7 @@ Neuen Image-Tag in der Job-Datei `nomad-jobs/infrastructure/github-runner.nomad`
 
 ### Classic PAT rotieren
 
-1. Neues PAT in GitHub generieren (Scopes: repo, workflow, admin:org)
-2. Neues Token in Vault speichern: `kv/github-runner`, Key `access_token`
-3. Runner-Job neu starten -- er liest den neuen Token automatisch aus Vault
+Der Runner registriert sich mit einem Classic PAT (Scopes: repo, workflow, admin:org) bei der Organisation. Das neue Token gehört nach `kv/github-runner`, Key `access_token`. Weil der Job den Wert per Vault-Template zur Startzeit einliest, greift die Rotation erst nach einem Neustart des Runner-Jobs.
 
 ## Troubleshooting
 
@@ -42,8 +40,8 @@ Mögliche Ursachen:
 
 **Symptom:** CI/CD-Pipeline schlägt beim Image-Push fehl.
 
-- ZOT nicht erreichbar: Läuft der ZOT System Job auf demselben Node?
-- Host-Networking nicht aktiv: Ohne Host-Networking ist `localhost:5000` nicht erreichbar
+- ZOT nicht erreichbar: Läuft der ZOT-Job, und ist er im Consul-Catalog registriert?
+- Host-Networking nicht aktiv: Ohne Host-Networking greift der Consul-DNS-Resolver des Hosts nicht, `zot.service.consul:5000` bleibt unauflösbar
 - Docker API Inkompatibilität: `skopeo copy` statt `docker push` verwenden
 
 ### Workflow hängt in "queued"
@@ -88,7 +86,7 @@ Vault sieht nur das Workload-Token des Jobs `github-runner`, keine Repo-Namen. E
 
 ### Volumen- oder CSI-Plugin-Updates
 
-Volumen und CSI-Plugins sind in der Blocklist der CD-Pipeline und werden **nicht** automatisch deployed. Sie müssen manuell out-of-band aktualisiert werden.
+Das CSI-Plugin (`system/linstor-csi.nomad`) steht **nicht** auf der Blocklist: Ein Merge auf main deployt es automatisch, ein manuelles Gate gibt es nicht. Ein defektes Plugin-Update trifft damit alle Jobs mit CSI-Volume-Claims. Rollback wie bei jedem anderen Job über `nomad job revert` oder einen Revert-Commit auf main. Welche Jobs tatsächlich geblockt sind, steht in der [Referenz](./referenz.md#blocklist).
 
 ## Verwandte Seiten
 

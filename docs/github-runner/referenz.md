@@ -30,7 +30,7 @@ Der Runner-Job authentifiziert sich bei Vault über die JWT-Auth-Methode `jwt-no
 - **Auth-Method** -- `auth/jwt-nomad`
 - **Role** -- `github-runner-deploy`
   - `bound_claims.nomad_job_id` == `github-runner`
-  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`, `grafana-deploy-fetch`
+  - `token_policies` -- `nomad-workload`, `nomad-deploy-fetch`, `grafana-deploy-fetch`, `github-runner-ci-fetch`
 - **Vault-Stanza im Job** -- `vault { role = "github-runner-deploy" }`
 
 Die Workload-Identity-Role ist damit zugleich die Brücke zur CD-Pipeline: Derselbe Runner erhält sowohl Zugriff auf seinen PAT als auch auf die Nomad Secret Engine.
@@ -132,13 +132,14 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/nomad-deploy-fetch
 
 ### Nomad ACL Policy `github-deploy`
 
-Minimale Permissions für den kurzlebigen Nomad-Token:
+Eng geschnittene Permissions für den kurzlebigen Nomad-Token:
 
 - `namespace.default` -- write mit Capabilities submit-job, dispatch-job, read-logs, read-job, list-jobs, csi-mount-volume, csi-register-plugin, csi-write-volume
+- `host_volume "nfs-logs"` -- mount-readonly, mount-readwrite. Zwingend für Jobs, die das Host-Volume `nfs-logs` (`/nfs/logs`) mounten. Fehlt die Capability, läuft `nomad job plan` durch, `nomad job run` quittiert aber mit 403
 - `node` -- read
 - `agent` -- read
 - `plugin` -- read (CSI-Plugin-Zugriff, für Jobs mit CSI-Volume-Claims zwingend)
-- Bewusst kein `alloc-exec`, kein `operator`, kein `sentinel-override`
+- Bewusst kein `alloc-exec`, kein `operator`, kein `sentinel-override`, kein `quota-write`
 
 Policy-Datei: `homelab-hashicorp-stack/nomad-configs/policies/github-deploy.hcl`
 
@@ -154,7 +155,7 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/grafana-deploy-fet
 
 Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
-- **Trigger** -- push auf `main`, paths-Filter auf `nomad-jobs/**/*.nomad`
+- **Trigger** -- push auf `main`, paths-Filter auf `**/*.nomad` (der Workflow liegt im nomad-jobs-Repo, die Pfade sind daher repo-relativ ohne Präfix). Zusätzlich getriggert von Dateien, die via `file()` in einen Job eingebettet sind -- die Keep-Begleitdateien (Workflow-YAMLs, Python-Skripte und SQL) -- weil deren Änderung sonst nie in den laufenden Job propagieren würde
 - **Concurrency-Group** -- `nomad-deploy-homelab` (verhindert parallele Deploys)
 - **Checkout** -- SHA-gepinnte `actions/checkout`
 
@@ -169,16 +170,19 @@ Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
 ### Blocklist
 
-Nur die CD-Pipeline-Bootstrap-Trägerschicht wird ausgeschlossen und muss manuell deployed werden. Grund: Wenn einer dieser Jobs kaputt deployed wird, kann die Pipeline selbst nicht mehr fixen (Bootstrap-Deadlock):
+Vier Jobs sind vom Auto-Deploy ausgeschlossen und müssen manuell deployed werden. Drei davon sind die CD-Pipeline-Bootstrap-Trägerschicht: Wird einer dieser Jobs kaputt deployed, kann die Pipeline sich selbst nicht mehr fixen (Bootstrap-Deadlock).
 
 - `infrastructure/zot-registry.nomad` -- Image-Registry, von der alle Nodes pullen
 - `infrastructure/github-runner.nomad` -- Runner, der den Workflow ausführt
 - `batch-jobs/renovate.nomad` -- Tool, das die PRs erzeugt
+- `identity/authentik.nomad` -- aus einem anderen Grund geblockt: Der Job lädt seine Blueprints via `file()` aus dem infra-Super-Repo. Im Auto-Deploy-CWD (dem nomad-jobs-Repo) ist dieser Pfad nicht auflösbar, `nomad job run` würde mit "no such file" fehlschlagen. Der Deploy muss aus dem infra-CWD erfolgen
 
-Alles andere -- Vault, Traefik, Datenbanken, Authentik, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
+Zusätzlich ist der Ordner `docs/` pauschal geblockt -- dort liegen unter `docs/templates/` nur Muster und Analyse-Dateien, nie deploybare Jobs.
+
+Alles andere -- Vault, Traefik, Datenbanken, CSI-Plugins, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
 
 ::: info Bewusste Entscheidung
-Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault/Traefik/Authentik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
+Hack-Radius > Ausfall-Radius. Im Single-Maintainer-Homelab mit Uptime Kuma + Loki-Monitoring ist ein kurzer Ausfall durch ein kaputtes Deployment akzeptabel, ein unpatched CVE in Vault oder Traefik aber nicht. Wer die Pipeline autonomer macht, muss beim Merge disziplinierter reviewen.
 :::
 
 ## Workflow: `deploy-grafana-dashboards.yml`

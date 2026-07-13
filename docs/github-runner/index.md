@@ -75,8 +75,9 @@ nomad: Nomad Cluster {
     class: node
     tooltip: "RUNNER_SCOPE=org\nPrivileged, Host-Networking\nclient-05 oder client-06"
   }
-  zot: ZOT Registry\nlocalhost:5000 {
+  zot: ZOT Registry\nzot.service.consul:5000 {
     class: node
+    tooltip: "Auflösung via Consul-DNS | Runner nutzt Host-Networking"
   }
 }
 
@@ -105,9 +106,9 @@ Privileged Mode und gemounteter Docker-Socket geben dem Container Root-Zugriff a
 
 ## Placement
 
-Der Job hat eine Constraint auf `vm-nomad-client-05` und `vm-nomad-client-06`. Auf diesen Nodes ist die lokale Container-Registry (ZOT) unter `localhost:5000` erreichbar, was der Runner für Image-Builds benötigt.
+Der Job hat eine Constraint auf `vm-nomad-client-05` und `vm-nomad-client-06`.
 
-Der Container nutzt `network_mode = "host"`, damit `localhost:5000` direkt auflösbar ist.
+Der Container nutzt `network_mode = "host"`, damit der Consul-DNS-Resolver des Hosts greift: Die Container-Registry ZOT wird über den Servicenamen `zot.service.consul:5000` angesprochen, den der Runner für Image-Builds und -Pushes braucht. Im Bridge-Mode wäre dieser Name nicht auflösbar.
 
 ## Runner Group
 
