@@ -26,119 +26,20 @@ Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (
 
 Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über Garage einen S3-kompatiblen Object Store für Backups und Terraform State.
 
-## NFS-Exports
+## Architektur
 
-Die folgenden Pfade werden als NFS-Shares bereitgestellt und auf allen Nomad-Client-VMs gemountet:
+Die Exports kommen vom HomeServer (DS1825+, 10.0.0.200, `/volume1`); das alte Blech (DS2419+, 10.0.0.210, `/volume2`) serviert separat die Jellyfin-Mediathek von USB-Shares an die Media-Worker. Garage läuft als Single-Node-Container auf dem HomeServer und ist nur intern erreichbar -- kein Public-Routing über Traefik.
 
-| Export-Pfad | Mount auf Clients | Verwendung |
-| :--- | :--- | :--- |
-| `/nfs/docker/` | `/nfs/docker/` | Persistente Daten für Container (Configs, DB-Dateien) |
-| `/nfs/jellyfin/` | `/nfs/jellyfin/` | Medien-Bibliothek für Jellyfin und arr-Stack |
-| `/nfs/nomad/` | `/nfs/nomad/` | Nomad-Daten (inkl. `consul-cert`-Subpfad) |
-| `/nfs/backup/` | `/nfs/backup/` | Backup-Ziel für pg_dumpall und weitere Jobs |
-| `/nfs/logs/` | `/nfs/logs/` | Log-Dateien für Batch-Jobs |
+Die konkreten Export-Pfade und Mounts, die Garage-Endpunkte und -Buckets sowie die DSM-Konfiguration stehen in der [NAS-Storage: Referenz](./referenz.md). Troubleshooting, SSH-Hardening und Wartungsprozeduren in [NAS-Storage: Betrieb](./betrieb.md).
 
-Die Mount-Punkte werden über Ansible (`roles/nfs`) in `/etc/fstab` der jeweiligen VMs konfiguriert. Die Exports kommen vom HomeServer (DS1825+, 10.0.0.200, `/volume1`); das alte Blech (DS2419+, 10.0.0.210, `/volume2`) serviert separat die Jellyfin-Mediathek von USB-Shares an die Media-Worker.
+## Monitoring
 
-Der frühere Export `/nfs/cert/` (TLS-Zertifikate der alten acme-Pipeline) wurde mit dem NAS-Cutover 2026-06 stillgelegt: Der native `acme.sh` deployt direkt in den DSM-Store, kein Cluster-Konsument liest den Pfad mehr. Mount, Export und Shared Folder sind entfernt -- siehe [TLS-Zertifikate](../_referenz/tls-zertifikate.md).
-
-## Garage S3
-
-Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups und Terraform State. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+). Garage löste die zuvor auf dem NAS betriebene MinIO-Instanz im Mai 2026 ab (MinIO-Repository im April 2026 archiviert).
-
-Die NAS-IP steht in [Hosts und IPs](../_referenz/hosts-und-ips.md).
-
-| Attribut | Wert |
-| :--- | :--- |
-| **API-Endpoint** | Port 9012 |
-| **S3 Web (Static Hosting)** | Port 9013 |
-| **Admin/Metrics** | Port 9014 (Bearer-Token-Auth) |
-| **Storage** | `/volume1/garage/{meta,data}` |
-| **Config** | `/volume1/garage/garage.toml` (0600/root) |
-| **Credentials** | siehe [Zugangsdaten](../_referenz/credentials.md) |
-
-### Buckets
-
-| Bucket | Zweck | Verwendet von |
-| :--- | :--- | :--- |
-| `gravel-recherche` | Bilder + Files Directus Gravel-Bike-Recherche | Directus Gravel |
-
-Jeder Bucket hat einen dedizierten Per-Bucket-Access-Key (kein globaler Admin-Account). Neue Buckets werden über die `garage`-CLI im Container angelegt.
-
-::: info Linstor-S3-Shipping zurückgebaut
-Garage diente früher als Ziel der Linstor-S3-Backup-Schicht (Remote `nas-backup`, Bucket `linstor-backups`). Scheduling und Deployment wurden am 2026-05-31 zurückgebaut -- Off-Node-Backup läuft seither über den Proxmox Backup Server plus app-konsistente DB-Dumps. Details: [Backup](../backup/).
-:::
-
-### Eigenschaften
-
-- Keine eigene Admin-Web-UI -- Administration via `garage`-CLI im Container oder Admin-HTTP-API mit Bearer-Token
-- Kein Object Versioning, kein Object Locking, keine Bucket Policies
-- Per-Key-pro-Bucket-Permission-Modell statt globaler IAM-Policies
-- Prometheus-Metriken unter `/metrics` (Token-geschützt)
-
-## Troubleshooting
-
-### NFS `fileid changed`-Fehler
-
-**Symptom:** Der Linux-Kernel auf den Client-VMs loggt `NFS: server 10.0.0.200 error: fileid changed`. Anwendungen (z.B. SABnzbd) erhalten `FileNotFoundError` oder `ESTALE`.
-
-**Ursache:** Synology DSM läuft auf Kernel 4.4.x. Btrfs vergibt Inode-Nummern pro Subvolume, nicht dateisystemweit. Der NFS-Server kann die verschiedenen Subvolume-IDs nicht in eindeutige fileids umrechnen -- der dafür nötige Kernel-Fix (XOR Subvolume-ID + Inode) existiert erst ab Linux 5.17+. Btrfs-Snapshots, Indexierung und Scrubs können fileids ändern.
-
-**Mitigation (Client-Seite):**
-- Niedrige Attribut-Cache-Zeiten (`acregmin/acregmax`, `acdirmin/acdirmax`) verkürzen das Zeitfenster, in dem stale fileids gecacht werden
-- Mount-Optionen werden zentral in der Ansible-Rolle `roles/nfs/defaults/main.yml` verwaltet
-- `lookupcache=positive` hilft **nicht** -- kontrolliert Dentry-Cache, nicht Attribut-Cache
-- `nconnect` erst hinzufügen wenn fileid serverseitig gelöst ist (erhöht Revalidierungs-Parallelität)
-
-**Mitigation (Server-Seite):**
-- Indexierung (Media Indexing) für NFS-exportierte Ordner deaktivieren
-- Snapshot-Frequenz reduzieren oder deaktivieren für Shares mit aktiver NFS-Nutzung
-- `@eaDir`-Verzeichnisse nach Deaktivierung der Indexierung entfernen
-
-### Staler NFS-Directory-Cache
-
-Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) führen dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die während Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand übereinstimmt.
-
-## DSM-Verwaltung (alle Synology)
-
-Alle Synology im Privat-Umfeld sind einheitlich konfiguriert. Die Steuerung läuft über die DSM-Web-API (`SYNO.Core.Web.DSM`, `SYNO.Core.Security.DSM`, `SYNO.Storage.CGI.Smart.Scheduler`); Login als `admin` mit OTP, Credentials im 1Password Vault `PRIVAT Agent`.
-
-| Einstellung | Wert | Hinweis |
-| :--- | :--- | :--- |
-| DSM-Web-Port (HTTP/HTTPS) | 40000 / 40001 | HTTP→HTTPS-Redirect aktiv; einheitlich auf allen Homelab-Geräten |
-| Logout-Timer | 600 Minuten | inaktive DSM-Sessions werden nach 10 h abgemeldet |
-| SMART Quick-Test | wöchentlich Montag 03:00 | alle Datenträger |
-| SMART Extended-Test | monatlich am 1. um 03:00 | alle Datenträger |
-
-Die SMART-Kadenz folgt dem Konsens von TrueNAS/Backblaze/smartmontools (kurzer Selbsttest wöchentlich, langer Oberflächentest monatlich). DSM-Versionsbesonderheit: der Logout-Timer wird je DSM-Release über eine andere API-Version von `SYNO.Core.Security.DSM` gesetzt (DSM 7.3 → v6, DSM 7.2 → v5, DSM 7.1 → v4).
-
-Die HSLU-DCLab- und ARCH-NAS folgen demselben Muster, behalten aber bewusst den DSM-Port `:8443` (wird für den Authentik-Login-Flow gebraucht) -- diese Geräte sind im DCLab-Wiki dokumentiert.
-
-## Erweiterungskarte (10GbE + NVMe)
-
-Der HomeServer ist mit einer Synology E10M20-T1 bestückt (ein 10GbE-Port plus zwei M.2-NVMe-Slots). Die Karte ist nicht auf der Kompatibilitätsliste der DS1825+ und wird von DSM darum standardmässig gesperrt -- der 10GbE-Port liefe sonst als `notsup0`, die NVMe blieben im Storage Manager unsichtbar. Sie wird über einen Aufgabenplaner-Task (Auslöser Herunterfahren) freigeschaltet, analog zum SSH-Hardening. Hintergrund, Patch-Umfang und Persistenz: [E10M20-T1 Freischaltung](./e10m20-freischaltung.md).
-
-## SSH-Zugang und Hardening
-
-Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../_referenz/ssh-zugang.md) und [Zugangsdaten](../_referenz/credentials.md). Login als `admin` mit Public-Key (`SSH Homelab`) und `sudo` über das Admin-Passwort -- einheitlich auf allen Homelab-Synology (HomeServer, MediaServer, DS1525+, Nana). Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
-
-Das NAS ist seit 2026-05-01 nach demselben Pattern wie die DCLab-NAS gehärtet -- relevant für das Verständnis der Architektur:
-
-- **Auth:** ausschliesslich Public-Key, `PasswordAuthentication no`, `PermitRootLogin no`, `AllowUsers admin` (Familien-Accounts mit `csh`-Shell sind ausgeschlossen)
-- **Crypto:** moderne Cipher/KEX/MAC-Suites ersetzen die DSM-Defaults (3DES, SHA1) über einen `managed-by-claude-ssh-hardening`-Marker-Block am Anfang von `/etc/ssh/sshd_config` (OpenSSH first-obtained-value-wins)
-
-::: warning Boot-Persistenz
-Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederhergestellt. Ein Boot-up-Task `ssh-hardening-reapply` im DSM Task Scheduler (User root) ruft `/volume1/scripts/ssh-hardening-reapply.sh` und reapplied den Hardening-Block idempotent. Das Skript liegt bewusst auf dem Daten-Volume und nicht auf der System-Partition (`/usr/local/sbin`) -- dort übersteht es DSM-Updates und Geräte-Migrationen.
-:::
-
-## Wartung
-
-- Das NAS verwaltet seine eigene RAID-Konsistenz (SHR/RAID)
-- Snapshots werden auf dem NAS selbst gesteuert
-- Monitoring: Siehe [Synology NAS Monitoring](../synology-monitoring/index.md)
+Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitoring](../synology-monitoring/index.md).
 
 ## Verwandte Seiten
 
+- [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Garage-Endpunkte/Buckets, DSM-Konfiguration
+- [NAS-Storage: Betrieb](./betrieb.md) -- Troubleshooting, SSH-Hardening, Wartung
 - [Server-Hardware](../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
 - [Datenstrategie](../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
