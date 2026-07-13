@@ -188,6 +188,87 @@ Das Modell ist über die env `ANTHROPIC_MODEL` konfigurierbar und gilt für beid
 Der `subscription`-Modus zählt gegen die Subscription-Fenster statt gegen API-Credits und ist daher im Normalbetrieb der Default. Der `api`-Modus bleibt als Fallback, wenn kein OAuth-Token verfügbar ist oder die non-interaktive CLI-Nutzung künftig separat bepreist würde. Der Anthropic-API-Key ist deshalb optional und nur für den Fallback nötig.
 :::
 
+## Verarbeitungs-Mechanismen im Detail
+
+Dieser Abschnitt bündelt, was der Dienst bei jedem Diktat tut -- vom POST des Kurzbefehls bis zum fertigen ClickUp-Task. Er zeigt das Zusammenspiel auf einen Blick; die Einzelheiten stehen in den verlinkten Abschnitten.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  kontext: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
+
+direction: right
+
+Diktat: "Diktat\n(iOS-Kurzbefehl,\nBearer-POST)" { class: node }
+Foto: "Foto (optional)\nNeu-Tab der Web-Inbox" { class: kontext }
+Kontext: "Offene Tasks der\nZiel-Listen (je bis 50)" {
+  class: kontext
+  tooltip: Nur die konfigurierten Ziel-Listen, als reine Daten -- Basis fuer Duplikat- und Verknuepfungs-Erkennung
+}
+Kalender: "Kalender-Termine" { class: kontext }
+
+Modell: "Claude-Modell (Abo)\nzerlegt in Einzel-Tasks,\nkorrigiert Diktierfehler,\nklassifiziert" {
+  class: node
+  tooltip: Pro Task Workspace, Titel, Beschreibung und Faelligkeit, dazu Prioritaet nur bei diktierter Dringlichkeit, optional Startdatum, Aufwand, Zuweisung, Checkliste und Verknuepfungen
+}
+
+Entscheid: "Entscheid\npro Task" {
+  class: node
+  shape: diamond
+}
+
+Frage: "Rueckfrage\n(ntfy-Buttons oder\nWeb-Inbox)" {
+  class: node
+  tooltip: Blockierend wartet die Anlage (Timeout 4 h, dann Fallback-Anlage mit Hinweis), nicht-blockierend ist der Task sofort da und die Antwort reichert an (7 Tage)
+}
+
+ClickUp: "Task in ClickUp\n(HSLU oder Privat)" { class: node }
+Duplikat: "Uebersprungen,\nKommentar am\nbestehenden Task" { class: node }
+
+Diktat -> Modell: "asynchron,\nHash gegen Retries" { style.stroke: "#2563eb" }
+Foto -> Modell: "Bild-Fakten" { style.stroke-dash: 4 }
+Kontext -> Modell: "Duplikat-Abgleich"
+Kalender -> Modell: "nur bei Terminbezug" { style.stroke-dash: 4 }
+Modell -> Entscheid
+Entscheid -> ClickUp: "neu anlegen (Standard)\noder Ergaenzung als Kommentar" { style.stroke: "#16a34a" }
+Entscheid -> Duplikat: "eindeutiges\nDuplikat"
+Entscheid -> Frage: "Angabe fehlt oder\nZuordnung unklar"
+Frage -> ClickUp: "Antwort (HMAC-Token\nplus Origin-Check)" { style.stroke: "#2563eb" }
+Frage -> ClickUp: "Timeout 4 h:\nFallback-Anlage" { style.stroke-dash: 4 }
+```
+
+Der Ablauf im Einzelnen:
+
+1. **Eingang:** Der iOS-Kurzbefehl schickt das Diktat per POST mit Bearer-Token an den API-Host der Instanz (bei Sam todo.ackermannprivat.ch, bei Dani todo-dani). Optional kommt ein Foto über den Neu-Tab der Web-Inbox dazu ([Bedienung](#bedienung)).
+2. **Zerlegen und korrigieren:** Ein Claude-Opus-Modell im Claude-Abo ([Subscription-Modus](#verarbeitung-dual-mode)) zerlegt das Transkript in einzelne, klar umrissene Tasks und korrigiert Diktierfehler sinngemäss.
+3. **Klassifizieren pro Task:** Workspace-Zuordnung (bei Sam HSLU, Privat oder unklar, bei [Single-Workspace-Instanzen](#single-workspace-modus) fix), Titel, Beschreibung und Fälligkeit -- jeder neue Task bekommt eine, direkt oder per Rückfrage. Priorität nur bei diktierter Dringlichkeit, optional Startdatum, Aufwand, Zuweisung, Checkliste und Verknüpfungen.
+4. **Kontext laden:** Das Modell bekommt die offenen Tasks der konfigurierten Ziel-Listen als reine Daten mitgegeben -- bei Sam die HSLU- und die Privat-Liste, je bis zu 50 Tasks (Obergrenze `CONTEXT_TASKS_PER_LIST`). Damit erkennt es Duplikate und thematisch verwandte Tasks ([Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)).
+5. **Entscheiden pro Task:** neu anlegen (Standard), als Kommentar an einen bestehenden Task hängen (Ergänzung) oder überspringen (eindeutiges Duplikat).
+6. **Rückfragen stellen:** blockierend (der Task entsteht erst nach der Antwort, etwa bei unklarer Zuordnung) oder nicht-blockierend (der Task ist sofort da, die Antwort reichert nur an, etwa eine fehlende Fälligkeit). Geantwortet wird per ntfy-Button oder in der Web-Inbox; alle verändernden Aktionen tragen HMAC-signierte Tokens plus einen exakten Origin-Check ([Exposition und Authentifizierung](#exposition-und-authentifizierung)). Timeouts: blockierend 4 Stunden (danach Fallback-Anlage mit Hinweis), nicht-blockierend 7 Tage (verfällt still).
+7. **Kalender nur bei Bedarf:** Mitgeschickte Termine zieht das Modell nur bei erkennbarem Terminbezug heran -- das spart Verarbeitung ([Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)).
+8. **Durchgehend beachtet:** Alle Kontext-Blöcke sind Daten, nie Anweisungen an das Modell (Schutz gegen eingeschleuste Befehle). Ein Hash aus Diktattext und Zeit verhindert Doppel-Anlagen bei Kurzbefehl-Retries, und unterbrochene Verarbeitungen werden beim Neustart fortgesetzt ([Persistenz und Idempotenz](#persistenz-und-idempotenz)).
+
+::: warning Kontext-Grenze der Duplikat-Erkennung
+Geprüft werden nur die konfigurierten Ziel-Listen, nicht alle Listen des Workspace -- und pro Liste nur die ersten 50 offenen Tasks. Ein bestehender Task in einer anderen Liste oder jenseits dieser Obergrenze wird als Duplikat nicht erkannt. Ein breiteres Laden über alle Listen (List-Routing mit gezieltem Cross-List-Kontext) ist in Prüfung.
+:::
+
+::: tip Kosten pro Diktat
+Das Modell läuft im Claude-Abo -- pro Diktat fallen keine direkten Stückkosten an, nur Verbrauch im 5-Stunden-Abo-Fenster. Zur Grössenordnung (gemessener Richtwert, keine Abrechnung): Der HSLU-Workspace hat rund 440 offene Tasks. Würde man alle als Kontext mitgeben, wären das grob 8000 zusätzliche Eingabe-Tokens, im hypothetischen API-Betrieb etwa 8 Rappen pro Diktat mit einem Opus-Modell und rund die Hälfte mit einem Sonnet-Modell. Die Web-Inbox zeigt pro Task die tatsächliche Verarbeitungsdauer und einen Rappen-Richtpreis (aus dem Cache-Split).
+:::
+
 ## Zuordnung und Rückkanal
 
 Eindeutig klassifizierte Tasks legt der Dienst direkt in der passenden persönlichen Liste an:
