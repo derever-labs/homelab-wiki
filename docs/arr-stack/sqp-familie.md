@@ -1,5 +1,5 @@
 ---
-title: "Arr-Stack: SQP-Familie"
+title: SQP-Familie
 description: TRaSH-SQP-Profilfamilie (Special Quality Profiles) im Detail -- Quelle, Audio-Haltung und HDR/DV-Strategie je Variante
 tags:
   - service
@@ -8,7 +8,7 @@ tags:
   - sonarr
 ---
 
-# Arr-Stack: SQP-Familie
+# SQP-Familie
 
 SQP steht für [Special Quality Profiles](https://trash-guides.info/SQP/) der TRaSH Guides — feiner abgestimmte Profile, die sich vor allem in der **Quelle** (WEB / Bluray-Encode / Remux), der **Audio-Haltung** und der **HDR/DV-Strategie** unterscheiden. Über die trash-pcd-Datenbank stehen alle Varianten zur Verfügung; bei uns ist nur ein Teil als Radarr-Profil angelegt.
 
