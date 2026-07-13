@@ -26,7 +26,7 @@ Der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementiert
 
 ## Zweck
 
-Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht mehrere Telegram-Pings für ein einzelnes Storage-Outage bekommt. Dieses Dokument hält die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
+Dieses Dokument hält die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
 
 ## Konvention: Label `correlation_key`
 

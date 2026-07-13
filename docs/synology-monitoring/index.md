@@ -25,7 +25,7 @@ Dreistufiges Monitoring des Synology NAS: Hardware-Health via CheckMK, lokaler T
 
 ## Rolle im Stack
 
-Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. [CheckMK](../checkmk/index.md) fragt beide NAS direkt via SNMPv3 ab und liefert die Hardware-Health (RAID, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem, CPU/RAM, Netzwerk-Durchsatz). Es ist damit die alleinige Alarmquelle für NAS-Hardware. Ergänzend sammelt ein lokaler Telegraf-Container die Metriken, die CheckMK nicht liefert, und ein NAS-autonomer Benchmark misst Disk-Performance und RAID-Reshape. Alle drei schreiben nach InfluxDB, Grafana visualisiert sie im Dashboard `synology-nas-health` (24 Panels).
+Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. [CheckMK](../checkmk/index.md) fragt beide NAS direkt via SNMPv3 ab und liefert die Hardware-Health (RAID, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem, CPU/RAM, Netzwerk-Durchsatz). Es ist damit die alleinige Alarmquelle für NAS-Hardware. Ergänzend sammelt ein lokaler Telegraf-Container die Metriken, die CheckMK nicht liefert, und ein NAS-autonomer Benchmark misst Disk-Performance und RAID-Reshape. Alle drei schreiben nach InfluxDB, Grafana visualisiert sie im Dashboard `synology-nas-health`.
 
 ::: info Cutover auf CheckMK (2026-06-05)
 Bis 2026-06-05 fragte der zentrale Telegraf-Nomad-Job das NAS parallel via SNMPv3 ab. Mit dem Cutover wurden der SNMP-Block aus der Telegraf-Config, der MIBs-Mount aus `influx.nomad` und die vier Synology-Alert-Rules aus Grafana entfernt: Hardware-Health hat seither genau eine Quelle statt zwei parallele, und der Alarmpfad läuft einheitlich über Keep. Die Dashboard-Queries nutzen seither das CheckMK-Schema (`host_name` / `service_description`) statt der Telegraf-SNMP-Tags.
@@ -92,7 +92,7 @@ Container Manager und NFS müssen nach einem NAS-Reboot manuell gestartet werden
 
 ## Grafana Dashboard
 
-Das Dashboard `synology-nas-health` hat 24 Panels in fünf Rows, aufgebaut nach dem Prinzip "Alarm, Kontext, Detail":
+Das Dashboard `synology-nas-health` gliedert sich in fünf Rows, aufgebaut nach dem Prinzip "Alarm, Kontext, Detail":
 
 - **Systemzustand** -- Status-Bar mit acht Panels (RAID-Status, Volume belegt, Max Disk Temp, IO Wait, Hintergrund-Jobs, Memory, Uptime, CPU-Last)
 - **Performance** und **System** -- Timeseries für Disk-Latenz (await), Durchsatz, CPU, RAM und Load

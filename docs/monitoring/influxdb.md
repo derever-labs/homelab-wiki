@@ -69,7 +69,7 @@ InfluxDB ist das Metriken-Backend des Monitoring-Stacks und das Gegenstück zu L
 
 | Bucket | Schreibt wer | Retention | Inhalt |
 | :--- | :--- | :--- | :--- |
-| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten + CheckMK | 90 Tage | Nomad-Prometheus, Linstor, DRBD, Media-Stats, CheckMK-Service-Metriken; via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health`/`nomad_blocked_evals` |
+| `telegraf` | Telegraf (Nomad) + Telegraf-Host-Agenten + CheckMK | 90 Tage | Nomad-Prometheus, Linstor, DRBD, Media-Stats, CheckMK-Service-Metriken, via Node-Agenten: `lvm_thinpool`, `csi_mounts`/`csi_plugin`, `nomad_alloc_restarts`/`nomad_job_health`/`nomad_blocked_evals` |
 | `proxmox` | Proxmox VE (nativ) | 90 Tage | VM/Container CPU, RAM, Disk, Netzwerk |
 | `telegraf_1y` | InfluxDB Task | 1 Jahr | 5-Min Durchschnitte (Downsampling) |
 | `telegraf_5y` | InfluxDB Task | 5 Jahre | 1h Durchschnitte (Downsampling) |
