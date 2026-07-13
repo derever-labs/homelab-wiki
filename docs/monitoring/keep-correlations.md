@@ -20,22 +20,13 @@ Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-C
 
 ## Live: Grouping-Correlation (2 Rules)
 
-Seit Layer 3 erzeugen zwei disjunkte Grouping-Rules (`nomad-jobs/monitoring/keep-bootstrap/setup-topology.py`, beide `resolveOn: all_resolved`) die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen:
+Seit Layer 3 erzeugen zwei disjunkte Grouping-Rules die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen: Service-Correlation (nach `service`) und Catch-all (nach `fingerprint`). SSOT dieser Ebene ist [Keep](keep.md#correlation-zwei-rules) -- dort stehen die Rules, die CEL-null-Falle (CON-25) und der Spam-Vektor bei Grafana-Alerts, deren `service` der Rule-Titel statt eines kanonischen Dienstes ist.
 
-| Rule | Bedingung (CEL) | Gruppierung |
-| :--- | :--- | :--- |
-| Service-Correlation | `size(service) > 0` | nach `service` -- ein Incident pro `service`-Wert |
-| Catch-all | `size(service) == 0` | nach `fingerprint` |
-
-`size(service) > 0` statt `service != null` ist Pflicht (CEL-null-Falle CON-25, Details in [Keep](keep.md#correlation-zwei-rules)). Diese zwei Rules sind die heute wirksame Korrelation; eine frühere 4-Rule-Variante (eigene Grafana-/CheckMK-Rules) wurde nicht deployt. Der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
-
-::: warning service = Alertname bei Grafana-Alerts
-Grafana-Alerts tragen als `service` den Rule-Titel (z.B. `DRBD Verbindung getrennt`), keinen kanonischen Dienst -- die Service-Correlation bündelt also nur je Alertname. Bei einem Node-Ausfall entsteht dadurch ein Incident pro DRBD-/Linstor-Alertname, bei Flapping je Zyklus ein neuer. Dominanter Spam-Vektor (siehe [Coverage](coverage.md) Layer 3); primär an der Quelle via Grafana `for`/`keep_firing_for` zu dämpfen.
-:::
+Der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
 
 ## Zweck
 
-Correlations gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht mehrere Telegram-Pings für ein einzelnes Storage-Outage bekommt. Dieses Dokument hält die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
+Dieses Dokument hält die geplanten Patterns fest, bevor die Source-Alerts in Welle 2/3 gebaut werden, damit die Welle-2/3-Subtasks von Anfang an die richtigen Labels setzen.
 
 ## Konvention: Label `correlation_key`
 
