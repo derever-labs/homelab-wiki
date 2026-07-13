@@ -37,7 +37,7 @@ Die konfigurierten Ressourcen-Limits sind im Nomad-Job `media/sabnzbd.nomad` def
 
 Bei Symptomen wie "SABnzbd nicht erreichbar während Extraktion" zuerst Memory-Auslastung prüfen.
 
-SABnzbd-Downloads können auch durch stale NFS-Directory-Caches fehlschlagen (`FileNotFoundError` auf `/jellyfin/downloads/incomplete/`). Wenn `acdirmin/acdirmax` zu hoch sind, sieht der NFS-Client veraltete Verzeichnisinhalte. Siehe [NAS Troubleshooting](../nas-storage/index.md#troubleshooting).
+SABnzbd-Downloads können auch durch stale NFS-Directory-Caches fehlschlagen (`FileNotFoundError` auf `/jellyfin/downloads/incomplete/`). Wenn `acdirmin/acdirmax` zu hoch sind, sieht der NFS-Client veraltete Verzeichnisinhalte. Siehe [NAS Troubleshooting](../nas-storage/betrieb.md#troubleshooting).
 :::
 
 ### Datenbank (PostgreSQL)
