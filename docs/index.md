@@ -79,7 +79,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [CrowdSec](./crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |
 | [Uptime Kuma](./uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
-| [Synology NAS Monitoring](./synology-monitoring/) | Telegraf SNMP, Grafana NAS-Dashboard |
+| [Synology NAS Monitoring](./synology-monitoring/) | CheckMK-Hardware-Health, lokaler Telegraf, Grafana NAS-Dashboard |
 
 ## Produktivität
 

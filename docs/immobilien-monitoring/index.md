@@ -63,7 +63,7 @@ ci: CI/CD Pipeline {
   }
   ZOT: ZOT Registry {
     class: node
-    tooltip: "localhost:5000 | OCI Image Cache + Custom Images"
+    tooltip: "zot.service.consul:5000 | OCI Image Cache + Custom Images"
   }
 }
 
@@ -399,7 +399,7 @@ Die Nachricht enthält pro Portal: Anzahl neue Listings, Detail-Scrapes, Deaktiv
 
 ## CI/CD Pipeline
 
-Der GitHub Actions Runner läuft als Nomad Service-Job mit Docker-Socket-Mount und Host-Netzwerk (ZOT auf `localhost:5000` direkt erreichbar). Das Dockerfile nutzt einen Multi-Stage Build: TypeScript wird in der Build-Stage kompiliert, das Production-Image enthält nur Runtime-Dependencies.
+Der GitHub Actions Runner läuft als Nomad Service-Job mit Docker-Socket-Mount und Host-Netzwerk (ZOT über `zot.service.consul:5000` via Consul-DNS erreichbar). Das Dockerfile nutzt einen Multi-Stage Build: TypeScript wird in der Build-Stage kompiliert, das Production-Image enthält nur Runtime-Dependencies.
 
 Der Workflow triggert bei Änderungen in `services/n8n-workflows/scraper/` oder bei manuellem Dispatch.
 

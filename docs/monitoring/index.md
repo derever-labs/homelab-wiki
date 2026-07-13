@@ -307,7 +307,7 @@ Sources.Traefik -> Collectors.Alloy: Logs (systemd + Syslog)
 Sources.Proxmox -> Collectors.Alloy: Logs (systemd)
 Sources.Infra -> Collectors.Alloy: Logs (systemd)
 Sources.NAS -> Collectors.Alloy: Syslog UDP 1514
-Sources.NAS -> Collectors.Telegraf: SNMP
+Sources.NAS -> Collectors.CMK: SNMPv3
 Sources.Servers -> Collectors.Telegraf: Prometheus
 Sources.Proxmox -> Storage.Influx: direkt (nativ)
 
@@ -395,5 +395,5 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard mit Telegraf SNMP und Alerting
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard (CheckMK-Hardware-Health) mit Alerting
 - [USV (APC)](../ups/index.md) -- USV-Monitoring via NUT und Grafana Alerting
