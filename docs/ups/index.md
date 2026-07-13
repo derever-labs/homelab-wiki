@@ -171,5 +171,5 @@ Alerts basieren auf der verbleibenden Laufzeit in Sekunden statt auf Batterie-Pr
 ## Verwandte Seiten
 
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Telegraf, InfluxDB, Alerting-Architektur
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Ähnliches Setup (SNMP via Telegraf)
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- NAS-Hardware-Health via CheckMK
 - [Proxmox](../proxmox/index.md) -- Virtualisierungsplattform (Hosts, VMs)

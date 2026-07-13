@@ -144,4 +144,4 @@ Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederher
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Telegraf SNMP, Grafana Dashboard, Alerting
+- [Synology NAS Monitoring](../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting

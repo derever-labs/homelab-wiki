@@ -29,7 +29,7 @@ CheckMK feuert Alerts erst dann an Keep, wenn der CheckMK->Keep-Webhook-Pfad geb
 
 Beide Cluster identisch aufgesetzt, aber unterschiedlich befüllt:
 
-- **Telegraf -> InfluxDB-Ops -> Grafana -> Webhook -> Keep**: app-Metriken, prom-scrapes, host-disk, host-cpu, ssh-counts. DCLab: SNMP-Block auskommentiert (alle SNMP-Targets nur via CheckMK). Homelab: SNMP für Synology aktiv
+- **Telegraf -> InfluxDB-Ops -> Grafana -> Webhook -> Keep**: app-Metriken, prom-scrapes, host-disk, host-cpu, ssh-counts. DCLab: SNMP-Block auskommentiert (alle SNMP-Targets nur via CheckMK). Homelab: Synology-Hardware seit dem Cutover 2026-06-05 via CheckMK (zentraler SNMP-Block stillgelegt)
 - **Alloy -> Loki -> Grafana LogQL -> Webhook -> Keep**: Log-Pattern-Alerts. Beide Cluster aktiv. DCLab hat einen Self-Detection-Alert (`loki-ingester-down`), Homelab keinen
 - **Uptime-Kuma -> Webhook -> Keep**: Push-Heartbeats (cron-jobs), TCP/HTTP-Probes. Single-Notifier-Cleanup live in beiden Clustern
 - **Direct -> Webhook -> Keep**: synthetische Cron-Probes, Watchdog-Skripte
