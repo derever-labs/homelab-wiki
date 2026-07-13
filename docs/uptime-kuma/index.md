@@ -55,9 +55,7 @@ Server- und Client-VMs werden getrennt gemonitort -- die Server-VMs `vm-nomad-se
 - `Nomad Token -- vm-nomad-server-04/05/06` -- Push-Monitor vom Server-Agent
 - `Nomad Token -- vm-nomad-client-04/05/06` -- Push-Monitor vom Client-Agent
 
-::: warning Kuma-CRUD nur per Direkt-SQL
-Kuma v2 bietet keinen Admin-API-Endpunkt für Monitor-Create/Update. Das UI arbeitet über Socket.IO mit Session-Cookie. Skript-getriebene Änderungen laufen über die `uptime-kuma-api`-Lib (Socket.IO, siehe `group-kuma-monitors.py`); Bulk-Änderungen alternativ per MariaDB-`INSERT`/`UPDATE` gegen die Datenbank `uptime_kuma` (`mariadb.service.consul`), anschliessend `docker restart` des Kuma-Containers für Cache-Reload. Vor Bulk-Änderungen `mariadb-dump` der Tabellen `monitor`, `monitor_tag`, `tag` als Backup nach `/app/data/`.
-:::
+Monitor-Create/Update läuft nur per `uptime-kuma-api` oder Direkt-SQL (Kuma v2 hat keinen Admin-API-Endpunkt) -- Details in der [Referenz](./referenz.md#kuma-crud-nur-per-direkt-sql).
 
 ## Alerting
 
@@ -89,47 +87,13 @@ Grund: Diese Monitore melden `down` gerade dann, wenn Keep nicht erreichbar ist.
 
 Auf ID 2 laufen `keep-heartbeat`, `keep-escalate-stale` und der `Stale-CRIT-Melder`. Der Monitor `keep-mobile` trägt beide.
 
-## resendInterval: zählt Beats, nicht Minuten
+## Referenz
 
-`resendInterval` ist die Anzahl aufeinanderfolgender DOWN-Beats bis zur nächsten Benachrichtigung, **keine** Minutenangabe:
+Die Nachschlage-Details zu Uptime Kuma stehen in der [Uptime Kuma Referenz](./referenz.md):
 
-```
-Realabstand = resendInterval x interval
-```
-
-Bei `resendInterval = 0` benachrichtigt Kuma während eines andauernden DOWN **nie erneut** -- `sendNotification()` läuft dann nur beim Statuswechsel (`important = 1`).
-
-::: warning Die 60-Sekunden-Täuschung
-Bei 60-Sekunden-Takt fallen Beats und Minuten zufällig zusammen, dort scheint eine Minuten-Lesart zu funktionieren. Bei jedem anderen Takt zerfällt die Gleichung. Der Wert `720` ergibt bei 60s-Takt 12 Stunden -- bei einem Drei-Tage-Scraper-Monitor aber 540 Tage.
-:::
-
-Belege (Kuma 2.4.0, `server/model/monitor.js`): Zeile 454 führt `downCount` über Beats fort, Zeile 1036/1037 vergleicht ihn gegen `resendInterval`, und `beatInterval = retryInterval` gilt laut Zeile 1083 nur im PENDING-Zweig -- im DOWN taktet der Beat mit `interval`. Das UI-Label lautet entsprechend "Resend Notification if Down X times consecutively".
-
-### Hausregel
-
-Kritische Infrastruktur und Alarm-Bastion auf **3 Stunden**, alles Übrige auf **12 Stunden**.
-
-```
-resendInterval = round(Zielabstand / interval), mindestens 1
-```
-
-Werte für 3 Stunden nach Takt: 60s -> 180, 2 min -> 90, 5 min -> 36, 10 min -> 18, 20 min -> 9, 1 h -> 3, 90 min -> 2.
-
-Bei Monitoren mit einem Takt über 3 Stunden (Backups, Scraper, Wochenjobs) ist `1` der einzige sinnvolle Wert -- ein Drei-Stunden-Abstand ist dort physikalisch unerreichbar, weil der Monitor gar nicht so oft schlägt.
-
-### Zertifikats-Monitore brauchen keinen Sonderweg
-
-Die Ablaufwarnung ist kein DOWN: `handleTlsInfo` (`monitor.js:2108`) ruft `checkCertExpiryNotifications` nach erfolgreichem TLS-Handshake, also im UP-Pfad, und meldet an festen Schwellen (`tlsExpiryNotifyDays`, Default 7/14/21 Tage). `resendInterval` berührt diesen Pfad nicht. Ein DOWN eines Cert-Monitors bedeutet einen akuten Ausfall (Seite weg oder Handshake gescheitert) -- dort gilt die normale 3-Stunden-Regel.
-
-## Monitore per API ändern
-
-`get_monitors()` und `get_monitor()` der Bibliothek `uptime-kuma-api` lesen den zuletzt empfangenen Socket.io-Event. Direkt nach einem `edit` oder `delete` zeigt dieselbe Verbindung noch den alten Stand.
-
-::: warning Verifikation nur mit frischer Verbindung
-Sonst bestätigt man den Cache statt den Server.
-:::
-
-`edit_monitor` erhält `pushToken` und `notificationIDList` (es liest den Monitor vorher komplett und merged die Argumente). Das ist wichtig, weil die Push-URLs in Vault unter `kv/uptime-kuma` liegen -- ein neu generierter Token würde die zugehörigen Nomad-Jobs still abhängen. Wer das an einem Wegwerf-Monitor testet: Ein Testmonitor **ohne** Notification deckt einen Notification-Verlust nicht auf.
+- **resendInterval-Semantik** -- Beats statt Minuten, die 60-Sekunden-Täuschung, Hausregel für Wiederhol-Abstände und die Sonderrolle der Zertifikats-Monitore
+- **Monitore per API ändern** -- Cache-Falle bei `get_monitors()` und der Token-/Notification-Erhalt von `edit_monitor`
+- **Kuma-CRUD nur per Direkt-SQL** -- Änderungen über `uptime-kuma-api` oder MariaDB, plus Backup-Vorgabe vor Bulk-Änderungen
 
 ## Entscheidungslog
 
