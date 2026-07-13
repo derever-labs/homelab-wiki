@@ -155,7 +155,7 @@ Policy-Datei: `homelab-hashicorp-stack/vault-configs/policies/grafana-deploy-fet
 
 Workflow-Datei im Repo: `.github/workflows/deploy-nomad-jobs.yml`
 
-- **Trigger** -- push auf `main`, paths-Filter auf `**/*.nomad` (der Workflow liegt im nomad-jobs-Repo, die Pfade sind daher repo-relativ ohne Präfix). Zusätzlich getriggert von Dateien, die via `file()` in einen Job eingebettet sind -- die Keep-Workflow-YAMLs und die Keep-Python-Skripte -- weil deren Änderung sonst nie in den laufenden Job propagieren würde
+- **Trigger** -- push auf `main`, paths-Filter auf `**/*.nomad` (der Workflow liegt im nomad-jobs-Repo, die Pfade sind daher repo-relativ ohne Präfix). Zusätzlich getriggert von Dateien, die via `file()` in einen Job eingebettet sind -- die Keep-Begleitdateien (Workflow-YAMLs, Python-Skripte und SQL) -- weil deren Änderung sonst nie in den laufenden Job propagieren würde
 - **Concurrency-Group** -- `nomad-deploy-homelab` (verhindert parallele Deploys)
 - **Checkout** -- SHA-gepinnte `actions/checkout`
 
@@ -177,7 +177,7 @@ Vier Jobs sind vom Auto-Deploy ausgeschlossen und müssen manuell deployed werde
 - `batch-jobs/renovate.nomad` -- Tool, das die PRs erzeugt
 - `identity/authentik.nomad` -- aus einem anderen Grund geblockt: Der Job lädt seine Blueprints via `file()` aus dem infra-Super-Repo. Im Auto-Deploy-CWD (dem nomad-jobs-Repo) ist dieser Pfad nicht auflösbar, `nomad job run` würde mit "no such file" fehlschlagen. Der Deploy muss aus dem infra-CWD erfolgen
 
-Zusätzlich ist der Ordner `docs/` pauschal geblockt -- dort liegen mit `docs/templates/` und `docs/entwuerfe/` nur Muster und Entwürfe, nie deploybare Jobs.
+Zusätzlich ist der Ordner `docs/` pauschal geblockt -- dort liegen unter `docs/templates/` nur Muster und Analyse-Dateien, nie deploybare Jobs.
 
 Alles andere -- Vault, Traefik, Datenbanken, CSI-Plugins, Monitoring -- wird automatisch deployed. Das Review-Gate liegt damit auf dem **Merge** (explizit oder via Renovate-Automerge), nicht mehr auf dem Deploy.
 
