@@ -71,7 +71,7 @@ Service-Jobs mit CSI-Volumes (u.a. ZOT selbst) starten erst, wenn Linstor das Vo
 
 - Linstor-Controller muss auf einem der Clients laufen
 - DRBD-Ressourcen müssen synchron sein (kein `Outdated` oder `StandAlone` Status)
-- Bei Stale-Claims nach unclean Shutdown: `nomad system gc` (siehe [Docker Registry](../docker-registry/index.md#failover-wiederanlauf))
+- Bei Stale-Claims nach unclean Shutdown: `nomad system gc` (siehe [Docker Registry](../docker-registry/betrieb.md#failover-wiederanlauf))
 
 #### 4b. ZOT-Registry zuerst hochfahren
 
