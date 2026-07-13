@@ -126,13 +126,27 @@ Ein leeres `is_active` (`NULL`) galt historisch fälschlich als "verfügbar". Un
 
 Die Marktanalyse verdichtet den Bestand zu Vermietungstempo und Preisdruck -- und macht ihre eigene Unsicherheit sichtbar, statt sie zu glätten.
 
-![Marktanalyse mobil: KPI-Kacheln und Anteil-vermietet-Kurve mit Unsicherheitsband](./screenshots/markt-vermietungstempo-mobil.png)
+<div class="mobile-gallery">
+<img src="./screenshots/markt-vermietungstempo-mobil-frame.png" alt="Marktanalyse mobil: KPI-Kacheln und Anteil-vermietet-Kurve mit Unsicherheitsband" />
+<img src="./screenshots/markt-absorption-mobil-frame.png" alt="Marktanalyse mobil: Zugänge und Abgänge pro Monat, unsichere Abgänge separat" />
+</div>
+
+<style>
+.mobile-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 24px 0;
+}
+.mobile-gallery img {
+  height: 420px;
+  width: auto;
+}
+</style>
 
 - **Vermietungstempo:** Eine Kurve "Anteil vermietet nach X Tagen" zeigt, wie schnell Inserate abgehen. Das eingezeichnete Band ist die Unsicherheit des Abgangszeitpunkts zwischen zwei Scans -- die Kurve ist absichtlich ein Korridor, keine scharfe Linie. Median-Dauer und Quartile stehen als Kacheln darüber, wahlweise über 30 / 90 Tage oder den ganzen Bestand.
 - **Nach Zimmerzahl und Gemeinde:** Median-Streifen je Klasse, damit einzelne Ausreisser die Aussage nicht dominieren.
-
-![Marktanalyse mobil: Zugänge und Abgänge pro Monat, unsichere Abgänge separat](./screenshots/markt-absorption-mobil.png)
-
 - **Absorption pro Monat:** Zugänge und Abgänge je Monat, wobei Abgänge mit nicht eingrenzbarem Zeitpunkt separat ausgewiesen werden. Fehlende Abgänge -- etwa weil ein Portal gerade keinen produktiven Scan hatte -- werden ehrlich als "keine Aussage" gekennzeichnet, nicht als Null.
 - **Preisdruck-Signale:** Mietsenkungen (mit Artefakt-Filter oberhalb von 25 %, um Datenfehler von echten Senkungen zu trennen), Wiederinserate, Langläufer über 90 Tage und Aktions-Angebote (mietfrei, Gratismonat -- erkannt über Stichworte in Titel und Beschreibung).
 
@@ -140,7 +154,9 @@ Die Marktanalyse verdichtet den Bestand zu Vermietungstempo und Preisdruck -- un
 
 Die Kandidaten-Inbox sammelt Frühsignale für mögliche neue Bauprojekte -- Baugesuche und Meldungen aus Lokalmedien, lange bevor ein Inserat erscheint. Der Nav-Eintrag trägt als einziger einen Zähler-Badge mit der Zahl ungesichteter Kandidaten.
 
-![Kandidaten-Inbox mobil: Karten mit Typ-Badge, Konfidenz, Quelle und Aktionen](./screenshots/kandidaten-inbox-mobil.png)
+<div class="mobile-gallery">
+<img src="./screenshots/kandidaten-inbox-mobil-frame.png" alt="Kandidaten-Inbox mobil: Karten mit Typ-Badge, Konfidenz, Quelle und Aktionen" />
+</div>
 
 Jeder Kandidat lässt sich **sichten**, **verwerfen** oder mit einem **bestehenden Projekt verknüpfen**. Die Segmente (neu, gesichtet, verworfen, mit Projekt) leben als URL-Filter, sind also teilbar. Die Signale kommen aus der `project_candidate`-Tabelle, die ein täglicher Ingest-Job befüllt -- Herkunft, Regel-Klassifikation und Konfidenz beschreibt die [Frühsignal-Pipeline](../immobilien-monitoring/index.md#fruehsignal-pipeline).
 
