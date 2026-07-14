@@ -55,12 +55,7 @@ Restore: Backups können im Controller unter Einstellungen > System > Backups ei
 
 ## Firmware-Updates
 
-Empfohlene Reihenfolge, um Inkompatibilitäten zu vermeiden:
-
-1. **Manuelles Backup erstellen** -- vor jedem Update
-2. **UniFi Network Application (Controller)** -- zuerst auf dem UDM Pro aktualisieren
-3. **Access Points** -- danach, da APs re-adopted werden können wenn die Protokoll-Version wechselt
-4. **Switches** -- zuletzt, da Switch-Firmware-Änderungen seltener breaking changes haben
+Zur Vermeidung von Inkompatibilitäten gilt bei Firmware-Updates die Reihenfolge Controller vor Access Points vor Switches. Vor jedem Update ist ein manuelles Backup zu erstellen. Zuerst wird die UniFi Network Application auf dem UDM Pro aktualisiert, danach die Access Points -- diese können bei einem Wechsel der Protokoll-Version ein Re-Adopt auslösen -- und zuletzt die Switches, deren Firmware seltener breaking changes mit sich bringt.
 
 Aktuelle Firmware-Versionen sind in der UniFi-Console unter Devices einsehbar -- nicht hier duplizieren, da sie sich häufig ändern.
 
