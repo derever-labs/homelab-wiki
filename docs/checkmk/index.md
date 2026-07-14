@@ -29,7 +29,7 @@ CheckMK überwacht alle relevanten Infrastruktur-Hosts über den CheckMK Agent:
 - **Nomad Clients:** vm-nomad-client-04/05/06 -- CPU, RAM, Disk, Docker-Daemon
 - **Infrastruktur-VMs:** lxc-dns-01, lxc-dns-02, vm-traefik-01, vm-traefik-02, PBS, CheckMK selbst
 - **NAS (Synology DS):** Zwei SNMP-Hosts -- `synology-nas` (Homelab DS1825+ via LAN) und `nana-nas` (Dottikon DS1517+ via Tailscale). Disk-Status, Volume-Auslastung, RAID-Zustand, Lüfter/Temperaturen, Update-Status
-- **Home Assistant:** Kein CheckMK-Agent (HAOS ist immutable, kein Agent installierbar). Metriken via Telegraf/Alloy + Proxmox-Special-Agent von pve02.
+- **Home Assistant:** Kein CheckMK-Agent (HAOS ist immutable, kein Agent installierbar). Metriken via Telegraf/Alloy + Proxmox-Special-Agent von pve02; die Gast-Memory-Innensicht liefert ein eigener [HAOS-Memory-Custom-Check](#haos-memory-check-ssh-forced-command).
 - **Nomad-Container:** Alle laufenden Allocs via Docker Piggyback-Mechanismus auf den Client-Nodes
 - **Netzwerk:** Erreichbarkeit kritischer Endpunkte
 
@@ -119,6 +119,17 @@ Die Ansible-Gruppe `drbd_storage` (definiert in `inventory/hosts.yml`) umfasst v
 - `checkmk-linstor-volumes.sh` -- Volume-Belegung und Thin-Pool-Auslastung
 
 Die Skripte liegen unter `homelab-hashicorp-stack/ansible/files/` und werden nach `/usr/lib/check_mk_agent/local/` deployt.
+
+### HAOS-Memory-Check (SSH forced-command)
+
+Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent tragen. Damit trotzdem die Gast-Memory-Innensicht überwacht wird -- der Proxmox-Hypervisor-Wert ist wegen QEMU-Overhead als Alert-Quelle wertlos (siehe [Discovery-Policy](../monitoring/checkmk-discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln)) -- liefert ein Custom-Check die Werte über den QEMU-Guest-Agent:
+
+- **Datenweg:** Der CheckMK-Host (`10.0.2.150`) öffnet eine SSH-Verbindung mit forced command auf pve02 und führt dort `/usr/local/bin/haos-meminfo.sh` aus. Das Skript liest die HAOS-VM über `pvesh` und den QEMU-Guest-Agent (`/proc/meminfo`) aus -- der `pvesh`-Weg ist cluster-robust und findet die VM auch nach einer Migration auf einen anderen Node.
+- **CheckMK-Seite:** dediziertes Keypair `/omd/sites/homelab/.ssh/haos_meminfo_ed25519`, Hostkey-Pin in `known_hosts`, Auswerte-Skript `/omd/sites/homelab/local/bin/check_haos_memory`. Der `custom_check` `HAOS Memory` läuft im 5-Minuten-Intervall; die Schwelle auf `MemAvailable` liegt bei WARN unter 15% / CRIT unter 8%.
+
+::: warning authorized_keys auf Proxmox ist clusterweit
+`/root/.ssh/authorized_keys` auf den Proxmox-Nodes ist ein Symlink auf `/etc/pve/priv/authorized_keys` in pmxcfs -- der eingetragene Key liegt damit gleichzeitig auf allen drei Nodes. Der Zugriff ist trotzdem eng begrenzt durch `from="10.0.2.150"`, ein forced command und das nur auf pve02 vorhandene Skript. Der Key trägt den Kommentar `haos-meminfo-checkmk-to-pve02`. Rollback: diese eine Zeile aus `/etc/pve/priv/authorized_keys` entfernen (wirkt clusterweit); ein datiertes Backup der Original-Datei liegt auf pve02 unter `/root/`.
+:::
 
 ### Synology als SNMP-Host
 
