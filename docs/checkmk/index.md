@@ -81,7 +81,7 @@ Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitorin
   - Container-Discovery-Einträge (~80 Einträge im Drift-Bereich)
 - **Aktive Special-Agents**: `proxmox_ve` für pve00/01/02, `synology_health` für beide NAS
 - **Aktive Standard-Agents**: identisch zu DCLab (`cmk_update_agent`, `mk_apt`, `mk_docker`, `mk_logins`)
-- **InfluxDB-Forwarder**: nicht aktiv (`influxdb_connections.mk` existiert nicht). Kein Forwarder zu Grafana-Ops
+- **InfluxDB-Forwarder**: aktiv seit dem Cutover 2026-06-05 -- schreibt die Service-Performance-Metriken aller monitored Hosts (inkl. beider Synology-NAS) zusätzlich in den `telegraf`-Bucket; für die NAS-Hardware ist er seither die einzige Quelle (Details in [InfluxDB & Telegraf](../monitoring/influxdb.md))
 - **Notification-Konfig**:
   1. Telegram-Plugin `check_mk_telegram-notify.sh` mit hardcoded Token und Chat-ID -- bypasses Keep komplett, gegen Single-Notifier-Konvention
   2. Mail-Plugin (Default-Rule)
