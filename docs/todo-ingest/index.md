@@ -214,7 +214,7 @@ direction: right
 
 Diktat: "Diktat\n(iOS-Kurzbefehl,\nBearer-POST)" { class: node }
 Foto: "Foto (optional)\nNeu-Tab der Web-Inbox" { class: kontext }
-Kontext: "Offene Tasks der\nZiel-Listen (je bis 50)" {
+Kontext: "Listen-Katalog +\nALLE offenen Tasks\ndes Workspace" {
   class: kontext
   tooltip: Nur die konfigurierten Ziel-Listen, als reine Daten -- Basis fuer Duplikat- und Verknuepfungs-Erkennung
 }
@@ -255,18 +255,18 @@ Der Ablauf im Einzelnen:
 1. **Eingang:** Der iOS-Kurzbefehl schickt das Diktat per POST mit Bearer-Token an den API-Host der Instanz (bei Sam todo.ackermannprivat.ch, bei Dani todo-dani). Optional kommt ein Foto über den Neu-Tab der Web-Inbox dazu ([Bedienung](#bedienung)).
 2. **Zerlegen und korrigieren:** Ein Claude-Opus-Modell im Claude-Abo ([Subscription-Modus](#verarbeitung-dual-mode)) zerlegt das Transkript in einzelne, klar umrissene Tasks und korrigiert Diktierfehler sinngemäss.
 3. **Klassifizieren pro Task:** Workspace-Zuordnung (bei Sam HSLU, Privat oder unklar, bei [Single-Workspace-Instanzen](#single-workspace-modus) fix), Titel, Beschreibung und Fälligkeit -- jeder neue Task bekommt eine, direkt oder per Rückfrage. Priorität nur bei diktierter Dringlichkeit, optional Startdatum, Aufwand, Zuweisung, Checkliste und Verknüpfungen.
-4. **Kontext laden:** Das Modell bekommt die offenen Tasks der konfigurierten Ziel-Listen als reine Daten mitgegeben -- bei Sam die HSLU- und die Privat-Liste, je bis zu 50 Tasks (Obergrenze `CONTEXT_TASKS_PER_LIST`). Damit erkennt es Duplikate und thematisch verwandte Tasks ([Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)).
+4. **Kontext laden und Liste wählen (List-Routing):** Das Modell bekommt den Listen-Katalog des Workspace (alle Listen mit Pfad, Beschreibung aus ClickUp und Task-Zahl -- zur Laufzeit entdeckt, Änderungen an Listen wirken ohne Deployment) sowie **alle** offenen Tasks des Workspace als Daten, je Zeile mit Liste und zugewiesener Person. Es wählt pro Task die passende Ziel-Liste; der Dienst validiert die Wahl gegen den Katalog, Unklares landet in der Standard-Liste mit einer nicht-blockierenden Listen-Rückfrage. Duplikate und Verwandtes erkennt es damit über **alle** Listen hinweg, auch wenn der bestehende Task einer anderen Person zugewiesen ist ([Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)).
 5. **Entscheiden pro Task:** neu anlegen (Standard), als Kommentar an einen bestehenden Task hängen (Ergänzung) oder überspringen (eindeutiges Duplikat).
 6. **Rückfragen stellen:** blockierend (der Task entsteht erst nach der Antwort, etwa bei unklarer Zuordnung) oder nicht-blockierend (der Task ist sofort da, die Antwort reichert nur an, etwa eine fehlende Fälligkeit). Geantwortet wird per ntfy-Button oder in der Web-Inbox; alle verändernden Aktionen tragen HMAC-signierte Tokens plus einen exakten Origin-Check ([Exposition und Authentifizierung](#exposition-und-authentifizierung)). Timeouts: blockierend 4 Stunden (danach Fallback-Anlage mit Hinweis), nicht-blockierend 7 Tage (verfällt still).
 7. **Kalender nur bei Bedarf:** Mitgeschickte Termine zieht das Modell nur bei erkennbarem Terminbezug heran -- das spart Verarbeitung ([Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)).
 8. **Durchgehend beachtet:** Alle Kontext-Blöcke sind Daten, nie Anweisungen an das Modell (Schutz gegen eingeschleuste Befehle). Ein Hash aus Diktattext und Zeit verhindert Doppel-Anlagen bei Kurzbefehl-Retries, und unterbrochene Verarbeitungen werden beim Neustart fortgesetzt ([Persistenz und Idempotenz](#persistenz-und-idempotenz)).
 
-::: warning Kontext-Grenze der Duplikat-Erkennung
-Geprüft werden nur die konfigurierten Ziel-Listen, nicht alle Listen des Workspace -- und pro Liste nur die ersten 50 offenen Tasks. Ein bestehender Task in einer anderen Liste oder jenseits dieser Obergrenze wird als Duplikat nicht erkannt. Ein breiteres Laden über alle Listen (List-Routing mit gezieltem Cross-List-Kontext) ist in Prüfung.
+::: warning Verbleibende Kontext-Grenzen
+Der team-weite Kontext ist auf `CONTEXT_MAX_TASKS_PER_WORKSPACE` offene Tasks gedeckelt (fälligkeitsnahe zuerst, Kappung wird geloggt); per Env ausgeschlossene Listen (`CATALOG_EXCLUDE_LIST_IDS`) sind weder Routing-Ziel noch Duplikat-Kontext. `LIST_ROUTING=false` schaltet das Routing instanzweise auf das alte Ziel-Listen-Verhalten zurück.
 :::
 
 ::: tip Kosten pro Diktat
-Das Modell läuft im Claude-Abo -- pro Diktat fallen keine direkten Stückkosten an, nur Verbrauch im 5-Stunden-Abo-Fenster. Zur Grössenordnung (gemessener Richtwert, keine Abrechnung): Der HSLU-Workspace hat rund 440 offene Tasks. Würde man alle als Kontext mitgeben, wären das grob 8000 zusätzliche Eingabe-Tokens, im hypothetischen API-Betrieb etwa 8 Rappen pro Diktat mit einem Opus-Modell und rund die Hälfte mit einem Sonnet-Modell. Die Web-Inbox zeigt pro Task die tatsächliche Verarbeitungsdauer und einen Rappen-Richtpreis (aus dem Cache-Split).
+Das Modell läuft im Claude-Abo -- pro Diktat fallen keine direkten Stückkosten an, nur Verbrauch im 5-Stunden-Abo-Fenster. Zur Grössenordnung (gemessener Richtwert, keine Abrechnung): Mit List-Routing über alle Listen (Katalog plus rund 700 offene Tasks beider Workspaces bei Sam) liegt der gemessene Prompt bei etwa 20'000 Eingabe-Tokens, im hypothetischen API-Betrieb rund 14 Rappen pro Diktat mit einem Opus-Modell und etwa die Hälfte mit einem Sonnet-Modell. Die Web-Inbox zeigt pro Task die tatsächliche Verarbeitungsdauer und einen Rappen-Richtpreis (aus dem Cache-Split).
 :::
 
 ## Zuordnung und Rückkanal
@@ -308,10 +308,10 @@ Wie viele ClickUp-Ziel-Listen eine Instanz bedient, steuert ihr Verhalten bei de
 ### Instanz Sam und Instanz Dani
 
 - **Sam** (in Betrieb): Hosts [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (API/Kurzbefehl, Bearer) und [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (Web-Inbox, Authentik). Dual-Workspace über die persönlichen Listen HSLU und Privat.
-- **Dani** (vorbereitet): Hosts todo-dani.ackermannprivat.ch und inbox-dani.ackermannprivat.ch, Single-Workspace (nur Privat), eigenes ntfy-Topic. Deployment als Nomad-Job `tools/todo-dani.nomad` im nomad-jobs-Repo.
+- **Dani** (in Betrieb): Hosts todo-dani.ackermannprivat.ch und inbox-dani.ackermannprivat.ch, Single-Workspace (nur Privat), eigenes ntfy-Topic. Deployment als Nomad-Job `tools/todo-dani.nomad` im nomad-jobs-Repo.
 
-::: info Instanz Dani in Vorbereitung
-Die zweite Instanz ist angelegt und konfiguriert; der Go-Live steht noch aus.
+::: info Onboarding Dani
+Die Instanz ist in Betrieb; auf Danis iPhone stehen noch der Diktat-Kurzbefehl und das ntfy-Topic-Abo aus (Verteilung über das geplante Kurzbefehl-Portal).
 :::
 
 ## Exposition und Authentifizierung
