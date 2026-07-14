@@ -161,3 +161,4 @@ Die Umstellung einer VM-Disk von scsi auf virtio-blk als Betriebsprozedur: [Betr
 - [Nomad](../nomad/) -- Container-Orchestrierung auf den VMs
 - [Consul](../consul/) -- Service Discovery und KV Store
 - [Vault](../vault/) -- Secrets Management
+- [VM-Firewall](../vm-firewall/index.md) -- Least-Privilege-Filterung der Stack-VMs (input DROP)

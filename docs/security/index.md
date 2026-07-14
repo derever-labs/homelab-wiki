@@ -87,3 +87,4 @@ Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware al
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection und IP-Blocking
 - [LDAP im Homelab](../ldap/index.md) -- LDAP-Schichten, Outpost, OpenLDAP-Legacy
 - [DNS-Architektur](../dns/index.md) -- DNS-Kette inkl. lxc-dns-01/02
+- [VM-Firewall](../vm-firewall/index.md) -- Netzwerk-Segmentierung der Stack-VMs (input DROP)

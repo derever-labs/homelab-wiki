@@ -313,4 +313,5 @@ Der UDM Pro ist nicht direkt am Glasfaser-Endpunkt angeschlossen, sondern per SF
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS
 - [Traefik](../traefik/) -- Reverse Proxy und Middleware Chains
+- [VM-Firewall](../vm-firewall/index.md) -- Segmentierung an der VM-NIC (input DROP)
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Vollständige IP-Zuordnung
