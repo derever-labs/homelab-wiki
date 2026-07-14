@@ -54,48 +54,13 @@ MQ -> HA: MQTT Subscribe
 Admin -> Z2M: HTTPS
 ```
 
-## USB Device Passthrough
+## Betrieb
 
-Der Sonoff Zigbee 3.0 USB Dongle Plus ist an `vm-nomad-client-06` angeschlossen. Der Nomad Job referenziert das Gerät über seinen stabilen Pfad unter `/dev/serial/by-id/` und mappt es im Container auf `/dev/ttyUSB0`.
-
-::: warning Node-Bindung
-Zigbee2MQTT ist fest an `vm-nomad-client-06` gebunden (Hard Constraint), weil der USB-Dongle physisch dort steckt. Ein Failover auf andere Nodes ist nicht möglich ohne den Dongle umzustecken.
-:::
-
-## Konfiguration
-
-### Zigbee-Kanal
-
-Kanal 25 ist konfiguriert, um Interferenzen mit dem 2.4-GHz-WLAN zu vermeiden.
-
-### Storage
-
-- **udev (read-only):** `/run/udev` im Container, auf Host `/run/udev` -- für USB-Adapter-Erkennung
-
-## Wartung
-
-### Gerät anlernen (Pairing)
-
-1. Im Web-Frontend (`zigbee.ackermannprivat.ch`) **Permit Join** aktivieren
-2. Gerät in Pairing-Modus versetzen
-3. Warten bis das Gerät erscheint, dann **Permit Join** deaktivieren
-
-### Troubleshooting
-
-Falls der USB-Stick nicht erkannt wird: prüfen ob das Device unter `/dev/serial/by-id/` auf dem Host (`vm-nomad-client-06`) erscheint. Bei Proxmox-VMs muss das USB-Gerät in der VM-Konfiguration durchgereicht sein.
-
-## Backup
-
-Das Verzeichnis `/nfs/docker/zigbee2mqtt/data` enthält drei kritische Dateien:
-
-- **`coordinator_backup.json`** -- Zigbee-Netzwerkschlüssel, IEEE-Adresse, PAN-ID. Ohne dieses Backup muss das gesamte Netz neu gepaart werden.
-- **`database.db`** -- Alle bekannten Devices mit friendly names, Gruppen, Scenes.
-- **`configuration.yaml`** -- Netzwerk-Konfiguration inkl. MQTT-Credentials.
-
-Backup-Kopien liegen unter `/nfs/backup/zigbee2mqtt/` (datierter Snapshot).
+USB-Passthrough, Pairing, Troubleshooting, Backup, Passwort-Rotation und Benutzeranlage sind im [IoT Betrieb](./betrieb.md) beschrieben. Konfigurationswerte (Zigbee-Kanal, udev-Mount) stehen in der [IoT Referenz](./referenz.md).
 
 ## Verwandte Seiten
 
+- [IoT Betrieb](./betrieb.md) -- Passthrough, Pairing, Backup, Rotation
 - [IoT Referenz](./referenz.md) -- Mosquitto MQTT Broker Details
 - [NAS Storage](../nas-storage/) -- NFS-Speicher für Konfiguration und Daten
 - [Traefik](../traefik/) -- Ingress mit intern-auth für Web-Frontend
