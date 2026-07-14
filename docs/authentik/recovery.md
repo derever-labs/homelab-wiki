@@ -174,4 +174,5 @@ OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR
 - [Authentik Übersicht](./index.md) -- Architektur und Stack-Einbindung
 - [Authentik Betrieb](./betrieb.md) -- Abhängigkeiten, Alerting-Kette, Rollback-Konzepte
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
+- [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Tier-Mapping, Blueprint-Quelle
 - [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
