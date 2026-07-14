@@ -210,16 +210,7 @@ Passphrase-File auf c05 und c06 (`/etc/linstor/passphrase`, mode 600). `linstor-
 
 ## Nomad CSI Integration
 
-Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs.
-
-| Attribut | Wert |
-|-------------|------|
-| Job-Typ | System (läuft auf allen Storage Nodes) |
-| Plugin-ID | `linstor.csi.linbit.com` |
-| Plugin-Typ | Monolith (Controller + Node in einem Container) |
-| Image | Siehe Nomad-Job `system/linstor-csi.nomad` |
-| Constraint | `vm-nomad-client-05`, `vm-nomad-client-06` |
-| Endpoint | `http://linstor-controller.service.consul:3370` |
+Das CSI Plugin (`system/linstor-csi.nomad`) ermöglicht die Verwendung von Linstor-Volumes als persistenten Speicher in Nomad Jobs. Die Plugin-Attribute (Job-Typ, Plugin-ID, Constraint, Endpoint) stehen in der [Linstor Referenz](./referenz.md#nomad-csi-plugin).
 
 Der Container läuft im privileged Mode, da CSI-Plugins Mount-Operationen auf dem Host durchführen müssen.
 
@@ -242,28 +233,9 @@ Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung de
 
 ## Performance
 
-### Thunderbolt Optimierung
-
 Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit ~20 Gbit/s (Werte siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Dadurch ist die Latenz für synchrone Replikation minimal.
 
-| Metrik | Erwarteter Wert |
-|--------|-----------------|
-| Latenz | < 0.1 ms |
-| Throughput | > 1 GB/s |
-| IOPS | > 100k (SSD) |
-
-### PostgreSQL Benchmark (DRBD vs Lokale SSD)
-
-Benchmark durchgeführt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threads, 60 Sekunden).
-
-| Metrik | DRBD (Netzwerk) | Lokal (SSD) | Differenz |
-|--------|-----------------|-------------|-----------|
-| TPS | 2,561 | 4,411 | +72% |
-| Latenz | 3.91 ms | 2.27 ms | -42% |
-| Transaktionen (60s) | 153,379 | 264,633 | +73% |
-| Verbindungszeit | 117 ms | 10 ms | -91% |
-
-**Fazit:** Der DRBD-Performance-Overhead ist für den Anwendungsfall akzeptabel. Die Vorteile (automatisches Failover, keine manuelle Replikation) überwiegen die leicht höheren Latenzen. Die meisten Services benötigen < 100 TPS.
+Erwartete Kennwerte und der pgbench-Vergleich DRBD gegen lokale SSD stehen in der [Linstor Referenz](./referenz.md#performance-kennwerte).
 
 ## Referenzen
 
@@ -277,6 +249,8 @@ Benchmark durchgeführt am 2025-12-29 mit pgbench (Scale 10, 10 Clients, 2 Threa
 ## Verwandte Seiten
 
 - [Linstor Betrieb](./betrieb.md) -- Failover, Troubleshooting, Monitoring, Volume-Übersicht
+- [Linstor Referenz](./referenz.md) -- CSI-Attribute, Performance, Panels und Metriken
+- [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
 - [Proxmox](../proxmox/) -- Host- und VM-Übersicht
 - [Nomad](../nomad/) -- Container-Orchestrierung mit CSI-Volumes
 - [Consul](../consul/) -- Service Discovery für Controller HA

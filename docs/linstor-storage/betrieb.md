@@ -33,7 +33,7 @@ Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client
 
 - CSI Boot Race Condition nach Node-Reboot (mitigiert durch `nomad-csi-reeval.timer`, Details: [CSI Boot Race Condition](#csi-boot-race-condition))
 - LVM Thin Pool Monitoring weicht von Linstor-Kapazitätsangaben ab -- beide Quellen prüfen
-- Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery](#split-brain-recovery))
+- Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery Runbook](./split-brain-runbook.md))
 - Offizielles LINBIT Image (drbd.io) erfordert Registrierung -- `kvaps/linstor-csi` als Alternative
 - **peer-tiebreaker nie manuell setzen:** Ein manuelles `DrbdOptions/PeerDevice/peer-tiebreaker` auf einer resource-connection entzieht LINSTOR das Tiebreaker-Management (`Vote=No`). Korrektur: Property leeren und die client-04-Ressource mit `--keep-tiebreaker` neu anlegen lassen.
 - **MaxOversubscriptionRatio=30:** Auf c05/c06 gesetzt (Default 5). Stark overcommitteter Thin Pool -- bei Pool-Full-Episode können DRBD-Bitmaps korrupt werden.
@@ -70,17 +70,7 @@ Manuelles Eviction über `drbd-reactorctl evict linstor_db` (ca. 20 Sekunden).
 
 ## Split-Brain Recovery
 
-Ein Split-Brain tritt auf wenn beide Nodes sich als Primary sehen. Dies wird durch den Quorum-Mechanismus (2-von-3) normalerweise verhindert.
-
-Falls es dennoch vorkommt:
-
-1. Bestimmen welcher Node die aktuelleren Daten hat
-2. Den anderen Node als Secondary degradieren und seine Daten verwerfen
-3. Verbindung wiederherstellen -- der Secondary synchronisiert automatisch vom Primary
-
-::: danger Datenverlust
-Beim Verwerfen der Daten auf dem Secondary gehen alle Schreibvorgänge verloren, die nur auf diesem Node stattfanden. Vor der Recovery prüfen, ob relevante Daten betroffen sind.
-:::
+Ein Split-Brain (beide Nodes sehen sich als Primary) wird im Normalbetrieb durch das Quorum (2-von-3) verhindert. Falls er dennoch eintritt, ist die destruktive Recovery mit Datenverlust auf dem Secondary im [Split-Brain Recovery Runbook](./split-brain-runbook.md) beschrieben.
 
 ## Volume-Management
 
@@ -122,17 +112,7 @@ Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBrea
 
 ### Grafana Dashboard
 
-URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`
-
-| Panel | Beschreibung |
-|-------|--------------|
-| Storage Pool Auslastung | Gauge mit Gesamtauslastung (Schwellwerte: 70% gelb, 90% rot) |
-| Storage Pool Total/Frei | Absolute Werte in GB |
-| Volumes | Anzahl der Resource Definitions |
-| Volume Auslastung | Prozentuale Auslastung pro Volume |
-| Volume Allocation | Tatsächlich belegter Speicher pro Volume |
-| Node Status | Online/Offline Status aller Nodes |
-| Resource Status | Sync-Status aller Ressourcen |
+URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`. Die Panel-Übersicht steht in der [Linstor Referenz](./referenz.md#grafana-panels).
 
 ### LVM Thin Pool Monitoring
 
@@ -142,15 +122,7 @@ Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert u
 
 ### Wichtige Metriken
 
-| Metrik | Beschreibung |
-|--------|--------------|
-| `linstor_storage_pool_capacity_total_bytes` | Gesamtkapazität des Storage Pools |
-| `linstor_storage_pool_capacity_free_bytes` | Freier Speicher im Pool |
-| `linstor_volume_allocated_size_bytes` | Tatsächlich belegter Speicher pro Volume |
-| `linstor_volume_definition_size_bytes` | Provisionierte Grösse pro Volume |
-| `linstor_node_state` | Node Status (0=Offline, 1=Connected, 2=Online) |
-| `linstor_resource_state` | Resource Status (0=UpToDate, 1=Syncing) |
-| `linstor_resource_definition_count` | Anzahl der definierten Volumes |
+Die Prometheus-/InfluxDB-Metriken sind in der [Linstor Referenz](./referenz.md#linstor-metriken) tabelliert.
 
 ## LINBIT GUI
 
@@ -180,12 +152,7 @@ Bei Problemen den Timer-Status und das Journal des `nomad-csi-reeval`-Services a
 
 ### Dateien
 
-| Datei | Beschreibung |
-|-------|--------------|
-| `/usr/local/bin/nomad-csi-reeval.sh` | Poll-basiertes Re-Evaluation Script |
-| `/etc/systemd/system/nomad-csi-reeval.service` | Oneshot Service |
-| `/etc/systemd/system/nomad-csi-reeval.timer` | Boot-Timer (60s nach Start) |
-| `/etc/nomad.d/nomad-csi-reeval.env` | Nomad Token (0600) |
+Script, Service, Timer und Env-Datei sind in der [Linstor Referenz](./referenz.md#csi-boot-reeval-dateien) tabelliert.
 
 ## Backup
 
@@ -194,6 +161,8 @@ Die allgemeine Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentati
 ## Verwandte Seiten
 
 - [Linstor Storage](../linstor-storage/) -- Architektur, HA-Design, CSI-Integration
+- [Linstor Referenz](./referenz.md) -- Nachschlagewerte (CSI, Metriken, Performance)
+- [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
 - [Proxmox](../proxmox/) -- Host- und VM-Übersicht
 - [Nomad](../nomad/) -- Container-Orchestrierung mit CSI-Volumes
 - [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes
