@@ -13,6 +13,8 @@ tags:
 
 Vollautomatisches Monitoring von Mietinseraten im 7km-Radius um Dottikon AG. Scrapfly umgeht Anti-Bot-Schutzmassnahmen serverseitig, ein Nomad Batch-Job orchestriert den gesamten Scan-Prozess, Claude Haiku reichert Listings mit strukturierten Daten an, und Telegram liefert Zusammenfassungen nach jedem Lauf. Diese Seite beschreibt die **Datenpipeline und ihren Betrieb**; die Web-App darüber -- Bedienung, Karte, Marktanalyse -- ist [Immo Monitor](../immo-monitor/index.md).
 
+Die Referenz-Tabellen (Homegate-URL-Struktur, Scan-Tiers, DB-Schema, Enrichment-Felder, Vault-Secrets, Credit-Management) stehen in der [Immobilien-Monitoring Referenz](./referenz.md); die vorgelagerte Neubau-Erkennung beschreibt die [Frühsignal-Pipeline](./fruehsignal.md).
+
 ## Übersicht
 
 | Attribut | Wert |
@@ -330,41 +332,11 @@ Beide Datenquellen liefern strukturiertes JSON direkt aus dem Server-Side-Render
 - **Übersichtsseiten** -- `window.__INITIAL_STATE__` enthält die Suchergebnisse als JSON (Titel, Preis, Zimmer, Koordinaten, Fotos)
 - **Detailseiten** -- `window.__PINIA_INITIAL_STATE__` (Vue 3/Pinia Store) enthält Beschreibung, Amenities, alle Fotos, Grundrisse, Verwalter-Kontakt
 
-### Homegate URL-Struktur
-
-- Trefferliste: `.../plz-{PLZ}/trefferliste?be=7000` (Preis bis CHF 7000)
-- Pagination: `&ep=2`, `&ep=3` etc. (20 Resultate pro Seite)
-- Detailseite: `https://www.homegate.ch/mieten/{external_id}`
-
-### Scan-Tiers (PLZ-Strategie)
-
-| Tier | Portal | Gebiet | Job | Intervall |
-|------|--------|--------|-----|-----------|
-| 1 | Homegate | PLZ 5605 (Dottikon) | `immoscraper` | Alle 3 Tage |
-| 3 | Homegate | PLZ 5610 (Wohlen AG) | `immoscraper-weekly` | Wöchentlich |
-| N | ImmoScout24 | 11 Orte in der Region | `immoscraper-weekly` | Wöchentlich |
-
-Homegate zeigt bei einer PLZ-Suche auch Ergebnisse aus umliegenden Gemeinden an. PLZ 5605 deckt damit den Grossteil des 7km-Radius ab (Dottikon, Hendschiken, Othmarsingen, Hägglingen, Villmergen). PLZ 5610 ergänzt das Randgebiet Wohlen AG.
-
-ImmoScout24 wird über 11 ortbasierte Suchen in der Region abgefragt -- nur Overview-Daten, kein Detail-Scraping (exklusive Listings sind selten und die Basisdaten reichen für die Erkennung).
-
-Referenzpunkt für Distanzberechnung: Dottikon 47.3775 / 8.2394
+Die Homegate-URL-Struktur und die Scan-Tiers (PLZ-Strategie) stehen in der [Referenz](./referenz.md#homegate-url-struktur).
 
 ## KI-Enrichment
 
-Nach dem Scraping analysiert Claude Haiku die Listing-Beschreibungen und extrahiert strukturierte Daten, die Homegate nicht als eigene Felder liefert:
-
-| Feld | Beispielwert |
-|------|-------------|
-| Stockwerk | 2 (EG = 0, UG = -1) |
-| Balkon / Terrasse | ja/nein |
-| Parkplatz / Garage | ja/nein |
-| Lift | ja/nein |
-| Minergie-Standard | Minergie, Minergie-P, Minergie-A |
-| Heizungstyp | Fussbodenheizung, Fernwärme, Wärmepumpe |
-| Waschküche | Eigene Waschmaschine, Gemeinschaftswaschküche |
-| Baujahr / Renovation | 2024, 2019 |
-| Highlights | Max 5 besondere Merkmale |
+Nach dem Scraping analysiert Claude Haiku die Listing-Beschreibungen und extrahiert strukturierte Daten, die Homegate nicht als eigene Felder liefert (die vollständige Feldliste steht in den [Enrichment-Feldern](./referenz.md#enrichment-felder)).
 
 Das Enrichment läuft nach der Scraping-Phase mit maximal 20 Listings pro Lauf. Ein Circuit Breaker stoppt nach 3 aufeinanderfolgenden Fehlern. Listings ohne Beschreibung werden übersprungen.
 
@@ -403,101 +375,6 @@ Der GitHub Actions Runner läuft als Nomad Service-Job mit Docker-Socket-Mount u
 
 Der Workflow triggert bei Änderungen in `services/n8n-workflows/scraper/` oder bei manuellem Dispatch.
 
-## Scrapfly Credit-Management
-
-| Scan-Typ | Credits pro Lauf | Intervall | Credits/Monat |
-|----------|-----------------|-----------|--------------|
-| Overview PLZ 5605 (~15 Seiten) | ~375 | Alle 3 Tage | ~3.750 |
-| Detail-Scrapes (~30 neue) | ~750 | Alle 3 Tage | ~7.500 |
-| Overview PLZ 5610 (~15 Seiten) | ~375 | Wöchentlich | ~1.500 |
-| IS24 Nebenscan (~13 Seiten) | ~325 | Wöchentlich | ~1.300 |
-| **Total geschätzt** | | | **~14.050** |
-
-Der Discovery Plan bietet 200.000 Credits/Monat für $30 -- die geschätzte Auslastung liegt bei ~6%.
-
-Jeder Scrapfly-Request liefert den Credit-Verbrauch in der API-Response zurück. Der Scraper summiert diese pro Lauf und schreibt den Gesamtwert in `scraper_runs`. Die Telegram-Notification zeigt den Verbrauch ebenfalls an.
-
-## Frühsignal-Pipeline {#fruehsignal-pipeline}
-
-Neben dem Inserate-Scraper läuft eine zweite, unabhängige Pipeline, die Neubauprojekte erkennt, **bevor** sie als Inserat auftauchen. Ein eigener Nomad-Job scannt täglich um 08:00 Uhr öffentliche Frühindikatoren und legt Treffer als Kandidaten ab; die Kandidaten-Inbox im [Immo-Monitor-Frontend](../immo-monitor/index.md) arbeitet sie manuell ab. Der Zeitpunkt liegt bewusst ausserhalb des Fensters, in dem sich die Vault-Templates der übrigen Batch-Jobs erneuern, damit der Job nicht mit deren Secret-Renewal kollidiert.
-
-### Quellen
-
-Der Kanton Aargau publiziert ordentliche Baugesuche nicht zentral (nur Sonderfälle wie Bauten ausserhalb der Bauzone), und die API von amtsblattportal.ch führt den Aargau nicht -- deshalb greift die Pipeline die 28 Zielgemeinden einzeln ab. Alle Quellen werden täglich in **einem** sequenziellen Lauf gepollt; RSS ist dabei nur das robusteste Format (stabile Item-IDs, Datum), wo es fehlt, parst ein Extraktor je CMS-Familie die Baugesuchs- bzw. Aktuelles-Seite. Die konkreten URLs und Belege je Quelle pflegt `src/fruehsignal/sources.ts` im Scraper.
-
-| Abgriff | Gemeinden / Quellen | Status |
-|---------|--------------------|--------|
-| WordPress-RSS | Dottikon, Fischbach-Göslikon | aktiv |
-| Medien-RSS | Wohler Anzeiger (Ortserkennung für alle 28 Gemeinden) | aktiv |
-| HTML-Poll GOViS | Mellingen, Boniswil, Seon, Seengen, Waltenschwil, Widen, Künten | aktiv |
-| HTML-Poll TYPO3 | Wohlenschwil | aktiv |
-| HTML-Poll Drupal | Niederwil | aktiv |
-| HTML-Poll ReNav | Dintikon, Hendschiken | aktiv |
-| zurückgestellt (Hosting-Sperre i-web) | Villmergen, Wohlen, Bremgarten, Tägerig, Sarmenstorf, Uezwil, Hägglingen, Othmarsingen, Rupperswil, Berikon, Lenzburg | Folge-Phase |
-| zurückgestellt (kein stabiler Anker) | Möriken-Wildegg, Mägenwil | bei Website-Umbau neu prüfen |
-| kein maschineller Kanal | Ammerswil, Büttikon | dokumentierte Lücke |
-
-Die elf i-web-Gemeinden teilen sich eine Hosting-Range, die auf gebündelte Abrufe mit einer Sperre reagiert -- ihre Anbindung folgt nach einer schonenden Markup-Analyse. Als Lehre daraus hält der Lauf Höflichkeits-Abstände ein (30 Sekunden zwischen Abrufen derselben Hosting-Range, keine automatischen Wiederholversuche). Bis dahin deckt der Wohler Anzeiger diese Gemeinden über die Ortserkennung mit ab.
-
-Google News ist bewusst **keine** Quelle: Die robots.txt von news.google.com sperrt die Such-Feeds für generische Abrufe, und diese Regel wird nicht für eine bessere Abdeckung aufgeweicht.
-
-::: info Fail-loud-Verhalten
-Jede Quelle, die einen Fehler wirft oder verdächtig wenige Einträge liefert (Erkennung von Markup-Brüchen), meldet den Lauf als down an Kuma. Bei über einem Dutzend fremder Gemeinde-Websites sind gelegentliche Alarme ohne Handlungsbedarf einkalkuliert -- dafür fällt kein stiller Ausfall einer einzelnen Quelle mehr unter den Tisch.
-:::
-
-### Regel-Klassifikation (kein LLM)
-
-Die Treffer werden **regelbasiert** eingeordnet, ohne Sprachmodell. Jeder Kandidat bekommt eine Klassifikation (`neubau`, `baugesuch`, `sonstiges`, `unklar`) und eine Konfidenz zwischen 0.00 und 1.00, die sich aus der gewichteten Zahl der Treffer-Signale ergibt. Die Inbox sortiert danach und zeigt Quelle, Klassifikation und Konfidenz pro Kandidat.
-
-Die Kandidaten liegen in der Tabelle **`project_candidate`** (im Frontend-Schema via Drizzle-Migration verwaltet): Quelle und stabiler Quellen-Schlüssel, Titel, URL (unique), Veröffentlichungsdatum, Gemeinde, Textausschnitt, Klassifikation, Konfidenz, Status (`neu` / `gesichtet` / `verworfen` / `projekt_erstellt`) und eine optionale Referenz auf ein recherchiertes `project`. Aus einem Kandidaten wird **kein** Projekt automatisch angelegt -- die Neuanlage bleibt dem Research-Skill mit seinen Geocode- und Duplikat-Guards vorbehalten.
-
-### Dead-Man-Monitoring
-
-Der Job meldet nach jedem Lauf einen Heartbeat an einen Uptime-Kuma Push-Monitor. Bleibt der Push aus, schlägt Kuma Alarm -- ein stiller Ausfall der Pipeline fällt so auf.
-
-::: info Vault-Cross-Job-Leseausnahme
-Der Frühsignal-Job liest Secrets, deren Pfad nicht seinem eigenen Job-Namen entspricht. Weil die `nomad-workload`-Policy per Template auf den eigenen Job-Namen zugeschnitten ist, braucht dieser Cross-Job-Zugriff eine statische Leseausnahme in der Policy. Sie ist im `homelab-hashicorp-stack`-Repo gepflegt; hier nur der Hinweis, dass sie existiert.
-:::
-
-## Datenbank-Schema
-
-Die Datenbank `immo` auf dem PostgreSQL Shared Cluster. Die vollständige DDL liegt als Migrations im Repo (`services/n8n-workflows/scraper/`); hier nur Zweck und architektur-relevante Felder pro Tabelle:
-
-- **listing** -- Haupttabelle, Unique Constraint `(portal, external_id)`. Architektur-relevant sind das Enrichment-Feld `enrichment_data` (JSONB) und die zwei manuell pflegbaren Felder `first_seen_at_override` (echter Vermarktungsstart) und `first_seen_source` (Provenance-Label fürs Frontend)
-- **listing_photo** -- Foto-Metadaten. Relevant: `storage_path` (relativer NFS-Pfad) und `download_status` für die Foto-Archivierung
-- **listing_external_id_history** -- Historische externe IDs pro Portal; primäre Quelle für den Vermarktungsstart bei Re-Listings, siehe Vermarktungsstart-Tracking im [Frontend-Wiki](../immo-monitor/index.md)
-- **listing_price_history** -- Preisänderungen, bei Smart-Skip-Entscheidung "geändert" automatisch befüllt
-- **listing_note** -- User-Bewertungen für Metabase (Rating, Favorit, Abgelehnt)
-
-### Amenities (normalisiert)
-
-- **amenity** -- Lookup-Tabelle mit Unique `name`
-- **listing_amenity** -- Junction-Table (`listing_id`, `amenity_id`)
-
-Homegate liefert Amenities als Boolean-Felder. Diese werden in die normalisierten Tabellen gemappt, weil Metabase JSONB-Arrays nicht filtern kann.
-
-### Neubau-Projekt-Tabellen
-
-- **project** -- Neubauprojekte mit Developer, Architekt, Energiestandard, Baufortschritt; `marketing_started_at` als etappenweite Datierung für `project_unit`-basierte Listings
-- **project_listing** -- Junction zu Listings
-- **project_unit** -- Einzelne Wohneinheiten mit generiertem `price_per_m2`
-- **project_source** -- Recherche-Quellen mit Zeitstempel
-
-### Views und Tracking
-
-- **v_listing_active** -- Primäre Metabase-Datenquelle mit berechneten Spalten (`price_per_m2`, `days_on_market`, User-Bewertungen)
-- **scraper_runs** -- Statistiken pro Lauf (Dauer, Listings, Fehler, Credits, Enrichment-Zähler)
-
-## Vault Secrets
-
-| Pfad | Keys | Zweck |
-|------|------|-------|
-| `kv/data/immoscraper` | `db_password` | PostgreSQL Zugang |
-| `kv/data/immoscraper` | `scrapfly_api_key` | Scrapfly REST-API |
-| `kv/data/immoscraper` | `claude_api_key` | Claude Haiku Enrichment |
-| `kv/data/shared/telegram` | `bot_token`, `chat_id` | Telegram Notifications |
-| `kv/data/github-runner` | `access_token` | GitHub Actions Runner PAT |
-
 ## Kosten
 
 | Posten | Kosten/Monat |
@@ -523,6 +400,8 @@ Zurückgestellt wegen minimalem Mehrwert (3 Listings) bei überproportionalem Im
 
 ## Verwandte Seiten
 
+- [Immobilien-Monitoring Referenz](./referenz.md) -- DB-Schema, Vault-Secrets, Credit-Management, URL-Struktur, Scan-Tiers, Enrichment-Felder
+- [Frühsignal-Pipeline](./fruehsignal.md) -- Neubau-Erkennung vor dem Inserat
 - [Immo-Monitor Frontend](../immo-monitor/) -- SvelteKit Kartenansicht
 - [Metabase](../metabase/) -- BI-Dashboard für Visualisierung
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
