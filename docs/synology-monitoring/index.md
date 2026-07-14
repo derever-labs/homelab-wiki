@@ -105,7 +105,7 @@ Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisionin
 
 NAS-Hardware alarmiert ausschliesslich CheckMK: die Notification geht an Keep, Keep korreliert sie zu einem Incident und routet nach Severity ins passende Telegram-Topic (siehe [Keep](../monitoring/keep.md)). In Grafana existieren seit dem Cutover keine Synology-Alert-Rules mehr -- das Dashboard ist reine Visualisierung.
 
-Welche Services CheckMK auf dem NAS überwacht und mit welcher Schwelle (Filesystem `/volume*` bei 95%), steht in der [CheckMK Discovery-Policy](../monitoring/checkmk-discovery.md).
+Welche Services CheckMK auf dem NAS überwacht und mit welcher Schwelle (Filesystem `/volume*` bei 95%, CPU-Last mit für die nächtlichen Backup- und Scrub-Spitzen angehobenen Schwellen), steht in der [CheckMK Discovery-Policy](../monitoring/checkmk-discovery.md).
 
 ## Storage-Benchmark & Reshape
 
