@@ -87,17 +87,7 @@ PB.ui -> PB.db: "Pflege-Workflow"
 
 ## Banner-Steuerung
 
-Collection `banner_config` mit genau einem Record. Die Aktivierungs-Logik läuft komplett server-seitig im Pocketbase-Hook: ist der Banner aus oder ausserhalb des Zeitfensters, liefert `/banner.css` ein leeres Stylesheet (`/* maintenance banner: off */`), sonst die Banner-Regeln.
-
-| Feld | Typ | Bedeutung |
-|------|-----|-----------|
-| `severity` | select | Farb-Preset (`wartung` orange, `info` blau, `incident` rot, `resolved` grün). Default `wartung` |
-| `enabled` | bool | Master-Schalter. `false` = Banner aus |
-| `text` | string | Anzeigetext, einzeilig, max 500 Zeichen |
-| `start_at` | datetime | Optional. Wenn gesetzt: Banner erscheint erst ab diesem Zeitpunkt |
-| `end_at` | datetime | Optional. Wenn gesetzt: Banner verschwindet automatisch nach diesem Zeitpunkt |
-
-Aktivierungslogik: `enabled && (start_at unset oder now >= start_at) && (end_at unset oder now <= end_at)`.
+Gepflegt wird der Banner über genau einen Record der Collection `banner_config` im Pocketbase-Admin-UI. Die Aktivierungs-Logik läuft server-seitig im Pocketbase-Hook. Die vollständige Feld-Referenz (`enabled`, `severity`, `text`, `start_at`, `end_at`) und die Aktivierungslogik-Formel stehen im Betrieb unter [banner_config-Felder](betrieb.md#banner-config-felder).
 
 ## CSS-Mechanik
 
