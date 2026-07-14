@@ -77,7 +77,7 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 Seerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
 
-Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Seerr und enthält den nativen Recovery-Link. Zusätzlich rendert Seerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt auch in Seerr 3.x. Details: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
+Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Seerr und enthält den nativen Recovery-Link. Zusätzlich rendert Seerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt auch in Seerr 3.x. Details: [Authentik Recovery -- Recovery-Eingangspfade aus Apps](../authentik/recovery.md#recovery-eingangspfade-aus-apps).
 
 ## Request Sync Sidecar
 

@@ -1,0 +1,177 @@
+---
+title: Authentik Recovery und Breakglass
+description: Recovery-Layer, Breakglass-Account und Benutzer-Recovery-Flow
+tags:
+  - identity
+  - authentik
+  - betrieb
+---
+
+# Authentik Recovery und Breakglass
+
+Recovery-Konzepte, Breakglass-Account und der Benutzer-Recovery-Flow für Authentik. Betriebs-Übersicht und Abhängigkeiten stehen in [Authentik Betrieb](./betrieb.md), Referenzdaten in [Authentik Referenz](./referenz.md), Architektur in [Authentik (Übersicht)](./index.md).
+
+## Recovery-Layer (Safety Net)
+
+Authentik ist hart abgesichert (MFA-Zwang, Reputation Policy, Password Policy). Das erhöht die Wahrscheinlichkeit, dass man sich selbst aussperrt. Dafür gibt es fünf Recovery-Layer, sortiert von am wenigsten invasiv bis zuletzt verwendbar:
+
+### Layer 1 -- Recovery URLs
+
+Authentik bietet pro User einen One-Shot-Recovery-Link. Der Link loggt den User ohne Passwort und ohne MFA ein und hat eine kurze Lebensdauer (typisch 1 Stunde). Für den Ernstfall werden vor jedem riskanten Schritt (z.B. MFA-Policy-Aktivierung) frische Links generiert und in 1Password abgelegt (Item "Authentik Recovery Runbook + Breakglass URLs").
+
+Die Links sind zeitlich limitiert, daher taugen sie nicht als langfristige Ablage -- das 1Password-Item dokumentiert nur das Verfahren und hält frische URLs kurz verfügbar.
+
+### Layer 2 -- Automation API Token
+
+Der primäre Rückkanal ist der Automation-API-Token in 1Password (Item "Authentik API Token akadmin"). Der Token ist periodic renewed, hat volle Admin-Rechte und funktioniert auch, wenn das Web-UI aus Lockout-Gründen unerreichbar ist. Mit ihm lassen sich Stages, Policies und Bindings beliebig patchen oder löschen -- inklusive des kritischen Stage-Flags `not_configured_action`, das MFA aktiviert oder deaktiviert.
+
+Dieser Layer ist die mit Abstand gängigste Recovery-Option. Alle Hardening-Schritte sind so gebaut, dass sie über den Token rückgängig gemacht werden können, solange er nicht revoked ist.
+
+### Layer 3 -- Nomad alloc exec (Django Shell)
+
+Wenn die API selbst kaputt ist oder der Token revoked wurde, bleibt der direkte Django-Shell-Zugriff im Authentik-Server-Container. Darüber können Datenbank-Objekte (Stages, Policies, User) direkt manipuliert werden. Das ist riskant, aber funktioniert auch, wenn der HTTP-Stack nicht mehr antwortet.
+
+### Layer 4 -- PostgreSQL-Restore
+
+Ein täglicher `pg_dumpall`-Job schreibt um 03:00 UTC einen vollständigen Dump aller Datenbanken nach NFS. Die Authentik-DB kann aus jedem Dump der letzten 7 Tage / 4 Wochen / 3 Monate (GFS-Schema) wiederhergestellt werden. Das ist der sauberste Rollback bei katastrophalen Konfigurationsfehlern -- der Preis ist Datenverlust bis zum letzten Backup.
+
+Details zur Backup-Infrastruktur: [Backup](../backup/index.md).
+
+### Layer 5 -- Re-Bootstrap
+
+Letzte Eskalationsstufe: Die komplette Authentik-Installation wird aus Vault-Secrets (`kv/data/authentik`, `kv/data/authentik-outpost`) und dem Nomad-Job neu aufgebaut. Alle Flows, Policies und Anpassungen müssen danach erneut provisioniert werden. Dieser Layer wird praktisch nie benötigt, solange die Datenbank-Backups funktionieren.
+
+### Rollback Group-Bindings
+
+Für den spezifischen Fall "Group-Binding-Rollout hat Problem verursacht":
+
+- **Einzelne App aussperrt legitime User:** Blueprint-Eintrag entfernen (oder `enabled: false`) → `nomad job run`. Reconciler deaktiviert die Binding; Default ist fail-open (App wieder offen für alle)
+- **Gesamtes Tier-Setup kippt:** `git revert` auf den Blueprint-Commit → Push → `nomad job run`
+- **Katastrophe (Blueprint blockiert Reconciler):** Baseline-JSON aus `state/authentik-baseline-YYYY-MM-DD.json` heranziehen und via API-Script den vorherigen Zustand wiederherstellen. Die Baseline ist pre-change-Snapshot aller Apps, Providers, Groups, Bindings und Expression-Policies
+
+Verifikation, dass Breakglass funktioniert: Vor jedem riskanten Rollout-Schritt prüfen, dass `akadmin-breakglass` sich über `/if/admin/` einloggen kann. Der Breakglass-Account hat keinen direkten App-Zugriff (nicht in `admin`), aber die Admin-UI bleibt unabhängig von Policy-Bindings erreichbar.
+
+## Breakglass-Account
+
+`akadmin-breakglass` ist ein zweiter, unabhängiger Admin-Account. Er hat:
+
+- Eigenes starkes Passwort (getrennt vom primären `akadmin`)
+- Eigenes TOTP-Device, eigene Static Recovery Codes
+- Mitgliedschaft in `authentik Admins` (superuser)
+- E-Mail-Alias `breakglass@ackermannprivat.ch`
+
+Der Account wird im Normalbetrieb nie verwendet. Sein einziger Zweck ist die Lifeline, wenn `akadmin` ausgesperrt ist -- sei es durch einen Policy-Fehler, ein verlorenes TOTP-Device oder einen kompromittierten Passwort-Store. Die Credentials liegen in 1Password unter "Authentik Breakglass (akadmin-breakglass)", inklusive eines Live-OTP-Felds, damit beim Einloggen kein manuelles Code-Abtippen nötig ist.
+
+::: warning Breakglass-Benutzung protokollieren
+Jeder Einsatz des Breakglass-Accounts sollte protokolliert werden (wann, warum). Nach der Nutzung muss das Passwort rotiert und ein neues TOTP-Device registriert werden, weil der Notfall-Einsatz oft unter Druck passiert und Spuren hinterlässt. Ein ungenutzter Breakglass-Account ist ein gesunder Breakglass-Account.
+:::
+
+## Recovery-Flow für Benutzer
+
+User, die ihr Passwort vergessen haben, klicken auf der Login-Seite auf "Passwort vergessen?". Der Recovery-Flow fragt nach E-Mail oder Username, sendet einen zeitlich begrenzten Mail-Link (Token-Expiry 30 min) und leitet nach erfolgreicher Token-Validierung in den Password-Change-Flow.
+
+Die Password-Change-Stage dort hat dieselbe Password Policy wie alle anderen Password-Write-Stellen gebunden -- schwache neue Passwörter werden abgewiesen.
+
+### Recovery-Eingangspfade aus Apps
+
+Im Homelab gibt es Apps, die Authentik-Credentials prüfen, ohne dass der User die Authentik-Login-Seite überhaupt zu sehen bekommt. Damit Recovery aus solchen Apps heraus funktioniert, muss der Forgot-Password-Link explizit auf den Authentik-Recovery-Flow zeigen -- App-interne Reset-Mechanismen scheitern, weil das Passwort gar nicht in der App liegt.
+
+Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstiegs-URL bleibt deshalb über App-Updates hinweg gültig.
+
+- **Authentik selbst** -- Die Identification-Stage referenziert den Recovery-Flow direkt; das Custom-CSS macht den Link unter dem Anmelde-Button als "Passwort vergessen?" sichtbar. Quelle: [`authentik-custom-css.txt`](https://gitea.ackermannprivat.ch/PRIVAT/infra/src/branch/main/authentik-custom-css.txt) im Infra-Repo
+- **Jellyseerr** (`public-auth@file`) -- ForwardAuth davor bedeutet: nicht-eingeloggte User landen zuerst auf der Authentik-Login-Seite mit dem nativen Recovery-Link. Auf der zweiten Hürde -- Jellyseerr's eigenem "Sign in with Jellyfin"-Login -- rendert die `JellyfinLogin`-Komponente einen Forgot-Link nur unter einer Bedingung (siehe Warning-Box unten zu `externalHostname`)
+- **Jellyfin** (`public-noauth@file`, kein ForwardAuth) -- Hier fehlt die Authentik-Login-Seite als natürliches Recovery-Sprungbrett. Der "Login Disclaimer" in der Jellyfin-Branding-Konfiguration nimmt HTML und wird unterhalb des Login-Formulars gerendert. Persistiert im Linstor-CSI-Volume `jellyfin-config`, überlebt App-Updates und Container-Restarts
+
+Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 1
+    layout-engine: elk
+  }
+}
+
+classes: {
+  app: { style: { border-radius: 8 } }
+  recovery: { style: { border-radius: 8; stroke: "#7c3aed" } }
+  store: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
+direction: down
+
+User: Benutzer { class: app }
+
+Apps: Login-Seiten {
+  class: container
+
+  AuthLogin: "auth.ackermannprivat.ch\nAuthentik (nativ)" {
+    class: app
+    tooltip: "Recovery-Link via Identification-Stage + Custom-CSS"
+  }
+  JSLogin: "wish.ackermannprivat.ch\nJellyseerr Sign-in" {
+    class: app
+    tooltip: "Forgot-Link rendert nur wenn externalHostname UND jellyfinForgotPasswordUrl gesetzt -- Wrapper {baseUrl && ...}"
+  }
+  JFLogin: "watch.ackermannprivat.ch\nJellyfin Login" {
+    class: app
+    tooltip: "LoginDisclaimer im Branding-Endpoint, persistiert im CSI-Volume"
+  }
+}
+
+FWD: "Authentik ForwardAuth\n(public-auth@file)" {
+  class: recovery
+  tooltip: "Schaltet die Authentik-Login-Seite VOR Jellyseerr -- nativer Recovery-Link greift hier zuerst"
+}
+
+Recovery: "default-recovery-flow" {
+  class: recovery
+  tooltip: "Identification + Recovery-Mail + Token + Password-Change-Stage"
+}
+
+Mail: "Recovery-Mail\nToken 30 min" {
+  class: store
+  shape: cylinder
+  tooltip: "SMTP Relay -- smtp.service.consul"
+}
+
+PwChange: "Password-Change-Stage\n(Password Policy aktiv)" { class: recovery }
+
+PG: "PostgreSQL\nUser-Hash" {
+  class: store
+  shape: cylinder
+}
+
+User -> Apps.AuthLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JSLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JFLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+
+Apps.JSLogin -> FWD: "Redirect vor App-Login" { style.stroke: "#6b7280" }
+FWD -> Recovery: "nativer Recovery-Link" { style.stroke: "#7c3aed" }
+Apps.AuthLogin -> Recovery: "Passwort vergessen?" { style.stroke: "#7c3aed" }
+Apps.JSLogin -> Recovery: "Forgot-Link\n(rendert wenn externalHostname gesetzt)" { style.stroke: "#7c3aed"; style.stroke-dash: 3 }
+Apps.JFLogin -> Recovery: "Disclaimer-Link" { style.stroke: "#7c3aed" }
+
+Recovery -> Mail: "sendet Token-Link" { style.stroke: "#854d0e" }
+Mail -> User: "User klickt Link" { style.stroke: "#16a34a"; style.stroke-dash: 3 }
+User -> PwChange: "neues Passwort" { style.stroke: "#2563eb" }
+PwChange -> PG: "Hash schreiben" { style.stroke: "#854d0e" }
+```
+
+::: info Warum kein App-internes Forgot-Password
+Jellyfin und Jellyseerr haben jeweils eigene Reset-Mechanismen (Jellyfin Quick-Connect-Code, Jellyseerr E-Mail-Reset). Beide setzen voraus, dass das Passwort lokal in der App-DB liegt. Im Homelab ist das nicht der Fall: Jellyfin nutzt den LDAP-Outpost (Passwort in Authentik-PG), Jellyseerr nutzt "Sign in with Jellyfin" (Passwort via LDAP wieder in Authentik). Die App-internen Resets würden die Authentik-User-DB nicht ändern und beim nächsten LDAP-Bind nicht greifen -- deshalb zeigt der UI-Link direkt auf den Authentik-Recovery-Flow.
+:::
+
+::: warning Jellyseerr Forgot-Link braucht externalHostname
+`jellyfinForgotPasswordUrl` allein reicht nicht -- die `JellyfinLogin`-Komponente rendert den Link in einem `{baseUrl && (...)}`-Wrapper, mit `baseUrl = settings.jellyfinExternalHost || settings.jellyfinHost`. Im Backend heisst das Feld `externalHostname` (Settings → Jellyfin → External URL). Bleibt `externalHostname` leer (Default in vielen Setups), wird der gesamte `&lt;a&gt;` nicht gerendert -- auch wenn `jellyfinForgotPasswordUrl` korrekt gesetzt ist. Im Homelab sind deshalb beide Felder gesetzt: `externalHostname = "https://watch.ackermannprivat.ch"` und `jellyfinForgotPasswordUrl = "https://auth.ackermannprivat.ch/if/flow/default-recovery-flow"`. URL-Validierung beider Felder verbietet trailing slash.
+
+OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR fallenbagel/jellyseerr#1505 closed), die Doppel-Login-Hürde (ForwardAuth + Jellyseerr-Login) bleibt. Recovery funktioniert dank der beschriebenen Settings trotzdem auf beiden Stufen.
+:::
+
+## Verwandte Seiten
+
+- [Authentik Übersicht](./index.md) -- Architektur und Stack-Einbindung
+- [Authentik Betrieb](./betrieb.md) -- Abhängigkeiten, Alerting-Kette, Rollback-Konzepte
+- [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
+- [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
