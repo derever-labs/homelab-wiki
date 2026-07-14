@@ -71,7 +71,7 @@ Details: [CrowdSec](../crowdsec/index.md)
 
 ## Zugriffsgruppen
 
-Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Referenz](../authentik/referenz.md#gruppen).
+Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Gruppen und Bindings](../authentik/gruppen-bindings.md#gruppen).
 
 ## Middleware Chains
 

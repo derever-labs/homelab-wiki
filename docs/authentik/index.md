@@ -21,7 +21,7 @@ Authentik ist der zentrale Identity Provider des Homelabs. Alle Services, die ei
 | Storage | PostgreSQL (`postgres.service.consul`, Datenbank `authentik`) |
 | Secrets | Vault (`kv/data/authentik`, `kv/data/authentik-outpost`) |
 
-Diese Seite deckt Rolle, Architektur und Komponenten ab. Details zu Flows, Policies, OIDC-Providern und UI-Anpassungen stehen in [Referenz](./referenz.md). Betriebs-Konzepte wie Recovery-Layer, Breakglass-Account und Alerting in [Betrieb](./betrieb.md).
+Diese Seite deckt Rolle, Architektur und Komponenten ab. Details zu Flows, Policies, OIDC-Providern und UI-Anpassungen stehen in [Referenz](./referenz.md), Gruppen, Bindings und Tier-Mapping in [Gruppen und Bindings](./gruppen-bindings.md). Recovery-Layer und Breakglass-Account in [Recovery und Breakglass](./recovery.md), weitere Betriebs-Konzepte und Alerting in [Betrieb](./betrieb.md).
 
 ## Rolle im Stack
 
@@ -194,7 +194,7 @@ Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bz
 
 ## Sicherheit auf einen Blick
 
-- **3-Tier-Zugriffskontrolle** -- `admin` (alles) > `family` (family-Tier + guest-Tier via Multi-Binding) > `guest` (guest-Tier). Jede App hat eine explizite Gruppen-Bindung. Ohne Bindung = offen (Authentik-Default fail-open) -- deshalb werden alle 45 Apps deklarativ via [Blueprints](./referenz.md#blueprint-quelle) zugeordnet. Ein Drift-Audit-Job überwacht täglich, dass keine neue App ohne Binding auftaucht
+- **3-Tier-Zugriffskontrolle** -- `admin` (alles) > `family` (family-Tier + guest-Tier via Multi-Binding) > `guest` (guest-Tier). Jede App hat eine explizite Gruppen-Bindung. Ohne Bindung = offen (Authentik-Default fail-open) -- deshalb werden alle 45 Apps deklarativ via [Blueprints](./gruppen-bindings.md#blueprint-quelle) zugeordnet. Ein Drift-Audit-Job überwacht täglich, dass keine neue App ohne Binding auftaucht
 - **MFA-Zwang für Admins** -- Mitglieder von `admin` und `authentik Admins` sowie alle Superuser müssen TOTP oder Passkey registrieren. Admins, die sich via Passkey einloggen, überspringen die MFA-Stage (Passkey zählt als Besitz + User-Verification). Non-Admins loggen weiterhin nur mit Passwort ein
 - **Password Policy** -- mindestens 12 Zeichen, zxcvbn-Score ≥ 3, gebunden an alle Password-Write-Stages
 - **Reputation Policy** -- Threshold −3 auf Username und IP, gebunden an Password-Stages (Auth + LDAP) sowie an Recovery-Identification und MFA-Validate
@@ -202,12 +202,14 @@ Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bz
 - **Passwordless-Login** -- WebAuthn Conditional UI (Autofill) im normalen Login-Flow; dedizierter `passwordless-flow` als Fallback via direkter URL; `user_verification=required`, `resident_key=required`
 - **Alerting** via Telegram-Relay für `login_failed`, `policy_exception`, `suspicious_request`, `password_set`, `configuration_error`
 
-Details und Mechanik: siehe [Referenz](./referenz.md) -- Betriebs-Konzepte (Recovery-Layer, Breakglass, Rollback) siehe [Betrieb](./betrieb.md).
+Details und Mechanik: siehe [Referenz](./referenz.md) -- Recovery-Layer, Breakglass und Rollback siehe [Recovery und Breakglass](./recovery.md).
 
 ## Verwandte Seiten
 
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider, CSS
-- [Authentik Betrieb](./betrieb.md) -- Recovery, Breakglass, Alerting-Kette
+- [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
+- [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
+- [Authentik Betrieb](./betrieb.md) -- Alerting-Kette, Rotation, Performance
 - [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking als erste Middleware-Stufe
