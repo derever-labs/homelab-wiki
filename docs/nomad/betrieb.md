@@ -78,6 +78,12 @@ Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart do
 `TaskState.Restarts` ist ein Lifetime-Counter pro Allokation und wird in Nomad nie zurückgesetzt (verifiziert im Source: keine `.Restarts = 0`-Treffer). Der `nomad-restart-storm-warn` Alert verwendet deshalb eine Delta-Query (`non_negative_difference(last("count")) > 5` über 10min mit `GROUP BY time(1m) fill(none)` und Reducer `sum`) statt direkter Schwelle auf den Counter. Sub-Route in `policies.yaml` streckt zusätzlich `repeat_interval` auf 168h (effektiv ~5d durch Alertmanager nflog-Cap), damit Trickle-Restart-Pattern nicht stündlich Telegram triggern.
 :::
 
+## Statische vs. dynamische Ports
+
+::: warning Port-Kollisionen vermeiden
+Die unter [Ports und Dienste](../_referenz/ports-und-dienste.md) gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinzufügen neuer statischer Ports diese Liste prüfen. Services hinter Traefik können alternativ dynamische Ports mit Consul Service Discovery nutzen. Einige Ports bleiben bewusst statisch, weil sie direkt adressiert werden -- etwa Ollama (`11434`, von mehreren AI-Jobs referenziert) und Jellyfin (`8096`, von externen Clients wie Infuse/Apple TV direkt angesprochen).
+:::
+
 ## Credentials
 
 Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
