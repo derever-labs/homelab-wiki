@@ -12,6 +12,8 @@ tags:
 
 Jellyfin ist der zentrale Medienserver für Filme und Serien. Er nutzt Intel QSV Hardware-Transcoding für 4K HDR-Streams und authentifiziert Benutzer direkt via LDAP gegen den Authentik LDAP Outpost.
 
+Die Referenz -- Hardware-Transcoding-Codecs, Storage-Mounts, Traefik-Routing und Wartungsbanner -- steht in der [Jellyfin Referenz](./referenz.md); die Betriebsprozeduren (LDAP-Authentifizierung, IPv6-Handling, täglicher Restart, Kurator-Playlists) in [Jellyfin Betrieb](./betrieb.md).
+
 ## Übersicht
 
 | Attribut | Wert |
@@ -51,125 +53,6 @@ JS -> ARR: Requests
 ARR -> NFS: Downloads
 ```
 
-## Hardware-Transcoding
-
-Jellyfin nutzt **Intel QuickSync (QSV)** über die Intel Iris Xe iGPU der MS-01 Hosts. Die iGPU wird per Full Passthrough von Proxmox an die Nomad-Client VMs durchgereicht (`/dev/dri/renderD128`). Beide Nodes (client-05/06) haben GPU-Zugriff, sodass Jellyfin auf jedem der beiden Nodes HW-Transcoding nutzen kann.
-
-### Konfiguration
-
-| Einstellung | Wert | Begründung |
-| :--- | :--- | :--- |
-| Hardware-Beschleunigung | Intel QuickSync (QSV) | Iris Xe, 96 EU, zwei MFX-Engines |
-| Decode | H.264, HEVC (8/10/12-bit), VP9, AV1 | Alle relevanten Quell-Codecs |
-| Encode | H.264 (h264_qsv) | HEVC-Encoding deaktiviert -- H.264 ist ~2x schneller und browser-kompatibler |
-| Tone Mapping | OpenCL (hable) | HDR10/HLG/DoVi → SDR. VPP deaktiviert wegen Regression-Bug in 10.11.x (Issue #15576) |
-| Low-Power Encoder | Aus (in UI) | Auf Alder Lake im Kernel automatisch aktiv |
-| Preset | fast | Guter Kompromiss aus Qualität und Speed |
-| Segment-Löschung | An | Verhindert unbegrenztes Cache-Wachstum |
-
-### Warum H.264 statt HEVC als Output
-
-HEVC-Encoding ist nur in Safari nativ abspielbar. H.264 funktioniert in allen Browsern, ist ~2x schneller beim Encoding, und bei 20 Mbps 1080p Zielbitrate ist der Qualitätsunterschied vernachlässigbar. Infuse/Apple TV nutzen Direct Play und sind nicht betroffen.
-
-### Performance
-
-Die Iris Xe schafft 10+ gleichzeitige 4K-Transcodes bei nahe null CPU-Last. Ein typischer 4K HDR HEVC → 1080p H.264 SDR Transcode läuft mit ~4-6x Echtzeit.
-
-### Bekannte Einschränkungen
-
-- **OpenCL Tone Mapping Bug (#15576):** In 10.11.x kann HDR-Content pixelig aussehen. Falls Artifacts auftreten: VPP testen oder auf 10.12.x warten.
-- **Seeking bei 4K:** Nach einem Sprung startet ein neuer Transcode -- das kann 2-3 Sekunden dauern bis der Buffer gefüllt ist.
-
-Transcode-Dateien und Caches werden auf dem lokalen `/tmp/jellyfin/`-Verzeichnis der VM abgelegt (nicht auf NFS), um die Schreiblast vom NAS fernzuhalten. Ein Prestart-Task im Nomad Job räumt bei jedem Start alte Caches auf.
-
-## Storage
-
-| Mount | Pfad im Container | Pfad auf Host | Typ |
-| :--- | :--- | :--- | :--- |
-| Config | `/config` | CSI Volume `jellyfin-config` | Linstor (DRBD-repliziert) |
-| Cache | `/config/cache` | `/tmp/jellyfin/cache` | Lokal (flüchtig) |
-| Transcodes | `/config/data/transcodes` | `/tmp/jellyfin/transcodes` | Lokal (flüchtig) |
-| Medienbibliothek | `/jellyfin` | `/nfs/jellyfin` | NFS ([NAS](../nas-storage/index.md)) |
-
-::: info Lokaler Cache
-Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt auf NFS. Das reduziert die Netzwerklast und verbessert die Transcoding-Performance erheblich.
-:::
-
-## Authentifizierung
-
-Jellyfin nutzt LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
-
-Der Bind-User ist `svc-jellyfin-ldap` (dedizierter Account, Typ `internal`). Dieser hat über die Rolle `ldap-searcher` die `search_full_directory`-Permission und kann das gesamte LDAP-Directory durchsuchen. Wer sich via LDAP anmelden darf, wird durch eine Expression-Policy auf der LDAP-Applikation gesteuert: nur Mitglieder der Gruppen `family` oder `guest` sind zugelassen.
-
-Der LDAP Provider nutzt **Cached Bind + Cached Search Mode**: Der erste Login pro User nach einem Outpost-Neustart durchläuft den vollen Authentik-Flow (~2s), alle weiteren Logins kommen aus dem Outpost-Memory (<5ms). Der LDAP-Provider verwendet einen eigenen minimalen Flow (`ldap-authentication-flow`) ohne MFA und GeoIP.
-
-::: tip Kein OAuth auf Traefik-Ebene
-Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.
-:::
-
-Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürliche Recovery-Sprungbrett. Stattdessen rendert die Jellyfin-Login-Maske unterhalb des Anmelde-Formulars einen "Passwort vergessen?"-Link, der auf den Authentik-Recovery-Flow zeigt -- konfiguriert über den Branding-Endpoint `LoginDisclaimer` und persistiert im CSI-Volume. Konzept und Diagramm: [Authentik Betrieb -- Recovery-Eingangspfade aus Apps](../authentik/betrieb.md#recovery-eingangspfade-aus-apps).
-
-## Traefik-Routing und Streaming-Bypass
-
-Vor Jellyfin laufen drei Traefik-Router nebeneinander:
-
-- **`jellyfin`** -- Default-Router für die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../banner/index.md) kommt nicht mehr aus dieser Chain, sondern über Jellyfins Custom-CSS (siehe unten).
-- **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
-- **`jellyfin-stream`** (Priority 100) -- alle binären oder streaming-ähnlichen Pfade. Chain bewusst kürzer: nur `crowdsec@file` und `secure-headers@file` -- **kein `error-pages`** (das würde sonst HTML in Binär-/Range-Antworten schreiben). Historisch lief hier auch kein `banner-inject`/`force-identity-encoding`; beide sind inzwischen global zurückgebaut.
-
-Hintergrund zum Stream-Router: Ursprünglich war der grössere Treiber `plugin-rewritebody` (= `banner-inject`), das die komplette Response pufferte -- bei multi-GB Videos und HLS-Segmenten zerstörte das `Content-Length` und blockierte `Range`-Requests (HTTP 206 Partial Content); Clients wie **Infuse** brachen mit "Ein Fehler ist aufgetreten -- Beim Laden des Inhaltes" ab. Seit dem `banner-inject`-Rueckbau bleibt als Grund für den Bypass `error-pages`, das keine HTML-Fehlerseiten in Binär-Streams schreiben darf.
-
-Die Stream-Bypass-Rule deckt folgende Pfad-Familien ab (Quelle: Jellyfin-Controller plus Praxiserfahrung):
-
-- `/Videos/*` -- Direct-Stream, HLS-Master/Variant/Segments, Trickplay, eingebettete Subtitles und Attachments
-- `/Audio/*` -- Direct, Universal-Audio (Transcode-Fallback), HLS
-- `/LiveRecordings/`, `/LiveStreamFiles/` -- LiveTV
-- `/Items/<id>/Download` und `/Items/<id>/File` -- vollständige Datei-Direktzugriffe
-- `/Providers/Subtitles/` -- Remote-Subtitle-Download
-- `/Playback/BitrateTest` -- bis 100 MB Zufalls-Bytes für Bandwidth-Estimation
-- `/FallbackFont/Fonts/` -- Font-Dateien für Subtitle-Rendering
-- `/websocket` -- sicherheitshalber, obwohl Traefik WebSockets üblicherweise transparent durchreicht
-
-Die Rule nutzt `PathRegexp` mit `(?i)`, weil Jellyfins ASP.NET-Routing case-insensitive matched, Traefik aber case-sensitive ist. Quelldatei: `media/jellyfin.nomad` im Repo `derever-labs/homelab-nomad-jobs`.
-
-::: info Was läuft durch die Default-Chain
-Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Items/{id}/PlaybackInfo`) und Poster-/Thumbnail-Bilder (`/Items/{id}/Images/*`) laufen durch die Default-Chain (`crowdsec`, `secure-headers`, `error-pages`). Der Wartungsbanner kommt hier nicht mehr aus der Chain, sondern über Jellyfins Custom-CSS (siehe nächster Abschnitt).
-:::
-
-## Wartungsbanner via Custom-CSS
-
-Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern über Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile lädt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollständige Mechanik und Pflege: [Wartungsbanner](../banner/index.md).
-
-Damit entfällt der ursprüngliche `banner-inject`-Grund des Streaming-Bypass oben -- die `plugin-rewritebody`-Pufferung berührt Jellyfin nicht mehr. Der Stream-Router bleibt trotzdem sinnvoll, weil er auch `error-pages` von binären Pfaden fernhält.
-
-## TMDb-Metadata ohne IPv6
-
-`api.themoviedb.org` antwortet dual-stack, die Homelab-VMs haben aber keine IPv6-Route nach aussen -- Jellyfins .NET-HttpClient lief dadurch via Happy-Eyeballs sporadisch in Timeouts. Frische Filme blieben beim Erstscan ohne Poster, weil der Fallback-Provider stattdessen ein Standbild aus der Video-Datei extrahierte. Die Env-Variable `DOTNET_SYSTEM_NET_DISABLEIPV6=1` im Job zwingt die Runtime strikt auf IPv4.
-
-## Täglicher Restart
-
-Ein periodischer Batch Job (`batch-jobs/daily_restart_jellyfin.nomad`) startet Jellyfin täglich um 05:00 Uhr neu, sofern keine aktiven Streams laufen. Das behebt Memory-Leaks und räumt temporäre Daten auf. Siehe [Batch Jobs](../_querschnitt/batch-jobs.md).
-
-## Private Kurator-Playlists
-
-Für persönliche Film-Kuratierung nutzt der Admin-Account zwei Playlists, die ausschliesslich in seinem Jellyfin-Profil sichtbar sind. Die Taxonomie lebt serverseitig in Radarr-Tags (`jf-cinema-a`, `jf-cinema-b`) -- die Mitgliedschaft wird von einem periodischen Nomad-Batchjob (`batch-jobs/jellyfin_adult_sync.nomad`) abgeglichen, der täglich um 04:15 Uhr nach dem Restart läuft.
-
-Der Job macht drei Dinge:
-
-1. Liest die beiden Radarr-Tags und matcht die TMDb-IDs gegen die Jellyfin-Movies-Library.
-2. Setzt für passende Items in der Jellyfin-SQLite-DB `OfficialRating='XXX'` plus granulares `LockedFields=[OfficialRating]` (damit Metadaten-Refreshes andere Felder frei aktualisieren können, das Rating aber nie überschrieben wird). Triggert danach einen Nomad-Alloc-Restart, damit Jellyfin den In-Memory-Cache neu lädt.
-3. Fügt fehlende Items in die beiden privaten Playlists ein.
-
-::: info Warum Radarr-Tags als Taxonomie-Quelle
-Die Kategorisierung lebt ausschliesslich serverseitig in Radarr-Tags und benötigt keine lokale Mapping-Datei. Zum Verschieben eines Films zwischen den beiden Playlists reicht es, in Radarr das Tag umzustellen -- der nächste Sync-Lauf zieht die Änderung automatisch nach.
-:::
-
-::: warning In-Memory-Cache-Quirk
-Direkte SQLite-Writes an der Jellyfin-DB werden vom laufenden Prozess **nicht** erkannt, bis ein Restart den In-Memory-Cache neu lädt. Deshalb triggert der Sync-Job nach jedem DB-Update explizit einen Nomad-Alloc-Restart und wartet, bis Playlists-API wieder antwortet, bevor er die Playlist-Items nachfährt. Für Änderungen ohne DB-Fix (nur Playlist-Pflege) ist kein Restart nötig.
-:::
-
-Secrets werden aus `kv/data/jellyfin-adult-sync` in Vault gelesen (Radarr-Key, Jellyfin-Key, Playlist-IDs, Nomad-Token).
-
 ## Beziehung zu Jellyseerr
 
 [Jellyseerr](../jellyseerr/index.md) ist das Wunschsystem für neue Medien. Benutzer (Familie, Gäste) können über `wish.ackermannprivat.ch` Filme und Serien anfordern. Jellyseerr prüft bei Jellyfin die Verfügbarkeit und leitet fehlende Medien an den Arr-Stack weiter.
@@ -190,6 +73,8 @@ Secrets werden aus `kv/data/jellyfin-adult-sync` in Vault gelesen (Radarr-Key, J
 
 ## Verwandte Seiten
 
+- [Jellyfin Referenz](./referenz.md) -- Transcoding, Storage, Traefik-Routing, Wartungsbanner
+- [Jellyfin Betrieb](./betrieb.md) -- Authentifizierung, IPv6, täglicher Restart, Kurator-Playlists
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
 - [Audiobookshelf](../audiobookshelf/index.md) -- Teilt die Bücher-Mediathek
