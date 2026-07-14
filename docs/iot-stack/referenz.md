@@ -50,10 +50,6 @@ Jeder Client hat einen eigenen Benutzer im Mosquitto `passwd`-File. Credentials 
 - **z2m** -- Zigbee2MQTT (Nomad-Container auf vm-nomad-client-06). Credentials werden per Nomad Template aus Vault (`kv/zigbee2mqtt`) als `ZIGBEE2MQTT_CONFIG_MQTT_USER` / `..._PASSWORD` env-vars in den Container injiziert. Kein Klartext in der `configuration.yaml`.
 - **homeassistant** -- Home Assistant (eigene VM, siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Credentials in `core.config_entries` (storage-file, nicht Vault -- HA läuft nicht auf Nomad).
 
-::: tip Vault als Single Source of Truth
-Der Mosquitto `passwd`-File wird als Nomad Template aus `kv/mosquitto` (Feld `passwd_content`) gerendert -- die PBKDF2-Hashes liegen nicht mehr im NFS-Klartext. Password-Rotation für z2m: (1) `kv/zigbee2mqtt` updaten, (2) neuen Hash in `kv/mosquitto.passwd_content` einfügen, (3) beide Jobs restarten. Mosquitto erhält automatisch SIGHUP zum Reload.
-:::
-
 ## Storage
 
 - **Config:** `/mosquitto/config/mosquitto.conf` -- Nomad Template (embedded im Job)
@@ -62,19 +58,19 @@ Der Mosquitto `passwd`-File wird als Nomad Template aus `kv/mosquitto` (Feld `pa
 
 Logs werden direkt auf stdout geschrieben und von Nomad eingesammelt -- kein separates Log-Volume nötig.
 
-::: tip Neue Benutzer hinzufügen
-1. `mosquitto_passwd` im laufenden Container nutzen (`docker exec ... mosquitto_passwd -c -b /tmp/x user password`), Hash-Zeile auslesen.
-2. `vault kv get kv/mosquitto` lesen, neue Zeile anhängen und `passwd_content` per `vault kv put kv/mosquitto` aktualisieren.
-3. `nomad alloc restart` auf Mosquitto -- Template wird neu gerendert, SIGHUP löst Reload aus.
-:::
-
 ## Netzwerk
 
 Mosquitto läuft im Bridge-Netzwerkmodus mit zwei statischen Ports (Protokolle und Consul-Service-Namen siehe [Ports und Dienste](../_referenz/ports-und-dienste.md)). Aufgelöst werden sie über `mosquitto.service.consul:1883` (MQTT) bzw. `mosquitto-websocket.service.consul:9001` (WebSocket).
 
+## Zigbee2MQTT-Konfiguration
+
+- **Zigbee-Kanal:** Kanal 25 ist konfiguriert, um Interferenzen mit dem 2.4-GHz-WLAN zu vermeiden.
+- **udev (read-only):** `/run/udev` im Container, auf Host `/run/udev` -- für USB-Adapter-Erkennung
+
 ## Verwandte Seiten
 
 - [IoT Stack](./index.md) -- Zigbee2MQTT und IoT-Architektur
+- [IoT Betrieb](./betrieb.md) -- Passthrough, Pairing, Backup, Rotation, Benutzeranlage
 - [DNS](../dns/) -- Consul DNS für `mosquitto.service.consul`
 - [Linstor](../linstor-storage/index.md) -- CSI Storage für Persistence-Daten
 - [NAS Storage](../nas-storage/) -- NFS für Zigbee2MQTT-Datenpfade
