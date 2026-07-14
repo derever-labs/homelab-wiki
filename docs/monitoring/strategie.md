@@ -33,136 +33,19 @@ Beide Cluster identisch aufgesetzt, aber unterschiedlich befüllt:
 - **Alloy -> Loki -> Grafana LogQL -> Webhook -> Keep**: Log-Pattern-Alerts. Beide Cluster aktiv. DCLab hat einen Self-Detection-Alert (`loki-ingester-down`), Homelab keinen
 - **Uptime-Kuma -> Webhook -> Keep**: Push-Heartbeats (cron-jobs), TCP/HTTP-Probes. Single-Notifier-Cleanup live in beiden Clustern
 - **Direct -> Webhook -> Keep**: synthetische Cron-Probes, Watchdog-Skripte
-- **CheckMK -> ??? -> Keep**: hier ist die Lücke. Kein Webhook-Notifier konfiguriert (siehe CheckMK-Inventar unten)
+- **CheckMK -> ??? -> Keep**: hier ist die Lücke. Kein Webhook-Notifier konfiguriert (Inventar-Details auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite)
 
 Single-Notifier-Konvention (Memory `project_monitoring_routing_2026_04`): jede Quelle = genau ein Webhook nach Keep. CheckMK verstösst aktuell strukturell.
 
-## 3. CheckMK DCLab Inventar
+## 3. CheckMK-Inventare
 
-- Site: `monitoring` (CCE), vm-checkmk = 10.180.46.95
-- Plugin-Katalog: ~2106 mitgelieferte Checks; Standard-Plugins für Linux/Windows-Agent, SNMP, Special-Agents
-- **Aktive Hosts** (organisiert in WATO-Folders):
-  - `dc-hslu/`: pve01 (renamed von `pve-00`), pve02, vm-checkmk, vm-pbs-00 (renamed von `pbs00`), vm-nomad-client-01/02/03, vm-nomad-server-01/02/03
-  - `dc-hslu/idrac/`: idrac-pve01 (10.180.46.241), idrac-pve02 (10.180.46.242) -- Redfish live, 58 Services pro Host
-  - `dc-hslu/storage/`: nas-01 (10.180.46.200), nas-02 (10.180.46.210), iar-nas-01 (10.180.50.200), iar-nas-02 (10.180.50.210) -- Synology SNMP live
-  - `dc-hslu/network/`: opnsense-primary (10.180.46.14), opnsense-secondary (10.180.46.15), opnsense-vip-wan (10.180.46.16), opnsense-vip-dns (10.180.46.33), switchlab01 (10.180.46.142), routerlab (10.180.46.140) -- alle ICMP-only Reachability live
-  - `dc-hslu/auth/`: vm-ad-ldap (10.180.46.235) -- ICMP-only (Windows-Agent + ad_replication noch ohne Agent-Daten)
-  - `dc-hslu/services/`: ubuntu-fog-new (10.180.46.223), vm-docker-host (10.180.46.31) -- als `cmk-agent` angelegt
-- **Aktive Special-Agents**: `proxmox_ve` für pve01 + pve02, `redfish` für iDRAC-Pair, `synology_health` (built-in via SNMP) für alle vier Synologys
-- **Aktive Standard-Agents**: `cmk_update_agent`, `mk_apt`, `mk_docker`, `mk_logins` über Linux-Hosts
-- **InfluxDB-Forwarder**: aktiv, Ziel `http://10.180.46.223:8086` Bucket `CheckMK` Org `HSLU-DC` über Connection `InfluxDB_connection_Juri` -- zielt auf Influx ausserhalb des Ops-Stacks (10.180.46.83), nicht im Single-Routing-Hub
-- **Notification-Konfig**: Mail-Default-Rule mit `{}`-Config (System-MTA), aber `vm-checkmk` hat keinen postfix installiert -- alle CheckMK-Notifications DCLab fallen ins Leere
-- **Mail-Empfänger**: contact `cmkadmin` ohne Mail-Adresse + Test-`automation` (notifications_enabled=False)
-- **Severity-Modell**: CheckMK Naemon-Kern (OK / WARN / CRIT / UNKNOWN), Mapping nach Keep braucht Webhook-Translator
-- **HA**: Single-Instance (vm-checkmk). Bei Site-Down: kein Failover, alle Hardware-/SNMP-Targets silent
-- **Disk**: knappes 33-GB-Volume auf vm-checkmk, wächst mit der RRD-Datenmenge
+Die vollständige Bestandsaufnahme beider CheckMK-Sites (DCLab und Homelab) -- Hosts, WATO-Struktur, Special- und Standard-Agents, InfluxDB-Forwarder, Notification-Konfig, Severity-Modell und HA-Status -- steht auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite. Kernpunkt für die Strategie: beide Sites sind Single-Instance ohne Failover, und der CheckMK->Keep-Webhook-Notifier fehlt in beiden Clustern.
 
-## 4. CheckMK Homelab Inventar
+## 4. Best-Path-Klassifikation
 
-- Site: `homelab` (CCE), checkmk = 10.0.2.150
-- Plugin-Katalog: ~2106 Checks identisch zu DCLab
-- **Aktive Hosts** (flache `all_hosts`-Liste):
-  - 6 Nomad-VMs: vm-nomad-server-04/05/06, vm-nomad-client-04/05/06
-  - 3 PVE-Hosts: pve00, pve01, pve02
-  - pve-01-nana (Tailscale 100.81.116.122) -- externer Watchdog Dottikon, ICMP-only
-  - 2 Synology-NAS: synology-nas (DS1825+ Homelab), nana-nas (DS1517+ Dottikon via Tailscale) -- SNMP live
-  - pbs-backup-server (10.0.2.50) -- als `cmk-agent` angelegt
-  - 2 DNS: lxc-dns-01 (10.0.2.1), lxc-dns-02 (10.0.2.2) -- als `cmk-agent` angelegt
-  - 2 Traefik: vm-traefik-01 (10.0.2.21), vm-traefik-02 (10.0.2.22) -- als `cmk-agent` angelegt
-  - traefik-vip (10.0.2.20), udm-pro (10.0.0.1) -- ICMP-only Reachability
-  - datacenter-manager (10.0.2.60), reddit-downloader (10.0.2.72) -- als `cmk-agent` angelegt
-  - homeassistant -- VM-Status-Host
-  - Container-Discovery-Einträge (~80 Einträge im Drift-Bereich)
-- **Aktive Special-Agents**: `proxmox_ve` für pve00/01/02, `synology_health` für beide NAS
-- **Aktive Standard-Agents**: identisch zu DCLab (`cmk_update_agent`, `mk_apt`, `mk_docker`, `mk_logins`)
-- **InfluxDB-Forwarder**: nicht aktiv (`influxdb_connections.mk` existiert nicht). Kein Forwarder zu Grafana-Ops
-- **Notification-Konfig**:
-  1. Telegram-Plugin `check_mk_telegram-notify.sh` mit hardcoded Token und Chat-ID -- bypasses Keep komplett, gegen Single-Notifier-Konvention
-  2. Mail-Plugin (Default-Rule)
-- **Postfix auf checkmk-VM**: `inet_interfaces = loopback-only`, kein Relayhost -- Mails verlassen die VM nicht
-- **Mail-Empfänger**: `cmkadmin` ohne email-Feld
-- **Severity-Modell**: identisch (OK/WARN/CRIT/UNKNOWN)
-- **HA**: Single-Instance (checkmk). Bei Site-Down: kein Failover
+Die kondensierte Best-Path-Sicht pro Coverage-Item (Item / Cluster / Layer / Coverage / Best-Path / Begründung) steht in [Monitoring: Best-Path-Klassifikation](klassifikation.md). Ist-Stand der Coverage siehe [Monitoring: Coverage](coverage.md).
 
-## 5. Klassifikations-Tabelle
-
-Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. Status laut Coverage-Audit (Ist-Stand siehe [Monitoring: Coverage](coverage.md)).
-
-| Item | Cluster | Layer | Coverage | Best-Path | Begründung |
-| --- | --- | --- | --- | --- | --- |
-| pve01 Hardware (R740) | DCLab | L1 | partial | CheckMK | Special-Agent `proxmox_ve` + Standard-Linux-Agent decken NVMe-SMART, PSU, Fan, Temp, RAM ab |
-| pve02 Hardware (R740) | DCLab | L1 | partial | CheckMK | gleicher Pfad -- `proxmox_ve` Special-Agent + mk_smartmon |
-| iDRAC pve01 | DCLab | L1 | live | CheckMK | Plugin `mk_redfish` Standard ab 2.3, ideal für iDRAC SEL/PSU/Fan/PCIe-Fatal -- live seit 2026-05-01 |
-| iDRAC pve02 | DCLab | L1 | live | CheckMK | gleicher Pfad |
-| nas-01 / nas-02 / iar-nas-01/02 (Synology) | DCLab | L1 | live | CheckMK | SNMP-Built-in `synology_*` Plugins seit 2026-05-01 |
-| USV DCLab | DCLab | L1 | missing | CheckMK | Plugin `mk_apc` (SNMP) -- USV-Plan offen |
-| Lab-PCs (15x HP Z2) | DCLab | L1 | missing | UK-Push | Heartbeat-Probes, Lab-PCs sind keine 24/7-Targets |
-| FOG-Imaging-Server | DCLab | L1 | partial | UK-Push + CheckMK | UK für HTTP-Probe, CheckMK für Disk-Volume + Linux-Standard-Agent |
-| Proxmox 2-Node Cluster | DCLab | L2 | missing | CheckMK | `proxmox_ve` Special-Agent + Cluster-Quorum-Check direkt |
-| ZFS rpool / rPoolHA | DCLab | L2 | missing | CheckMK | Plugin `zfsget` Standard, deckt ZED-Events + Pool-State + Scrub-Status ab |
-| ZFS-Replication 19 Jobs | DCLab | L2 | missing | CheckMK + Direct-Cron | Standard-Plugin gibt keine pve-spezifische Replication-Sicht -- `pvesr status`-Cron als Direct-Webhook ergänzt |
-| HA-Manager + Watchdog | DCLab | L2 | missing | Loki + Direct | ha-crm/watchdog-mux ist Log-Pattern-Job; CheckMK-Plugin existiert nicht out-of-box |
-| pve-firewall | DCLab | L2 | missing | CheckMK | mk_systemd reicht, P2 |
-| DRBD/Linstor 3-Node Cluster | DCLab | L3 | partial | Telegraf | App-Metriken via prom-Endpoint, CheckMK hat kein DRBD-Plugin out-of-box |
-| CSI-Health-Producer Script | DCLab | L3 | partial | Direct-Cron + Telegraf | App-spezifisch, kein CheckMK-Bedarf |
-| Linstor S3 Snapshot-Backup | DCLab | L3 | missing | UK-Push | Heartbeat-Pattern, UK-Stärke |
-| vm-pbs-00 Datastore | DCLab | L3 | partial | CheckMK | mk_apt + Linux-Standard reicht; PBS-Sync und Verify lokal logwatch |
-| OPNsense Primary | DCLab | L4 | partial | CheckMK | SNMP-Plugins decken CARP/Daemons/Interfaces ab. ICMP-Reachability live seit 2026-05-01, Service-Coverage offen (Lösungsweg: Community-MKP `scsitteam/checkmk_opnsense`) |
-| OPNsense Secondary | DCLab | L4 | partial | CheckMK | analog |
-| OPNsense CARP-VIPs | DCLab | L4 | partial | CheckMK ICMP + UK-Probe | Reachability live, DNS-/HTTP-Probe geplant |
-| Cloudflare-Tunnel | DCLab | L4 | partial | Loki + UK | Token-Expiry-Pattern aus Logs + externes UK-Probe |
-| Traefik | DCLab | L4 | partial | UK + Loki | bestehendes Pattern (kein CheckMK nötig) |
-| Lab-Switches | DCLab | L4 | partial | CheckMK | SNMP-Plugins für Switches sind CheckMK-Stärke. ICMP-Reachability live, SNMP geplant |
-| Nomad Cluster | DCLab | L5 | partial | Telegraf | `inputs.nomad` prom-scrape |
-| Consul Cluster | DCLab | L5 | partial | Telegraf | `inputs.consul` prom-scrape |
-| Vault Cluster | DCLab | L5 | missing | UK + Telegraf | Sealed-Probe via UK gegen `/sys/health`, prom-Metriken via Telegraf |
-| Postgres-DRBD | DCLab | L5 | partial | Telegraf | `inputs.postgresql_extensible` |
-| Authentik-Server | DCLab | L6 | missing | Telegraf + Loki + Direct | Heartbeat + LogQL + Connection-Storm-Threshold |
-| Authentik-Outposts | DCLab | L6 | missing | Telegraf | prom-scrape `authentik_outpost_connection`, P0 cluster-übergreifend |
-| AD-LDAP (vm-ad-ldap) | DCLab | L6 | partial | CheckMK + Direct | Standard-Windows-Agent + `ad_replication`-Plugin out-of-box; LDAP-Bind-Cron als Webhook (synthetisch). Host live seit 2026-05-01 als ICMP-only |
-| LE-Cert-Renewal (Traefik + ACME) | DCLab | L6 | missing | UK-Probe + Loki | Cert-Expiry via UK-HTTP-Probe (cert-days), acme-error via Loki-Pattern |
-| Vault-Audit-Log | DCLab | L6 | unknown | Direct-Cron + Loki | Status-Cron + Audit-Backend via Loki |
-| Cookie-Domain-Setting | DCLab | L6 | missing | Direct-Cron | 10-min-Drift-Cron, Cross-Cluster |
-| Loki / InfluxDB / Grafana / Telegraf / Alloy / Keep / CheckMK / UK Self DCLab | DCLab | L7 | partial | Telegraf + UK | absent + cardinality + volume-fill + extern-probe |
-| pve00 NVMe SMART + hwmon + Power-Loss | Homelab | L1 | missing | CheckMK | mk_smartmon Standard, lm_sensors via Standard-Agent |
-| pve01/02 NVMe SMART + hwmon + Power-Loss | Homelab | L1 | missing | CheckMK | gleicher Pfad |
-| pve-01-nana NVMe SMART + hwmon + Power-Loss | Homelab | L1 | missing | CheckMK | externer Watchdog-Host bekommt CheckMK-Agent |
-| USV (NUT/upsd) | Homelab | L1 | partial | CheckMK | mk_apc oder mk_nut Plugin -- Datenquelle definitiv klären |
-| synology-nas + nana-nas | Homelab | L1 | live | CheckMK | `synology_*` Built-in Plugins live seit 2026-05-01 |
-| proxmox-cluster-quorum | Homelab | L2 | partial | CheckMK | proxmox_ve Special-Agent (bereits aktiv) deckt Quorum + HA-Manager |
-| proxmox-watchdog-mux | Homelab | L2 | missing | Loki + Direct-Cron | softdog-Liveness via Log-Pattern + sysctl-Cron -- kein CheckMK-Plugin |
-| proxmox-zfs-rpool / scrub | Homelab | L2 | missing | CheckMK | zfsget-Plugin Standard |
-| proxmox-nfs-storage | Homelab | L2 | missing | CheckMK | mk_synology + df-Plugin auf NFS-Mounts |
-| proxmox-pveproxy-api | Homelab | L2 | missing | UK-Probe | HTTP-Probe :8006 |
-| proxmox-host-metrics | Homelab | L2 | missing | Telegraf (pve-Exporter) | App-Metrik-Sicht via Prom-Scrape -- ergänzend zu CheckMK Special-Agent |
-| Linstor-Cluster | Homelab | L3 | partial | Telegraf + Loki | App-Metriken |
-| Linstor-Backup-Pipeline | Homelab | L3 | partial | UK + Loki | Heartbeat + Errors-Pattern |
-| pbs-backup-server Datastore | Homelab | L3 | partial | CheckMK | Linux-Standard-Agent + df-Plugin -- dazu PBS-Logs via Loki. Host live seit 2026-05-01, Agent-Install ausstehend |
-| Garage S3 | Homelab | L3 | partial | Telegraf | /metrics Bearer-Token-Endpoint, Telegraf-Input pending |
-| CSI-Health-Files | Homelab | L3 | partial | Direct-Cron + Telegraf | bestehend |
-| Traefik (HA-Pair) | Homelab | L4 | partial | UK + Loki | bestehend, vm-traefik-01/02 als CheckMK-Host live seit 2026-05-01 |
-| Pi-hole HA + Unbound (lxc-dns-01/02) | Homelab | L4 | partial | CheckMK + Direct | Linux-Standard-Agent (FTL-Pattern via Loki); double-down + nebula-sync via Direct-Cron. Hosts als `cmk-agent` angelegt seit 2026-05-01 |
-| nebula-sync | Homelab | L4 | missing | UK-Push + Loki | Heartbeat + Sync-Failure-Pattern |
-| UDM Pro (UniFi Gateway) | Homelab | L4 | partial | CheckMK | SNMP-Plugins für Edge-Devices/UniFi sind CheckMK-Stärke. ICMP-Reachability live seit 2026-05-01 |
-| UniFi Switches | Homelab | L4 | missing | CheckMK | gleicher Pfad -- SNMP + Syslog-Sender |
-| CrowdSec Container | Homelab | L4 | partial | Direct + Loki | Container-Up via Direct-Cron, Bouncer-Last-Pull via Loki -- kein CheckMK-Bedarf |
-| Tailscale-Mesh | Homelab | L4 | missing | Direct-Cron | tailscale status -json via Cron |
-| Cloudflare DDNS x2 | Homelab | L4 | partial | Loki + Direct | Pattern + IP-Vergleich-Cron |
-| Keepalived (VRRP) | Homelab | L4 | live | Direct | bestehend |
-| Internet-Reachability | Homelab | L4 | missing | UK-Probe | Uptime-Kuma-Probes |
-| Nomad / Consul / Vault Cluster | Homelab | L5 | partial | Telegraf | inputs.nomad / consul / Sealed-Probe |
-| Postgres (DRBD Single) | Homelab | L5 | partial | Telegraf | inputs.postgresql |
-| Authentik Server + Outposts | Homelab | L6 | partial | Telegraf + Loki + UK | bestehend, identisch DCLab |
-| OpenLDAP | Homelab | L6 | missing | Direct-Cron | BIND-Test-Cron via ldapsearch -- CheckMK scheidet aus, weil `agent_ldap` nur in der Plus-Edition verfügbar ist |
-| LE-Cert ackermannprivat.ch / ackermann.systems | Homelab | L6 | missing | UK-Probe | Cert-Days |
-| Vault Audit Backend / Sealed-State | Homelab | L6 | partial | Direct-Cron + UK-Probe | Audit-File-Watch + sys/health |
-| Tailscale Cross-Tailnet | Homelab | L6 | missing | Direct-Cron | Member-Diff-Cron |
-| Loki / InfluxDB / Grafana / Telegraf / Alloy / Keep / CheckMK / UK Self Homelab | Homelab | L7 | partial | Telegraf + UK | absent + cardinality + volume-fill + extern-probe |
-| External Watchdog Platform pve-01-nana | Homelab | L7 | partial | Direct | Stack-Deployment ausstehend [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
-
-Die vollständige Item-Tabelle steht in [Monitoring: Coverage](coverage.md) -- diese Sektion ist die kondensierte Best-Path-Sicht.
-
-## 6. Trade-Off-Analyse und Risiken
+## 5. Trade-Off-Analyse und Risiken
 
 Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 
@@ -177,7 +60,7 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 - **Token-Security**: Homelab `notifications.mk` hat hardcoded Telegram-Token in einer Repo-tauglichen Datei, der bei Site-Backup oder Cluster-Migration mitgesichert wird -- gegen die 1Password-Konvention. Mitigation: nach der CheckMK->Keep-Migration entfernen
 - **Doppel-Coverage Telegraf+CheckMK**: pve-Exporter (Telegraf) + `proxmox_ve` Special-Agent (CheckMK) liefern beide Proxmox-Daten. Akzeptiert wegen unterschiedlicher Detail-Tiefe, Risiko zweier Alert-Pfade für dasselbe Problem. Mitigation: Alert-Rules in Telegraf nur für Counter/Rates, in CheckMK nur für State/Health
 
-## 7. Empfehlung -- Pfad-Zuordnung
+## 6. Empfehlung -- Pfad-Zuordnung
 
 ### CheckMK übernimmt (P0-Liste)
 
@@ -249,6 +132,8 @@ Die `mail`-Default-Notification-Rule ist in beiden Clustern ohne MTA funktional 
 ## Verwandte Seiten
 
 - [Monitoring](index.md) -- Komponenten-Übersicht
+- [Monitoring: Best-Path-Klassifikation](klassifikation.md) -- Best-Path pro Coverage-Item
+- [CheckMK](../checkmk/index.md) -- Host-Level-Monitoring inkl. Cluster-Inventar beider Sites
 - [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
 - [Monitoring: CheckMK Discovery-Policy](checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
 - [Monitoring: Keep-Correlations](keep-correlations.md) -- Correlation-Patterns für Keep
