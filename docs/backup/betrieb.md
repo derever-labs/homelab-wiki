@@ -59,7 +59,7 @@ Das Archiv enthält das native InfluxDB-Backup-Format (bolt, sqlite, TSM-Shards)
 Der Drill validiert die Wiederherstellbarkeit: Archiv entschlüsseln, entpacken und mit `influx restore --full` in einen Wegwerf-Container `influxdb:2` einspielen. Die Restore-Prozedur steht im Runbook `docs/runbooks/backup-restore.md`.
 
 ::: warning --full überschreibt den Operator-Token
-`influx restore --full` ersetzt die gesamte KV-Datenbank inklusive Auth-Tokens. Nach dem Restore gelten die Produktions-Tokens — der `<temp-token>` aus der Container-Initialisierung ist ungültig. Health-Check ohne Token: `curl http://localhost:8086/health` → `status: pass`.
+`influx restore --full` ersetzt die gesamte KV-Datenbank inklusive Auth-Tokens. Nach dem Restore gelten die Produktions-Tokens — der bei der Container-Initialisierung gesetzte temporäre Admin-Token ist ungültig. Health-Check ohne Token: `curl http://localhost:8086/health` → `status: pass`.
 
 Für eine reine Bucket-Validierung ohne `--full` einen Teilrestore per `--bucket` verwenden (kein Token-Ersatz).
 :::
