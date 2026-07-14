@@ -65,9 +65,7 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 
 ## Nomad Jobs -- Statische Ports
 
-::: warning Port-Kollisionen vermeiden
-Alle hier gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinzufügen neuer statischer Ports diese Liste prüfen. Services hinter Traefik können alternativ dynamische Ports mit Consul Service Discovery nutzen. Einige Ports bleiben bewusst statisch, weil sie direkt adressiert werden -- etwa Ollama (`11434`, von mehreren AI-Jobs referenziert) und Jellyfin (`8096`, von externen Clients wie Infuse/Apple TV direkt angesprochen).
-:::
+Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln siehe [Nomad Betrieb](../nomad/betrieb.md#statische-vs-dynamische-ports).
 
 ### Datenbanken und Infrastruktur
 
