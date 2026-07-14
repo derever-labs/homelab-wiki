@@ -187,10 +187,7 @@ Zwei unabhängige Datenquellen laufen nebeneinander:
 Wird ein Inserat inaktiv, bleibt der verknüpfte `project_unit.status` unverändert. `project.status = completed` heisst "Bau fertig", nicht "vollvermietet". Die Ground Truth auf Unit-Ebene muss über die Projekt-Websites nachgezogen werden.
 :::
 
-### Status-Werte
-
-`project_unit.status`: `planned`, `available`, `reserved`, `rented`, `sold`.
-`project.status`: `planning`, `construction`, `completed`, `established`.
+Die zulässigen Werte für `project_unit.status` und `project.status` stehen in der [Referenz](./referenz.md#status-werte).
 
 ### Etappen via `parent_project_id`
 
@@ -200,25 +197,7 @@ Mehrstufige Projekte werden als Parent mit Kindern modelliert; die Detailseite z
 
 Die Routes `/firmen`, `/firmen/[id]`, `/personen` und `/personen/[id]` bilden beteiligte Firmen und Personen ab, bidirektional mit Projekten verknüpft. Auslöser war die Tiefenrecherche zum Furter-Areal in Dottikon: Die textuellen `developer`/`architect`/`general_contractor`-Felder pro Projekt skalieren nicht, weil eine Firma in mehreren Projekten auftaucht und eine Person mehrere Firmen-Mandate hält. Der eigentliche Recherche-Wert ist die Netzwerk-Analyse -- wer sitzt mit wem im Verwaltungsrat. Mit `company`- und `person`-Entitäten lassen sich diese Beziehungen sauber abbilden und auf eigenen Detailseiten visualisieren.
 
-### Relationen-Datenmodell
-
-Sieben Tabellen in `src/lib/server/db/schema.ts` ergänzen das Listing-/Projekt-Schema:
-
-- **`company`** -- Stammdaten einer Firma (Name, Slug, UID, Kategorie, Adresse, Gründungsjahr, optionale `parent_company_id`).
-- **`company_source`** -- Quellen-URLs pro Firma (Moneyhouse, Zefix, eigene Website, Presse).
-- **`person`** -- Personen mit Name, Slug, Beschreibung. Nur Handelsregister-Öffentlichkeit, keine privaten Daten.
-- **`person_company`** -- Rolle einer Person in einer Firma mit optionalem Zeitraum.
-- **`project_company`** -- Rolle einer Firma in einem Projekt.
-- **`project_person`** -- direkte Personen-Referenz pro Projekt.
-- **`project_photo`** -- Projekt-Fotos ohne Umweg über `listing_photo`, kategorisiert nach Etappe, Typologie und Kategorie.
-
-::: info Freitext mit kuratierter Wertetabelle
-`company.category`, `person_company.role` und `project_company.role` sind `text`-Felder mit einer kuratierten Wertetabelle in `src/lib/constants/roles.ts`. Neue Werte kommen ohne Migration hinzu; unbekannte Werte werden mit einem Default-Badge gerendert, damit sie im UI sichtbar bleiben. Die `value`-Schlüssel sind die in der DB gespeicherten Enum-Werte und dürfen nicht "korrigiert" werden -- sonst fallen alle Rollen stumm auf "Andere" zurück.
-:::
-
-### Netzwerk-Diagramme
-
-Fünf D2-Diagramme in `src/lib/diagrams/` werden über `scripts/build-diagrams.sh` statisch zu SVG nach `static/diagrams/` gerendert und als Bild eingebunden -- das vermeidet Client-seitiges Rendering. Sie zeigen die Furter-/ffbk-Gruppe, die Schäfer-Gruppe, die Verflechtung zwischen beiden, einen Zeitstrahl über vier Generationen und die Etappen-Übersicht des Holzparks.
+Das Relationen-Datenmodell -- sieben Tabellen in `src/lib/server/db/schema.ts` -- und die Buildkette der Netzwerk-Diagramme stehen in der [Referenz](./referenz.md#relationen-datenmodell).
 
 ## Vermarktungsstart-Tracking
 
@@ -258,18 +237,10 @@ Die Photo-Route braucht eine höhere `priority` als die Host-basierten Default-R
 
 Auf dem Telefon trägt die Bottom-Leiste sechs Ziele: fünf Tabs (Home, Inserate, Favoriten, Karte, Projekte) und ein "Mehr"-Sheet. Das Sheet bündelt die sekundären Routen (Marktanalyse, Kandidaten, Firmen, Personen, About) -- die Marktanalyse ist mobil bewusst kein siebter Tab, sondern lebt im Sheet und als Kachel auf der Home-Seite. Der Vergleich sitzt als Icon-Button mit Zähler im Inserate-Header.
 
-## Betrieb: Schema und Deploy
-
-Schemaänderungen laufen über den Drizzle-Migrationsverlauf: `schema.ts` anpassen, `npm run db:generate`, die erzeugte SQL prüfen, dann `npm run db:migrate`. `drizzle-kit push` wird bewusst nicht gegen die Produktionsdatenbank gefahren -- es protokolliert nichts und entfernt, was es nicht kennt; genau daraus sind frühere stille Schema-Drifts entstanden.
-
-Vor dem Deploy greift ein CI-Gate: `lint` (prettier + eslint) und `check` (svelte-check) müssen grün sein, bevor der Nomad-Job neu ausgerollt wird.
-
-## Datenbank
-
-Die App nutzt die PostgreSQL-Datenbank `immo`, in der der DB-User `immo` volle Rechte hat. Verbindungsdaten, User und Vault-Pfad sind kanonisch in [Datenbanken](../_referenz/datenbanken.md) hinterlegt.
-
 ## Verwandte Seiten
 
+- [Immo Monitor Referenz](./referenz.md) -- Statuswerte, Relationen-Datenmodell und Netzwerk-Diagramme
+- [Immo Monitor Betrieb](./betrieb.md) -- Schema-Migration, Deploy-Gate und Datenbank
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Datenpipeline: Scraper, Enrichment, Foto-Download, Frühsignal-Ingest und DB-Schema
 - [NAS Storage](../nas-storage/index.md) -- NFS-Share für das Photo-Archiv
 - [Metabase](../metabase/index.md) -- alternatives BI-Dashboard auf denselben Daten
