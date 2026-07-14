@@ -11,6 +11,8 @@ tags:
 
 Der Monitoring Stack dient der Visualisierung von Metriken und der Überwachung der Service-Verfügbarkeit. Er bündelt mehrere Dienste für Metriken, Logs, Verfügbarkeit und Alert-Routing.
 
+Die Referenz-Tabellen (Alert-Regeln, Log-Quellen, Log-Levels) stehen in der [Monitoring Referenz](./referenz.md), die Betriebs-Prozeduren (Grafana-Admin, Silencing, Backup-Monitoring, Wartung) im [Monitoring Betrieb](./betrieb.md).
+
 ## Übersicht
 
 | Attribut | Wert |
@@ -62,38 +64,7 @@ Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-
 
 Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet nach Incident-Severity in drei Forum-Topics (Kritisch/Warnung/Info) über den batch-Bot. Details siehe [Keep](keep.md).
 
-**Metrik-basierte Alert Rules (InfluxDB):**
-
-| Rule | Bedingung | For | Severity |
-| :--- | :--- | :--- | :--- |
-| LVM Thin Pool > 75% | `data_percent > 75` | 5min | Warning |
-| LVM Thin Pool > 85% | `data_percent > 85` | 2min | Critical |
-| LVM Metadata > 75% | `metadata_percent > 75` | 5min | Warning |
-| DRBD Verbindung getrennt | `drbd_connection_state` nicht mehr `Connected` | 10min | Critical |
-| DRBD Replica Disk degradiert | `drbd_device_state` = `Failed` oder `Outdated` | 10min | Critical |
-| DRBD Node unbeabsichtigt Diskless | Replica ungewollt `Diskless` | 10min | Critical |
-| DRBD Degraded Replica | weniger als 2 Replicas `UpToDate` je Ressource | 5min | Critical |
-| DRBD Split-Brain | mehr als eine Replica `Primary` je Ressource | sofort | Critical |
-| CSI Stale Mounts | `csi_mounts.stale_count > 0` | 10min | Warning |
-| CSI-Plugin-Socket weg | `csi_plugin.socket_alive == 0` | 5min | Critical |
-| Nomad Restart-Storm | `non_negative_difference(nomad_alloc_restarts.count) > 5` in 10min (per Alloc) | 2min | Warning |
-| Nomad Reschedule-Storm | `nomad_job_health.failed_10m > 5` (per Job, Host) | 5min | Critical |
-
-Die DRBD-Überwachung ist seit 2026-07-05 zustandsbasiert: Alarmiert wird auf die One-Hot-kodierten Zustände von Verbindung, Disk und Rolle (`drbd_connection_state`, `drbd_device_state`, `drbd_resource_role`), nicht mehr auf Out-of-Sync-Bytes. Der frühere byteweise Out-of-Sync-Alarm wurde entfernt: Der periodische `drbd-verify` erzeugt auf aktiven Thin-LVM-Volumes systembedingt Out-of-Sync-Spikes, obwohl die Replica `UpToDate` ist -- jede Byte-Schwelle löste dabei falsch aus. Echte Degradierung deckt die zustandsbasierte Regel `DRBD Degraded Replica` ab.
-
-**Log-basierte Alert Rules (Loki):**
-
-| Rule | Bedingung | For | Severity |
-| :--- | :--- | :--- | :--- |
-| Failed SSH Logins | `>5 "Failed password" in 5min` | sofort | Warning |
-| Traefik 5xx Spike | `>20 HTTP-5xx in 5min` | sofort | Warning |
-| Nomad Alloc Failed | `"alloc failed" in 10min` | sofort | Critical |
-| Vault Permission Denied | `>10 "permission denied" in 5min` | sofort | Warning |
-| EXT4 Filesystem Error | `"EXT4-fs error" im Journal` | sofort | Critical |
-| Proxmox QMP Call Failed | `"qmp_call failed" bzw. "qmp command ... failed"` (Gast- und Host-Log) | sofort | Critical |
-| Out of Memory Killer | `"Out of memory: Kill" im Journal` | sofort | Critical |
-
-**Hinweis:** Die Alert-Annotations verwenden Grafana Template-Variablen (`$labels`, `$values`), die für Nomads Template-Engine escaped werden müssen (doppelte geschweifte Klammern in HCL-Templates).
+Die vollständigen metrik- und log-basierten Alert-Regel-Tabellen stehen in der [Monitoring Referenz](./referenz.md#alert-regeln).
 
 ### Alert-Routing-Pipeline
 
@@ -212,27 +183,7 @@ bot_batch -> homelab_alerts.info: "info / low"
 Keep korreliert eingehende Alerts zu **Incidents** (vier disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep.md), [Telegram-Bots](telegram-bots.md).
 :::
 
-### Admin-Zugang zur Grafana-HTTP-API
-
-Interner Admin-Zugang (ohne Authentik-ForwardAuth) läuft über einen Grafana Service Account mit Bearer-Token:
-
-- 1P-Item `Grafana API Claude` (Vault `PRIVAT Agent`) -- SA-Name `claude-automation`, Admin-Rolle, ewiges Token
-- Aufruf-Pfad: SSH-Tunnel auf einen Nomad-Client, Target ist `grafana.service.consul` mit dynamischem Nomad-Port aus dem Consul-Catalog
-- Authentik-Kette entfällt, solange der Tunnel direkt auf die Container-Adresse zielt
-
-Für GitOps-Deploys (Dashboards) existiert weiterhin der separate SA `gitops-dashboards`, dessen Token über Vault gezogen wird -- siehe [Deployment](#deployment).
-
-### Alerts silencen
-
-Silences werden über die Alertmanager-API gesetzt, nicht über die UI -- so bleibt die Silence-Historie im Git-Workflow nachvollziehbar und Silences sind scriptbar.
-
-- Endpoint: `POST /api/alertmanager/grafana/api/v2/silences`
-- Matcher nach `alertname` (mit `isRegex` für Pattern), Laufzeit per `startsAt`/`endsAt`, Grund ins `comment`-Feld mit ClickUp-Task-Referenz
-- Silence-ID in den ClickUp-Task schreiben, damit das Entfernen nach Fix zurückverfolgbar ist
-
-::: info Silence-Policy
-Silences müssen einen ClickUp-Task referenzieren und eine Laufzeit (14--30 Tage) haben. Ohne Laufzeit-Limit verlieren sich Silences im Noise. Wenn ein Silence ausläuft bevor die Ursache gefixt ist, erzeugt der erneute Alert den Druck, den Fix zu priorisieren.
-:::
+Der interne Admin-Zugang zur Grafana-HTTP-API (Service Account) und das Silencing von Alerts über die Alertmanager-API sind im [Monitoring Betrieb](./betrieb.md) beschrieben.
 
 ## Verfügbarkeits-Monitoring (Uptime Kuma)
 
@@ -242,14 +193,6 @@ Uptime Kuma ist seit dem Gatus-Rückbau (2026-06-10) die einzige Synthetic-Monit
 - **Flächenabdeckung** (Media, Productivity, AI, IoT, Apps) plus Push-Monitore für Batch-Jobs.
 
 Alle Monitore senden via Single-Notifier "Keep" mit Default Enabled; Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
-
-## Backup-Monitoring
-
-### Linstor Backup Monitor
-Ein separates Script (`/usr/local/bin/linstor-backup-monitor.sh`) prüft um 06:00 Uhr den Status der S3-Backups und meldet via Uptime Kuma Push.
-
-### PostgreSQL Backup
-Der Nomad Batch-Job `postgres-backup` führt täglich ein `pg_dumpall` durch und sichert auf NFS (`/nfs/backup/postgres/`). Status wird via Uptime Kuma Push gemeldet.
 
 ## Zentrales Logging (Loki + Alloy)
 
@@ -337,54 +280,14 @@ Alloy sammelt Logs aus allen Infrastruktur-Komponenten und leitet sie an Loki we
 - **Ansible-Rolle `alloy`** (systemd) auf Server-/Client-Nodes, Proxmox und Infra-VMs -- systemd-Journal plus optionale Datei-Targets.
 - **Standalone-Config (traefik-ha)** auf den Traefik-VMs -- Docker-Compose-Logs mit Source-Label `docker-compose`.
 
-Deployment-Details, Playbook-Tabelle, Label-Schema und Log-Query-Beispiele sind in [Grafana Alloy](./alloy.md) gepflegt. Die folgende Tabelle ist die SSOT für die Zuordnung Host -> Methode -> Source-Label.
+Deployment-Details, Playbook-Tabelle, Label-Schema und Log-Query-Beispiele sind in [Grafana Alloy](./alloy.md) gepflegt. Die SSOT für die Zuordnung Host -> Methode -> Source-Label ist die [Log-Quellen-Übersicht](./referenz.md#log-quellen) in der Referenz.
 
-### Übersicht aller Log-Quellen
-
-| Host / Gruppe | Methode | Source-Label |
-| :--- | :--- | :--- |
-| vm-nomad-client-04/05/06 | Nomad System-Job | -- (Container via `nomad_task`) |
-| vm-nomad-server-04/05/06 | Ansible (systemd) | `journal` |
-| vm-nomad-client-04/05/06 | Ansible (systemd) | `nomad-client` |
-| vm-traefik-01/02 | Standalone-Config (traefik-ha) | `docker-compose` |
-| pve00, pve01, pve02 | Ansible (systemd) | `proxmox` |
-| CheckMK | Ansible (systemd) | `checkmk` |
-| PBS | Ansible (systemd) | `pbs` |
-| Datacenter Manager | Ansible (systemd) | `datacenter-manager` |
-| lxc-dns-01/02 | Ansible (systemd) | `dns` |
-| Zigbee-Node | Ansible (systemd) | `iot` |
-| Vault Audit-Log (Server VMs) | Ansible (systemd) | `vault-audit` |
-| Synology NAS | Syslog → Alloy Receiver | `syslog` |
-| UniFi | Syslog → Alloy Receiver | `syslog` |
-
-### Log-Levels
-
-| Komponente | Log-Level | Konfigurationsort |
-| :--- | :--- | :--- |
-| Loki | `warn` | `monitoring/loki.nomad` |
-| Grafana | `info` | `monitoring/grafana.nomad` |
-| Nomad | `INFO` | `ansible/roles/nomad/defaults/main.yml` |
-| Consul | `WARN` | `ansible/roles/consul/defaults/main.yml` |
-| Vault | `INFO` | `ansible/roles/vault/defaults/main.yml` |
-| Authentik | `info` | `identity/authentik.nomad` |
-| Traefik (Core) | `WARN` | `traefik.yml.j2` |
-| Traefik (Access) | aktiv (JSON, stdout) | Filter: `statusCodes: 400-599` + `minDuration: 2s` + `retryAttempts`; Rotation via Docker-Log-Driver |
-
-LogQL-Beispiele für die Loki-Datasource (uid: `loki-logs`) sind in [Grafana Alloy](./alloy.md#logql-beispiele) gepflegt.
-
-## Wartung
-### Grafana Dashboards
-Dashboards sind als JSON unter `nomad-jobs/monitoring/grafana-dashboards/` im Git versioniert. Jeder Merge auf `main` triggert den Workflow `deploy-grafana-dashboards.yml`, der nur die geänderten Dashboards via API nach Grafana pusht. Rollbacks laufen über `git revert` -- der Workflow pushed die vorherige Version zurück. Manuelle UI-Änderungen gehen bis zum nächsten API-Push -- für dauerhafte Änderungen muss das JSON ins Git.
-
-::: tip Initial-Upload / force-all
-Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dashboards (ausser `_backup`/`_research`) einmal durchpusht. Wird nach grösseren Refactorings oder bei Neueinrichtung einer Grafana-Instanz genutzt.
-:::
-
-### InfluxDB Downsampling-Tasks
-6 Flux-Tasks in der InfluxDB-UI aggregieren Rohdaten in 1y- und 5y-Buckets (`telegraf`, `proxmox`, `homeassistant`). Source-of-Truth ist `nomad-jobs/monitoring/influxdb-tasks/` -- das README dort dokumentiert Task-IDs, Zeitpläne und den Import-Pfad in die UI. Jeder Task sendet einen Heartbeat an einen Uptime-Kuma Push-Monitor, sodass ein Task-Ausfall innert ~1h auffällt.
+Die Log-Level je Komponente listet die [Monitoring Referenz](./referenz.md#log-levels). Grafana-Admin, Silencing, Backup-Monitoring und die Wartung (Grafana Dashboards, InfluxDB Downsampling-Tasks) sind im [Monitoring Betrieb](./betrieb.md) beschrieben.
 
 ## Verwandte Seiten
 
+- [Monitoring Referenz](./referenz.md) -- Alert-Regeln, Log-Quellen und Log-Levels
+- [Monitoring Betrieb](./betrieb.md) -- Grafana-Admin, Silencing, Backup-Monitoring, Wartung
 - [Coverage](./coverage.md) -- Welcher Host und Service wird wie überwacht und was bewusst ausgelassen
 - [CheckMK Discovery-Policy](./checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
 - [Keep](./keep.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
