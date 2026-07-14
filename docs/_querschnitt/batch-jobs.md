@@ -2,7 +2,6 @@
 title: Batch Jobs
 description: Übersicht aller periodischen Nomad Jobs für Wartung, Backup, Monitoring und Updates
 tags:
-  - runbook
   - nomad
   - batch
   - wartung
