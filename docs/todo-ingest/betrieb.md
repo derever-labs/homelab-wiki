@@ -51,7 +51,7 @@ Die Erfassung hängt an einem signierten iOS-Kurzbefehl (Diktat Deutsch Schweiz,
 
 ## Daily Digest
 
-Der Dienst erstellt auf Abruf einen von Claude Opus formulierten Tagesüberblick: Headline zur Gesamtlage, "Heute zuerst" (Top-3), danach die vollständigen Sektionen Überfällig, Heute fällig, Diese Woche und Weitere offene, dazu die Termine von heute und morgen und der Systemstatus. Quellen sind die zwei persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks aller Workspaces (tiefer priorisiert, ausser dringend) und die vom Kurzbefehl mitgelieferten iPhone-Kalender. Ein Delta-Gedächtnis markiert "neu" und "seit N Tagen" überfällig. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
+Der Dienst erstellt auf Abruf einen geführten Tagesüberblick -- einen nummerierten Morgen-Flow statt einer flachen Aufgabenliste. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die vom Kurzbefehl mitgelieferten iPhone-Kalender; im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
 
 ```d2
 vars: {
@@ -89,7 +89,23 @@ KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
 - **Morgens:** das iPhone vom Ladegerät nehmen genügt. Als Wecker dient Sleep Cycle, dessen Alarm-Stopp iOS-Automationen nicht auslösen kann (der Trigger "Wecker wird gestoppt" feuert nur bei der nativen Uhr-App) -- darum ist das nächtliche Laden der Anker. Der Kurzbefehl "Daily Digest Morgen" schickt die Kalenderdaten mit, läuft nur zwischen 04:00 und 10:59 und öffnet kein Safari; der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Mehrfaches Ab- und Anstecken fängt das Server-Debounce (5 min) ab.
 - **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
 - **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** kein automatischer Digest, on-demand jederzeit möglich. Werktags ohne Digest bis 09:00 erinnert eine ntfy-Warnung daran, dass die Automation nicht gefeuert hat.
-- **Inhalt:** Headline mit Gesamtlage, "Heute zuerst" (Top 3), danach die vollständigen Sektionen überfällig, heute fällig, diese Woche und weitere offene. Der Kurzbefehl liefert die Termine der nächsten sieben Tage mit: angezeigt werden heute und morgen, der ganze Horizont fliesst in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant"). Unter dem Digest stehen Dauer, Token-Verbrauch und das API-Kostenäquivalent des Laufs.
+### Aufbau der Digest-Seite
+
+Die Seite führt in nummerierten Schritten durch den Morgen, statt alles Offene aufzulisten:
+
+1. **Kopf:** Headline zur Gesamtlage und eine Momentum-Zeile aus echten Erledigt-Abfragen -- gestern erledigt, erledigt in den rollenden sieben Tagen, aktuell offen (heute fällig plus überfällig).
+2. **Dein Tag:** Termine von heute und morgen sowie Geburtstage mit sieben Tagen Vorlauf. Der Kurzbefehl liefert die Termine der nächsten sieben Tage mit -- angezeigt werden heute und morgen, der ganze Horizont fliesst in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant").
+3. **Heute zuerst:** die höchstens drei Aufgaben, die zuerst drankommen, als Karten mit Aktions-Buttons.
+4. **Eine Entscheidung:** höchstens eine erzwungene Entscheidung (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
+5. **Fokus:** ein Overlay, das die offenen Top-3 einzeln und gross zeigt -- eine Aufgabe aufs Mal.
+
+Darunter steht ein aufklappbarer Ausblick (Rest von heute plus die Woche, mit denselben Aktionen) und eine ehrliche Zähler-Zeile für alles bewusst Ausgeblendete: überfällige, terminlose und tiefpriorisierte Aufgaben. Aufgaben mit tiefer Priorität erscheinen ausschliesslich als Zähler, nie als Karte oder Zeile. Ganz unten stehen Dauer, Token-Verbrauch und das API-Kostenäquivalent des Laufs sowie ein Verweis auf offene Rückfragen und fehlgeschlagene Diktate in der Inbox.
+
+### Anti-Tapete und Aktionen
+
+Damit der Digest nicht zur immer gleichen Tapete wird, zählt der Dienst pro Task, wie oft er prominent vorgeschlagen wurde -- höchstens einmal pro Kalendertag. Erreicht ein Task mit Priorität dringend oder hoch die Schwelle (`DIGEST_DECISION_MIN_SEEN`, Standard drei), ohne je angefasst worden zu sein, erzwingt der Digest genau eine Entscheidung: **Diese Woche erledigen** (Fälligkeit auf Freitag), **Umterminieren** (Fälligkeit plus zwei Wochen) oder **Streichen** (der Task wird mit Kommentar in ClickUp geschlossen).
+
+Alle Karten in "Heute zuerst" und im Ausblick tragen zusätzlich die Aktionen **Erledigt**, **Auf morgen** und **Nächste Woche**. Jede Aktion läuft über `POST /digest/action`, abgesichert über ein HMAC-Token pro Task und Aktion (dieselbe Mechanik wie die ntfy-Buttons, siehe [Exposition und Authentifizierung](./index.md#exposition-und-authentifizierung)) plus einen Abgleich gegen den aktuell gerenderten Digest; das Workspace-Token bleibt serverseitig. Ausgeführte Aktionen erscheinen im Digest abgehakt statt als offene Aufgabe.
 
 ### Einrichtung der Morgen-Automation
 
