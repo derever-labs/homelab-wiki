@@ -42,27 +42,56 @@ akzeptiert.
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: down
 
 classes: {
-  node: { style.border-radius: 8 }
-  data: { shape: cylinder; style.border-radius: 8 }
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-Volume: "Linstor-CSI Volume\nzot-data (150 GB)\nDRBD 3-Replica" { class: data }
-Zot: "Zot\nzot.service.consul:5000\n(Service Job, 1 Alloc)" { class: node }
-Cache: "Pull-Through Cache\nDocker Hub, ghcr.io, quay.io" { class: node }
-Mirror: "daemon.json registry-mirrors\nAlle Nodes zu zot.service.consul:5000" { class: node }
+Consumers: Konsumenten {
+  class: container
 
-Volume -> Zot
-Zot -> Cache
-Mirror -> Zot
+  Nodes: "Nomad-Nodes\n(docker pull)" {
+    class: node
+    tooltip: "Job-Files referenzieren zot.service.consul:5000 explizit | daemon.json registry-mirrors nur als Fallback für Kurz-Referenzen"
+  }
+  CI: "CI-Pipelines\n(User ci-push)" {
+    class: node
+    tooltip: "GitHub Actions -- einziger autorisierter Push-Pfad"
+  }
+}
+
+Zot: "Zot Registry\nzot.service.consul:5000" {
+  class: node
+  tooltip: "Nomad Service Job, 1 Alloc | htpasswd-Auth, anonymes Lesen erlaubt | BoltDB embedded"
+}
+
+Volume: "Linstor-CSI Volume\nzot-data" {
+  shape: cylinder
+  tooltip: "DRBD 3-Replica -- Blobs und BoltDB MetaDB, folgt dem Alloc via CSI"
+}
+
+Upstream: Upstream-Registries {
+  class: container
+
+  Hub: Docker Hub { class: node }
+  GHCR: ghcr.io { class: node }
+  Quay: quay.io { class: node }
+}
+
+Consumers.Nodes -> Zot: "pull" { style.stroke: "#2563eb" }
+Consumers.CI -> Zot: "push (eigene Images)" { style.stroke: "#16a34a" }
+Zot -> Volume: "Blobs + Metadaten" { style.stroke: "#854d0e" }
+Zot -> Upstream: "Pull-Through: on-demand Sync" {
+  style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+}
+Consumers.Nodes -> Upstream: "Bootstrap-Klasse: Direkt-Pull" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+  tooltip: "ZOT, Keep und Uptime-Kuma pullen bewusst am Cache vorbei, um bei Zot-Ausfall startfähig zu bleiben"
+}
 ```
 
 **Eigenschaften:**

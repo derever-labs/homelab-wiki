@@ -49,13 +49,6 @@ Die `deploy-nomad-jobs.yml`-Pipeline nutzt die Vault Nomad Secret Engine statt e
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: {
     style: {

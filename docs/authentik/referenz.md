@@ -75,13 +75,6 @@ Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der ers
 Der Pfad vom Browser bis zur Jellyfin-Session mit Cache-Entscheidung (Hit vs. Miss) und den API-Roundtrips im Outpost:
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
 classes: {

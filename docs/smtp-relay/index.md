@@ -26,26 +26,51 @@ Zentraler SMTP-Relay für das gesamte Homelab. Nimmt Mails von internen Nodes un
 ```d2
 direction: down
 
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+}
+
 Infra: Infrastruktur-Nodes {
-  style.stroke-dash: 4
-  PVE: PVE / PBS / CheckMK (Postfix Satellite)
+  class: container
+
+  PVE: "PVE / PBS / CheckMK\n(Postfix Satellite)" {
+    class: node
+    tooltip: "Ansible-Role postfix-relay -- lokaler Postfix leitet an den Relay weiter"
+  }
 }
 
 Services: Nomad Services {
-  style.stroke-dash: 4
-  VW: Vaultwarden
-  KC: Keycloak
-  PL: Paperless
+  class: container
+
+  AK: Authentik {
+    class: node
+    tooltip: "Recovery-Mails und Benachrichtigungen"
+  }
+  VW: Vaultwarden {
+    class: node
+    tooltip: "Einladungen und Master-Password-Hints"
+  }
+  PL: Paperless {
+    class: node
+  }
 }
 
-SMTP: smtp-relay (Nomad Job) { tooltip: "boky/postfix, 10.0.2.0/24 ohne Auth" }
-EXT: mail.netzone.ch { tooltip: "Port 587" }
+SMTP: smtp-relay (Nomad Job) {
+  class: node
+  tooltip: "boky/postfix | nimmt nur 10.0.2.0/24 ohne Auth an | Sender-Rewrite auf services@ackermann.systems"
+}
 
-Infra.PVE -> SMTP: smtp.service.consul:25
+EXT: mail.netzone.ch {
+  class: node
+  tooltip: "Upstream-Smarthost Port 587"
+}
+
+Infra.PVE -> SMTP: "smtp.service.consul:25"
+Services.AK -> SMTP
 Services.VW -> SMTP
-Services.KC -> SMTP
 Services.PL -> SMTP
-SMTP -> EXT: TLS + SASL Auth
+SMTP -> EXT: "TLS + SASL Auth"
 ```
 
 ## Konfiguration
