@@ -25,13 +25,6 @@ Keep ist der zentrale Incident-Hub im Homelab. Alle Alert-Quellen (Grafana, Upti
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   svc: { style: { border-radius: 8 } }
   layer: { style: { border-radius: 8; stroke-dash: 4 } }
@@ -158,13 +151,6 @@ Wenn Keep selbst tot ist, geht jeder Alert verloren. Zwei Keep-**unabhängige** 
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   svc: { style: { border-radius: 8 } }
   watch: { style: { border-radius: 8; stroke-dash: 2 } }
@@ -173,11 +159,14 @@ classes: {
 
 keep: Keep\n(Postgres) { class: svc }
 
-dms: keep-heartbeat-watch\n(Dead-Man-Switch, alle 3 min) { class: watch; tooltip: "Kuma-Heartbeat + stale-firing-Digest" }
+dms: keep-heartbeat-watch\n(Dead-Man-Switch) {
+  class: watch
+  tooltip: "prüft Keep-API und pusht Kuma-Heartbeat"
+}
 
 kuma: Uptime-Kuma-Watchdog-Tier {
   class: watch
-  m84: in-cluster\nMonitor keep-heartbeat { class: watch }
+  m84: in-cluster (MariaDB)\nMonitor keep-heartbeat { class: watch }
   home: wd-home (LXC) { class: watch }
   nana: wd-nana (Dottikon) { class: watch }
 }
@@ -185,9 +174,10 @@ kuma: Uptime-Kuma-Watchdog-Tier {
 batch: batch-Bot { class: svc }
 krit: Kritisch-Topic (25009) { class: sink }
 
-keep -> dms: "Heartbeat-Push"
-dms -> batch: "bei Fehler/Stille"
-kuma.m84 -> batch
+dms -> keep: "prüft API\n(stale-firing Incidents)"
+dms -> kuma.m84: Heartbeat-Push
+dms -> batch: bei Fehler / Stille
+kuma.m84 -> batch: Heartbeat ausgeblieben
 kuma.home -> batch
 kuma.nana -> batch
 batch -> krit: "Kuma-Watchdog\n+ Uptime-Link"

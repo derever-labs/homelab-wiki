@@ -24,34 +24,30 @@ Die APC USV versorgt das gesamte Homelab (Proxmox-Hosts, Netzwerk, NAS) bei Stro
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
-USV: "APC USV" { style.border-radius: 8 }
-NMC: "Network Management Card" { style.border-radius: 8 }
-NUT: "NUT Server (systemd auf PVE Master)" { style.border-radius: 8 }
-SLAVE1: "PVE Slave 1 (upsmon)" { style.border-radius: 8 }
-SLAVE2: "PVE Slave 2 (upsmon)" { style.border-radius: 8 }
-TEL: "Telegraf (Nomad Job)" { style.border-radius: 8 }
-INFLUX: InfluxDB { style.border-radius: 8 }
-GRAF: Grafana { style.border-radius: 8 }
-TG: Telegram { style.border-radius: 8 }
+classes: {
+  node: { style: { border-radius: 8 } }
+  db: { shape: cylinder }
+}
 
-USV -> NMC: Strom
-NMC -> NUT: "SNMP UDP 161"
-NUT -> SLAVE1: "NUT Protocol TCP 3493"
-NUT -> SLAVE2: "NUT Protocol TCP 3493"
-NUT -> TEL: "NUT Protocol TCP 3493"
-NUT -> TG: NOTIFYCMD
-TEL -> INFLUX
-INFLUX -> GRAF
-GRAF -> TG: "Alert Rules"
+usv: "APC USV\n(NMC-Karte)" { class: node }
+nut: "NUT-Server\n(systemd auf PVE-Master)" { class: node }
+slaves: "PVE-Slaves\n(upsmon)" { class: node }
+tel: "Telegraf\n(Nomad-Job)" { class: node }
+influx: InfluxDB { class: db }
+graf: Grafana { class: node }
+keep: Keep { class: node }
+tg: Telegram { class: node }
+
+usv -> nut: "SNMP UDP 161"
+nut -> slaves: "NUT-Protokoll TCP 3493"
+nut -> tel: "NUT-Protokoll TCP 3493"
+nut -> tg: "NOTIFYCMD\n(ups-notify.sh)"
+tel -> influx: inputs.upsd
+influx -> graf
+graf -> keep: "Alert-Rules\n(Webhook)"
+keep -> tg: Severity-Topic
 ```
 
 ::: warning NUT muss auf dem PVE-Host laufen
@@ -61,13 +57,6 @@ NUT darf nicht als Nomad-Container betrieben werden. Bei einem Shutdown fährt P
 ## Shutdown-Ablauf
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
 classes: {
@@ -97,7 +86,7 @@ lowbatt: 2. Kritischer Batteriestand {
 slaves: 3. Slaves herunterfahren {
   class: phase
   direction: down
-  cmd: "NUT Master sendet SHUTDOWN\nan PVE Slave 1 + 2" { class: nut }
+  cmd: "NUT-Master sendet SHUTDOWN\nan die PVE-Slaves" { class: nut }
   vms: "Slaves stoppen\nVMs/CTs" { class: slave }
   halt: "Slaves fahren\nHost herunter" { class: slave }
   cmd -> vms -> halt
@@ -163,6 +152,8 @@ Auf jedem Host sendet `/usr/local/bin/ups-notify.sh` Telegram-Nachrichten bei US
 | Laufzeit < 5 min | battery_runtime < 300s | sofort | Critical |
 | Batterie ersetzen | replace_indicator > 1 | 5 min | Warning |
 | USV nicht erreichbar | keine Daten | 2 min | Critical |
+
+Die Rules melden wie alle metrikbasierten Alerts per Webhook an [Keep](../monitoring/keep.md), das nach Severity ins Telegram-Topic routet.
 
 ::: tip Alerts auf Laufzeit, nicht Prozent
 Alerts basieren auf der verbleibenden Laufzeit in Sekunden statt auf Batterie-Prozent. 20% einer degradierten Batterie können nur 30 Sekunden bedeuten.

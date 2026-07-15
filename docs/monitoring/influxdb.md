@@ -25,40 +25,42 @@ InfluxDB ist das zentrale Zeitreihen-Backend des Homelab. Telegraf läuft als zw
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
-Sources: Quellen {
-  style.stroke-dash: 4
-  CheckMK: "CheckMK (Site homelab)\ninkl. NAS via SNMPv3"
-  Nomad: "Nomad (6 Nodes)\n(Prometheus)"
-  Linstor: "Linstor\n(Prometheus)"
-  DRBD: "DRBD Reactor\n(Prometheus)"
-  Proxmox: "Proxmox (3 Hosts)"
+classes: {
+  svc: { style: { border-radius: 8 } }
+  agent: { style: { border-radius: 8; stroke-dash: 2 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  db: { shape: cylinder }
 }
 
-NodeCron: "Node-Crons (Worker)\ncsi/lvm/nomad-health\n-> /var/lib/csi-metrics" { style.border-radius: 8 }
-TELHOST: "Telegraf-Host-Agent\n(je Node, lokal)" { style.border-radius: 8 }
-TEL: "Telegraf\n(Nomad Job)" { style.border-radius: 8 }
-INFLUX: "InfluxDB" { shape: cylinder }
-GRAF: Grafana { style.border-radius: 8 }
+sources: Quellen {
+  class: container
+  checkmk: "CheckMK (Site homelab)\ninkl. NAS via SNMPv3" { class: svc }
+  nomad: "Nomad Clients + Server\n(Prometheus)" { class: svc }
+  linstor: "Linstor\n(Prometheus)" { class: svc }
+  drbd: "DRBD Reactor\n(Prometheus)" { class: svc }
+  proxmox: Proxmox-Hosts { class: svc }
+  media: "Jellyfin / Radarr / Sonarr\n(exec + file)" { class: svc }
+}
 
-Sources.Nomad -> TEL
-Sources.Linstor -> TEL
-Sources.DRBD -> TEL
-Sources.CheckMK -> INFLUX: Forwarder
-Sources.Proxmox -> INFLUX: direkt (nativ)
+nodecron: "Node-Crons (Worker)\ncsi/lvm/nomad-health" { class: agent }
+telhost: "Telegraf-Host-Agent\n(je Node, lokal)" { class: agent }
+tel: "Telegraf\n(Nomad-Job)" { class: agent }
+influx: InfluxDB { class: db }
+graf: Grafana { class: svc }
 
-NodeCron -> TELHOST: File-Input (lokal, NFS-frei)
-TELHOST -> INFLUX: "Bucket telegraf\n(+ telegraf-host)"
-TEL -> INFLUX
-INFLUX -> GRAF
+sources.nomad -> tel: scrape
+sources.linstor -> tel: scrape
+sources.drbd -> tel: scrape
+sources.media -> tel: exec / file
+sources.checkmk -> influx: Forwarder
+sources.proxmox -> influx: direkt (nativ)
+
+nodecron -> telhost: File-Input (lokal, NFS-frei)
+telhost -> influx: "Bucket telegraf\n(+ telegraf-host)"
+tel -> influx
+influx -> graf
 ```
 
 ## Rolle im Stack

@@ -34,40 +34,36 @@ Bis 2026-06-05 fragte der zentrale Telegraf-Nomad-Job das NAS parallel via SNMPv
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-classes: {
-  node: {
-    style: {
-      border-radius: 8
-    }
-  }
-}
-
 direction: right
 
-NAS: Synology NAS
-CMK: "CheckMK\n(Site homelab)"
-TEL_LOCAL: "Telegraf lokal\n(Docker auf NAS)"
-BENCH: "Storage-Benchmark\n(DSM-Aufgabenplaner)"
-INFLUX: InfluxDB { shape: cylinder }
-GRAF: Grafana
-KEEP: Keep
-TG: Telegram
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  db: { shape: cylinder }
+}
 
-NAS -> CMK: "SNMPv3\nUDP 161"
-CMK -> INFLUX: Forwarder
-TEL_LOCAL -> TEL_LOCAL: "Exec Scripts\n(diskio, services, jobs)"
-TEL_LOCAL -> INFLUX: Consul DNS
-BENCH -> INFLUX: "fio, mdstat, iostat"
-INFLUX -> GRAF
-CMK -> KEEP: Notification
-KEEP -> TG: "Severity-Topic"
+nas: Synology NAS {
+  class: container
+  tel: "Telegraf lokal\n(Docker-Container)" {
+    class: node
+    tooltip: "diskio, nas_background_jobs, nfs_server_threads, cpu/mem/system/net"
+  }
+  bench: "Storage-Benchmark\n(DSM-Aufgabenplaner)" { class: node }
+}
+
+cmk: "CheckMK\n(Site homelab)" { class: node }
+influx: InfluxDB { class: db }
+graf: Grafana { class: node }
+keep: Keep { class: node }
+tg: Telegram { class: node }
+
+nas -> cmk: "SNMPv3\nUDP 161"
+cmk -> influx: "Forwarder\n(Service-Metriken)"
+nas.tel -> influx: "diskio / Jobs / NFS"
+nas.bench -> influx: "fio / mdstat / iostat"
+influx -> graf
+cmk -> keep: Notification
+keep -> tg: Severity-Topic
 ```
 
 ## Datenquellen
