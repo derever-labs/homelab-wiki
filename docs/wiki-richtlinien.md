@@ -22,7 +22,7 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - Konzeptionelle Erklärungen (wie Komponenten zusammenspielen)
 - Tabellen mit Übersichtsdaten (Hosts, IPs, Services, URLs)
 - D2-Diagramme für Architektur und Datenflüsse
-- Runbooks mit knappen Schritt-Beschreibungen
+- DR- und Notfall-Runbooks (Cold-Start, Cluster-Restart, Backup-Restore, Split-Brain) mit knappen Schritten -- Routine-Schrittfolgen dagegen auf Zweck plus Repo-Verweis kürzen (siehe Redaktionsnorm)
 
 ### Was NICHT ins Wiki gehört
 
@@ -31,6 +31,20 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - **Keine Konfigurationsdateien** -- "Verwaltet durch Ansible" oder "Siehe `pfad/zur/datei`"
 - **Keine Installationsanleitungen** -- gehören ins Repo (README, Ansible Roles)
 - **Keine offenen Punkte, TODOs, "nächste Schritte", ausstehenden Aufgaben oder Incidents** -- diese gehören als ClickUp-Task in die Privat IT Generell Liste (List 901504641206). Das Wiki beschreibt Ist-Zustand und Architektur. Bekannte Architektur-Limitationen ohne konkreten Handlungsauftrag dürfen als `::: warning` oder `::: danger` dokumentiert werden -- alles mit Action-Charakter gehört ins ClickUp.
+
+## Redaktionsnorm
+
+Diese Grundsätze aus der Wiki-Revision 2026-07 leiten jede Kürzung und Umschreibung:
+
+- **Kürzen heisst verschieben (Ziel zuerst):** Fakten werden nie ersatzlos gelöscht. Erst wandert der Inhalt an seinen richtigen Ort (Referenzseite, Repo-Datei, Runbook, ClickUp), dann wird die Quelle gekürzt. Ersatzloses Löschen nur, wenn der Fakt nachweislich an einem lebenden Zweitort steht, mit Angabe dieses Ortes.
+
+- **Runbook-Linie:** DR- und Notfall-Runbooks (Cold-Start, Cluster-Restart, Backup-Restore, Split-Brain) bleiben mit ihren knappen Schritten erhalten. Routine-Schrittfolgen werden auf Zweck plus Repo-Verweis gekürzt, ohne dafür neue Runbook-Seiten anzulegen. `betrieb.md` trägt Betriebs-Konzepte, keine nummerierten Anleitungen.
+
+- **Symptom, Ursache, Gotchas und Warum bleiben immer:** Troubleshooting als Aufzählung Symptom/Ursache/Konzept sowie die Begründungen hinter Entscheidungen und Einschränkungen werden nie weggekürzt.
+
+- **Keine Repo-Nacherzählung:** Prosa, die ein Skript, einen Job oder eine Config Schritt für Schritt nacherzählt, wird auf einen Satz Zweck plus Repo-Verweis gekürzt. Warum-Begründungen und Gotchas, die die Repo-Datei nicht trägt, bleiben im Wiki.
+
+- **Keine offenen Punkte, keine volatilen Werte:** Offene Punkte und TODOs gehören ins ClickUp, sich häufig ändernde Werte auf die Live-Quelle. Details in den Abschnitten "Was NICHT ins Wiki gehört" und "Dynamische Daten vermeiden".
 
 ## Single Source of Truth (SSOT)
 
@@ -84,7 +98,7 @@ Jedes System folgt einem einheitlichen Muster aus bis zu drei Dateien:
 |-------|--------|
 | `index.md` | Architektur, Konzept, Rolle im Stack |
 | `referenz.md` | Technische Details, Konfigurationstabellen |
-| `betrieb.md` | Betriebsanleitungen, Troubleshooting |
+| `betrieb.md` | Betriebs-Konzepte (Abhängigkeiten, Automatisierung, Einschränkungen mit Warum), Troubleshooting als Symptom/Ursache/Konzept -- keine nummerierten Schrittanleitungen |
 
 Nicht jedes System braucht alle drei Dateien. Einfache Systeme kommen mit `index.md` allein aus.
 
@@ -163,6 +177,7 @@ Jede Inhaltsseite endet mit einer `## Verwandte Seiten` Sektion. Aufzählungslis
 
 - **Sprache:** Deutsch
 - **Gross-/Kleinschreibung:** Wie im normalen Satz (kein Title Case)
+- **Kein Doppelpunkt** in Seitentiteln (Frontmatter `title` und H1)
 - **Schweizer Rechtschreibung:** Kein Eszett, immer `ss`
 
 ## Formatierung
@@ -234,12 +249,18 @@ A -> B -> C
 
 Verbindliche D2-Konventionen:
 
-- **Theme:** Neutral Grey (`theme-id: 1`), Layout-Engine ELK
+- **Zentrale Konfiguration:** Theme Neutral Grey (`theme-id: 1`) und Layout-Engine TALA werden zentral in `config.mts` gesetzt -- keine `layout-engine`- oder `theme`-Pins in einzelnen Diagramm-Blöcken
 - **Classes** für wiederholte Styles: `node`, `container`, `data` mit `border-radius: 8` (kein `shadow`); Container zusätzlich `stroke-dash: 4`
 - **Keine `icon:`-Zeilen** -- die Icon-Quelle ist seit 2026-04 nicht erreichbar (403)
-- **Tooltips einzeilig** für IPs, Specs oder Kontext-Infos
+- **Kein Komma in `style`-Werten**
+- **Keine volatilen Werte in Diagrammen** (Versionen, Counts, Status) -- diese veralten, stattdessen auf die Live-Quelle verweisen
+- **Tooltips einzeilig** für IPs, Specs oder Kontext-Infos -- und **nur auf Shapes**: Edge-Tooltips werden von d2 nicht ins SVG gerendert (empirisch verifiziert, gilt für TALA und ELK)
 - **Keine** `<`, `>`, `{`, `}` in Labels oder Tooltips
-- Vollständige Richtlinien und Beispiele: Abschnitt "Diagramme (D2)" weiter unten bzw. in den bestehenden Diagrammen
+- Vollständige Richtlinien und Beispiele: in den bestehenden Diagrammen
+
+::: info Unlizenzierte TALA
+Die TALA-Layout-Engine läuft unlizenziert. Die generierten Diagramme tragen einen `UNLICENSED-COPY`-Schriftzug -- das ist bewusst akzeptiert.
+:::
 
 ## Verlinkung
 
