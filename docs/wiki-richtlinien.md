@@ -254,7 +254,7 @@ Verbindliche D2-Konventionen:
 - **Keine `icon:`-Zeilen** -- die Icon-Quelle ist seit 2026-04 nicht erreichbar (403)
 - **Kein Komma in `style`-Werten**
 - **Keine volatilen Werte in Diagrammen** (Versionen, Counts, Status) -- diese veralten, stattdessen auf die Live-Quelle verweisen
-- **Tooltips einzeilig** für IPs, Specs oder Kontext-Infos
+- **Tooltips einzeilig** für IPs, Specs oder Kontext-Infos -- und **nur auf Shapes**: Edge-Tooltips werden von d2 nicht ins SVG gerendert (empirisch verifiziert, gilt für TALA und ELK)
 - **Keine** `<`, `>`, `{`, `}` in Labels oder Tooltips
 - Vollständige Richtlinien und Beispiele: in den bestehenden Diagrammen
 
