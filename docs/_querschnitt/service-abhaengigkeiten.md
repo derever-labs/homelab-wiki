@@ -11,33 +11,22 @@ tags:
 
 ## Übersicht
 
-Dieses Diagramm zeigt, welche Services von welchen Infrastruktur-Komponenten und voneinander abhängen.
+Dieses Diagramm zeigt, welche Services von welchen Infrastruktur-Komponenten und voneinander abhängen. Dargestellt sind nur explizit modellierte Abhängigkeiten. Die implizite Basis (Traefik, Consul, Vault, DNS, NFS) gilt für alle Services und ist unten beschrieben. Services ohne weitere Abhängigkeiten erscheinen nicht im Diagramm.
 
 ## Abhängigkeits-Diagramm
 
 ```d2
 direction: down
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
-Core: Core Infrastructure {
+Core: "Core-Infrastruktur" {
   style.stroke-dash: 4
-  TRAEFIK: Traefik { style.border-radius: 8 }
-  DNS: Pi-hole + Unbound { style.border-radius: 8 }
-  CONSUL: Consul { style.border-radius: 8 }
-  VAULT: Vault { style.border-radius: 8 }
   AUTHENTIK: Authentik { style.border-radius: 8 }
   PG: PostgreSQL { shape: cylinder; style.border-radius: 8 }
+  MARIADB: MariaDB { shape: cylinder; style.border-radius: 8 }
   SMTP: SMTP Relay { style.border-radius: 8 }
-  NFS: Synology NAS { shape: cylinder; style.border-radius: 8 }
 }
 
-Media: Media Stack {
+Media: "Media-Stack" {
   style.stroke-dash: 4
   JF: Jellyfin { style.border-radius: 8 }
   JS: Jellyseerr { style.border-radius: 8 }
@@ -47,9 +36,6 @@ Media: Media Stack {
   SAB: SABnzbd { style.border-radius: 8 }
   JSTAT: JellyStat { style.border-radius: 8 }
   PROF: Profilarr { style.border-radius: 8 }
-  STASH: Stash { style.border-radius: 8 }
-  ABS: AudioBookShelf { style.border-radius: 8 }
-  YTDL: YouTube-DL { style.border-radius: 8 }
   SYDL: Special-YT-DLP { style.border-radius: 8 }
   VG: Video-Grabber { style.border-radius: 8 }
 }
@@ -63,20 +49,18 @@ Mon: Monitoring {
   UK: Uptime Kuma { style.border-radius: 8 }
 }
 
-Prod: Productivity {
+Prod: "Produktivität" {
   style.stroke-dash: 4
   VW: Vaultwarden { style.border-radius: 8 }
   PL: Paperless { style.border-radius: 8 }
   TD: Tandoor { style.border-radius: 8 }
-  CD: ChangeDetection { style.border-radius: 8 }
-  OBS: Obsidian LiveSync { style.border-radius: 8 }
   GITEA: Gitea { style.border-radius: 8 }
   N8N: n8n { style.border-radius: 8 }
   META: Metabase { style.border-radius: 8 }
   SOLID: solidtime { style.border-radius: 8 }
 }
 
-AI: AI / LLM {
+AI: "AI / LLM" {
   style.stroke-dash: 4
   OLLAMA: Ollama { style.border-radius: 8 }
   OWUI: Open-WebUI { style.border-radius: 8 }
@@ -98,6 +82,8 @@ Media.PROWLARR -> Core.PG
 Media.JS -> Core.PG
 Media.JSTAT -> Core.PG
 Media.JS -> Media.JF
+Media.JS -> Media.SONARR: Request
+Media.JS -> Media.RADARR: Request
 Media.JSTAT -> Media.JF
 Media.SONARR -> Media.SAB
 Media.RADARR -> Media.SAB
@@ -121,6 +107,7 @@ Mon.GRAFANA -> Mon.INFLUX
 Mon.GRAFANA -> Mon.LOKI
 Mon.GRAFANA -> Core.PG
 Mon.ALLOY -> Mon.LOKI
+Mon.UK -> Core.MARIADB
 
 AI.OWUI -> AI.OLLAMA
 AI.HOLLA -> AI.OLLAMA

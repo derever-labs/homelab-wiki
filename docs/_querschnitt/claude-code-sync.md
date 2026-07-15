@@ -15,46 +15,40 @@ Zwei macOS-Accounts (`samuel_ackermann` und `hslu_samuel_ackermann`) teilen sich
 
 ```d2
 direction: down
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 
 SharedStorage: "Shared Storage (/Users/Shared/git/)" {
   style.stroke-dash: 4
   gitea: "gitea/" {
     style.stroke-dash: 4
-    CS: "claude-skills/ (4 Skills)" { style.border-radius: 8 }
-    DF: "dotfiles/ (SSH config + CLAUDE.md)" { style.border-radius: 8 }
+    CS: "claude-skills/" { style.border-radius: 8 }
+    DF: "dotfiles/\n(CLAUDE.md, SSH-Config, ccstatusline)" { style.border-radius: 8 }
   }
   github: "github/" {
     style.stroke-dash: 4
-    CMD: "HSLU_DC/agents/commands/ (Slash-Commands)" { style.border-radius: 8 }
+    CMD: "HSLU_DC/agents/commands/" { style.border-radius: 8 }
   }
 }
 
 hslu: "~hslu/.claude/" {
   style.stroke-dash: 4
-  HS: "skills ->" { style.border-radius: 8 }
-  HC: "commands ->" { style.border-radius: 8 }
-  HM: "CLAUDE.md ->" { style.border-radius: 8 }
+  HS: "skills" { style.border-radius: 8 }
+  HC: "commands" { style.border-radius: 8 }
+  HM: "CLAUDE.md" { style.border-radius: 8 }
 }
 
 samuel: "~samuel/.claude/" {
   style.stroke-dash: 4
-  SS: "skills ->" { style.border-radius: 8 }
-  SC: "commands ->" { style.border-radius: 8 }
-  SM: "CLAUDE.md ->" { style.border-radius: 8 }
+  SS: "skills" { style.border-radius: 8 }
+  SC: "commands" { style.border-radius: 8 }
+  SM: "CLAUDE.md" { style.border-radius: 8 }
 }
 
-hslu.HS -> SharedStorage.gitea.CS
-samuel.SS -> SharedStorage.gitea.CS
-hslu.HC -> SharedStorage.github.CMD
-samuel.SC -> SharedStorage.github.CMD
-hslu.HM -> SharedStorage.gitea.DF
-samuel.SM -> SharedStorage.gitea.DF
+hslu.HS -> SharedStorage.gitea.CS: Symlink
+samuel.SS -> SharedStorage.gitea.CS: Symlink
+hslu.HC -> SharedStorage.github.CMD: Symlink
+samuel.SC -> SharedStorage.github.CMD: Symlink
+hslu.HM -> SharedStorage.gitea.DF: Symlink
+samuel.SM -> SharedStorage.gitea.DF: Symlink
 ```
 
 ## Was geteilt wird vs. pro User

@@ -68,7 +68,7 @@ Upstream: "Upstream-Registries (Internet)" {
   ghcr: "ghcr.io"
   quay: "quay.io"
   dockerio: "docker.io"
-  gcp: "us-central1-docker.pkg.dev"
+  gcp: "GCP Artifact Registry"
 }
 
 Systemd_Layer: "systemd (kein Container)" {
@@ -79,11 +79,11 @@ Systemd_Layer: "systemd (kein Container)" {
 }
 
 Bootstrap_Clean: "Bootstrap-Klasse clean (kein ZOT im Pfad)" {
-  zot_img: "ZOT-Job\nImage: ghcr.io/project-zot/zot"
-  keep: "Keep\nImage: us-central1-docker.pkg.dev/keephq"
-  kuma: "Uptime-Kuma\nImage: louislam/uptime-kuma:2\n(via daemon.json mirror-fallback)"
-  csi: "Linstor-CSI\nImage: quay.io/piraeusdatastore"
-  alloy: "Alloy (Monitoring)\ngrafana/alloy:v1.13.1\n(short-form, mirror-fallback, seit 31.05)"
+  zot_img: "ZOT-Job\nImage direkt von ghcr.io"
+  keep: "Keep\nImage direkt von GCP"
+  kuma: "Uptime-Kuma\nshort-form mit mirror-fallback"
+  csi: "Linstor-CSI\nImage direkt von quay.io"
+  alloy: "Alloy (Monitoring)\nshort-form mit mirror-fallback"
   zot_img.class: clean
   keep.class: clean
   kuma.class: clean
@@ -92,8 +92,8 @@ Bootstrap_Clean: "Bootstrap-Klasse clean (kein ZOT im Pfad)" {
 }
 
 Anti_Pattern: "Anti-Pattern (hängt an ZOT, zurückgestellt)" {
-  helper: "wait-for-postgres prestart-Helper\nzot.service.consul/library/alpine\nMechanismus selbst von ZOT abhängig"
-  latest: "7 Jobs mit force_pull=true + :latest\nzot.service.consul/.../<image>:latest\nImmer Pull bei Restart"
+  helper: "wait-for-postgres prestart-Helper\nAlpine-Image via zot.service.consul"
+  latest: "Jobs mit force_pull=true + :latest\nPull via ZOT bei jedem Restart"
   helper.class: antipattern
   latest.class: antipattern
 }
@@ -104,8 +104,8 @@ ZOT_Service: "ZOT-Service\nzot.service.consul:5000" {
 
 Upstream.ghcr -> Bootstrap_Clean.zot_img
 Upstream.gcp -> Bootstrap_Clean.keep
-Upstream.dockerio -> Bootstrap_Clean.kuma: "via mirror-fallback"
-Upstream.dockerio -> Bootstrap_Clean.alloy: "via mirror-fallback"
+Upstream.dockerio -> Bootstrap_Clean.kuma: "mirror-fallback"
+Upstream.dockerio -> Bootstrap_Clean.alloy: "mirror-fallback"
 Upstream.quay -> Bootstrap_Clean.csi
 
 Bootstrap_Clean.zot_img -> ZOT_Service
@@ -149,7 +149,7 @@ classes: {
 
 S1: "Schicht 1: Cache-Layer (Pull-Versuche vermeiden)" {
   class: layer
-  gc: "gc.image_delay = 168h\nclient.hcl"
+  gc: "gc.image_delay = 168h\n(client.hcl)"
   fp: "force_pull = false als Standard\nin Service-Klasse-Jobs"
   tag: "Renovate auf feste Tags\n(eigene Builds, langfristig)"
   gc.class: cfg
@@ -157,28 +157,28 @@ S1: "Schicht 1: Cache-Layer (Pull-Versuche vermeiden)" {
   tag.class: cfg
 }
 
-S2: "Schicht 2: Bootstrap-Class (Image-Quellen, nicht ZOT)" {
+S2: "Schicht 2: Bootstrap-Klasse (Image-Quellen ohne ZOT)" {
   class: layer
-  alloy: "Alloy auf direkten Upstream\nghcr.io/grafana/alloy"
-  helper: "wait-for-postgres image-frei\nraw_exec + /usr/bin/pg_isready"
+  alloy: "Alloy: Upstream direkt\noder short-form mit mirror-fallback"
+  helper: "wait-for-postgres image-frei\n(raw_exec + pg_isready)"
   alloy.class: job
   helper.class: raw
 }
 
 S3: "Schicht 3: Wait-Layer (image-freie Prestart-Hooks)" {
   class: layer
-  hook: "raw_exec + /usr/bin/curl\n--retry 60 --max-time 300\nin den 7 Anti-Pattern-Jobs"
+  hook: "raw_exec + curl mit hartem Timeout\nin den verbleibenden Anti-Pattern-Jobs"
   pattern: "Pattern-Dokumentation\n(HCL2-Funktion oder Block-Konvention)"
   hook.class: raw
   pattern.class: cfg
 }
 
-S4: "Schicht 4: Failure-Mode (restart / reschedule / disconnect)" {
+S4: "Schicht 4: Failure-Mode-Profile" {
   class: layer
-  restart: "restart mode=fail\nattempts=3, interval=10m, delay=20s"
-  resch: "reschedule unlimited, exponential\nmax_delay=30m"
-  disc: "disconnect lost_after=3m\nreplace=true reconcile=best_score"
-  boot: "Bootstrap-Sonderprofil:\nattempts=5, festes reschedule attempts=5"
+  restart: "restart mode=fail"
+  resch: "reschedule exponential"
+  disc: "disconnect mit replace"
+  boot: "Bootstrap-Sonderprofil\n(festes reschedule-Limit)"
   restart.class: pol
   resch.class: pol
   disc.class: pol
@@ -199,9 +199,10 @@ und nicht im Diagramm ablesbar: Das harte 300s-Timeout in Schicht 3 erzwingt ein
 Failure statt silent-hang, und mode=fail in Schicht 4 macht dauerhafte Probleme sichtbar statt
 sie im delay-Loop zu verstecken.
 
-## Diagramm 3: Cluster-Restart -- Ist-Verhalten
+## Diagramm 3: Cluster-Restart -- Verhalten vor dem Mini-Bundle
 
-Stromausfall, alle Nodes neu. Vor Migration: Big-Bang-Startup ohne Reihenfolge-Disziplin.
+Stromausfall, alle Nodes neu. Historisches Verhalten vor Runbook-Split und Alloy-Fix:
+Big-Bang-Startup ohne Reihenfolge-Disziplin.
 
 ```d2
 direction: down
@@ -267,7 +268,7 @@ t9_cache: "Schicht 1: 80% der Apps haben Image lokal cached\n-> kein Pull, sofor
 
 t9_wait: "Schicht 3: 20% mit neuem Tag oder GC'd Image\n-> prestart wait-for-zot mit raw_exec+curl\n-> kein Pull-Versuch bevor ZOT da" { class: wait }
 
-t10_alloy: "Alloy startet aus ghcr.io direkt\n-> Monitoring sofort verfügbar\n-> sehen Cascade in Echtzeit" { class: done }
+t10_alloy: "Alloy startet ohne ZOT (mirror-fallback)\n-> Monitoring sofort verfügbar\n-> Cascade in Echtzeit sichtbar" { class: done }
 
 t11: "t=300s: alle Apps healthy" { class: done }
 
