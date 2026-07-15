@@ -26,12 +26,6 @@ SuggestArr analysiert die Watch-History aus Jellyfin und generiert personalisier
 Die Empfehlungen werden als **Pending Requests** in Jellyseerr erstellt -- ein Admin muss sie manuell genehmigen, bevor Radarr/Sonarr den Download starten.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
 JF: Jellyfin { style.border-radius: 8 }

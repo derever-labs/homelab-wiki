@@ -29,13 +29,6 @@ Karakeep Ingest ist die Erfassungs-Hilfe für Fälle, die der Karakeep-eigene Cr
 Eingefügte URLs werden nach Herkunft aufgeteilt: LinkedIn läuft über die Apify-Pipeline (Volltext und Originalbilder), Instagram über einen zweiten Apify-Actor (Caption und Originalbilder, bei Carousels alle Seiten, bei Reels das Cover-Thumbnail statt des Videos), YouTube-Videos über einen kostenlosen Pfad (oEmbed-Metadaten und das Vorschaubild aus dem Thumbnail-CDN, ohne Scrapfly), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Alle Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird. Bei Instagram nehmen nur einzelne Posts und Reels (`/p/`, `/reel/`) den Apify-Pfad; Profile, Explore und Stories bleiben im Web-Pfad. Bei YouTube gilt dasselbe für echte Videos (Watch-Links, Shorts, youtu.be) gegenüber Kanälen und Playlists.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
 }

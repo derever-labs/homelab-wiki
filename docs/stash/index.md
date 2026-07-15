@@ -45,56 +45,53 @@ Die Haupt-Instanz (`stash`) verwaltet die primäre Mediathek und wird von den Ba
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: down
 
 Clients: Zugriff {
   style.stroke-dash: 4
   Browser: Browser { style.border-radius: 8 }
+  ATV: "Jellyfin-App\n(Apple TV)" { style.border-radius: 8 }
 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
-  tooltip: "10.0.2.20"
-  R1: "Router: s.* intern-auth" { style.border-radius: 8 }
-  R2: "Router: secure.* intern-auth" { style.border-radius: 8 }
+  R1: "Router s.*\nintern-auth" { style.border-radius: 8 }
+  R2: "Router secure.*\nintern-auth" { style.border-radius: 8 }
 }
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  S1: "stash (Haupt-Instanz)" { style.border-radius: 8 }
-  S2: "stash-secure (Separate Instanz)" { style.border-radius: 8 }
+  S1: "stash\n(Haupt-Instanz)" { style.border-radius: 8 }
+  S2: "stash-secure\n(separate Instanz)" { style.border-radius: 8 }
+  PROXY: "stash-jellyfin-proxy\n(Port 8098, ohne Traefik)" { style.border-radius: 8 }
 }
 
 Storage: Storage {
   style.stroke-dash: 4
-  LCSI: "Linstor CSI stash-data-r2" { shape: cylinder }
-  LCSI2: "Linstor CSI stash-secure-data" { shape: cylinder }
-  NFS1: "NFS /nfs/.../data" { shape: cylinder }
-  NFS2: "NFS /nfs/.../secure" { shape: cylinder }
+  LCSI: "Linstor CSI\nstash-data-r2" { shape: cylinder }
+  LCSI2: "Linstor CSI\nstash-secure-data" { shape: cylinder }
+  NFS1: "NFS .../data" { shape: cylinder }
+  NFS2: "NFS .../secure" { shape: cylinder }
 }
 
 Batch: Batch Jobs {
   style.stroke-dash: 4
   PH: ph-downloader { style.border-radius: 8 }
   RD: reddit-downloader { style.border-radius: 8 }
+  GDL: reddit-gallery-dl { style.border-radius: 8 }
 }
 
 Clients.Browser -> Traefik.R1: HTTPS
 Clients.Browser -> Traefik.R2: HTTPS
+Clients.ATV -> Nomad.PROXY: "HTTP :8098 (nur intern)"
 Traefik.R1 -> Nomad.S1
 Traefik.R2 -> Nomad.S2
+Nomad.PROXY -> Nomad.S1: Jellyfin-API-Emulation
 Nomad.S1 -> Storage.LCSI
 Nomad.S1 -> Storage.NFS1
 Nomad.S2 -> Storage.LCSI2
 Nomad.S2 -> Storage.NFS2
-Batch.PH -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
-Batch.RD -> Nomad.S1: "Stash API: Scan + Generate" { style.stroke-dash: 5 }
+Batch -> Nomad.S1: "Stash-API: Scan + Generate" { style.stroke-dash: 4 }
 ```
 
 ## Konfiguration

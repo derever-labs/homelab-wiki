@@ -31,57 +31,30 @@ direction: down
 
 Trigger: Trigger {
   style.stroke-dash: 4
-  CRON1: "Cron: 02:00 UTC" { style.border-radius: 8 }
-  CRON2: "Cron: 02:30 UTC" { style.border-radius: 8 }
-  TG: Telegram Chat { style.border-radius: 8 }
+  CRON: "Cron\n(täglich nachts, gestaffelt)" { style.border-radius: 8 }
+  TG: Telegram-Chat { style.border-radius: 8 }
 }
 
-Bot: Telegram Bot (Service) {
-  style.stroke-dash: 4
-  TGBOT: "phdler-telegram-bot list, add, start, status" { style.border-radius: 8 }
-}
+TGBOT: "phdler-telegram-bot\n(Service: list, add, start, status)" { style.border-radius: 8 }
 
 Batch: Batch Jobs {
   style.stroke-dash: 4
-  RD: "reddit-downloader (BDFR)" { style.border-radius: 8 }
-  PH: "ph-downloader (phdler.py + yt-dlp)" { style.border-radius: 8 }
-  GDL: "reddit-gallery-dl (gallery-dl)" { style.border-radius: 8 }
+  RD: "reddit-downloader\n(BDFR)" { style.border-radius: 8 }
+  PH: "ph-downloader\n(phdler.py + yt-dlp)" { style.border-radius: 8 }
+  GDL: "reddit-gallery-dl\n(gallery-dl)" { style.border-radius: 8 }
 }
 
-Stash: Stash (Media Organizer) {
-  style.stroke-dash: 4
-  API: "GraphQL API /graphql" { style.border-radius: 8 }
-  SCAN: metadataScan { style.border-radius: 8 }
-  GEN: metadataGenerate { style.border-radius: 8 }
-}
+STASH: "Stash\n(metadataScan + metadataGenerate)" { style.border-radius: 8 }
+NFS: "NFS-Volume nfs-logs\n(Downloads, phdler.py, SQLite)" { shape: cylinder }
+RELAY: telegram-relay { style.border-radius: 8 }
 
-Storage: Storage {
-  style.stroke-dash: 4
-  NFS: "NFS nfs-logs Volume" { shape: cylinder }
-}
-
-Notify: Benachrichtigung {
-  style.stroke-dash: 4
-  TGAPI: Telegram API { style.border-radius: 8 }
-}
-
-Trigger.CRON1 -> Batch.RD
-Trigger.CRON1 -> Batch.GDL
-Trigger.CRON2 -> Batch.PH
-Trigger.TG -> Bot.TGBOT
-Bot.TGBOT -> Batch.PH: Nomad API: force periodic
-Bot.TGBOT -> Storage.NFS: phdler.py: add/list
-Batch.RD -> Storage.NFS
-Batch.PH -> Storage.NFS
-Batch.GDL -> Storage.NFS
-Batch.RD -> Stash.API: bei neuen Downloads
-Batch.PH -> Stash.API
-Batch.GDL -> Stash.API: bei neuen Downloads
-Stash.API -> Stash.SCAN
-Stash.SCAN -> Stash.GEN
-Batch.RD -> Notify.TGAPI
-Batch.PH -> Notify.TGAPI
-Batch.GDL -> Notify.TGAPI
+Trigger.CRON -> Batch
+Trigger.TG -> TGBOT
+TGBOT -> Batch.PH: "Nomad API: force periodic"
+TGBOT -> NFS: "phdler.py: add / list"
+Batch -> NFS: Downloads
+Batch -> STASH: "Scan + Generate\nbei neuen Downloads"
+Batch -> RELAY: Ergebnis-Report
 ```
 
 ## Komponenten

@@ -32,29 +32,33 @@ Diese Trennung ist Absicht. Bilder leben ausschliesslich in Karakeep und kommen 
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
-  node: { style: { border-radius: 8 } }
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
 }
 
 direction: right
 
-Clients: {
-  style.stroke-dash: 4
-  EXT: "Browser-Extension / Mobile-App\n(Bearer-Token auf /api)" { class: node }
-  WEB: "Web-UI\n(Karakeep-Login)" { class: node }
+BACKUPDIR: "NAS /nfs/backup/karakeep\n(age-verschlüsselt, GFS-Rotation)" {
+  shape: cylinder
+  class: node
 }
+KV: "Vault kv/karakeep" { class: node }
+MON: "Uptime Kuma\n(Push-Monitor)" { class: node }
 
-Traefik: Traefik {
+Storage: Storage {
   style.stroke-dash: 4
-  tooltip: 10.0.2.20
-  R: "Router kara.*\nintern-api (intern + Tailscale)" { class: node }
+  DATA: "Linstor CSI karakeep-data\n(SQLite + Assets)" {
+    shape: cylinder
+    class: node
+  }
+  MEILIVOL: "Linstor CSI karakeep-meili\n(Suchindex)" {
+    shape: cylinder
+    class: node
+  }
 }
 
 Karakeep: "Nomad-Group karakeep" {
@@ -62,28 +66,18 @@ Karakeep: "Nomad-Group karakeep" {
   WEBT: "web\n(App)" { class: node }
   CHROME: "chrome\n(Screenshots)" { class: node }
   MEILI: "meilisearch\n(Volltextsuche)" { class: node }
-  BACKUP: "backup\n(Sidecar, täglich 03:30)" { class: node }
+  BACKUP: "backup\n(Sidecar, täglich)" { class: node }
 }
 
-Storage: {
+Traefik: Traefik {
   style.stroke-dash: 4
-  DATA: "Linstor CSI\nkarakeep-data\n(SQLite + Assets)" { shape: cylinder; class: node }
-  MEILIVOL: "Linstor CSI\nkarakeep-meili\n(Suchindex)" { shape: cylinder; class: node }
+  R: "Router kara.*\nintern-api (intern + Tailscale)" { class: node }
 }
 
-NAS: NAS {
+Clients: Zugriff {
   style.stroke-dash: 4
-  BACKUPDIR: "/nfs/backup/karakeep\nage-verschlüsselt, GFS 7/28/90" { shape: cylinder; class: node }
-}
-
-Vault: {
-  style.stroke-dash: 4
-  KV: "Vault kv/karakeep" { class: node }
-}
-
-Kuma: {
-  style.stroke-dash: 4
-  MON: "Uptime Kuma\nPush 'Karakeep Backup'" { class: node }
+  EXT: "Browser-Extension / Mobile-App\n(Bearer-Token auf /api)" { class: node }
+  WEB: "Web-UI\n(Karakeep-Login)" { class: node }
 }
 
 Clients.EXT -> Traefik.R: HTTPS
@@ -94,10 +88,10 @@ Karakeep.WEBT -> Karakeep.MEILI: Suche
 Karakeep.WEBT -> Storage.DATA
 Karakeep.MEILI -> Storage.MEILIVOL
 Karakeep.BACKUP -> Storage.DATA: liest SQLite + Assets
-Karakeep.BACKUP -> NAS.BACKUPDIR: age-Archiv
-Karakeep.BACKUP -> Kuma.MON: Heartbeat
-Karakeep.WEBT -> Vault.KV: Secrets
-Karakeep.MEILI -> Vault.KV: Master-Key
+Karakeep.BACKUP -> BACKUPDIR: age-Archiv
+Karakeep.BACKUP -> MON: Heartbeat
+Karakeep.WEBT -> KV: Secrets
+Karakeep.MEILI -> KV: Master-Key
 ```
 
 ## Exposition und Authentifizierung

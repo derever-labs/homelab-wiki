@@ -33,35 +33,6 @@ Filebrowser dient als Debugging- und Inspektions-Tool für die Nomad Nodes. Typi
 
 Pro Nomad Client Node läuft eine eigene Instanz; die URL folgt dem Schema `files-<hostname>.ackermannprivat.ch`.
 
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: right
-
-User: Admin User
-Traefik: "Traefik\nintern-auth"
-
-FB04: "Filebrowser\nclient-04"
-FB05: "Filebrowser\nclient-05"
-FB06: "Filebrowser\nclient-06"
-
-FS04: "Filesystem\nclient-04 (ro)" { shape: cylinder }
-FS05: "Filesystem\nclient-05 (ro)" { shape: cylinder }
-FS06: "Filesystem\nclient-06 (ro)" { shape: cylinder }
-
-User -> Traefik: HTTPS
-Traefik -> FB04
-Traefik -> FB05
-Traefik -> FB06
-FB04 -> FS04
-FB05 -> FS05
-FB06 -> FS06
-```
-
 ## Mount-Pfade
 
 Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Container gemountet. Wichtige Pfade auf den Nodes:
