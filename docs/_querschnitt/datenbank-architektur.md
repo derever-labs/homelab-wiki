@@ -18,7 +18,7 @@ Das Homelab verwendet zwei zentrale Datenbank-Cluster auf DRBD-replizierten Volu
 - **PostgreSQL Shared Cluster** für Services mit PostgreSQL-Backend (Standard für die meisten Apps)
 - **MariaDB Cluster** für Services die zwingend MySQL/MariaDB benötigen (Uptime Kuma)
 
-Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432` bzw. `mariadb.service.consul:3306`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken (z.B. Obsidian LiveSync mit CouchDB).
+Alle Services verbinden sich über Consul DNS (`postgres.service.consul:5432` bzw. `mariadb.service.consul:3306`). Einzelne Services mit inkompatiblen Anforderungen verwenden Sidecar-Datenbanken (z.B. Obsidian LiveSync mit CouchDB). Grafana verbindet sich zusätzlich als read-only Datasource direkt mit dem PostgreSQL Shared Cluster.
 
 Dieser Ansatz minimiert den Betriebsaufwand: zwei Cluster mit je einem Backup-Job, einer Monitoring-Konfiguration und einem Restore-Prozess -- statt dutzender individueller Datenbank-Instanzen.
 
@@ -26,69 +26,38 @@ Dieser Ansatz minimiert den Betriebsaufwand: zwei Cluster mit je einem Backup-Jo
 
 ```d2
 direction: down
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
+
+Services: "Services (Nomad)" {
+  style: { border-radius: 8; multiple: true }
+  tooltip: "Service-zu-Datenbank-Zuordnung: Referenz Datenbanken"
 }
 
-Services: Services (Nomad) {
-  style.stroke-dash: 4
-  RADAR: Radarr { style.border-radius: 8 }
-  SONAR: Sonarr { style.border-radius: 8 }
-  PROWL: Prowlarr { style.border-radius: 8 }
-  JSEER: Jellyseerr { style.border-radius: 8 }
-  JSTAT: JellyStat { style.border-radius: 8 }
-  VW: Vaultwarden { style.border-radius: 8 }
-  PL: Paperless { style.border-radius: 8 }
-  GT: Gitea { style.border-radius: 8 }
-  TD: Tandoor { style.border-radius: 8 }
-  ST: solidtime { style.border-radius: 8 }
-  N8N: n8n { style.border-radius: 8 }
-  MB: Metabase { style.border-radius: 8 }
-  GR: Grafana { style.border-radius: 8 }
+PG: "PostgreSQL Shared Cluster" {
+  shape: cylinder
+  style.border-radius: 8
+  tooltip: "postgres.service.consul:5432"
 }
 
-Database: PostgreSQL Shared Cluster {
-  style.stroke-dash: 4
-  PG: PostgreSQL {
-    shape: cylinder
-    tooltip: postgres.service.consul:5432
-    style.border-radius: 8
-  }
+MDB: "MariaDB Cluster" {
+  shape: cylinder
+  style.border-radius: 8
+  tooltip: "mariadb.service.consul:3306"
 }
 
-Storage: DRBD Linstor Storage {
-  style.stroke-dash: 4
-  DRBD: Linstor CSI Volume postgres-data { style.border-radius: 8 }
-}
+Storage: "Linstor CSI Volumes (DRBD-repliziert)" { style.border-radius: 8 }
 
-Backup: Backup {
-  style.stroke-dash: 4
-  DUMP: pg_dumpall 03:00 UTC { style.border-radius: 8 }
-  NFS: NFS Backup GFS 7d/4w/3m { shape: cylinder; style.border-radius: 8 }
-  PBS: Proxmox Backup Server VM-Block { shape: cylinder; style.border-radius: 8 }
-}
+Dump: "Logische Dumps (täglich, GFS)" { style.border-radius: 8 }
+NFS: "NFS-Backup" { shape: cylinder; style.border-radius: 8 }
+PBS: "PBS (VM-Block-Backup)" { shape: cylinder; style.border-radius: 8 }
 
-Services.RADAR -> Database.PG
-Services.SONAR -> Database.PG
-Services.PROWL -> Database.PG
-Services.JSEER -> Database.PG
-Services.JSTAT -> Database.PG
-Services.VW -> Database.PG
-Services.PL -> Database.PG
-Services.GT -> Database.PG
-Services.TD -> Database.PG
-Services.ST -> Database.PG
-Services.N8N -> Database.PG
-Services.MB -> Database.PG
-Services.GR -> Database.PG: read-only Datasource { style.stroke-dash: 5 }
-
-Database.PG -> Storage.DRBD
-Database.PG -> Backup.DUMP
-Backup.DUMP -> Backup.NFS
-Storage.DRBD -> Backup.PBS
+Services -> PG: "Standard"
+Services -> MDB: "nur MySQL-pflichtige Services"
+PG -> Storage
+MDB -> Storage
+PG -> Dump
+MDB -> Dump
+Dump -> NFS
+Storage -> PBS
 ```
 
 ## DRBD-Replikation
@@ -97,24 +66,18 @@ Das PostgreSQL-Datenverzeichnis liegt auf einem Linstor CSI Volume, das über DR
 
 ```d2
 direction: right
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 
-pve01: pve01 vm-nomad-client-05 {
+pve01: "pve01 (vm-nomad-client-05)" {
   style.stroke-dash: 4
-  D1: DRBD postgres-data Primary oder Secondary { style.border-radius: 8 }
+  D1: "DRBD postgres-data\nPrimary oder Secondary" { style.border-radius: 8 }
 }
 
-pve02: pve02 vm-nomad-client-06 {
+pve02: "pve02 (vm-nomad-client-06)" {
   style.stroke-dash: 4
-  D2: DRBD postgres-data Primary oder Secondary { style.border-radius: 8 }
+  D2: "DRBD postgres-data\nPrimary oder Secondary" { style.border-radius: 8 }
 }
 
-pve01.D1 <-> pve02.D2: Thunderbolt ~20 Gbps { tooltip: 10.99.1.0/24 }
+pve01.D1 <-> pve02.D2: "Thunderbolt (synchrone Replikation)"
 ```
 
 Nur ein Node hat zur gleichen Zeit den Primary-Status. Nomad steuert, auf welchem Client der PostgreSQL-Job läuft.
