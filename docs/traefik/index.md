@@ -23,34 +23,21 @@ Traefik läuft als HA-Reverse-Proxy auf zwei VMs mit Keepalived VIP. Alle Homela
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-direction: down
-
-external: Externer Zugang {
-  class: container
-
-  Internet: Internet {
-    class: node
-  }
-  CF: Cloudflare DNS {
-    class: node
-    tooltip: "DNS für *.ackermannprivat.ch und *.ackermann.systems"
-  }
-  Router: UDM Pro {
-    class: node
-    tooltip: "10.0.0.1 | Port-Forward 80/443 auf VIP"
-  }
+Internet: Internet {
+  class: node
+}
+CF: Cloudflare DNS {
+  class: node
+  tooltip: "DNS-Zonen *.ackermannprivat.ch / *.ackermann.systems -- nur DNS, kein Proxying"
+}
+Router: UDM Pro {
+  class: node
+  tooltip: "10.0.0.1 | Port-Forward 80/443 auf die VIP"
 }
 
 ha: Traefik HA Cluster {
@@ -67,6 +54,14 @@ ha: Traefik HA Cluster {
   T2: vm-traefik-02 (BACKUP) {
     class: node
     tooltip: "10.0.2.22 | Priorität 100, Docker Compose, CrowdSec"
+  }
+
+  VIP -> T1: aktiver Node {
+    style.stroke: "#6b7280"
+  }
+  VIP -> T2: Failover {
+    style.stroke: "#6b7280"
+    style.stroke-dash: 3
   }
 }
 
@@ -88,7 +83,7 @@ backend: Backend-Services {
 
   Nomad: Nomad Services {
     class: node
-    tooltip: "Container-Services registriert via Consul Tags"
+    tooltip: "Container-Services, Routing via Consul Service Tags"
   }
   Standalone: Standalone Services {
     class: node
@@ -96,41 +91,40 @@ backend: Backend-Services {
   }
 }
 
-external.Internet -> external.CF: DNS Lookup {
-  style.stroke: "#2563eb"
-}
-external.CF -> external.Router: HTTPS {
-  style.stroke: "#2563eb"
-}
-external.Router -> ha.VIP: Port 80/443 {
-  style.stroke: "#2563eb"
-}
-ha.VIP -> ha.T1: Aktiver Node {
-  style.stroke: "#6b7280"
-}
-ha.VIP -> ha.T2: Failover {
+Internet -> CF: DNS-Auflösung {
   style.stroke: "#6b7280"
   style.stroke-dash: 3
+  tooltip: "Nur Namensauflösung -- Zertifikate bezieht Traefik via DNS-01-Challenge"
 }
-ha.T1 -> providers.Consul: Catalog API {
+Internet -> Router: HTTPS 80/443 {
+  style.stroke: "#2563eb"
+  tooltip: "Direkt auf die öffentliche IP, kein Cloudflare-Proxy"
+}
+Router -> ha.VIP: Port-Forward 80/443 {
+  style.stroke: "#2563eb"
+}
+ha -> backend: HTTP(S) zu den Ziel-Services {
+  style.stroke: "#16a34a"
+  tooltip: "Der VIP-Inhaber proxied die Requests an die Backends"
+}
+
+ha -> providers.Consul: Catalog API {
   style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+  tooltip: "Beide Nodes pollen den Service-Katalog (HTTP :8500)"
 }
-ha.T1 -> providers.File: Watch Config {
+ha -> providers.File: File-Watch {
   style.stroke: "#7c3aed"
+  style.stroke-dash: 3
+  tooltip: "Beide Nodes laden services-external.yml live (watch: true)"
 }
-ha.T2 -> providers.Consul: Catalog API {
+providers.Consul -> backend.Nomad: definiert Routen {
   style.stroke: "#7c3aed"
   style.stroke-dash: 3
 }
-ha.T2 -> providers.File: Watch Config {
+providers.File -> backend.Standalone: definiert Routen {
   style.stroke: "#7c3aed"
   style.stroke-dash: 3
-}
-providers.Consul -> backend.Nomad: Service Backends {
-  style.stroke: "#16a34a"
-}
-providers.File -> backend.Standalone: File Routes {
-  style.stroke: "#16a34a"
 }
 ```
 

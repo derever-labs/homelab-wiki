@@ -33,19 +33,10 @@ Bei Vault-Ausfall können laufende Dienste keine Secrets mehr erneuern und neue 
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: right
 
 raft: Vault Raft Cluster {
   class: container
@@ -77,37 +68,24 @@ raft: Vault Raft Cluster {
   }
 }
 
-Nomad: Nomad Server {
+clients: Vault-Clients {
   class: node
-  tooltip: "Stellt JWT für Workload Identity aus"
-}
-
-NJ: Nomad Task {
-  class: node
-  tooltip: "Container mit vault-Stanza und identity-Block"
+  tooltip: "Nomad Tasks (Workload Identity, Ablauf siehe unten), Admin-CLI"
 }
 
 Consul: Consul {
   class: node
-  tooltip: "Service Discovery für active.vault"
+  tooltip: "Service Discovery: vault.service.consul und active.vault"
 }
 
-Nomad -> NJ: JWT ausstellen {
-  style.stroke: "#6b7280"
-}
-NJ -> raft: JWT vorzeigen (HTTP :8200) {
+clients -> raft: HTTP :8200 {
   style.stroke: "#7c3aed"
-  tooltip: "Task authentifiziert sich mit dem JWT"
+  tooltip: "Zugriff über vault.service.consul -- kein fest verdrahteter Node"
 }
-raft -> NJ: Secret (KV v2) {
-  style.stroke: "#16a34a"
-  style.stroke-dash: 3
-  tooltip: "Vault liefert Secrets aus dem Job-spezifischen KV-Pfad"
-}
-raft -> Consul: Service registrieren {
+raft -> Consul: registriert active/standby {
   style.stroke: "#6b7280"
   style.stroke-dash: 3
-  tooltip: "Vault registriert sich als active/standby in Consul"
+  tooltip: "Jeder Node meldet seinen Zustand, Consul löst auf den aktiven Leader auf"
 }
 ```
 
@@ -130,18 +108,10 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 Nomad-Jobs authentifizieren sich bei Vault über JWT-basierte Workload Identity. Dadurch brauchen Jobs keine statischen Tokens -- die Identität ergibt sich aus dem Job selbst.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: right
 
 Nomad: Nomad Server {
   class: node
@@ -153,44 +123,38 @@ Task: Nomad Task {
   tooltip: "Container mit vault-Stanza und identity-Block (env = true, file = true)"
 }
 
-Vault: Vault {
-  class: node
-  tooltip: "JWT Auth Method validiert die Signatur gegen Nomads JWKS-Endpoint"
+vault: Vault {
+  class: container
+
+  auth: JWT Auth Method {
+    class: node
+    tooltip: "Validiert die JWT-Signatur gegen Nomads JWKS-Endpoint"
+  }
+  kv: KV v2 Secret Engine {
+    class: node
+    tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschränkt Zugriff auf eigenen Pfad"
+  }
 }
 
-KV: KV v2 Secret Engine {
-  class: node
-  tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschränkt Zugriff auf eigenen Pfad"
-}
-
-# 1. JWT ausstellen
 Nomad -> Task: 1. JWT ausstellen (Workload Identity) {
   style.stroke: "#6b7280"
 }
-
-# 2. JWT an Vault vorzeigen
-Task -> Vault: 2. JWT vorzeigen (HTTP :8200) {
+Task -> vault.auth: 2. JWT vorzeigen (HTTP :8200) {
   style.stroke: "#7c3aed"
   tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token nötig"
 }
-
-# 3. Vault validiert und gibt Token
-Vault -> Task: 3. Vault Token (Policy: nomad-workloads) {
-  style.stroke-dash: 3
+vault.auth -> Task: 3. Vault Token (Policy nomad-workloads) {
   style.stroke: "#7c3aed"
+  style.stroke-dash: 3
   tooltip: "Vault prüft JWT-Signatur via Nomad JWKS, dann Token mit eingeschränkter Policy"
 }
-
-# 4. Secrets lesen
-Task -> KV: 4. kv/data/JOB_ID lesen {
+Task -> vault.kv: 4. kv/data/JOB_ID lesen {
   style.stroke: "#2563eb"
   tooltip: "Task liest nur Secrets unter seinem eigenen Job-Pfad"
 }
-
-# 5. Secret-Werte zurück
-KV -> Task: 5. Secret-Werte {
-  style.stroke-dash: 3
+vault.kv -> Task: 5. Secret-Werte {
   style.stroke: "#16a34a"
+  style.stroke-dash: 3
 }
 ```
 

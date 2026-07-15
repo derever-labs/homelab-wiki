@@ -30,19 +30,10 @@ Bei Consul-Ausfall verlieren alle Dienste ihre Service Discovery und DNS-Auflös
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: right
 
 srv: Consul Server {
   class: container
@@ -101,14 +92,9 @@ DNS: Pi-hole {
   tooltip: "10.0.2.1 / 10.0.2.2 | Leitet .consul-Anfragen an Consul DNS weiter"
 }
 
-cli -> srv: Service Registration {
+cli -> srv: Service Registration + Health-Status {
   style.stroke: "#2563eb"
-  tooltip: "Consul Clients registrieren Container-Services im Cluster"
-}
-srv -> cli: Health Checks {
-  style.stroke: "#16a34a"
-  style.stroke-dash: 3
-  tooltip: "Server verteilen Health-Check-Ergebnisse an alle Agents"
+  tooltip: "Agents registrieren lokale Container-Services, führen Health Checks aus und melden die Ergebnisse"
 }
 TRF -> srv: Consul Catalog API {
   style.stroke: "#7c3aed"

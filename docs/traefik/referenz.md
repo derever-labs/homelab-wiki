@@ -82,37 +82,27 @@ Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die 
 ### Authentik ForwardAuth
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: {
-    style: {
-      border-radius: 8
-    }
+    style.border-radius: 8
   }
 }
 
-direction: right
-
 User: User { class: node }
-Traefik: Traefik { class: node }
-chain: Middleware Chain { class: node }
+Traefik: Traefik { class: node; tooltip: "Wendet die am Router konfigurierte Middleware Chain an" }
 ipcheck: ipAllowList (intern) oder CrowdSec (public) { class: node }
 fwdauth: authentik-forward-auth { class: node }
-authentik: Authentik { class: node; tooltip: "ForwardAuth /outpost.goauthentik.io/..." }
+authentik: Authentik { class: node; tooltip: "ForwardAuth-Endpoint /outpost.goauthentik.io/..." }
 Backend: Backend { class: node }
 
-User -> Traefik
-Traefik -> chain
-chain -> ipcheck
+User -> Traefik: Request
+Traefik -> ipcheck: Middleware Chain
 ipcheck -> fwdauth
-fwdauth -> authentik: { style.stroke-dash: 5 }
-fwdauth -> Backend
+fwdauth <-> authentik: Subrequest {
+  style.stroke-dash: 5
+  tooltip: "Ohne gültige Session antwortet der Outpost mit 302 zum Login"
+}
+fwdauth -> Backend: Request nach erfolgreicher Auth
 ```
 
 ### Authentik-Callback

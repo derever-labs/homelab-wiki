@@ -18,24 +18,12 @@ Das Homelab erstreckt sich über drei Standorte -- **Lenzburg** (Hauptstandort),
 Drei Standorte mit je eigenem UniFi-Gateway und Internet-Uplink, zu einem logischen Netz verbunden über das Tailscale-Overlay (`tag:homelab`). Standort-Tabelle und Beschreibung je Standort: [Standorte](./standorte.md).
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: down
-
 classes: {
   site: {
     style.stroke-dash: 4
     style.border-radius: 8
   }
   node: {
-    style.border-radius: 8
-  }
-  overlay: {
-    style.stroke-dash: 4
     style.border-radius: 8
   }
   tslink: {
@@ -88,23 +76,22 @@ luzern: Standort Luzern {
 }
 
 tailscale: Tailscale Overlay {
-  class: overlay
-  tooltip: "tag:homelab, 100.64.0.0/10"
-  tsmesh: Mesh-VPN { class: node; tooltip: "Subnet-Router je Standort verbinden die LANs" }
+  class: node
+  tooltip: "tag:homelab, 100.64.0.0/10 -- Subnet-Router je Standort verbinden die LANs"
 }
 
 internet -> lenzburg.lzgw: WAN
 internet -> dottikon.dogw: WAN
 internet -> luzern.lugw: WAN
 
-lenzburg.lzsvc -> tailscale.tsmesh: Subnet-Router + Exit-Node {
+lenzburg.lzsvc -> tailscale: Subnet-Router + Exit-Node {
   class: tslink
   tooltip: "vm-traefik-01/02, zusätzlich pve00"
 }
-dottikon.dopve -> tailscale.tsmesh: Subnet-Router 192.168.2.0/23 {
+dottikon.dopve -> tailscale: Subnet-Router 192.168.2.0/23 {
   class: tslink
 }
-luzern.lupve -> tailscale.tsmesh: Subnet-Router 172.16.0.0/24 {
+luzern.lupve -> tailscale: Subnet-Router 172.16.0.0/24 {
   class: tslink
   tooltip: "Route redundant auch via apple-tv"
 }
@@ -121,82 +108,73 @@ Die **Proxmox-Verwaltungs- und Backup-Sicht** derselben Standorte (PDM verwaltet
 Das VLAN-Setup des Hauptstandorts: fünf Segmente hinter dem UDM Pro, plus das Thunderbolt-Peer-Netz und das Tailscale-Overlay.
 
 ```d2
-direction: down
-
-WAN: WAN / Internet {
-  style.stroke-dash: 4
-  ISP: ISP Router { style.border-radius: 8 }
+classes: {
+  seg: {
+    style.stroke-dash: 4
+    style.border-radius: 8
+  }
+  node: {
+    style.border-radius: 8
+  }
 }
 
-Core: Core Network {
-  style.stroke-dash: 4
-  UDMPRO: UDM Pro (Router) { style.border-radius: 8 }
-  USL8A: USL8A (10G Aggregation) { style.border-radius: 8 }
-  UDMPRO -> USL8A
+wan: ISP-Router {
+  class: node
+  tooltip: "PPPoE-Terminierung, statische öffentliche IP"
 }
 
-MGMT: "Management (native) 10.0.0.0/22" {
-  style.stroke-dash: 4
-  PVE00: pve00 { tooltip: "10.0.2.40"; style.border-radius: 8 }
-  PVE01: pve01 { tooltip: "10.0.2.41"; style.border-radius: 8 }
-  PVE02: pve02 { tooltip: "10.0.2.42"; style.border-radius: 8 }
-  DNS01: lxc-dns-01 { tooltip: "10.0.2.1"; style.border-radius: 8 }
-  DNS02: lxc-dns-02 { tooltip: "10.0.2.2"; style.border-radius: 8 }
-  TRF01: vm-traefik-01 { tooltip: "10.0.2.21"; style.border-radius: 8 }
-  TRF02: vm-traefik-02 { tooltip: "10.0.2.22"; style.border-radius: 8 }
-  NS04: vm-nomad-server-04 { tooltip: "10.0.2.104"; style.border-radius: 8 }
-  NS05: vm-nomad-server-05 { tooltip: "10.0.2.105"; style.border-radius: 8 }
-  NS06: vm-nomad-server-06 { tooltip: "10.0.2.106"; style.border-radius: 8 }
-  NC04: vm-nomad-client-04 { tooltip: "10.0.2.124"; style.border-radius: 8 }
-  NC05: vm-nomad-client-05 { tooltip: "10.0.2.125"; style.border-radius: 8 }
-  NC06: vm-nomad-client-06 { tooltip: "10.0.2.126"; style.border-radius: 8 }
-  PBS: pbs-backup-server { tooltip: "10.0.2.50"; style.border-radius: 8 }
-  CMK: checkmk { tooltip: "10.0.2.150"; style.border-radius: 8 }
-  DCM: datacenter-manager { tooltip: "10.0.2.60"; style.border-radius: 8 }
-  NAS: Synology NAS { tooltip: "10.0.0.200"; style.border-radius: 8 }
-  HA: Home Assistant { tooltip: "10.0.0.100"; style.border-radius: 8 }
+core: Core {
+  class: seg
+  udm: UDM Pro { class: node; tooltip: "Router + Controller, 10.0.0.1 -- Gateway aller VLANs" }
+  agg: USL8A (10G-Aggregation) { class: node }
+  udm -> agg: 10G
 }
 
-DEV: Device Network VLAN 10 {
-  style.stroke-dash: 4
-  DEVGW: Gateway { tooltip: "10.0.10.1"; style.border-radius: 8 }
+mgmt: "Management (native)\n10.0.0.0/22" {
+  class: seg
+  tooltip: "Proxmox-Hosts, Nomad-VMs, DNS-LXCs, Traefik-VMs, NAS, PBS, PDM, CheckMK, Home Assistant -- IPs siehe Hosts und IPs"
+}
+dev: "Device VLAN 10\n10.0.10.0/24" {
+  class: seg
+  tooltip: "Endgeräte"
+}
+guest: "Guest VLAN 30\n10.0.30.0/24" {
+  class: seg
+  tooltip: "Gäste-WLAN"
+}
+rack: "Rack VLAN 100\n10.0.100.0/24" {
+  class: seg
+  tooltip: "Rack-Infrastruktur"
+}
+iot: "IoT VLAN 200\n10.0.200.0/24" {
+  class: seg
+  tooltip: "Home Assistant, Zigbee, NAS"
 }
 
-GUEST: Guest Network VLAN 30 {
-  style.stroke-dash: 4
-  GUESTGW: Gateway { tooltip: "10.0.30.1"; style.border-radius: 8 }
+tb: "Thunderbolt P2P\n10.99.1.0/24" {
+  class: seg
+  tooltip: "DRBD-Replikation + VM-Migration, läuft nicht über den Switch"
+}
+ts: "Tailscale Overlay\n100.64.0.0/10" {
+  class: seg
+  tooltip: "CGNAT-Overlay über die drei Standorte"
 }
 
-RACK: Rack Network VLAN 100 {
-  style.stroke-dash: 4
-  RACKGW: Gateway { tooltip: "10.0.100.1"; style.border-radius: 8 }
-}
+wan -> core.udm: SFP+ (eth9)
+core.agg -> mgmt
+core.agg -> dev
+core.agg -> guest
+core.agg -> rack
+core.agg -> iot
 
-IOT: IoT Network VLAN 200 {
-  style.stroke-dash: 4
-  IOTGW: Gateway { tooltip: "10.0.200.1"; style.border-radius: 8 }
-  ZIG: Zigbee Node { style.border-radius: 8 }
+mgmt <-> tb: pve01/pve02 direkt {
+  style.stroke-dash: 3
+  tooltip: "Zwei TB4-Kabel als Bond, am Switch vorbei"
 }
-
-TB: Thunderbolt P2P 10.99.1.0/24 {
-  style.stroke-dash: 4
-  TB01: pve01-tb { tooltip: "10.99.1.1"; style.border-radius: 8 }
-  TB02: pve02-tb { tooltip: "10.99.1.2"; style.border-radius: 8 }
+mgmt <-> ts: Subnet-Router {
+  style.stroke-dash: 3
+  tooltip: "vm-traefik-01/02 (10.0.0.0/22, Exit-Node) und pve00 (VLAN-Subnetze) advertisieren ins Tailnet"
 }
-
-TS: Tailscale Overlay 100.64.0.0/10 {
-  style.stroke-dash: 4
-  TAIL: Tailscale CGNAT { style.border-radius: 8 }
-}
-
-WAN.ISP -> Core.UDMPRO: SFP+ (eth9)
-Core.USL8A -> MGMT
-Core.USL8A -> DEV
-Core.USL8A -> GUEST
-Core.USL8A -> RACK
-Core.USL8A -> IOT
-TB.TB01 <-> TB.TB02: DRBD + Migration
-TS.TAIL -> Core.UDMPRO: VPN Overlay { style.stroke-dash: 5 }
 ```
 
 ## Lenzburg -- Physische Topologie
@@ -204,24 +182,28 @@ TS.TAIL -> Core.UDMPRO: VPN Overlay { style.stroke-dash: 5 }
 Verkabelung von Gateway, Aggregation-Switch, Zugangs-Switches und Access Points am Hauptstandort. Modelle und Standorte: [Hardware-Inventar](../_referenz/hardware-inventar.md#unifi-netzwerk-hardware).
 
 ```d2
-direction: down
+classes: {
+  node: {
+    style.border-radius: 8
+  }
+}
 
-ISP: ISP-Router { tooltip: "WAN-Uplink"; style.border-radius: 8 }
-UDM: UDM Pro { tooltip: "Gateway + Controller"; style.border-radius: 8 }
-AGG: "10G-Switch-Rack (USL8A)" { style.border-radius: 8 }
-SW_KELLER: "POE-Switch-Keller (US-8-60W)" { style.border-radius: 8 }
-SW_KAMMERLI: "1G-Switch-Kämmerli (US-24)" { style.border-radius: 8 }
-SW_24_2: "US-24 (unnamed)" { style.border-radius: 8 }
-SW_150W: "US-8-150W (unnamed)" { style.border-radius: 8 }
-FLEX_DANI: Flex Mini Dani { style.border-radius: 8 }
-FLEX_GAESTE: Flex Mini Gäste { style.border-radius: 8 }
-AP_WERKSTADT: "AP-AC-LR Werkstadt" { style.border-radius: 8 }
-AP_DANI: "AP-AC-LR Dani" { style.border-radius: 8 }
-AP_GASTE: "AP-AC-LR Gäste" { style.border-radius: 8 }
-AP_KOFFER: "AP-AC-LR Koffer" { style.border-radius: 8 }
-AP_GARAGE: "AP-AC-LR Garage" { style.border-radius: 8 }
-AP_NINA: "AP-U6-Pro Nina" { style.border-radius: 8 }
-AP_KUCHE: "AP-U6-Pro Küche" { style.border-radius: 8 }
+ISP: ISP-Router { class: node; tooltip: "WAN-Uplink" }
+UDM: UDM Pro { class: node; tooltip: "Gateway + Controller" }
+AGG: "10G-Switch-Rack (USL8A)" { class: node }
+SW_KELLER: "POE-Switch-Keller (US-8-60W)" { class: node }
+SW_KAMMERLI: "1G-Switch-Kämmerli (US-24)" { class: node }
+SW_24_2: "US-24 (unnamed)" { class: node }
+SW_150W: "US-8-150W (unnamed)" { class: node }
+FLEX_DANI: Flex Mini Dani { class: node }
+FLEX_GAESTE: Flex Mini Gäste { class: node }
+AP_WERKSTADT: "AP-AC-LR Werkstadt" { class: node }
+AP_DANI: "AP-AC-LR Dani" { class: node }
+AP_GASTE: "AP-AC-LR Gäste" { class: node }
+AP_KOFFER: "AP-AC-LR Koffer" { class: node }
+AP_GARAGE: "AP-AC-LR Garage" { class: node }
+AP_NINA: "AP-U6-Pro Nina" { class: node }
+AP_KUCHE: "AP-U6-Pro Küche" { class: node }
 
 ISP -> UDM: "SFP+ (eth9)"
 UDM -> AGG: 10G

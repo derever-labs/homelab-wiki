@@ -22,19 +22,10 @@ Nomad ist der Workload-Scheduler des Homelabs. Er entscheidet auf welchem Worker
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: down
 
 servers: Nomad Server Cluster {
   class: container
@@ -56,6 +47,9 @@ servers: Nomad Server Cluster {
     style.stroke: "#6b7280"
   }
   S05 <-> S06: Raft {
+    style.stroke: "#6b7280"
+  }
+  S06 <-> S04: Raft {
     style.stroke: "#6b7280"
   }
 }
