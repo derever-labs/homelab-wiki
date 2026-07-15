@@ -24,25 +24,18 @@ Audiobookshelf ist der zentrale Server für Hörbücher und Podcasts. Die Mediat
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
-Client: Clients {
+Clients: Zugriff {
   style.stroke-dash: 4
-  APP: "Audiobookshelf App (iOS/Android)" { style.border-radius: 8 }
+  APP: "Audiobookshelf-App\n(iOS/Android)" { style.border-radius: 8 }
   WEB: Web-UI { style.border-radius: 8 }
 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
-  tooltip: "10.0.2.20"
-  INT: "Router: intern intern-noauth" { style.border-radius: 8 }
-  EXT: "Router: extern public-auth" { style.border-radius: 8 }
+  INT: "Router intern\nintern-noauth" { style.border-radius: 8 }
+  EXT: "Router extern\npublic-auth" { style.border-radius: 8 }
 }
 
 Nomad: Nomad Cluster {
@@ -50,23 +43,19 @@ Nomad: Nomad Cluster {
   ABS: Audiobookshelf { style.border-radius: 8 }
 }
 
-CSI: Linstor CSI {
+Storage: Storage {
   style.stroke-dash: 4
-  CFG: "config + metadata" { shape: cylinder }
+  CFG: "Linstor CSI\nconfig + metadata" { shape: cylinder }
+  BOOKS: "NFS /nfs/jellyfin/media/books/" { shape: cylinder }
 }
 
-NFS: NAS {
-  style.stroke-dash: 4
-  BOOKS: "/nfs/jellyfin/media/books/" { shape: cylinder }
-}
-
-Client.APP -> Traefik.INT: HTTPS intern
-Client.APP -> Traefik.EXT: HTTPS extern
-Client.WEB -> Traefik.EXT: HTTPS
+Clients.APP -> Traefik.INT: HTTPS intern
+Clients.APP -> Traefik.EXT: HTTPS extern
+Clients.WEB -> Traefik.EXT: HTTPS
 Traefik.INT -> Nomad.ABS
 Traefik.EXT -> Nomad.ABS
-Nomad.ABS -> CSI.CFG
-Nomad.ABS -> NFS.BOOKS
+Nomad.ABS -> Storage.CFG
+Nomad.ABS -> Storage.BOOKS
 ```
 
 ## Verwandte Seiten

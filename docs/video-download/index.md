@@ -26,25 +26,21 @@ Vier Web-UIs für den manuellen Download von Videos. Jedes Tool hat einen spezif
 ```d2
 direction: right
 
-Clients: Zugriff {
-  style.stroke-dash: 4
-  Browser: Browser { style.border-radius: 8 }
-}
+Browser: Browser { style.border-radius: 8 }
 
-Traefik: "Traefik (10.0.2.20)" {
+Traefik: "Traefik\n(intern-auth-strict)" {
   style.stroke-dash: 4
-  tooltip: "10.0.2.20"
-  T1: "download.*" { style.border-radius: 8 }
-  T2: "s-download.*" { style.border-radius: 8 }
-  T3: "s2-download.*" { style.border-radius: 8 }
-  T4: "grab.*" { style.border-radius: 8 }
+  T1: "Router download.*" { style.border-radius: 8 }
+  T2: "Router s-download.*" { style.border-radius: 8 }
+  T3: "Router s2-download.*" { style.border-radius: 8 }
+  T4: "Router grab.*" { style.border-radius: 8 }
 }
 
 Nomad: Nomad Cluster {
   style.stroke-dash: 4
-  YDL: "youtube-dl (youtubedl-material)" { style.border-radius: 8 }
-  SYDL: "special-youtube-dl (youtubedl-material)" { style.border-radius: 8 }
-  SYTDLP: "special-yt-dlp (yt-dlp-webui)" { style.border-radius: 8 }
+  YDL: "youtube-dl\n(youtubedl-material)" { style.border-radius: 8 }
+  SYDL: "special-youtube-dl\n(youtubedl-material)" { style.border-radius: 8 }
+  SYTDLP: "special-yt-dlp\n(yt-dlp-webui)" { style.border-radius: 8 }
   VG: video-grabber { style.border-radius: 8 }
 }
 
@@ -54,10 +50,10 @@ Storage: Ziel-Storage {
   ST: "NFS Stash-Datenverzeichnis" { shape: cylinder }
 }
 
-Clients.Browser -> Traefik.T1
-Clients.Browser -> Traefik.T2
-Clients.Browser -> Traefik.T3
-Clients.Browser -> Traefik.T4
+Browser -> Traefik.T1
+Browser -> Traefik.T2
+Browser -> Traefik.T3
+Browser -> Traefik.T4
 Traefik.T1 -> Nomad.YDL
 Traefik.T2 -> Nomad.SYDL
 Traefik.T3 -> Nomad.SYTDLP

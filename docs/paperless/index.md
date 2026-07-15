@@ -31,24 +31,14 @@ Paperless-ngx ist das zentrale Dokumenten-Management-System (DMS) im Homelab. Es
 Paperless-ngx besteht aus mehreren Komponenten: dem Webserver (Django), einem Consumer-Prozess der neue Dokumente im Consume-Verzeichnis erkennt und verarbeitet, und einem Scheduler für periodische Aufgaben. In der vereinfachten Deployment-Variante (`paperless-simple`) laufen alle Komponenten in einem Container.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
-Input: Dokumenteneingang {
-  style.stroke-dash: 4
-  SCAN: "Scanner / E-Mail" { style.border-radius: 8 }
-}
+USER: Browser { style.border-radius: 8 }
+SCAN: "Scanner / E-Mail" { style.border-radius: 8 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
-  tooltip: 10.0.2.20
-  R1: "Router: paperless.*\nintern-auth" { style.border-radius: 8 }
+  R1: "Router paperless.*\nintern-auth" { style.border-radius: 8 }
 }
 
 Nomad: Nomad Cluster {
@@ -57,14 +47,12 @@ Nomad: Nomad Cluster {
   PG: "PostgreSQL\n(postgres.service.consul)" { shape: cylinder }
 }
 
-Storage: {
-  style.stroke-dash: 4
-  CSI: "Linstor CSI\npaperless-data-r2" { shape: cylinder }
-}
+CSI: "Linstor CSI\npaperless-data-r2" { shape: cylinder }
 
-Input.SCAN -> Storage.CSI: Datei in /consume
+USER -> Traefik.R1: HTTPS
+SCAN -> CSI: Datei in /consume
 Traefik.R1 -> Nomad.PL
-Nomad.PL -> Storage.CSI: "Consumer liest /consume,\nschreibt /media + /data"
+Nomad.PL -> CSI: "Consumer liest /consume,\nschreibt /media + /data"
 Nomad.PL -> Nomad.PG
 ```
 

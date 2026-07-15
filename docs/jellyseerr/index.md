@@ -34,12 +34,6 @@ Die PostgreSQL-Datenbank `jellyseerr` wurde historisch per pgloader aus SQLite k
 Seerr leitet Anfragen automatisch an die zuständigen Arr-Services weiter, die den Download und die Organisation übernehmen.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
 USER: "User (wish.ackermannprivat.ch)" { style.border-radius: 8 }

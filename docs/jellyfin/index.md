@@ -34,23 +34,43 @@ Jellyfin streamt Medien vom NFS-Share und nutzt Linstor CSI für die persistente
 ```d2
 direction: right
 
-User: "User (watch.ackermannprivat.ch)" { style.border-radius: 8 }
-Traefik: Traefik { style.border-radius: 8 }
-JF: Jellyfin { style.border-radius: 8 }
-LDAP: "Authentik LDAP Outpost" { style.border-radius: 8 }
-NFS: "NFS /nfs/jellyfin" { shape: cylinder }
-CSI: "Linstor CSI jellyfin-config" { shape: cylinder }
-JS: Jellyseerr { style.border-radius: 8 }
-ARR: "Arr Stack (Radarr, Sonarr)" { style.border-radius: 8 }
+Clients: Zugriff {
+  style.stroke-dash: 4
+  USER: "Browser / Jellyfin-Apps" { style.border-radius: 8 }
+}
 
-User -> Traefik: HTTPS
-Traefik -> JF
-JF -> LDAP: LDAP Bind
-JF -> NFS: Medien lesen
-JF -> CSI: Config
-JS -> JF: Verfügbarkeit prüfen
-JS -> ARR: Requests
-ARR -> NFS: Downloads
+Traefik: Traefik {
+  style.stroke-dash: 4
+  R: "Router watch.*\npublic-noauth (kein ForwardAuth)" { style.border-radius: 8 }
+}
+
+Nomad: Nomad Cluster {
+  style.stroke-dash: 4
+  JF: Jellyfin { style.border-radius: 8 }
+}
+
+LDAP: "Authentik LDAP Outpost" { style.border-radius: 8 }
+
+Storage: Storage {
+  style.stroke-dash: 4
+  CSI: "Linstor CSI\njellyfin-config" { shape: cylinder }
+  NFS: "NFS /nfs/jellyfin" { shape: cylinder }
+}
+
+Wunsch: Wunsch-Kette {
+  style.stroke-dash: 4
+  JS: Jellyseerr { style.border-radius: 8 }
+  ARR: "Arr-Stack (Radarr, Sonarr)" { style.border-radius: 8 }
+}
+
+Clients.USER -> Traefik.R: HTTPS
+Traefik.R -> Nomad.JF
+Nomad.JF -> LDAP: LDAP Bind
+Nomad.JF -> Storage.CSI: Config
+Nomad.JF -> Storage.NFS: Medien lesen
+Wunsch.JS -> Nomad.JF: "Verfügbarkeit prüfen"
+Wunsch.JS -> Wunsch.ARR: Requests
+Wunsch.ARR -> Storage.NFS: Downloads
 ```
 
 ## Beziehung zu Jellyseerr

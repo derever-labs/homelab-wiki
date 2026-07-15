@@ -28,48 +28,27 @@ Wird unter anderem für das [Immobilien-Monitoring](../immobilien-monitoring/ind
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
-USER: Browser {
-  style.border-radius: 8
-}
+USER: Browser { style.border-radius: 8 }
 
 Traefik: Traefik {
   style.stroke-dash: 4
-  tooltip: 10.0.2.20
-  R1: "Router: change.*\nintern-auth" {
-    style.border-radius: 8
-  }
+  R1: "Router change.*\nintern-auth" { style.border-radius: 8 }
 }
 
-Nomad: Nomad Job {
+Nomad: "Nomad-Job changedetection" {
   style.stroke-dash: 4
-  CD: "ChangeDetection\n(Port 5000)" {
-    style.border-radius: 8
-  }
-  PW: "Playwright Chrome\n(Sidecar, Port 3000)" {
-    style.border-radius: 8
-  }
+  CD: ChangeDetection { style.border-radius: 8 }
+  PW: "Playwright Chrome\n(Sidecar)" { style.border-radius: 8 }
 }
 
-External: Externe Websites {
-  style.stroke-dash: 4
-  WEB: "Überwachte\nWebseiten" {
-    style.border-radius: 8
-  }
-}
+WEB: "Überwachte Webseiten" { style.border-radius: 8 }
 
 USER -> Traefik.R1: HTTPS
-Traefik.R1 -> Nomad.CD: HTTP :5000
+Traefik.R1 -> Nomad.CD
 Nomad.CD -> Nomad.PW: WebSocket
-Nomad.PW -> External.WEB: HTTP/JS
+Nomad.PW -> WEB: "HTTP + JS-Rendering"
 ```
 
 ## Konfiguration
