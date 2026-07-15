@@ -37,81 +37,64 @@ Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Fa
 **Wichtig:** Linstor Controller ist für Active/Passive designed -- nur EIN Controller kann gleichzeitig laufen!
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-direction: down
+linstor: Linstor-Cluster (Quorum 2/3) {
+  class: container
 
-DB: DRBD Resource linstor_db {
+  c05: vm-nomad-client-05 {
+    class: node
+    tooltip: "10.0.2.125, TB 10.99.1.105 -- Satellite + Controller-Kandidat, drbd-reactor managed"
+  }
+  c06: vm-nomad-client-06 {
+    class: node
+    tooltip: "10.0.2.126, TB 10.99.1.106 -- Satellite + Controller-Kandidat, drbd-reactor managed"
+  }
+  c04: vm-nomad-client-04 (diskless) {
+    class: node
+    tooltip: "10.0.2.124 -- Satellite ohne Storage, nur Quorum-Witness"
+  }
+
+  c05 <-> c06: DRBD-Replikation (Thunderbolt) {
+    style.stroke: "#2563eb"
+    tooltip: "10.99.1.0/24, ~20 Gbit/s -- alle Volumes inkl. linstor_db (H2-Controller-DB)"
+  }
+  c05 -- c04: Quorum (Management) {
+    style.stroke: "#6b7280"
+    tooltip: "10.0.2.0/24, 1 Gbit -- node-connection path management-path"
+  }
+  c06 -- c04: Quorum (Management) {
+    style.stroke: "#6b7280"
+    tooltip: "10.0.2.0/24, 1 Gbit -- node-connection path management-path"
+  }
+}
+
+svc: linstor-controller.service.consul {
   class: node
-  tooltip: "Quorum 2/3 | H2 Datenbank für Linstor Controller State"
+  tooltip: "Consul-Service mit DNS-TTL 0 -- zeigt immer auf den aktiven Controller"
 }
 
-C05: vm-nomad-client-05 -- ACTIVE {
-  class: container
-
-  C05a: Linstor Controller + Satellite {
-    class: node
-    tooltip: "10.0.2.125 | TB: 10.99.1.105 | 200 GB ZFS, drbd-reactor managed"
-  }
-}
-
-C06: vm-nomad-client-06 -- STANDBY {
-  class: container
-
-  C06a: Linstor Satellite (Standby Controller) {
-    class: node
-    tooltip: "10.0.2.126 | TB: 10.99.1.106 | 200 GB ZFS, drbd-reactor übernimmt bei Failover"
-  }
-}
-
-C04: vm-nomad-client-04 -- TieBreaker {
-  class: container
-
-  C04a: Satellite (Diskless) {
-    class: node
-    tooltip: "10.0.2.124 | Kein Storage, nur Quorum-Witness"
-  }
-}
-
-CSI: Nomad CSI Plugin {
+csi: Nomad CSI Plugin {
   class: node
-  tooltip: "linstor.csi.linbit.com | Endpoint: linstor-controller.service.consul:3370"
+  tooltip: "linstor.csi.linbit.com, privileged -- system/linstor-csi.nomad"
 }
 
-DB -- C05: DRBD Primary {
-  style.stroke: "#854d0e"
-  tooltip: "Aktive H2 DB auf dem Controller-Node"
-}
-DB -- C06: DRBD Secondary {
+linstor.c05 -> svc: registriert wenn aktiv {
   style.stroke: "#854d0e"
   style.stroke-dash: 3
-  tooltip: "Synchrone Replikation der H2 DB"
+  tooltip: "drbd-reactor promotet den DRBD-Primary, startet Controller + Consul-Registrierung"
 }
-C05 <-> C06: Thunderbolt ~20 Gbit/s {
-  style.stroke: "#2563eb"
-  tooltip: "10.99.1.0/24 | DRBD-Replikation aller Volumes"
+linstor.c06 -> svc: registriert wenn aktiv {
+  style.stroke: "#854d0e"
+  style.stroke-dash: 3
+  tooltip: "drbd-reactor promotet den DRBD-Primary, startet Controller + Consul-Registrierung"
 }
-C05 -> C04: Management 1 Gbit {
-  style.stroke: "#6b7280"
-  tooltip: "10.0.2.0/24 | Control Plane, Quorum"
-}
-C06 -> C04: Management 1 Gbit {
-  style.stroke: "#6b7280"
-  tooltip: "10.0.2.0/24 | Control Plane, Quorum"
-}
-CSI -> C05: Linstor API {
+csi -> svc: Linstor API (HTTP :3370) {
   style.stroke: "#7c3aed"
-  tooltip: "HTTP :3370 via Consul Service Discovery"
+  tooltip: "Endpoint via Consul Service Discovery -- Failover ohne CSI-Anpassung"
 }
 ```
 

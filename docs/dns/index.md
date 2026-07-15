@@ -28,19 +28,10 @@ DNS ist die Basis-Dependency für alle Netzwerk-Clients und Nomad-Services. Die 
 Beide LXCs sind identisch konfiguriert:
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: down
 
 Client: Netzwerk-Client {
   class: node
@@ -52,14 +43,14 @@ pihole: Pi-hole v6 (DNS-Eingang) {
 
   PH1: lxc-dns-01 (Primary) {
     class: node
-    tooltip: "10.0.2.1 | LXC 4021 auf pve01, Port 53, FTL/dnsmasq"
+    tooltip: "10.0.2.1, LXC auf pve01, Port 53, FTL/dnsmasq"
   }
   PH2: lxc-dns-02 (Secondary) {
     class: node
-    tooltip: "10.0.2.2 | LXC 4022 auf pve02, Port 53, FTL/dnsmasq"
+    tooltip: "10.0.2.2, LXC auf pve02, Port 53, FTL/dnsmasq"
   }
 
-  PH1 <-> PH2: Nebula-Sync (täglich 04:00) {
+  PH1 <-> PH2: Nebula-Sync {
     style.stroke: "#6b7280"
     style.stroke-dash: 3
     tooltip: "Full Teleporter Sync, Nomad Service-Job mit internem Cron"
@@ -67,35 +58,23 @@ pihole: Pi-hole v6 (DNS-Eingang) {
 }
 
 consul: Consul DNS {
-  class: container
-
-  CS1: vm-nomad-server-04 {
-    class: node
-    tooltip: "10.0.2.104 | Port 8600"
-  }
-  CS2: vm-nomad-server-05 {
-    class: node
-    tooltip: "10.0.2.105 | Port 8600"
-  }
-  CS3: vm-nomad-server-06 {
-    class: node
-    tooltip: "10.0.2.106 | Port 8600"
-  }
+  class: node
+  tooltip: "vm-nomad-server-04/05/06, Port 8600 -- Service Discovery für Nomad-Container"
 }
 
 Router: UDM Pro {
   class: node
-  tooltip: "10.0.0.1 | Löst *.local auf"
+  tooltip: "10.0.0.1 -- löst *.local auf"
 }
 
 Traefik: Traefik VIP {
   class: node
-  tooltip: "10.0.2.20 | Wildcard *.ackermannprivat.ch / *.ackermann.systems"
+  tooltip: "10.0.2.20 -- Ziel der Wildcard-Records *.ackermannprivat.ch / *.ackermann.systems"
 }
 
 Unbound: Unbound {
   class: node
-  tooltip: "Port 5335 (localhost) | Rekursiver Resolver mit DNSSEC"
+  tooltip: "Port 5335 (localhost), rekursiver Resolver mit DNSSEC"
 }
 
 Root: Root DNS Server {
@@ -106,17 +85,18 @@ Root: Root DNS Server {
 Client -> pihole: DNS Query (Port 53) {
   style.stroke: "#2563eb"
 }
-pihole -> consul: *.consul (Conditional Forwarding) {
+pihole -> consul: "*.consul (Conditional Forwarding)" {
   style.stroke: "#7c3aed"
-  tooltip: "Port 8600 | Service Discovery für Nomad-Container"
+  tooltip: "Port 8600"
 }
-pihole -> Router: *.local {
+pihole -> Router: "*.local (Conditional Forwarding)" {
   style.stroke: "#6b7280"
   tooltip: "UniFi-Geräte und DHCP-Hostnamen"
 }
-pihole -> Traefik: *.ackermannprivat.ch / *.ackermann.systems {
+pihole -> Traefik: Antwort aus lokalem Wildcard-Record {
   style.stroke: "#16a34a"
-  tooltip: "Wildcard-DNS zeigt auf Traefik VIP 10.0.2.20"
+  style.stroke-dash: 3
+  tooltip: "Kein Forwarding -- Pi-hole antwortet für *.ackermannprivat.ch / *.ackermann.systems direkt mit der Traefik-VIP"
 }
 pihole -> Unbound: Alle anderen Domains {
   style.stroke: "#6b7280"

@@ -21,20 +21,16 @@ Diese Seite ist die kanonische Quelle für Tailscale-IPs. Die Tooltips im Diagra
 :::
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: right
-
 classes: {
   cluster: {
     style.stroke-dash: 4
   }
   host: {
     style.border-radius: 8
+  }
+  nets: {
+    style.border-radius: 8
+    style.stroke-dash: 2
   }
   blocked: {
     style.stroke: "#cc3333"
@@ -55,8 +51,8 @@ HSLU: "tag:hslu" {
   OPN1: opn-01 { class: host; tooltip: "FreeBSD, 100.113.244.85, Subnet-Router" }
   OPN2: opn-02 { class: host; tooltip: "FreeBSD, 100.110.151.3, Subnet-Router" }
   MESSE: messe-pc-hslu { class: host; tooltip: "Windows, 100.116.116.63" }
-  HSLUNETS: "10.180.0.0/16, 147.88.0.0/16, 147.88.202.0/24, 192.168.50.0/24" {
-    class: host
+  HSLUNETS: "advertisierte Subnetze:\n10.180.0.0/16, 147.88.0.0/16,\n147.88.202.0/24, 192.168.50.0/24" {
+    class: nets
   }
 }
 
@@ -68,15 +64,14 @@ HOMELAB: "tag:homelab" {
   PVELU: pve-lu-01 { class: host; tooltip: "Linux, 100.112.213.18, Subnet-Router 172.16.0.0/24" }
   PVE00: pve00 { class: host; tooltip: "Linux, 100.89.174.31, Subnet-Router Lenzburg-VLANs" }
   MORE: "weitere Hosts" { class: host; tooltip: "pdm, checkmk-homelab, pve01, pve02, homeassistant (HA-Luzern) -- Tailnet-Mitglieder ohne Subnet-Routes" }
-  HOMELABNETS: "10.0.0.0/22, 192.168.2.0/23, 172.16.0.0/24" {
-    class: host
+  HOMELABNETS: "advertisierte Subnetze:\n10.0.0.0/22, 192.168.2.0/23,\n172.16.0.0/24" {
+    class: nets
   }
 }
 
 ADMIN -> HSLU: erlaubt
 ADMIN -> HOMELAB: erlaubt
-HSLU -> HOMELAB: blockiert { class: blocked }
-HOMELAB -> HSLU: blockiert { class: blocked }
+HSLU <-> HOMELAB: blockiert { class: blocked }
 ```
 
 ## Subnet-Router-Topologie
@@ -84,14 +79,6 @@ HOMELAB -> HSLU: blockiert { class: blocked }
 Drei physische Standorte sind über Tailscale verbunden. Jeder Standort hat mindestens einen Subnet-Router, der das lokale Netz ins Tailnet advertisiert.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: right
-
 classes: {
   standort: {
     style.stroke-dash: 4
@@ -112,15 +99,15 @@ LENZBURG: Standort Lenzburg {
   class: standort
   TRF1: vm-traefik-01 {
     class: router
-    tooltip: "tag:homelab; 100.101.37.122; Exit-Node; advertisiert 10.0.0.0/22"
+    tooltip: "tag:homelab, 100.101.37.122, Exit-Node"
   }
   TRF2: vm-traefik-02 {
     class: router
-    tooltip: "tag:homelab; 100.91.238.106; Exit-Node; advertisiert 10.0.0.0/22"
+    tooltip: "tag:homelab, 100.91.238.106, Exit-Node"
   }
   PVE00: pve00 {
     class: router
-    tooltip: "tag:homelab; 100.89.174.31; advertisiert 10.0.0.0/21, 10.0.10.0/23, 10.0.100.0/23, 10.0.200.0/23"
+    tooltip: "tag:homelab, 100.89.174.31"
   }
 }
 
@@ -128,7 +115,7 @@ DOTTIKON: Standort Dottikon {
   class: standort
   NANA: pve-01-nana {
     class: router
-    tooltip: "tag:homelab; 100.81.116.122; advertisiert 192.168.2.0/23"
+    tooltip: "tag:homelab, 100.81.116.122"
   }
 }
 
@@ -136,20 +123,22 @@ LUZERN: Standort Luzern {
   class: standort
   PVELU: pve-lu-01 {
     class: router
-    tooltip: "tag:homelab; 100.112.213.18; advertisiert 172.16.0.0/24"
+    tooltip: "tag:homelab, 100.112.213.18"
   }
   ATV: apple-tv {
     class: router
-    tooltip: "tag:admin; 100.106.104.34; advertisiert 172.16.0.0/24 (redundant)"
+    tooltip: "tag:admin, 100.106.104.34"
   }
 }
 
 LENZBURG.TRF1 -> TAILNET: "10.0.0.0/22"
 LENZBURG.TRF2 -> TAILNET: "10.0.0.0/22"
-LENZBURG.PVE00 -> TAILNET: "10.0.0.0/21\n10.0.10.0/23\n10.0.100.0/23\n10.0.200.0/23"
+LENZBURG.PVE00 -> TAILNET: "10.0.0.0/21 + VLAN-Subnetze" {
+  tooltip: "10.0.0.0/21, 10.0.10.0/23, 10.0.100.0/23, 10.0.200.0/23"
+}
 DOTTIKON.NANA -> TAILNET: "192.168.2.0/23"
 LUZERN.PVELU -> TAILNET: "172.16.0.0/24"
-LUZERN.ATV -> TAILNET: "172.16.0.0/24"
+LUZERN.ATV -> TAILNET: "172.16.0.0/24 (redundant)"
 ```
 
 ::: warning Quell-IPs hinter Subnet-Routern

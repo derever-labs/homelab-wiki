@@ -41,28 +41,19 @@ IPs, DNS und Details: [Hosts und IPs -- Externe Plattformen](../_referenz/hosts-
 ### Standort-Topologie
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-direction: right
-
 lenzburg: Standort Lenzburg {
   class: container
-  tooltip: "Homelab-Hauptstandort, 10.0.2.0/24"
+  tooltip: "Hauptstandort, 10.0.0.0/22"
 
   cluster: PVE-Cluster lenzburg {
     class: container
     pve00: pve00 { class: node; tooltip: "10.0.2.40 | Quorum" }
-    pve01: pve01 { class: node; tooltip: "10.0.2.41 | Compute + MASTER" }
+    pve01: pve01 { class: node; tooltip: "10.0.2.41 | Compute" }
     pve02: pve02 { class: node; tooltip: "10.0.2.42 | Compute" }
     pve01 <-> pve02: Thunderbolt / DRBD {
       style.stroke: "#6b7280"
