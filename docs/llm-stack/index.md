@@ -36,41 +36,48 @@ Zwei Komponenten bilden den lokalen LLM-Stack: Ollama hostet und betreibt die Sp
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
-User: Benutzer {
-  style.stroke-dash: 4
-  Browser: Browser { style.border-radius: 8 }
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
 }
+
+Client: "Browser /\nAPI-Client" { class: node }
 
 Traefik: "Traefik" {
-  style.stroke-dash: 4
-  tooltip: "IP siehe _referenz/hosts-und-ips.md"
-  RC: "Router: chat.*\nintern-noauth" { style.border-radius: 8 }
-  RO: "Router: ollama.*\nintern-noauth" { style.border-radius: 8 }
+  class: container
+  RC: "chat.*\n(intern-noauth)" { class: node }
+  RO: "ollama.*\n(intern-noauth)" { class: node }
 }
 
-Nomad: "Nomad Cluster" {
-  style.stroke-dash: 4
-  OW: "Open WebUI (chat.*)" { style.border-radius: 8 }
-  OL: "Ollama (ollama.*)" { style.border-radius: 8 }
+Nomad: "Nomad-Cluster" {
+  class: container
+  OW: "Open WebUI" { class: node }
+  OL: "Ollama" { class: node }
+  OW -> OL: "REST via Consul DNS"
 }
 
-NFS: "NFS /nfs/docker/ollama" { shape: cylinder }
-CSI_OW: "Linstor CSI\nopen-webui-data" { shape: cylinder }
+PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
+NFS: "NFS\nOllama-Modelle" { shape: cylinder }
+Vol: "Linstor CSI\nopen-webui-data" { shape: cylinder }
 
-User.Browser -> Traefik.RC: HTTPS
+Client -> Traefik.RC: Chat-UI
+Client -> Traefik.RO: Ollama-API
 Traefik.RC -> Nomad.OW
-Nomad.OW -> Nomad.OL: "HTTP :11434\nvia Consul DNS"
 Traefik.RO -> Nomad.OL
+Nomad.OW -> PG
+Nomad.OW -> Vol
 Nomad.OL -> NFS
-Nomad.OW -> CSI_OW
 ```
 
 ## Rolle im Stack

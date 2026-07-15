@@ -39,47 +39,65 @@ Selbstgehostete Zeiterfassung als Ersatz für Toggl Track. Zwei Tools parallel i
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
+direction: right
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+  db: {
+    shape: cylinder
   }
 }
 
-direction: right
-
-iPhone: iPhone {
-  style.stroke-dash: 4
-  PWA: solidtime PWA { style.border-radius: 8 }
-  SC1: "iOS Shortcut: Ankunft Horw" { style.border-radius: 8 }
-  SC2: "iOS Shortcut: Verlassen Horw" { style.border-radius: 8 }
+iPhone: "iPhone" {
+  class: container
+  PWA: "solidtime PWA" { class: node }
+  SC: "iOS-Shortcuts\n(Geofence Horw)" { class: node }
 }
+
+Browser: "Browser" { class: node }
+Git: "Git-Repos lokal\n(post-commit-Hook)" { class: node }
 
 Traefik: "Traefik" {
-  style.stroke-dash: 4
-  tooltip: "10.0.2.20"
-  R1: "Router: time.* (intern-auth)" { style.border-radius: 8 }
-  R2: "Router: time.*/api (kein OAuth)" { style.border-radius: 8 }
-  R3: "Router: n8n.*/webhook (kein OAuth)" { style.border-radius: 8 }
+  class: container
+  R1: "time.*\n(intern-auth)" { class: node }
+  R2: "time.*/api\n(ohne OAuth)" { class: node }
+  R3: "n8n.*/webhook\n(ohne OAuth)" { class: node }
+  R4: "kimai.*\n(intern-auth)" { class: node }
 }
 
-Nomad: Nomad Cluster {
-  style.stroke-dash: 4
-  ST: "solidtime (app, scheduler, worker, gotenberg)" { style.border-radius: 8 }
-  KI: "Kimai (kimai + mariadb)" { style.border-radius: 8 }
-  N8N: n8n { style.border-radius: 8 }
-  PG: PostgreSQL { shape: cylinder; style.border-radius: 8 }
+Nomad: "Nomad-Cluster" {
+  class: container
+  ST: "solidtime" { class: node }
+  N8N: "n8n" { class: node }
+  Kimai: "Kimai" {
+    class: container
+    APP: "kimai" { class: node }
+    DB: "MariaDB\n(Sidecar)" { class: db }
+    APP -> DB
+  }
+  PG: "PostgreSQL\nShared Cluster" { class: db }
 }
 
 iPhone.PWA -> Traefik.R1: HTTPS
-iPhone.SC1 -> Traefik.R3: GET /webhook/arbeit-start
-iPhone.SC2 -> Traefik.R3: GET /webhook/arbeit-stop
-Traefik.R1 -> Nomad.ST: Authentik ForwardAuth
+iPhone.SC -> Traefik.R3: "arbeit-start / arbeit-stop"
+Git -> Traefik.R3: git-commit
+Browser -> Traefik.R4: HTTPS
+Traefik.R1 -> Nomad.ST
 Traefik.R2 -> Nomad.ST
 Traefik.R3 -> Nomad.N8N
-Nomad.N8N -> Traefik.R2: API: Timer Start/Stop
+Traefik.R4 -> Nomad.Kimai.APP
+Nomad.N8N -> Traefik.R2: "solidtime-API\n(Timer und Zeitblöcke)"
 Nomad.ST -> Nomad.PG
-Nomad.KI -> Nomad.KI: MariaDB Sidecar { style.stroke-dash: 5 }
 ```
 
 ## Rolle im Stack
@@ -93,45 +111,26 @@ Automatisches Starten und Stoppen des solidtime-Timers basierend auf dem Standor
 ### Ablauf
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
+shape: sequence_diagram
+
+iphone: iPhone
+n8n: n8n
+st: solidtime
+
+Timer starten (Ankunft Horw): {
+  iphone -> n8n: "GET /webhook/arbeit-start"
+  n8n -> st: "POST time-entries (start=now, end=null)"
+  st -> n8n: Timer-ID
+  n8n -> iphone: status=started
 }
 
-direction: right
-
-classes: {
-  iphone: { style: { border-radius: 8; stroke: "#1a73e8" } }
-  n8n: { style: { border-radius: 8; stroke: "#e8710a" } }
-  solid: { style: { border-radius: 8; stroke: "#188038" } }
-  phase: { style: { border-radius: 8; stroke-dash: 4 } }
+Timer stoppen (Verlassen Horw): {
+  iphone -> n8n: "GET /webhook/arbeit-stop"
+  n8n -> st: "GET time-entries?active=true"
+  st -> n8n: laufender Timer
+  n8n -> st: "PUT time-entries (end=now)"
+  n8n -> iphone: status=stopped + duration
 }
-
-start: Ankunft Horw -- Timer starten {
-  class: phase
-  direction: down
-  hook: "iPhone GET\n/webhook/arbeit-start" { class: iphone }
-  post: "n8n POST time-entries\nstart=now, end=null" { class: n8n }
-  ack: "solidtime:\nTimer-ID" { class: solid }
-  resp: "n8n Response:\nstatus=started" { class: n8n }
-  hook -> post -> ack -> resp
-}
-
-stop: Verlassen Horw -- Timer stoppen {
-  class: phase
-  direction: down
-  hook: "iPhone GET\n/webhook/arbeit-stop" { class: iphone }
-  find: "n8n GET time-entries\n?active=true" { class: n8n }
-  cur: "solidtime:\nlaufender Timer" { class: solid }
-  close: "n8n PUT time-entries\nend=now" { class: n8n }
-  ack: "solidtime:\ngestoppter Timer" { class: solid }
-  resp: "n8n Response:\nstatus=stopped + duration" { class: n8n }
-  hook -> find -> cur -> close -> ack -> resp
-}
-
-start -> stop
 ```
 
 ### Einrichtung iOS

@@ -28,45 +28,26 @@ Ein CouchDB-Server synchronisiert Obsidian-Vaults in Echtzeit zwischen mehreren 
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
+direction: right
+
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
   }
 }
 
-classes: {
-  node: { style: { border-radius: 8 } }
-}
+Mac: "Obsidian\n(macOS)" { class: node }
+iOS: "Obsidian\n(iOS)" { class: node }
+Traefik: "Traefik: obsidian-sync.*\n(intern-noauth + CORS)" { class: node }
+CDB: "CouchDB\n(Nomad Job)" { class: node }
+Vol: "Linstor CSI\nobsidian-livesync-data" { shape: cylinder }
 
-direction: right
-
-Clients: {
-  style.stroke-dash: 4
-  MAC: "Obsidian\n(macOS)" { class: node }
-  IOS: "Obsidian\n(iOS)" { class: node }
-}
-
-Traefik: Traefik {
-  style.stroke-dash: 4
-  tooltip: 10.0.2.20
-  R1: "Router: obsidian-sync.*\nintern-noauth + CORS" { class: node }
-}
-
-Nomad: Nomad Cluster {
-  style.stroke-dash: 4
-  CDB: "CouchDB\n(Port 5984)" { class: node }
-}
-
-Storage: {
-  style.stroke-dash: 4
-  LINSTOR: "Linstor CSI\nobsidian-livesync-data" { shape: cylinder; class: node }
-}
-
-Clients.MAC -> Traefik.R1: HTTPS + Basic Auth
-Clients.IOS -> Traefik.R1: HTTPS + Basic Auth
-Traefik.R1 -> Nomad.CDB
-Nomad.CDB -> Storage.LINSTOR
+Mac -> Traefik: "HTTPS + Basic Auth"
+iOS -> Traefik: "HTTPS + Basic Auth"
+Traefik -> CDB
+CDB -> Vol
 ```
 
 ## Konfiguration

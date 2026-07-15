@@ -32,26 +32,39 @@ Der USB-Dongle ist physisch an `vm-nomad-client-06` angeschlossen und wird per D
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
-ZD: "Zigbee-Geräte (Sensoren, Schalter)" { style.border-radius: 8 }
-USB: "USB Dongle Sonoff 3.0" { style.border-radius: 8 }
-Z2M: "Zigbee2MQTT (client-06)" { style.border-radius: 8 }
-MQ: "Mosquitto (Nomad Job)" { style.border-radius: 8 }
-HA: "Home Assistant" { style.border-radius: 8 }
-Admin: Admin { style.border-radius: 8 }
+classes: {
+  node: {
+    style: {
+      border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
+}
 
-ZD -> USB: "Zigbee (CH 25)"
-USB -> Z2M
-Z2M -> MQ: MQTT Publish
+ZD: "Zigbee-Geräte\n(Sensoren, Schalter)" { class: node }
+
+C06: "vm-nomad-client-06" {
+  class: container
+  USB: "USB-Dongle\nSonoff Zigbee 3.0" { class: node }
+  Z2M: "Zigbee2MQTT\n(Nomad)" { class: node }
+  USB -> Z2M: Device-Passthrough
+}
+
+MQ: "Mosquitto\n(Nomad, MQTT)" { class: node }
+HA: "Home Assistant\n(VM auf Proxmox)" { class: node }
+Admin: "Admin" { class: node }
+
+ZD -> C06.USB: Zigbee
+C06.Z2M -> MQ: MQTT Publish
 MQ -> HA: MQTT Subscribe
-Admin -> Z2M: HTTPS
+Admin -> C06.Z2M: HTTPS via Traefik
 ```
 
 ## Betrieb
