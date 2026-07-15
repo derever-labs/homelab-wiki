@@ -14,25 +14,20 @@ tags:
 
 ## Übersicht
 
-Das Homelab verwendet zwei vollständig getrennte Zertifikatspfade -- beide via Let's Encrypt (ACME) mit Cloudflare DNS-01-Challenge, aber mit unterschiedlichen ACME-Clients, Subdomains und Challenge-Records:
+Das Homelab verwendet drei vollständig getrennte Zertifikatspfade -- beide via Let's Encrypt (ACME) mit Cloudflare DNS-01-Challenge, aber mit unterschiedlichen ACME-Clients, Subdomains und Challenge-Records:
 
 - **Pfad 1:** Traefik als ACME-Client -- Wildcard `*.ackermannprivat.ch` für alle reverse-proxied Services
 - **Pfad 2:** `acme.sh` direkt auf dem NAS (DS1825+) -- dediziertes Zertifikat für `login.ackermannprivat.ch` inkl. nativer Synology-Dienste
+- **Pfad 3:** Proxmox-eigener ACME-Client (`pvenode acme`) -- eigenes Zertifikat je Node-FQDN (Details im Abschnitt unten)
 
-Die zwei Challenge-Records sind kollisionsfrei, da sie auf unterschiedliche Subdomains ausgestellt werden:
+Die Challenge-Records sind kollisionsfrei, da sie auf unterschiedliche Subdomains ausgestellt werden:
 - Traefik: `_acme-challenge.ackermannprivat.ch` (Wildcard)
 - acme.sh auf NAS: `_acme-challenge.login.ackermannprivat.ch` (Single-Hostname)
+- Proxmox: `_acme-challenge.<node-fqdn>`
 
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: down
 
 classes: {
@@ -42,15 +37,15 @@ classes: {
 
 CF: Cloudflare DNS {
   class: node
-  tooltip: "Zone ackermannprivat.ch | DNS-01 ACME-Validierung"
+  tooltip: "Zone ackermannprivat.ch, DNS-01-ACME-Validierung via TXT-Records"
 }
 
 path1: Pfad 1 -- Traefik Wildcard {
   class: container
 
-  Traefik: "Traefik v3.4 HA\n(vm-traefik-01 MASTER / vm-traefik-02 BACKUP)" {
+  Traefik: "Traefik HA\n(vm-traefik-01 / vm-traefik-02)" {
     class: node
-    tooltip: "10.0.2.21 / 10.0.2.22 | VIP 10.0.2.20 | certificatesResolvers Cloudflare DNS-01, EC256 | acme.json lokal"
+    tooltip: "certificatesResolvers Cloudflare DNS-01, EC256. acme.json lokal je VM"
   }
   Services: "Reverse-proxied Services\n(*.ackermannprivat.ch)" {
     class: node
@@ -64,11 +59,11 @@ path2: Pfad 2 -- NAS direkt {
 
   AcmeSH: "acme.sh\n(nativ auf NAS)" {
     class: node
-    tooltip: "/usr/local/share/acme.sh | --nocron | crontab Mittwoch 04:00"
+    tooltip: "/usr/local/share/acme.sh, installiert mit --nocron, crontab Mittwoch 04:00"
   }
-  DSMStore: "DSM-Cert-Store\n(/usr/syno/etc/certificate/_archive/<DEFAULT>)" {
+  DSMStore: "DSM-Cert-Store" {
     class: node
-    tooltip: "reloadcmd-Script kopiert Cert in alle System- und Paket-Dienst-Stores + nginx-Reload"
+    tooltip: "reloadcmd-Script kopiert das Cert in alle System- und Paket-Dienst-Stores und lädt nginx neu"
   }
   DSMServices: "DSM-Web + Drive (Port 6690) + Photos" {
     class: node
@@ -78,11 +73,23 @@ path2: Pfad 2 -- NAS direkt {
   DSMStore -> DSMServices: "synosystemctl\nrestart nginx"
 }
 
-CF -> path1.Traefik: "_acme-challenge\n.ackermannprivat.ch" {
+path3: Pfad 3 -- Proxmox-Nodes {
+  class: container
+
+  PVE: "pvenode acme\n(alle Proxmox-Nodes)" {
+    class: node
+    tooltip: "Eingebauter ACME-Client, Cert je Node-FQDN, automatische Erneuerung"
+  }
+}
+
+path1.Traefik -> CF: "_acme-challenge\n.ackermannprivat.ch" {
   style.stroke: "#2563eb"
 }
-CF -> path2.AcmeSH: "_acme-challenge\n.login.ackermannprivat.ch" {
+path2.AcmeSH -> CF: "_acme-challenge\n.login.ackermannprivat.ch" {
   style.stroke: "#16a34a"
+}
+path3.PVE -> CF: "_acme-challenge\nje Node-FQDN" {
+  style.stroke: "#854d0e"
 }
 ```
 

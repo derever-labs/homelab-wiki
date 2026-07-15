@@ -10,13 +10,6 @@ tags:
 # Hardware
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: {
     style: {
@@ -38,17 +31,17 @@ rack: Lenzburg Rack {
 
   pve00: pve00 {
     class: node
-    tooltip: "Minisforum DeskMini N100\nRAM: 16 GB DDR4-3200\nStorage: 512 GB NVMe HighRel"
+    tooltip: "Minisforum DeskMini N100. RAM 16 GB DDR4-3200, Storage 512 GB NVMe"
   }
 
   pve01: pve01 {
     class: node
-    tooltip: "Minisforum MS-01 (Venus Series)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+    tooltip: "Minisforum MS-01 (Venus Series). RAM 96 GB DDR5-4800, Storage 2x 4 TB Kingston Fury Renegade"
   }
 
   pve02: pve02 {
     class: node
-    tooltip: "Minisforum MS-01 (Venus Series)\nRAM: 96 GB DDR5-4800\nStorage: 2x 4 TB Kingston Fury Renegade"
+    tooltip: "Minisforum MS-01 (Venus Series). RAM 96 GB DDR5-4800, Storage 2x 4 TB Kingston Fury Renegade"
   }
 
   pve01 <-> pve02: 2x Thunderbolt 4 Bond
@@ -62,6 +55,20 @@ rack: Lenzburg Rack {
   pve02 -> aggregation
 }
 
+nas: NAS Lenzburg {
+  class: container
+
+  homeserver: "HomeServer\nSynology DS1825+" {
+    class: node
+    tooltip: "Prod-NAS: NFS-Exports, Garage S3, Backup-Ziel (Hyper Backup)"
+  }
+
+  mediaserver: "MediaServer\nSynology DS2419+" {
+    class: node
+    tooltip: "Jellyfin-Mediathek von USB-Shares per NFS an die Media-Worker"
+  }
+}
+
 udmpro: UDM Pro {
   class: node
 }
@@ -71,6 +78,12 @@ internet: Internet {
 }
 
 rack.aggregation -> udmpro
+nas.homeserver -> udmpro: LAN {
+  style.stroke-dash: 3
+}
+nas.mediaserver -> udmpro: LAN {
+  style.stroke-dash: 3
+}
 udmpro -> internet
 
 luzern: Standort Luzern {
@@ -78,7 +91,7 @@ luzern: Standort Luzern {
 
   pvelu: pve-lu-01 {
     class: node
-    tooltip: "Acer Revo RB610\nCPU: i3-1315U (6C/8T)\nRAM: 8 GB\nStorage: 256 GB WD SN740 NVMe\nNetz: 172.16.0.0/24"
+    tooltip: "Acer Revo RB610. CPU i3-1315U (6C/8T), RAM 8 GB, Storage 256 GB WD SN740 NVMe. Netz 172.16.0.0/24"
   }
 }
 

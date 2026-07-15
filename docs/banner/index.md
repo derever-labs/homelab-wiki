@@ -54,35 +54,20 @@ Der `@import` steht **nach** dem bestehenden Theme-Import (Ultrachromic), damit 
 ## Architektur
 
 ```d2
-direction: right
+shape: sequence_diagram
 
-Browser: User Browser {
-  style.stroke-dash: 4
-  page: "Jellyfin-Web (HTML + Custom-CSS @import)" { style.border-radius: 8 }
-  banner_dom: "body::before (fixed top, z-index 1000)" { style.border-radius: 8 }
-}
+B: "Browser\n(Jellyfin-Web)"
+JF: "Jellyfin\nwatch.ackermannprivat.ch"
+PB: "Pocketbase\nbanner.ackermannprivat.ch"
+DB: "SQLite\n(Linstor CSI)"
 
-JF: "Jellyfin (watch.ackermannprivat.ch)" {
-  style.stroke-dash: 4
-  branding: "Branding CustomCss: @import banner.css" { style.border-radius: 8 }
-}
-
-PB: "Pocketbase (banner.ackermannprivat.ch)" {
-  style.stroke-dash: 4
-  css: "GET /banner.css (server-seitig gerendert)" { style.border-radius: 8 }
-  ui: "Admin-UI /_/ (Pflege)" { style.border-radius: 8 }
-  db: "SQLite (Linstor CSI)" { style.border-radius: 8 }
-}
-
-Browser.page -> JF.branding: "1. Web-UI lädt, liest CustomCss"
-JF.branding -> Browser.page: "2. @import url(banner.css)"
-Browser.page -> PB.css: "3. GET /banner.css (cross-origin)"
-PB.css -> PB.db: "4. SELECT banner_config"
-PB.db -> PB.css: "5. enabled, severity, text, Zeitfenster"
-PB.css -> Browser.page: "6. CSS (Banner-Regeln oder leer)"
-Browser.page -> Browser.banner_dom: "7. body::before rendern"
-
-PB.ui -> PB.db: "Pflege-Workflow"
+B -> JF: "Web-UI laden,\nBranding CustomCss lesen"
+JF -> B: "@import url(banner.css)"
+B -> PB: "GET /banner.css\n(cross-origin)"
+PB -> DB: "SELECT banner_config"
+DB -> PB: "enabled, severity,\ntext, Zeitfenster"
+PB -> B: "CSS: Banner-Regeln\noder leer"
+B -> B: "body::before rendern\n(fixed top, z-index 1000)"
 ```
 
 ## Banner-Steuerung

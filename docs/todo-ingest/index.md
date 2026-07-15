@@ -33,13 +33,6 @@ Todo Ingest ist die Erfassungs-Schicht zwischen iPhone-Diktat und ClickUp. Der z
 Das Werkzeug ist bewusst generisch: Es erfasst jede Art von Aufgabe (privat, HSLU, Alltag), nicht nur IT-Themen. Die Klassifikation entscheidet ausschliesslich über den Ziel-Workspace, nicht über die Art der Aufgabe.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
 }
@@ -53,12 +46,12 @@ Ingest: "todo-ingest (Hono)" {
   DB: "SQLite\n(Persistenz vor\nVerarbeitung)" { shape: cylinder; class: node }
   CTX: "Kontext-Sammler" {
     class: node
-    tooltip: Offene Tasks beider Ziel-Listen, soeben angelegte Tasks (24h), offene Rueckfragen (60 min) und mitgeschickte Termine -- als Daten deklariert (Injection-Haertung)
+    tooltip: "Offene Tasks beider Ziel-Listen, soeben angelegte Tasks (24h), offene Rückfragen (60 min) und mitgeschickte Termine -- als Daten deklariert (Injection-Härtung)"
   }
-  AI: "Klassifikation\n(Claude, seriell,\neine nach der anderen)" { class: node }
+  AI: "Klassifikation\n(Claude, seriell)" { class: node }
   SWEEP: "Sweeper\n(15-min-Takt)" {
     class: node
-    tooltip: Blockierende Rueckfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen still
+    tooltip: "Blockierende Rückfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen still"
   }
 }
 
@@ -66,14 +59,14 @@ ClickUp: "ClickUp\n(HSLU oder Privat)" { class: node }
 Ntfy: "ntfy\n(Push aufs iPhone)" { class: node }
 Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
   class: node
-  tooltip: Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rueckfragen, zuletzt erstellte Tasks und die Diktat-Historie; Antworten und Reprocess laufen ueber HMAC-signierte Aktionen, Text-Erfassung ueber dieselbe Pipeline wie das Diktat
+  tooltip: "Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rückfragen, zuletzt erstellte Tasks und die Diktat-Historie. Antworten und Reprocess laufen über HMAC-signierte Aktionen, Text-Erfassung über dieselbe Pipeline wie das Diktat"
 }
 
 Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
 Ingest.CTX -> Ingest.AI: "Duplikat- und\nAntwort-Kontext"
-Ingest.AI -> ClickUp: "neu anlegen / Kommentar /\nDuplikat ueberspringen" { style.stroke: "#16a34a" }
-Ingest.AI -> Ntfy: "Bestaetigung oder Rueckfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
+Ingest.AI -> ClickUp: "neu anlegen / Kommentar /\nDuplikat überspringen" { style.stroke: "#16a34a" }
+Ingest.AI -> Ntfy: "Bestätigung oder Rückfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
 Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#2563eb" }
 Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
 Inbox -> Ingest: "via Authentik: antworten,\nreprocessen, erfassen" { style.stroke: "#0891b2" }
