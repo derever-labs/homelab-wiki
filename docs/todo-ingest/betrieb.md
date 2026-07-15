@@ -25,13 +25,6 @@ Der Dienst ist auf freihändiges Erfassen ausgelegt -- diktieren, loslassen, der
 - **Nachvollziehen und korrigieren:** Das wörtliche Diktat steht als Ground-Truth in jeder Task-Beschreibung (Abschnitt "Diktat"). Fehlklassifikationen lassen sich so erkennen und der Task direkt in ClickUp anpassen. Bereits abgelaufene (getimeoutete) Rückfragen sind in der Inbox nicht mehr beantwortbar -- der Task existiert dann schon und wird direkt in ClickUp korrigiert.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 shape: sequence_diagram
 
 S: "Samuel"
@@ -42,7 +35,7 @@ S -> T: "Aktionstaste: Diktat (+ Termine)"
 T -> P: "Erfasst: Druckerpapier nachbestellen"
 T -> P: "Frage: Bis wann? (3 Buttons)"
 S -> T: "Button-Tap, Antwort-Diktat\nODER Web-Inbox"
-T -> P: "Quittung: faellig 2026-07-17"
+T -> P: "Quittung: Fälligkeit gesetzt"
 ```
 
 ### Einrichtung auf dem iPhone
@@ -54,35 +47,28 @@ Die Erfassung hängt an einem signierten iOS-Kurzbefehl (Diktat Deutsch Schweiz,
 Der Dienst erstellt auf Abruf einen geführten Tagesüberblick -- einen nummerierten Morgen-Flow statt einer flachen Aufgabenliste. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die vom Kurzbefehl mitgelieferten iPhone-Kalender; im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
 }
 
 direction: right
 
-Wecker: "Ladegeraet getrennt\n(iOS-Automation)" { class: node }
+Wecker: "Ladegerät getrennt\n(iOS-Automation)" { class: node }
 KB: "Kurzbefehl\nDaily Digest (Morgen)" {
   class: node
-  tooltip: Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit; die Morgen-Variante laeuft nur 04:00-10:59, die manuelle Variante jederzeit (Home-Screen/Widget)
+  tooltip: "Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit. Die Morgen-Variante läuft nur 04:00-10:59, die manuelle Variante jederzeit (Home-Screen/Widget)"
 }
 Svc: "todo-ingest" {
   class: node
-  tooltip: Debounce 5 min, dann ClickUp-Erhebung (Listen + zugewiesene, Teilausfall toleriert), Opus formuliert Headline/Top-3/Item-Texte, der Server garantiert Vollstaendigkeit und baut alle Links deterministisch
+  tooltip: "Debounce 5 min, dann ClickUp-Erhebung (Listen + zugewiesene Tasks, Teilausfall toleriert). Opus formuliert Headline, Top-3 und Item-Texte, der Server garantiert Vollständigkeit und baut alle Links deterministisch"
 }
 Seite: "Digest-Seite\n(Inbox-Host, Authentik)" { class: node }
 Push: "ntfy-Ping\nDigest bereit" { class: node }
 
-Wecker -> KB: "sofort ausfuehren\n(nur 04:00-10:59)"
+Wecker -> KB: "sofort ausführen\n(nur 04:00-10:59)"
 KB -> Svc: "POST /api/digest\n(Kalender, 202)" { style.stroke: "#2563eb" }
 Svc -> Push: "fertig" { style.stroke: "#16a34a" }
-Push -> Seite: "Tap oeffnet" { style.stroke: "#2563eb" }
+Push -> Seite: "Tap öffnet" { style.stroke: "#2563eb" }
 KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
 ```
 
@@ -116,13 +102,6 @@ Der Morgen-Digest hängt an zwei signierten Kurzbefehl-Dateien ("Daily Digest" m
 Dieser Abschnitt bündelt, was der Dienst bei jedem Diktat tut -- vom POST des Kurzbefehls bis zum fertigen ClickUp-Task. Er zeigt das Zusammenspiel auf einen Blick; die Einzelheiten stehen in den verlinkten Abschnitten.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   kontext: {
@@ -139,13 +118,13 @@ Diktat: "Diktat\n(iOS-Kurzbefehl,\nBearer-POST)" { class: node }
 Foto: "Foto (optional)\nNeu-Tab der Web-Inbox" { class: kontext }
 Kontext: "Listen-Katalog +\nALLE offenen Tasks\ndes Workspace" {
   class: kontext
-  tooltip: Nur die konfigurierten Ziel-Listen, als reine Daten -- Basis fuer Duplikat- und Verknuepfungs-Erkennung
+  tooltip: "Zur Laufzeit entdeckter Listen-Katalog des Workspace (ohne ausgeschlossene Listen) plus alle offenen Tasks, als reine Daten. Basis für List-Routing, Duplikat- und Verknüpfungs-Erkennung"
 }
 Kalender: "Kalender-Termine" { class: kontext }
 
 Modell: "Claude-Modell (Abo)\nzerlegt in Einzel-Tasks,\nkorrigiert Diktierfehler,\nklassifiziert" {
   class: node
-  tooltip: Pro Task Workspace, Titel, Beschreibung und Faelligkeit, dazu Prioritaet nur bei diktierter Dringlichkeit, optional Startdatum, Aufwand, Zuweisung, Checkliste und Verknuepfungen
+  tooltip: "Pro Task Workspace, Titel, Beschreibung und Fälligkeit, dazu Priorität nur bei diktierter Dringlichkeit, optional Startdatum, Aufwand, Zuweisung, Checkliste und Verknüpfungen"
 }
 
 Entscheid: "Entscheid\npro Task" {
@@ -153,20 +132,20 @@ Entscheid: "Entscheid\npro Task" {
   shape: diamond
 }
 
-Frage: "Rueckfrage\n(ntfy-Buttons oder\nWeb-Inbox)" {
+Frage: "Rückfrage\n(ntfy-Buttons oder\nWeb-Inbox)" {
   class: node
-  tooltip: Blockierend wartet die Anlage (Timeout 4 h, dann Fallback-Anlage mit Hinweis), nicht-blockierend ist der Task sofort da und die Antwort reichert an (7 Tage)
+  tooltip: "Blockierend wartet die Anlage (Timeout 4 h, dann Fallback-Anlage mit Hinweis), nicht-blockierend ist der Task sofort da und die Antwort reichert an (7 Tage)"
 }
 
 ClickUp: "Task in ClickUp\n(HSLU oder Privat)" { class: node }
-Duplikat: "Uebersprungen,\nKommentar am\nbestehenden Task" { class: node }
+Duplikat: "Übersprungen,\nKommentar am\nbestehenden Task" { class: node }
 
 Diktat -> Modell: "asynchron,\nHash gegen Retries" { style.stroke: "#2563eb" }
 Foto -> Modell: "Bild-Fakten" { style.stroke-dash: 4 }
 Kontext -> Modell: "Duplikat-Abgleich"
 Kalender -> Modell: "nur bei Terminbezug" { style.stroke-dash: 4 }
 Modell -> Entscheid
-Entscheid -> ClickUp: "neu anlegen (Standard)\noder Ergaenzung als Kommentar" { style.stroke: "#16a34a" }
+Entscheid -> ClickUp: "neu anlegen (Standard)\noder Ergänzung als Kommentar" { style.stroke: "#16a34a" }
 Entscheid -> Duplikat: "eindeutiges\nDuplikat"
 Entscheid -> Frage: "Angabe fehlt oder\nZuordnung unklar"
 Frage -> ClickUp: "Antwort (HMAC-Token\nplus Origin-Check)" { style.stroke: "#2563eb" }

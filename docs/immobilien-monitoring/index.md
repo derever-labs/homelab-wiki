@@ -38,13 +38,6 @@ Der Scraper ist ein reiner Backend-Batch-Job ohne eigenes UI. Er sammelt Mietins
 ## Gesamtarchitektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
@@ -52,37 +45,37 @@ classes: {
 
 direction: down
 
-ci: CI/CD Pipeline {
+ci: CI/CD-Pipeline {
   class: container
 
-  GH: GitHub Repo {
+  GH: GitHub-Repo {
     class: node
-    tooltip: "derever-labs/homelab-nomad-jobs | Push auf main triggert Build"
+    tooltip: "derever-labs/homelab-nomad-jobs. Push auf main triggert den Build"
   }
-  Runner: GitHub Actions Runner {
+  Runner: GitHub-Actions-Runner {
     class: node
-    tooltip: "Self-Hosted auf Nomad Client | Docker Build + Push"
+    tooltip: "Self-Hosted auf Nomad-Client. Docker Build + Push"
   }
-  ZOT: ZOT Registry {
+  ZOT: ZOT-Registry {
     class: node
-    tooltip: "zot.service.consul:5000 | OCI Image Cache + Custom Images"
+    tooltip: "zot.service.consul:5000. OCI-Image-Cache und eigene Images"
   }
 }
 
 scraper: Immoscraper (Nomad Batch) {
   class: container
 
-  Job: Scraper Container {
+  Job: Scraper-Container {
     class: node
-    tooltip: "node (Alpine) | MODE=scan oder MODE=weekly"
+    tooltip: "MODE=scan oder MODE=weekly"
   }
   SF: Scrapfly API {
     class: node
-    tooltip: "ASP Anti-Bot Bypass | country=de | Discovery Plan 30 USD/Mo"
+    tooltip: "ASP Anti-Bot-Bypass, country=de"
   }
   AI: Claude Haiku {
     class: node
-    tooltip: "KI-Enrichment | Stockwerk, Balkon, Parking, Minergie"
+    tooltip: "KI-Enrichment: Stockwerk, Balkon, Parking, Minergie"
   }
 }
 
@@ -91,11 +84,11 @@ portale: Immobilienportale {
 
   HG: Homegate {
     class: node
-    tooltip: "SMG | 70-75% Marktanteil | DataDome + Cloudflare"
+    tooltip: "SMG-Hauptportal. DataDome + Cloudflare"
   }
   IS24: ImmoScout24 {
     class: node
-    tooltip: "SMG | Wöchentlicher Nebenscan | 96% Überlappung mit HG"
+    tooltip: "SMG. Wöchentlicher Nebenscan"
   }
 }
 
@@ -106,20 +99,28 @@ daten: Datenhaltung {
     shape: cylinder
     tooltip: "listing, listing_photo, amenity, scraper_runs, project"
   }
+  NFS: "NFS Foto-Archiv (NAS)" {
+    shape: cylinder
+    tooltip: "Lokale Foto-Kopien, unabhängig von ablaufenden CDN-URLs"
+  }
   Vault: Vault Secrets {
     class: node
-    tooltip: "kv/data/immoscraper | DB Password, Scrapfly Key, Claude Key"
+    tooltip: "kv/data/immoscraper: DB-Passwort, Scrapfly-Key, Claude-Key"
   }
 }
 
 output: Ausgabe {
   class: container
 
-  MB: Metabase Dashboards {
+  IM: "Immo Monitor\n(SvelteKit)" {
     class: node
-    tooltip: "Active Listings, New Today, Market Analytics, Price Drops"
+    tooltip: "Bedienoberfläche: Inserate, Karte, Marktanalyse"
   }
-  TG: Telegram Bot {
+  MB: Metabase-Dashboards {
+    class: node
+    tooltip: "BI-Dashboards auf denselben Daten"
+  }
+  TG: Telegram-Bot {
     class: node
     tooltip: "Scan-Zusammenfassung nach jedem Lauf"
   }
@@ -128,25 +129,25 @@ output: Ausgabe {
 ci.GH -> ci.Runner: Push triggert Workflow {
   style.stroke: "#2563eb"
 }
-ci.Runner -> ci.ZOT: Docker Image Push {
+ci.Runner -> ci.ZOT: Docker-Image-Push {
   style.stroke: "#2563eb"
 }
-ci.ZOT -> scraper.Job: Image Pull (force_pull) {
+ci.ZOT -> scraper.Job: Image-Pull (force_pull) {
   style.stroke: "#6b7280"
   style.stroke-dash: 3
 }
 
-daten.Vault -> scraper.Job: Secrets via Nomad Template {
+daten.Vault -> scraper.Job: Secrets via Nomad-Template {
   style.stroke: "#7c3aed"
 }
 
 scraper.Job -> scraper.SF: HTTP GET mit ASP {
   style.stroke: "#2563eb"
 }
-scraper.SF -> portale.HG: DataDome Bypass {
+scraper.SF -> portale.HG: DataDome-Bypass {
   style.stroke: "#2563eb"
 }
-scraper.SF -> portale.IS24: DataDome Bypass (weekly) {
+scraper.SF -> portale.IS24: DataDome-Bypass (weekly) {
   style.stroke: "#2563eb"
   style.stroke-dash: 3
 }
@@ -157,7 +158,17 @@ scraper.Job -> scraper.AI: Listing-Texte {
 scraper.Job -> daten.PG: UPSERT Listings + Fotos {
   style.stroke: "#854d0e"
 }
+scraper.Job -> daten.NFS: Foto-Download {
+  style.stroke: "#854d0e"
+}
 
+daten.PG -> output.IM: Lifecycle-Ableitung {
+  style.stroke: "#854d0e"
+}
+daten.NFS -> output.IM: Fotos read-only {
+  style.stroke: "#854d0e"
+  style.stroke-dash: 3
+}
 daten.PG -> output.MB: v_listing_active View {
   style.stroke: "#854d0e"
 }
@@ -171,17 +182,9 @@ scraper.Job -> output.TG: Scan-Zusammenfassung {
 Jeder Scan-Lauf durchläuft fünf Phasen sequentiell. Der gesamte Prozess ist deterministisch -- kein LLM wird für die Datenextraktion benötigt.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
-  decision: { style: { border-radius: 8 }; shape: diamond }
 }
 
 direction: right
@@ -191,11 +194,11 @@ p1: Phase 1 -- Overview {
 
   Fetch: Scrapfly Fetch {
     class: node
-    tooltip: "Alle Seiten paginiert (20/Seite) | 2s Delay zwischen Seiten"
+    tooltip: "Alle Seiten paginiert (20/Seite), 2s Delay zwischen Seiten"
   }
   Parse: __INITIAL_STATE__ parsen {
     class: node
-    tooltip: "Deterministisch | Titel, Preis, Zimmer, Koordinaten, Fotos"
+    tooltip: "Deterministisch: Titel, Preis, Zimmer, Koordinaten, Fotos"
   }
   Count: Ergebnis-Zähler {
     class: node
@@ -208,11 +211,11 @@ p2: Phase 2 -- Smart Skip {
 
   DB: DB-Abgleich {
     class: node
-    tooltip: "getExistingListings() | Map external_id auf rent_gross und detail_scraped_at"
+    tooltip: "getExistingListings() mappt external_id auf rent_gross und detail_scraped_at"
   }
   Decide: Entscheidung {
     class: node
-    tooltip: "neu | geändert | fehlend | skip"
+    tooltip: "neu, geändert, fehlend oder skip"
   }
 }
 
@@ -234,7 +237,7 @@ p4: Phase 4 -- Detail-Scrape {
 
   Fetch2: Scrapfly Fetch {
     class: node
-    tooltip: "Einzelinserat | 5s Delay | Circuit Breaker nach 5 Fehlern"
+    tooltip: "Einzelinserat, 5s Delay, Circuit Breaker nach 5 Fehlern"
   }
   Pinia: __PINIA_INITIAL_STATE__ {
     class: node
@@ -242,7 +245,7 @@ p4: Phase 4 -- Detail-Scrape {
   }
   Update: Detail-Update + Amenities {
     class: node
-    tooltip: "updateListingDetail() | upsertPhotos() | Amenity-Junction"
+    tooltip: "updateListingDetail(), upsertPhotos(), Amenity-Junction"
   }
 }
 
@@ -255,7 +258,7 @@ p5: Phase 5 -- Abschluss {
   }
   Enrich: KI-Enrichment {
     class: node
-    tooltip: "Claude Haiku | max 20 Listings pro Lauf"
+    tooltip: "Claude Haiku, max 20 Listings pro Lauf"
   }
   Notify: Telegram {
     class: node

@@ -16,35 +16,30 @@ Build-, Webhook- und Deploy-Automatik des VitePress Wikis. Für den Steckbrief s
 ## Build- und Deploy-Pipeline
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
+classes: {
+  node: { style: { border-radius: 8 } }
 }
+
 direction: right
 
-classes: {
-  node: {
-    style: { border-radius: 8 }
-  }
-}
-
 Push: git push main { class: node }
-GHA: "GitHub Actions\n(Self-Hosted Runner)" { class: node }
-WH: "Webhook\n(Port 9001)" { class: node }
-Sync: webhook Sidecar { class: node }
+GHA: "GitHub Actions\n(Self-Hosted Runner)" {
+  class: node
+  tooltip: "Build-Validierung: npm ci + vitepress build, Dead-Link-Handling via Issue"
+}
+Sidecar: "webhook-Sidecar\n(BusyBox httpd, Port 9001)" {
+  class: node
+  tooltip: "CGI-Script: git pull + Rebuild, flock gegen parallele Builds"
+}
 Dist: dist/ { class: node }
 Serve: "serve\n(Port 4173)" { class: node }
 Traefik: "Traefik\n(wiki.ackermannprivat.ch)" { class: node }
 
 Push -> GHA
-GHA -> GHA: Build-Validierung
-GHA -> WH: curl webhook
-WH -> Sync: git pull + rebuild
-Sync -> Dist: atomarer Swap
-Dist -> Serve
-Serve -> Traefik
+GHA -> Sidecar: "curl Webhook\n(Token aus Vault)"
+Sidecar -> Dist: "atomarer Swap"
+Dist -> Serve: "statisch ausliefern"
+Traefik -> Serve: "Reverse-Proxy"
 ```
 
 ## Webhook-Mechanismus

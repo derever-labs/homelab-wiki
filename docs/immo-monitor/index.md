@@ -29,13 +29,6 @@ Immo Monitor ersetzt die frühere Kombination aus Metabase + Leaflet + NocoDB du
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
@@ -47,10 +40,9 @@ Browser: Browser { class: node }
 
 Traefik: Traefik {
   class: container
-  tooltip: "10.0.2.20"
   RI: "intern-auth@file (LAN/VPN)" { class: node }
   RE: "public-auth@file (extern)" { class: node }
-  RP: "Photo Route (ohne Auth, hohe Priority)" { class: node }
+  RP: "Photo-Route (ohne Auth, hohe Priority)" { class: node }
 }
 
 App: "Immo Monitor (SvelteKit)" {
@@ -59,7 +51,7 @@ App: "Immo Monitor (SvelteKit)" {
 }
 PG: "PostgreSQL immo" {
   shape: cylinder
-  tooltip: "Lesen; Schreiben nur auf Nutzer-Tabellen"
+  tooltip: "App liest alles, schreibt nur Nutzer-Tabellen"
 }
 NFS: "NFS Photo-Archiv" {
   shape: cylinder

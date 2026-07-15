@@ -36,16 +36,8 @@ Die verbindliche Detail-Quelle (Reusable-Workflow, Templates, Gates) ist die Rep
 ## Deploy-Flow
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
-  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 direction: right
@@ -59,9 +51,10 @@ nomad: "Nomad-Deploy\nHealth-Gate + auto_revert" { class: node }
 
 commit -> build
 build -> registry: "skopeo push"
-build -> pr: "oeffnet Bump-PR"
+build -> pr: "öffnet Bump-PR"
 pr -> deploy: "Merge (squash)"
 deploy -> nomad
+registry -> nomad: "Image-Pull" { style.stroke-dash: 3 }
 ```
 
 Der Bump-PR wird von der CI selbst per Squash gemergt (`gh pr merge --squash`, bis zu drei Versuche gegen den GitHub-Mergeability-Flake). Kein Auto-Merge meint hier allein GitHubs natives `--auto`-Flag, das auf dem GitHub-Free-Plan für private Repos nicht verfügbar ist (`allow_auto_merge=false`). Der maschinelle SHA-Bump-Diff braucht kein menschliches Review. Der Merge startet den Nomad-Deploy. Schlägt der Health-Check fehl, rollt `auto_revert` auf die letzte gesunde Version zurück.
