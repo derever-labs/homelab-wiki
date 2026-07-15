@@ -24,12 +24,7 @@ DbGate ist ein leichtgewichtiger Database Manager, der im Browser läuft. Er bie
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
+direction: right
 
 classes: {
   node: {
@@ -37,20 +32,29 @@ classes: {
       border-radius: 8
     }
   }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
+    }
+  }
 }
 
-direction: right
+Admin: "Admin" { class: node }
+Traefik: "Traefik\n(intern-auth)" { class: node }
 
-User: Admin User { class: node }
-Traefik: "Traefik\nintern-auth" { class: node }
-DbGate: "DbGate\n(host network)" { class: node }
-PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
-CSI: "Linstor CSI\ndbgate-data" { shape: cylinder }
+Node: "PostgreSQL-Node (client-05/06)" {
+  class: container
+  DbGate: "DbGate\n(host network)" { class: node }
+  PG: "PostgreSQL\nShared Cluster" { shape: cylinder }
+  DbGate -> PG: "localhost:5432"
+}
 
-User -> Traefik: HTTPS
-Traefik -> DbGate: HTTP :3002
-DbGate -> PG: localhost:5432
-DbGate -> CSI: Verbindungsdaten
+Vol: "Linstor CSI\ndbgate-data" { shape: cylinder }
+
+Admin -> Traefik: HTTPS
+Traefik -> Node.DbGate: HTTP
+Node.DbGate -> Vol: "Verbindungsprofile + Queries"
 ```
 
 ## Datenbankzugriff

@@ -73,17 +73,18 @@ Maschinen-Clients können den OIDC-Login nicht durchlaufen, nutzen also den Toke
 Einträge in Tandoors Einkaufsliste werden automatisch in die **Bring!**-App gespiegelt -- über Tandoors eingebauten *HomeAssistant-Connector* und die offizielle Bring!-Integration von Home Assistant (Lenzburg). Ein nativer Bring!-Connector existiert in Tandoor nicht; eine HA-Automation ist nicht nötig, weil Tandoor direkt in die Bring!-Liste pusht, die Home Assistant als Todo-Entität bereitstellt.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
+direction: right
 
 classes: {
   node: {
     style: {
       border-radius: 8
+    }
+  }
+  container: {
+    style: {
+      border-radius: 8
+      stroke-dash: 4
     }
   }
   ext: {
@@ -94,16 +95,18 @@ classes: {
   }
 }
 
-direction: right
+Tandoor: "Tandoor" {
+  class: container
+  Liste: "Einkaufsliste" { class: node }
+  Conn: "HomeAssistant-\nConnector" { class: node }
+  Liste -> Conn: "Eintrag anlegen/löschen"
+}
 
-TANDOOR: "Tandoor\nEinkaufsliste" { class: node }
-CONN: "HomeAssistant-\nConnector" { class: node }
 HA: "Home Assistant Lenzburg\n(todo.luzern)" { class: node }
-BRING: "Bring!\nListe Luzern" { class: ext }
+Bring: "Bring!-Liste\nLuzern" { class: ext }
 
-TANDOOR -> CONN: "Eintrag\nanlegen/loeschen"
-CONN -> HA: "REST: todo.add_item /\ntodo.remove_item"
-HA <-> BRING: "Bring!-Integration"
+Tandoor.Conn -> HA: "REST: todo.add_item /\ntodo.remove_item"
+HA <-> Bring: "Bring!-Integration"
 ```
 
 Tandoor ruft beim Anlegen oder Löschen eines Eintrags die HA-REST-API (`todo.add_item` / `todo.remove_item`) auf der Entität `todo.luzern` auf; Home Assistant spiegelt diese Liste über die Bring!-Integration in die Bring!-Liste *Luzern*.

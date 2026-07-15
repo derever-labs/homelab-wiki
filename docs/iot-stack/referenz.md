@@ -24,24 +24,7 @@ tags:
 
 Mosquitto ist der zentrale MQTT Message Broker für alle IoT-Komponenten. Zigbee2MQTT publiziert Gerätedaten über Mosquitto, Home Assistant subscribt auf die Topics für die Hausautomation.
 
-```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-direction: right
-
-Z2M: Zigbee2MQTT { style.border-radius: 8; tooltip: "User: z2m" }
-MQ: "Mosquitto Port 1883" { style.border-radius: 8; tooltip: "MQTT 1883 / WS 9001 -- mosquitto.service.consul" }
-HA: "Home Assistant" { style.border-radius: 8; tooltip: "User: homeassistant" }
-WS: Web-Clients { style.border-radius: 8 }
-
-Z2M -> MQ: Publish
-MQ -> HA: Subscribe
-MQ -> WS: WebSocket 9001
-```
+Architektur-Diagramm: [IoT Stack](./index.md).
 
 ## MQTT-Benutzer
 
