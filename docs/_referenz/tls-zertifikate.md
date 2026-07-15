@@ -1,6 +1,6 @@
 ---
 title: "TLS-Zertifikate"
-description: Zwei getrennte Zertifikatspfade im Homelab -- Traefik-Wildcard und direktes NAS-Zertifikat
+description: Drei getrennte Zertifikatspfade im Homelab -- Traefik-Wildcard, direktes NAS-Zertifikat und Proxmox-Node-Zertifikate
 tags:
   - referenz
   - tls
