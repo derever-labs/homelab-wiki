@@ -85,13 +85,6 @@ Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstie
 Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   app: { style: { border-radius: 8 } }
   recovery: { style: { border-radius: 8; stroke: "#7c3aed" } }
@@ -132,7 +125,6 @@ Recovery: "default-recovery-flow" {
 
 Mail: "Recovery-Mail\nToken 30 min" {
   class: store
-  shape: cylinder
   tooltip: "SMTP Relay -- smtp.service.consul"
 }
 

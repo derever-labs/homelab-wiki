@@ -25,48 +25,36 @@ Gitea ist der zentrale Git-Server fÃ¼r private und interne Repositories. Er ergÃ
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
 classes: {
-  node: {
-    style: {
-      border-radius: 8
-    }
-  }
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-Clients: {
-  style.stroke-dash: 4
-  GIT: "Git CLI\n(SSH Port 2222)" { class: node }
-  WEB: Browser { class: node }
-}
+GIT: "Git CLI\n(SSH Port 2222)" { class: node }
+WEB: Browser { class: node }
 
 Traefik: Traefik {
-  style.stroke-dash: 4
+  class: container
   tooltip: 10.0.2.20
   R1: "Router: gitea.*\nintern-auth" { class: node }
 }
 
 Nomad: Nomad Cluster {
-  style.stroke-dash: 4
+  class: container
   GT: "Gitea\n(Port 3003)" { class: node }
   PG: "PostgreSQL\n(postgres.service.consul)" { shape: cylinder }
 }
 
 Storage: {
-  style.stroke-dash: 4
-  CSI: "Linstor CSI\ngitea-data (5 GiB)" { shape: cylinder }
+  class: container
+  CSI: "Linstor CSI\ngitea-data" { shape: cylinder }
 }
 
-Clients.WEB -> Traefik.R1: HTTPS
+WEB -> Traefik.R1: HTTPS
 Traefik.R1 -> Nomad.GT: HTTP
-Clients.GIT -> Nomad.GT: SSH
+GIT -> Nomad.GT: SSH
 Nomad.GT -> Nomad.PG: SQL
 Nomad.GT -> Storage.CSI: Mount
 ```

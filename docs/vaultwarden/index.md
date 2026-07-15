@@ -29,36 +29,31 @@ Vaultwarden ist der zentrale Passwort-Manager im Homelab. Alle Passwörter, TOTP
 Vaultwarden trennt zwei Datenpfade: die strukturierte Vault-Datenbank lebt im gemeinsamen PostgreSQL-Cluster, der lokale Service-State (Anhänge, generierte Server-Schlüssel, Icon-Cache) liegt auf einem DRBD-replizierten Linstor-CSI-Volume. Beide Pfade sind dadurch zwischen client-05 und client-06 redundant.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
 classes: {
-  node: { style.border-radius: 8 }
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 clients: Clients {
-  style.stroke-dash: 4
+  class: container
   brw: Browser-Extension { class: node }
   app: "Bitwarden-App (iOS / Android / Desktop)" { class: node }
 }
 
 traefik: Traefik {
-  style.stroke-dash: 4
+  class: container
   router: "Router p.ackermannprivat.ch (intern-noauth)" { class: node }
 }
 
 nomad: Nomad-Cluster {
-  style.stroke-dash: 4
+  class: container
   vw: Vaultwarden { class: node; tooltip: "client-05/06" }
 }
 
 storage: Storage {
-  style.stroke-dash: 4
+  class: container
   csi: "Linstor CSI vaultwarden-data-r2" { class: node; tooltip: "ext4, DRBD-repliziert auf client-05/06" }
   pg: "PostgreSQL postgres.service.consul" { class: node; tooltip: "DB vaultwarden im Postgres-DRBD-Cluster" }
 }

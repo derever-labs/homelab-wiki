@@ -28,13 +28,6 @@ LDAP ist im Homelab ein Kompatibilitäts-Shim: Authentik ist der einzige Identit
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }

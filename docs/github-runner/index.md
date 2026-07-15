@@ -30,41 +30,17 @@ Der Runner ist ein self-hosted GitHub Actions Runner, der als Nomad Service Job 
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
-  node: {
-    style: {
-      border-radius: 8
-    }
-  }
-  container: {
-    style: {
-      border-radius: 8
-      stroke-dash: 4
-    }
-  }
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
 github: GitHub (derever-labs) {
   class: container
 
-  wiki: homelab-wiki {
+  repos: "Repos der Organisation\n(RUNNER_SCOPE=org)" {
     class: node
-    tooltip: "VitePress Build + Webhook"
-  }
-  nomad-jobs: homelab-nomad-jobs {
-    class: node
-    tooltip: "Container Build + Deploy"
-  }
-  immo: immo-monitor {
-    class: node
-    tooltip: "Container Build + Deploy"
+    tooltip: "Alle Repos der Org -- Wiki-Builds, Container-Builds, Deployments"
   }
 }
 
@@ -73,24 +49,28 @@ nomad: Nomad Cluster {
 
   runner: Self-hosted Runner {
     class: node
-    tooltip: "RUNNER_SCOPE=org\nPrivileged, Host-Networking\nclient-05 oder client-06"
+    tooltip: "Privileged, Host-Networking, Docker-Socket | client-05 oder client-06"
   }
-  zot: ZOT Registry\nzot.service.consul:5000 {
+  zot: "ZOT Registry\nzot.service.consul:5000" {
     class: node
-    tooltip: "Auflösung via Consul-DNS | Runner nutzt Host-Networking"
+    tooltip: "Auflösung via Consul-DNS -- Runner nutzt Host-Networking"
+  }
+  api: Nomad API {
+    class: node
+    tooltip: "nomad job plan + run -- kurzlebiger Token aus der Vault Nomad Secret Engine"
   }
 }
 
-vault: Vault\nkv/github-runner {
+vault: "Vault\nkv/github-runner" {
   class: node
-  tooltip: "Classic PAT (permanent)\nScopes: repo, workflow, admin:org"
+  tooltip: "Classic PAT (permanent) | Scopes: repo, workflow, admin:org"
 }
 
-github.wiki -> nomad.runner: push on main
-github.nomad-jobs -> nomad.runner: push on main
-github.immo -> nomad.runner: push on main
-
+github.repos -> nomad.runner: push auf main
 nomad.runner -> nomad.zot: docker build + push
+nomad.runner -> nomad.api: Deploys {
+  style.stroke-dash: 3
+}
 vault -> nomad.runner: PAT via Workload Identity {
   style.stroke-dash: 3
 }

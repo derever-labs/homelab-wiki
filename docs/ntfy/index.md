@@ -27,21 +27,15 @@ ntfy ist ein selbstgehosteter Push-Benachrichtigungsdienst. Homelab-Services pub
 ntfy ist der generische Push-Transport des Homelabs. Ein Dienst publiziert eine Nachricht auf ein Topic, ntfy stellt sie an die abonnierten Clients zu. Für den ersten Konsumenten Todo Ingest transportiert ntfy zwei Arten von Nachrichten: Bestätigungen und Fehlermeldungen sowie interaktive Rückfragen mit HSLU/Privat-Action-Buttons, deren Klick direkt einen HTTP-Callback auslöst.
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
+direction: right
 
 classes: {
   node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-direction: right
-
-Producers: "Publisher" {
-  style.stroke-dash: 4
+Producers: Publisher {
+  class: container
   TI: "todo-ingest\n(Topic todo, write-only)" { class: node }
 }
 

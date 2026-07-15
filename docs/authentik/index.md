@@ -32,13 +32,6 @@ Neben dem reinen Login übernimmt Authentik im Homelab auch Passwort-Recovery pe
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
@@ -114,7 +107,6 @@ PG: PostgreSQL {
 
 SMTP: SMTP Relay {
   class: node
-  shape: cylinder
   tooltip: "smtp.service.consul | Recovery-Mails und Benachrichtigungen"
 }
 
