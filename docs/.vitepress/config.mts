@@ -47,7 +47,7 @@ export default defineConfig({
     config: (md) => {
       md.use(d2, {
         theme: Theme.NEUTRAL_GREY,
-        layout: Layout.ELK,
+        layout: Layout.TALA,
         fileType: FileType.SVG,
         padding: 40,
       })
