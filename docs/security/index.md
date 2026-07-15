@@ -22,29 +22,27 @@ Der Zugriff auf interne Services wird zentral über Traefik gesteuert. Authentif
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 direction: right
 
-User: User Request { style.border-radius: 8 }
-CS: CrowdSec Plugin (Stream-Modus) { style.border-radius: 8 }
-Chain: Middleware Chain (secure-headers) { style.border-radius: 8 }
-FWD: Authentik ForwardAuth { style.border-radius: 8 }
-AK: Authentik { tooltip: auth.ackermannprivat.ch; style.border-radius: 8 }
-Backend: Backend Service { style.border-radius: 8 }
-Block: Blockiert (böswillige IP) { style.border-radius: 8 }
+classes: {
+  node: { style: { border-radius: 8 } }
+  blocked: { style: { border-radius: 8; stroke-dash: 2 } }
+}
 
-User -> CS
-CS -> Chain
-Chain -> FWD
-FWD -> AK: { style.stroke-dash: 5 }
-FWD -> Backend
-CS -> Block: { style.stroke-dash: 5 }
+user: User-Request { class: node }
+cs: "CrowdSec-Plugin\n(Stream-Modus)" { class: node }
+chain: "Middleware-Chain\n(intern-* / public-*)" { class: node }
+fwd: Authentik ForwardAuth { class: node }
+ak: Authentik { class: node; tooltip: "auth.ackermannprivat.ch" }
+backend: Backend-Service { class: node }
+block: "Blockiert\n(böswillige IP)" { class: blocked }
+
+user -> cs
+cs -> chain
+chain -> fwd
+fwd -> ak: { style.stroke-dash: 5 }
+fwd -> backend
+cs -> block: { style.stroke-dash: 5 }
 ```
 
 ## Komponenten

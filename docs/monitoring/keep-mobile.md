@@ -35,19 +35,12 @@ Der Hono-BFF haelt den Keep-API-Key serverseitig und proxyt die Keep-REST-API in
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
+direction: right
 
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
 }
-
-direction: right
 
 browser: Mobile-Browser { class: node }
 traefik: "Traefik\n(Authentik ForwardAuth)" { class: node }
@@ -60,10 +53,10 @@ cluster: Nomad-Cluster {
 }
 
 browser -> traefik: "HTTPS m.keep.*"
-traefik -> bff: "UI + /api/* (auth)"
-bff -> keep: "Keep-API\n(API-Key serverseitig)"
-bff -> kuma: "Status-Page\n(Inline-Status + Verlauf)"
-kuma -> traefik: "/api/health\n(Self-Monitor, no-auth)"
+traefik -> cluster.bff: "UI + /api/* (auth)"
+cluster.bff -> cluster.keep: "Keep-API\n(API-Key serverseitig)"
+cluster.bff -> cluster.kuma: "Status-Page\n(Inline-Status + Verlauf)"
+cluster.kuma -> traefik: "/api/health\n(Self-Monitor, no-auth)"
 ```
 
 ## Auth-Muster

@@ -71,13 +71,6 @@ Die vollständigen metrik- und log-basierten Alert-Regel-Tabellen stehen in der 
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   svc: {
     style: {
@@ -110,8 +103,7 @@ classes: {
   }
 }
 
-# --- Quellen mit Direct-Webhook (Pfad 1) ---
-direct: Direct-Webhook (Pfad 1) {
+pfad1: Pfad 1 -- Direct-Webhook {
   class: container
   kuma: Uptime Kuma {class: svc}
   authentik: Authentik {class: svc}
@@ -120,67 +112,57 @@ direct: Direct-Webhook (Pfad 1) {
   checkmk: CheckMK {class: svc}
 }
 
-# --- Logs/Metrics für Pfad 2/3 ---
-sources_l: Log-Quellen (Pfad 2) {
+pfad2: Pfad 2 -- Log-basiert {
   class: container
   apps: Container/Hosts {class: svc}
   unifi: UniFi (Syslog) {class: svc}
-}
-sources_m: Metrik-Quellen (Pfad 3) {
-  class: container
-  snmp: SNMP Targets {class: svc}
-  hosts: Hosts/Container {class: svc}
+  alloy: Grafana Alloy {class: agent}
+  loki: Loki {class: db}
+  apps -> alloy: Docker / journald
+  unifi -> alloy: Syslog 1514
+  alloy -> loki: push
 }
 
-alloy: Grafana Alloy {class: agent}
-telegraf: Telegraf {class: agent}
-loki: Loki {class: db}
-influx: InfluxDB {class: db}
+pfad3: Pfad 3 -- Metrik-basiert {
+  class: container
+  snmp: SNMP-Targets {class: svc}
+  hosts: Hosts/Container {class: svc}
+  telegraf: Telegraf {class: agent}
+  influx: InfluxDB {class: db}
+  snmp -> telegraf: scrape
+  hosts -> telegraf: scrape
+  telegraf -> influx: write
+}
+
 grafana: Grafana\nUnified Alerting {class: svc}
 
 keep: Keep\nIncident-Hub\nDedup + Routing {class: svc}
 
-bot_batch: batch-Bot\nbatch_ackermann_bot {
+bot_batch: batch-Bot {
   class: agent
-  tooltip: "Alleiniger Sender; postet nach Severity in die Topics"
+  tooltip: "Alleiniger Sender; postet nach Incident-Severity in die Topics"
 }
 
-homelab_alerts: Homelab Alerts\nForum-Channel\n(chat-id -1003971798942) {
+homelab_alerts: Homelab Alerts (Telegram-Forum) {
   class: container
-  krit: Kritisch (25009) {class: sink}
-  warn: Warnung (25010) {class: sink}
-  info: Info (25011) {class: sink}
+  krit: Kritisch {class: sink}
+  warn: Warnung {class: sink}
+  info: Info {class: sink}
 }
 
-# Pfad 1: Direct-Webhook
-direct.kuma -> keep: webhook
-direct.authentik -> keep: webhook
-direct.arr -> keep: webhook
-direct.immo -> keep: webhook
-direct.checkmk -> keep: webhook
+pfad1 -> keep: Webhooks
+pfad2.loki -> grafana: LogQL-Query
+pfad3.influx -> grafana: InfluxQL-Query
+grafana -> keep: Webhook
 
-# Pfad 2: Logs -> Loki -> Grafana-Rule
-sources_l.apps -> alloy: Docker / journald
-sources_l.unifi -> alloy: Syslog 1514
-alloy -> loki: push
-loki -> grafana: LogQL Query
-grafana -> keep: webhook
-
-# Pfad 3: Metriken -> InfluxDB -> Grafana-Rule
-sources_m.snmp -> telegraf: scrape
-sources_m.hosts -> telegraf: scrape
-telegraf -> influx: write
-influx -> grafana: Flux Query
-
-# Keep -> Incident -> batch-Bot -> Severity-Topics
-keep -> bot_batch: "Incident-Workflows"
-bot_batch -> homelab_alerts.krit: "critical / high / fail-open"
-bot_batch -> homelab_alerts.warn: "warning"
-bot_batch -> homelab_alerts.info: "info / low"
+keep -> bot_batch: Incident-Workflows
+bot_batch -> homelab_alerts.krit: critical / high / fail-open
+bot_batch -> homelab_alerts.warn: warning
+bot_batch -> homelab_alerts.info: info / low
 ```
 
 ::: info Routing-Logik
-Keep korreliert eingehende Alerts zu **Incidents** (vier disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep.md), [Telegram-Bots](telegram-bots.md).
+Keep korreliert eingehende Alerts zu **Incidents** (zwei disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep.md), [Telegram-Bots](telegram-bots.md).
 :::
 
 Der interne Admin-Zugang zur Grafana-HTTP-API (Service Account) und das Silencing von Alerts über die Alertmanager-API sind im [Monitoring Betrieb](./betrieb.md) beschrieben.
@@ -196,72 +178,66 @@ Alle Monitore senden via Single-Notifier "Keep" mit Default Enabled; Severity- u
 
 ## Zentrales Logging (Loki + Alloy)
 
-### Gesamtarchitektur
+### Architektur
 
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
+  svc: {
+    style: {
+      border-radius: 8
+    }
+  }
+  agent: {
+    style: {
+      border-radius: 8
+      stroke-dash: 2
+    }
+  }
   container: {
     style: {
       border-radius: 8
       stroke-dash: 4
     }
   }
+  db: {
+    shape: cylinder
+    style: {
+      border-radius: 8
+    }
+  }
 }
 
-Sources: Infrastruktur-Quellen {
+sources: Log-Quellen {
   class: container
-  Containers: "Nomad Container\n(3 Client-Nodes)"
-  Servers: "HashiCorp VMs\n(Server + Client)"
-  Traefik: "Traefik VMs (2x)"
-  Proxmox: "Proxmox Hosts (3x)"
-  Infra: "Infra VMs\n(CheckMK, PBS, DNS)"
-  NAS: "NAS / Router\n(Syslog)"
+  containers: Nomad-Container {class: svc}
+  vms: HashiCorp-VMs\n(Server + Client) {class: svc}
+  proxmox: Proxmox-Hosts {class: svc}
+  infra: Infra-VMs\n(CheckMK, PBS, DNS) {class: svc}
+  traefik: Traefik-VMs {class: svc}
+  nas: NAS / Router {class: svc}
 }
 
-Collectors: Collector-Layer {
+alloy: Grafana Alloy {
   class: container
-  Alloy: "Grafana Alloy\n(System-Job + systemd)"
-  Telegraf: "Telegraf\n(Nomad Job)"
-  CMK: "CheckMK Agent"
-  Kuma: "Uptime Kuma"
+  sys: System-Job\n(je Client-Node) {class: agent}
+  ansible: Ansible-Rolle\n(systemd) {class: agent}
+  standalone: Standalone\n(traefik-ha) {class: agent}
 }
 
-Storage: Storage-Layer {
-  class: container
-  Loki: "Loki\n(Log-Storage)"
-  Influx: "InfluxDB\n(Metriken)"
-  CheckMK: "CheckMK\n(Host-Status)"
-}
+loki: Loki {class: db}
+grafana: Grafana {class: svc}
 
-GRAF: Grafana
+sources.containers -> alloy.sys: Docker-Socket
+sources.nas -> alloy.sys: Syslog UDP 1514
+sources.vms -> alloy.ansible
+sources.proxmox -> alloy.ansible
+sources.infra -> alloy.ansible
+sources.traefik -> alloy.standalone: Compose-Logs
 
-Sources.Containers -> Collectors.Alloy: Logs (Docker-Socket)
-Sources.Servers -> Collectors.Alloy: Logs (systemd-Journal)
-Sources.Traefik -> Collectors.Alloy: Logs (systemd + Syslog)
-Sources.Proxmox -> Collectors.Alloy: Logs (systemd)
-Sources.Infra -> Collectors.Alloy: Logs (systemd)
-Sources.NAS -> Collectors.Alloy: Syslog UDP 1514
-Sources.NAS -> Collectors.CMK: SNMPv3
-Sources.Servers -> Collectors.Telegraf: Prometheus
-Sources.Proxmox -> Storage.Influx: direkt (nativ)
-
-Collectors.Alloy -> Storage.Loki
-Collectors.Telegraf -> Storage.Influx
-Collectors.CMK -> Storage.CheckMK
-Collectors.Kuma -> GRAF: "HTTP/TCP-Checks"
-
-Storage.Loki -> GRAF
-Storage.Influx -> GRAF
-Storage.CheckMK -> GRAF
+alloy -> loki: push
+loki -> grafana: LogQL
 ```
 
 ### Loki (Log-Storage)

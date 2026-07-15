@@ -19,13 +19,6 @@ Telegram ist **kein** dedizierter Service im Cluster -- es wird über die Bot-AP
 ```d2
 direction: right
 
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
-
 classes: {
   svc: { style: { border-radius: 8 } }
   agent: { style: { border-radius: 8; stroke-dash: 2 } }
@@ -35,28 +28,38 @@ classes: {
 }
 
 keep: Keep\nIncident-Engine { class: svc }
+indep: "Keep-unabhängige Sender\n(Dead-Man-Switch + Kuma-Watchdogs)" { class: agent }
+apprise: "Apprise-Tools\n(Skripte)" { class: agent }
 
 batch: batch-Bot\nbatch_ackermann_bot {
   class: agent
-  tooltip: "Alleiniger Sender; Admin der Gruppe (can_manage_topics)"
+  tooltip: "Alleiniger Sender im Regelbetrieb; Admin der Gruppe (can_manage_topics)"
 }
 
 vip: vip-Bot\ntop_uptime_ackermann_bot {
   class: idle
-  tooltip: "Seit 2026-06-09 IDLE -- kein Workflow/Job sendet mehr"
+  tooltip: "Seit Cutover 2026-06-09 IDLE -- kein Workflow/Job sendet mehr"
 }
 
-forum: Homelab Alerts (Forum-Gruppe -1003971798942) {
+relay: "Telegram-Relay\n(POST /notify)" { class: agent }
+default: default-Bot\nuptime_ackermann_bot { class: agent }
+
+forum: Homelab Alerts (Forum-Gruppe) {
   class: container
-  krit: Kritisch (25009)\ncritical + high + fail-open { class: sink; tooltip: "Ack-Button, NIE muten" }
-  warn: Warnung (25010)\nwarning { class: sink; tooltip: "eigener Mute-Schalter" }
-  info: Info (25011)\ninfo + low { class: sink; tooltip: "default stumm-bar" }
+  krit: "Kritisch (25009)\ncritical + high + fail-open" { class: sink; tooltip: "Ack-Button, NIE muten" }
+  warn: "Warnung (25010)\nwarning" { class: sink; tooltip: "eigener Mute-Schalter" }
+  info: "Info (25011)\ninfo + low" { class: sink; tooltip: "default stumm-bar" }
 }
 
 keep -> batch: "Incident-Workflows\n(notify/escalate/ack/resolve)"
-batch -> forum.krit: "severity not in\n[warning,info,low]"
+indep -> batch: immer Kritisch
+batch -> forum.krit: "severity not in\n[warning, info, low]"
 batch -> forum.warn: "== warning"
-batch -> forum.info: "in [info,low]"
+batch -> forum.info: "in [info, low]"
+
+apprise -> relay: "json://"
+relay -> default: topics.json-Routing
+default -> forum: "Kategorie -> Severity-Topic"
 ```
 
 ## Severity-Topics statt VIP-DM (Cutover 2026-06-09)
@@ -96,7 +99,7 @@ Der Telegram-Relay (`nomad-jobs/services/telegram-relay.nomad`) ist ein HTTP-End
 
 - **Endpoint** -- `telegram-relay.service.consul/notify` (Port via Consul-SRV)
 - **Body** -- mindestens `text`, optional `title`; Apprise-`message` als Fallback für `text`
-- **Bot** -- default-Bot, postet in den 1:1-Chat
+- **Bot** -- default-Bot. Payloads mit Kategorie (`topic`) landen über die Routing-Konfig im passenden Severity-Topic; ein Payload ohne Kategorie fällt auf den 1:1-Chat zurück (im Repo nutzt kein Caller diesen Fallback)
 - **Routing-Konfig** -- `topics.json` in Vault `kv/shared/telegram-relay`; alle Kategorien zeigen auf die Severity-Topics (ci-cd/backup/downloader/immo -> Info 25011; security/monitoring -> Warnung 25010). Zuvor zeigten sechs Einträge auf tote Threads (stiller Verlust), bereinigt 2026-06-10.
 
 Wenn ein Tool sowohl Webhooks als auch Apprise kann, **immer Webhook nach Keep** bevorzugen.

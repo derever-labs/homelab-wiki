@@ -21,30 +21,30 @@ CrowdSec ist ein kollaboratives Intrusion-Detection-System, das Traefik Access L
 ## Architektur
 
 ```d2
-vars: {
-  d2-config: {
-    theme-id: 1
-    layout-engine: elk
-  }
-}
 direction: right
 
 classes: {
-  node: { style.border-radius: 8 }
+  node: { style: { border-radius: 8 } }
+  ext: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-Internet: Internet { class: node }
-Traefik: Traefik { class: node }
-Plugin: CrowdSec Bouncer (Traefik Plugin) { class: node }
-Backend: Backend Service { class: node }
-Engine: CrowdSec Engine (LAPI) { class: node }
-Logs: Traefik Container-Logs { class: node; tooltip: "Docker-Socket Source (stdout des Traefik-Containers)" }
+internet: Internet { class: node }
+traefik: Traefik { class: node }
+plugin: "CrowdSec-Bouncer\n(Traefik-Plugin)" { class: node }
+backend: Backend-Service { class: node }
+engine: "CrowdSec Engine\n(LAPI)" { class: node }
+logs: Traefik Container-Logs {
+  class: node
+  tooltip: "Docker-Socket Source (stdout des Traefik-Containers)"
+}
+console: "CrowdSec Console\n(app.crowdsec.net)" { class: ext }
 
-Internet -> Traefik
-Traefik -> Plugin
-Plugin -> Backend
-Plugin -> Engine: { style.stroke-dash: 5 }
-Engine -> Logs: { style.stroke-dash: 5 }
+internet -> traefik
+traefik -> plugin
+plugin -> backend
+plugin -> engine: "holt Decisions\n(Stream-Modus)" { style.stroke-dash: 5 }
+logs -> engine: "Access-Logs\n(Docker-Socket)" { style.stroke-dash: 5 }
+engine <-> console: "Signale /\nCommunity-Blocklists" { style.stroke-dash: 5 }
 ```
 
 Das Bouncer-Plugin läuft nativ in Traefik (kein separater Container). Im Stream-Modus werden Entscheidungen periodisch von der Engine abgeholt und gecacht -- kein API-Call pro Request. Die Engine synchronisiert sich mit der CrowdSec Console ([app.crowdsec.net](https://app.crowdsec.net)) für Community-Blocklists.
