@@ -14,7 +14,7 @@ tags:
 
 ## Übersicht
 
-Das Homelab verwendet drei vollständig getrennte Zertifikatspfade -- beide via Let's Encrypt (ACME) mit Cloudflare DNS-01-Challenge, aber mit unterschiedlichen ACME-Clients, Subdomains und Challenge-Records:
+Das Homelab verwendet drei vollständig getrennte Zertifikatspfade -- alle drei via Let's Encrypt (ACME) mit Cloudflare DNS-01-Challenge, aber mit unterschiedlichen ACME-Clients, Subdomains und Challenge-Records:
 
 - **Pfad 1:** Traefik als ACME-Client -- Wildcard `*.ackermannprivat.ch` für alle reverse-proxied Services
 - **Pfad 2:** `acme.sh` direkt auf dem NAS (DS1825+) -- dediziertes Zertifikat für `login.ackermannprivat.ch` inkl. nativer Synology-Dienste
