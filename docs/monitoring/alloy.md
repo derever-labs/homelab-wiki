@@ -20,7 +20,48 @@ Grafana Alloy ist der zentrale Log-Collector im Homelab. Er sammelt Logs aus Doc
 | **Ansible Rolle `alloy`** | Server-, Client-Nodes, Proxmox, Infra-VMs | `playbooks/deploy-alloy.yml` u.a. | systemd-Journal + optionale Logfiles |
 | **Ansible Rolle `alloy` (Traefik-VMs)** | vm-traefik-01/02 | Separate Ansible-Konfiguration | Docker-Compose-Logs + Syslog-Receiver |
 
-Die vollständige Tabelle aller Log-Quellen mit ihren Source-Labels ist unter [Monitoring Stack -- Zentrales Logging](./index.md#grafana-alloy-log-collector) dokumentiert.
+Die vollständige Tabelle aller Log-Quellen mit ihren Source-Labels ist in der [Log-Quellen-Übersicht](./referenz.md#log-quellen) dokumentiert.
+
+Welche Deployment-Variante welche Quellen einsammelt (Pfeil = Initiator, gestrichelt = verbindungsloser Stream):
+
+```d2
+classes: {
+  svc: { style: { border-radius: 8 } }
+  agent: { style: { border-radius: 8; stroke-dash: 2 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  db: { shape: cylinder; style: { border-radius: 8 } }
+  async: { style: { stroke-dash: 3 } }
+}
+
+sources: Log-Quellen {
+  class: container
+  containers: Nomad-Container { class: svc }
+  vms: HashiCorp-VMs (Server + Client) { class: svc }
+  proxmox: Proxmox-Hosts { class: svc }
+  infra: Infra-VMs (CheckMK, PBS, DNS) { class: svc }
+  traefik: Traefik-VMs { class: svc }
+  nas: NAS / Router { class: svc }
+}
+
+alloy: Grafana Alloy {
+  class: container
+  sys: System-Job (je Client-Node) { class: agent }
+  ansible: Ansible-Rolle (systemd) { class: agent }
+  standalone: Standalone (traefik-ha) { class: agent }
+}
+
+loki: Loki { class: db }
+grafana: Grafana { class: svc }
+
+alloy.sys -> sources.containers: liest Docker-Socket
+sources.nas -> alloy.sys: sendet Syslog 1514 { class: async }
+alloy.ansible -> sources.vms: liest journald
+alloy.ansible -> sources.proxmox: liest journald
+alloy.ansible -> sources.infra: liest journald
+alloy.standalone -> sources.traefik: liest Compose-Logs
+alloy -> loki: pusht Logs (HTTP)
+grafana -> loki: fragt Logs ab (LogQL)
+```
 
 ## Variante 1: Nomad System-Job
 
