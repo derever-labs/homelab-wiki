@@ -77,4 +77,4 @@ Der ganze Flow ab HA-Maintenance ist in einem `block/rescue/always`-Pattern eing
 
 - [Smart Shutdown](smart-shutdown.md) -- graceful Drain bei VM-Reboots
 - [Cluster Restart](cluster-restart.md) -- Vollständiger Cluster-Restart
-- [Linstor Storage](../linstor-storage/index.md) -- DRBD-Replikation und Storage-Backend
+- [Linstor Storage](../storage/linstor/index.md) -- DRBD-Replikation und Storage-Backend

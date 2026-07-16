@@ -43,7 +43,7 @@ Ausgerollt via `scripts/install_smart_shutdown.sh` im Homelab-Infra-Repo. Auf al
 - `reschedule` -- Platzierung auf einem anderen Node wenn lokale Restarts erschöpft sind
 - `max_client_disconnect` -- wartet 5 Minuten bei kurzen Netzwerkausfällen bevor rescheduled wird
 
-**CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../linstor-storage/betrieb.md#csi-boot-race-condition)
+**CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../storage/linstor/betrieb.md#csi-boot-race-condition)
 
 ### Disk-Housekeeping
 
@@ -95,6 +95,6 @@ Für den regulären Betrieb wird ein ACL-Token mit der Policy `operator` benöti
 - [Nomad Übersicht](./index.md) -- Architektur und Komponenten des Clusters
 - [Nomad Referenz](./referenz.md) -- Nodes, Ports und Konfigurationsdetails
 - [Nomad Timeouts](./timeouts.md) -- Timeout-Parameter für Deploys und Pulls
-- [Linstor Betrieb](../linstor-storage/betrieb.md) -- CSI-Storage, Boot-Race und Failover
+- [Linstor Betrieb](../storage/linstor/betrieb.md) -- CSI-Storage, Boot-Race und Failover
 - [Consul](../consul/index.md) -- Service Discovery und Health Checks
 - [Vault](../vault/index.md) -- Secret-Injection für Jobs

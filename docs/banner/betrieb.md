@@ -47,4 +47,4 @@ Migrationen liegen inline als Templates in [`services/pocketbase.nomad`](https:/
 
 ## Backup
 
-Die SQLite-Datei liegt im Linstor-CSI-Volume `banner-pb-data` (DRBD autoPlace=2). Punkt-in-Zeit-Backup über die allgemeine Linstor-Strategie (siehe [linstor-storage/betrieb](../linstor-storage/betrieb.md)).
+Die SQLite-Datei liegt im Linstor-CSI-Volume `banner-pb-data` (DRBD autoPlace=2). Punkt-in-Zeit-Backup über die allgemeine Linstor-Strategie (siehe [linstor-storage/betrieb](../storage/linstor/betrieb.md)).

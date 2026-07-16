@@ -40,9 +40,9 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [NAS Storage](./nas-storage/) | Synology NFS-Exports und Garage S3 |
-| [Linstor Storage](./linstor-storage/) | DRBD-repliziertes Block-Storage (CSI) |
-| [Backup](./backup/) | Backup-Strategie, PBS, pg_dumpall |
+| [NAS Storage](./storage/nas/) | Synology NFS-Exports und Garage S3 |
+| [Linstor Storage](./storage/linstor/) | DRBD-repliziertes Block-Storage (CSI) |
+| [Backup](./storage/backup/) | Backup-Strategie, PBS, pg_dumpall |
 
 ## Kerndienste
 

@@ -49,7 +49,7 @@ Transcode-Dateien und Caches werden auf dem lokalen `/tmp/jellyfin/`-Verzeichnis
 | Config | `/config` | CSI Volume `jellyfin-config` | Linstor (DRBD-repliziert) |
 | Cache | `/config/cache` | `/tmp/jellyfin/cache` | Lokal (flüchtig) |
 | Transcodes | `/config/data/transcodes` | `/tmp/jellyfin/transcodes` | Lokal (flüchtig) |
-| Medienbibliothek | `/jellyfin` | `/nfs/jellyfin` | NFS ([NAS](../nas-storage/index.md)) |
+| Medienbibliothek | `/jellyfin` | `/nfs/jellyfin` | NFS ([NAS](../storage/nas/index.md)) |
 
 ::: info Lokaler Cache
 Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt auf NFS. Das reduziert die Netzwerklast und verbessert die Transcoding-Performance erheblich.

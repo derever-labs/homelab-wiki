@@ -45,7 +45,7 @@ Konsolidierte Übersicht aller periodischen Nomad Jobs. Die Job-Dateien liegen i
 | `nomad-snapshot` | batch | Täglich 01:30 | Nomad Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Uptime Kuma Push |
 | `vault-backup` | batch | Täglich 02:00 | Vault Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Uptime Kuma Push |
 
-Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../backup/index.md)
+Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../storage/backup/index.md)
 
 ### Updates
 
@@ -75,7 +75,7 @@ Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewus
 
 ## Verwandte Seiten
 
-- [Backup-Strategie](../backup/index.md) -- PostgreSQL Backup Architektur und Restore-Konzept
+- [Backup-Strategie](../storage/backup/index.md) -- PostgreSQL Backup Architektur und Restore-Konzept
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess bei Wartungsarbeiten
 - [Monitoring Stack](../monitoring/index.md) -- Uptime Kuma Push-Monitore für Backup-Status
 - [Renovate](./renovate.md) -- Kontrollierte Docker-Image-Updates via GitHub PRs

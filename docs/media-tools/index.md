@@ -105,4 +105,4 @@ Profilarr ist seit 2026-06-05 der Nachfolger von notifiarr für die Quality-Prof
 - [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr
 - [Jellyfin](../jellyfin/index.md) -- Media Player, dessen Mediathek Handbrake nutzt
 - [Audiobookshelf](../audiobookshelf/index.md) -- Hörbuch-Server, ergänzt durch LazyLibrarian
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für alle Media-Tools
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Storage für alle Media-Tools

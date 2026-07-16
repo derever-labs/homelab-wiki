@@ -55,5 +55,5 @@ Mosquitto läuft im Bridge-Netzwerkmodus mit zwei statischen Ports (Protokolle u
 - [IoT Stack](./index.md) -- Zigbee2MQTT und IoT-Architektur
 - [IoT Betrieb](./betrieb.md) -- Passthrough, Pairing, Backup, Rotation, Benutzeranlage
 - [DNS](../dns/) -- Consul DNS für `mosquitto.service.consul`
-- [Linstor](../linstor-storage/index.md) -- CSI Storage für Persistence-Daten
-- [NAS Storage](../nas-storage/) -- NFS für Zigbee2MQTT-Datenpfade
+- [Linstor](../storage/linstor/index.md) -- CSI Storage für Persistence-Daten
+- [NAS Storage](../storage/nas/) -- NFS für Zigbee2MQTT-Datenpfade

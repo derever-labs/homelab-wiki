@@ -19,8 +19,8 @@ Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (
 |----------|------|
 | Deployment | Bare-metal (Synology DSM) |
 | NFS-Clients | Ansible-Rolle `roles/nfs` (fstab-Mounts auf den VMs) |
-| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
-| Hardware | [Server-Hardware](../_referenz/hardware-inventar.md#nas) |
+| IPs | [Hosts und IPs](../../_referenz/hosts-und-ips.md) |
+| Hardware | [Server-Hardware](../../_referenz/hardware-inventar.md#nas) |
 
 ## Rolle im Stack
 
@@ -34,15 +34,15 @@ Die konkreten Export-Pfade und Mounts, die Garage-Endpunkte und -Buckets sowie d
 
 ## Monitoring
 
-Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitoring](../synology-monitoring/index.md).
+Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitoring](../../synology-monitoring/index.md).
 
 ## Verwandte Seiten
 
 - [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Garage-Endpunkte/Buckets, DSM-Konfiguration
 - [NAS-Storage: Betrieb](./betrieb.md) -- Troubleshooting, SSH-Hardening, Wartung
-- [Server-Hardware](../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
-- [Datenstrategie](../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
+- [Server-Hardware](../../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
+- [Datenstrategie](../../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
-- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
-- [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting
+- [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
+- [Proxmox Cluster](../../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
+- [Synology NAS Monitoring](../../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting

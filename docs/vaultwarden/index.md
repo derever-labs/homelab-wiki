@@ -102,11 +102,11 @@ Vaultwarden verschickt Mails (Einladungen, Hinweise, Master-Password-Hint) über
 Die zwei Datenpfade werden separat gesichert:
 
 - **PostgreSQL-DB `vaultwarden`** -- Teil der `postgres-backup`-Pipeline aus dem zentralen Postgres-Cluster
-- **CSI-Volume `vaultwarden-data-r2`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
+- **CSI-Volume `vaultwarden-data-r2`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../storage/backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
 
 ## Verwandte Seiten
 
-- [Backup-Strategie](../backup/index.md)
-- [Linstor / DRBD-Storage](../linstor-storage/index.md)
+- [Backup-Strategie](../storage/backup/index.md)
+- [Linstor / DRBD-Storage](../storage/linstor/index.md)
 - [Traefik Middlewares](../edge/traefik/referenz.md)
 - [SMTP-Relay](../smtp-relay/index.md)

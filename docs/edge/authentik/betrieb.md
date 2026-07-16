@@ -134,5 +134,5 @@ Die Schritt-für-Schritt-Reihenfolge des Erstdeploys (Vault-Secrets, PostgreSQL-
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
-- [Backup](../../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
+- [Backup](../../storage/backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
 - [Telegram Bots](../../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay

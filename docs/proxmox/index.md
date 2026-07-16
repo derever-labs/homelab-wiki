@@ -146,9 +146,9 @@ Die Umstellung einer VM-Disk von scsi auf virtio-blk als Betriebsprozedur: [Betr
 - [Referenz](./referenz.md) -- iGPU-Passthrough, VM-Disk-/ZFS-Tuning, SSO/OIDC-Felder und PDM-Konfiguration
 - [Betrieb](./betrieb.md) -- HA-Prüfungen, Wartung, bekannte Probleme
 - [Netzwerk](../netzwerk/) -- VLANs, Subnets, Hardware
-- [Backup](../backup/) -- Backup-Strategie und PBS
+- [Backup](../storage/backup/) -- Backup-Strategie und PBS
 - [Hardware-Inventar](../_referenz/hardware-inventar.md) -- Physische Hardware-Details
-- [Linstor Storage](../linstor-storage/) -- DRBD-replizierter Block-Storage
+- [Linstor Storage](../storage/linstor/) -- DRBD-replizierter Block-Storage
 - [Nomad](../nomad/) -- Container-Orchestrierung auf den VMs
 - [Consul](../consul/) -- Service Discovery und KV Store
 - [Vault](../vault/) -- Secrets Management

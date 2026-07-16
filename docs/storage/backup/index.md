@@ -20,7 +20,7 @@ Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen un
 | PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
 | VM Backups (PBS) | Proxmox PBS → PBS Server, Block-Level inkl. LINSTOR-Volumes; auch externe Nodes (Luzern/Dottikon) via Tailscale -- RPO 24h, 6 Monate |
 | DRBD-Replikation | 2× Live-Replica (client-05/client-06) -- Hochverfügbarkeit, kein Backup |
-| SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../_querschnitt/datenstrategie.md#_3-litestream-replikation-sqlite-nicht-umgesetzt)) |
+| SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../../_querschnitt/datenstrategie.md#_3-litestream-replikation-sqlite-nicht-umgesetzt)) |
 
 ## PostgreSQL Backup
 
@@ -48,7 +48,7 @@ Die DRBD/LINSTOR-Volumes werden **nicht LINSTOR-nativ** gesichert. Sie sind durc
 - **DRBD-Replikation** hält jedes Volume 2× live (client-05 + client-06, Diskless-TieBreaker client-04) -- die Daten der ausgenommenen c06-Disk sind damit weiterhin auf c05 vorhanden.
 
 ::: info S3-Schicht zurückgebaut (2026-05-31)
-Die frühere LINSTOR-S3-Backup-Schicht (lokale Snapshots + Shipping nach Garage, Schedule `backup-daily`, Master-Key-Auto-Unlock) wurde entfernt -- sie war redundant zu PBS und bei grossen Volumes (z. B. zot ~46 GiB) unzuverlässig. Details: [Linstor Betrieb](../linstor-storage/betrieb.md).
+Die frühere LINSTOR-S3-Backup-Schicht (lokale Snapshots + Shipping nach Garage, Schedule `backup-daily`, Master-Key-Auto-Unlock) wurde entfernt -- sie war redundant zu PBS und bei grossen Volumes (z. B. zot ~46 GiB) unzuverlässig. Details: [Linstor Betrieb](../linstor/betrieb.md).
 :::
 
 ## Verschlüsselung (age)
@@ -80,6 +80,6 @@ Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.
 ## Verwandte Seiten
 
 - [Backup Referenz](./referenz.md) -- PBS-Details, Retention Policy, Datastore
-- [Linstor Storage](../linstor-storage/) -- DRBD-Storage und Snapshot-Mechanismus
-- [Monitoring](../monitoring/) -- Uptime Kuma Push-Monitore für Backup-Status
-- [Datenbanken](../_referenz/datenbanken.md) -- PostgreSQL Shared Cluster und Service-Zuordnung
+- [Linstor Storage](../linstor/) -- DRBD-Storage und Snapshot-Mechanismus
+- [Monitoring](../../monitoring/) -- Uptime Kuma Push-Monitore für Backup-Status
+- [Datenbanken](../../_referenz/datenbanken.md) -- PostgreSQL Shared Cluster und Service-Zuordnung

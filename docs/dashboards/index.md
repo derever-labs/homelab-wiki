@@ -60,4 +60,4 @@ Flame Intra und Homepage verwenden beide `intra.ackermannprivat.ch`. Nur einer d
 - [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress und Middleware-Chains (public-auth vs. intern-auth)
 - [Traefik Middleware Chains](../edge/traefik/referenz.md) -- Unterschied public-auth vs. intern-auth Chains
 - [CrowdSec](../edge/crowdsec/index.md) -- IP-Blocking für die öffentliche Flame-Instanz
-- [Linstor](../linstor-storage/index.md) -- CSI Storage für Flame-Instanzen
+- [Linstor](../storage/linstor/index.md) -- CSI Storage für Flame-Instanzen

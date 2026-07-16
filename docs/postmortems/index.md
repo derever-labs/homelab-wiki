@@ -17,4 +17,4 @@ Strukturierte Nachschau bei Incidents > 2h Dauer oder Multi-Node-Impact. Schreib
 ## Verwandte Seiten
 
 - [Incident-Template](../_querschnitt/incident-template.md)
-- [Linstor Storage](../linstor-storage/index.md) -- DRBD/Linstor-Cluster (Kontext zum ZOT-NAS-Cascade)
+- [Linstor Storage](../storage/linstor/index.md) -- DRBD/Linstor-Cluster (Kontext zum ZOT-NAS-Cascade)

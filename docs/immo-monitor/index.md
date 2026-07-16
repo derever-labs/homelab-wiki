@@ -234,6 +234,6 @@ Auf dem Telefon trägt die Bottom-Leiste sechs Ziele: fünf Tabs (Home, Inserate
 - [Immo Monitor Referenz](./referenz.md) -- Statuswerte, Relationen-Datenmodell und Netzwerk-Diagramme
 - [Immo Monitor Betrieb](./betrieb.md) -- Schema-Migration, Deploy-Gate und Datenbank
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Datenpipeline: Scraper, Enrichment, Foto-Download, Frühsignal-Ingest und DB-Schema
-- [NAS Storage](../nas-storage/index.md) -- NFS-Share für das Photo-Archiv
+- [NAS Storage](../storage/nas/index.md) -- NFS-Share für das Photo-Archiv
 - [Metabase](../metabase/index.md) -- alternatives BI-Dashboard auf denselben Daten
 - [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware Chains für die Authentifizierung

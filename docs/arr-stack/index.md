@@ -17,7 +17,7 @@ Der Media Stack automatisiert die Suche, den Download und die Organisation von M
 |----------|------|
 | URL | [prowlarr.ackermannprivat.ch](https://prowlarr.ackermannprivat.ch) (Indexer), [sonarr.ackermannprivat.ch](https://sonarr.ackermannprivat.ch) (Serien), [radarr.ackermannprivat.ch](https://radarr.ackermannprivat.ch) (Filme), [sabnzbd.ackermannprivat.ch](https://sabnzbd.ackermannprivat.ch) (Usenet-Downloader) |
 | Deployment | Nomad Jobs `media/prowlarr.nomad`, `media/sonarr.nomad`, `media/radarr.nomad`, `media/sabnzbd.nomad` |
-| Storage | NFS auf dem [NAS](../nas-storage/index.md); SABnzbd-Config auf Linstor CSI |
+| Storage | NFS auf dem [NAS](../storage/nas/index.md); SABnzbd-Config auf Linstor CSI |
 | Datenbank | [PostgreSQL Shared Cluster](../_querschnitt/datenbank-architektur.md) (Sonarr, Radarr, Prowlarr) |
 | Auth | Authentik via Traefik; SABnzbd nur intern |
 | Secrets | DB-Passwörter via Vault Workload Identity |
@@ -28,7 +28,7 @@ Die arr-Suite ist die Automatisierungsschicht zwischen Usenet/Indexern und [Jell
 
 ## Konfiguration
 ### Speicher
-Konfiguration und Mediathek liegen zentral auf dem [NAS](../nas-storage/index.md) (NFS); Downloads und Mediathek teilen sich denselben Pfad, damit Sonarr und Radarr Hardlinks statt Kopien nutzen können. SABnzbd ist die Ausnahme: seine Konfiguration liegt auf einem Linstor CSI Volume (`sabnzbd-config-r2`) statt NFS, weshalb der Job auf die Linstor Storage Nodes `vm-nomad-client-05/06` eingeschränkt ist.
+Konfiguration und Mediathek liegen zentral auf dem [NAS](../storage/nas/index.md) (NFS); Downloads und Mediathek teilen sich denselben Pfad, damit Sonarr und Radarr Hardlinks statt Kopien nutzen können. SABnzbd ist die Ausnahme: seine Konfiguration liegt auf einem Linstor CSI Volume (`sabnzbd-config-r2`) statt NFS, weshalb der Job auf die Linstor Storage Nodes `vm-nomad-client-05/06` eingeschränkt ist.
 
 ::: warning SABnzbd Memory-Limits und NFS-Cache
 SABnzbd benötigt ausreichend Memory für Unpack-Operationen. Zu niedrige Limits machen den HTTP-Server unresponsive, was dazu führt, dass Consul Health Checks fehlschlagen und SABnzbd aus dem Cluster deregistriert wird.
@@ -37,7 +37,7 @@ Die konfigurierten Ressourcen-Limits sind im Nomad-Job `media/sabnzbd.nomad` def
 
 Bei Symptomen wie "SABnzbd nicht erreichbar während Extraktion" zuerst Memory-Auslastung prüfen.
 
-SABnzbd-Downloads können auch durch stale NFS-Directory-Caches fehlschlagen (`FileNotFoundError` auf `/jellyfin/downloads/incomplete/`). Wenn `acdirmin/acdirmax` zu hoch sind, sieht der NFS-Client veraltete Verzeichnisinhalte. Siehe [NAS Troubleshooting](../nas-storage/betrieb.md#troubleshooting).
+SABnzbd-Downloads können auch durch stale NFS-Directory-Caches fehlschlagen (`FileNotFoundError` auf `/jellyfin/downloads/incomplete/`). Wenn `acdirmin/acdirmax` zu hoch sind, sieht der NFS-Client veraltete Verzeichnisinhalte. Siehe [NAS Troubleshooting](../storage/nas/betrieb.md#troubleshooting).
 :::
 
 ### Datenbank (PostgreSQL)
@@ -75,4 +75,4 @@ Deshalb nutzen diese Services **Traefik-URLs** (`*.ackermannprivat.ch`) für die
 - [Jellyfin](../jellyfin/index.md) -- Media Server
 - [Radarr Quality Profiles](./referenz.md) -- Detaillierte Profil-Konfiguration
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Medien und Konfiguration
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Storage für Medien und Konfiguration

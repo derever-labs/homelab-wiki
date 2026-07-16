@@ -20,11 +20,11 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 | **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
 | **Object Storage** | Garage (S3) | NAS | Backup-Targets, Terraform State |
 
-Details zu NFS-Exports: [NAS-Speicher](../nas-storage/index.md)
+Details zu NFS-Exports: [NAS-Speicher](../storage/nas/index.md)
 
 ## 2. Aktuelle Datenbank-Strategie
 
-Alle datenbank-gestützten Services nutzen den **PostgreSQL Shared Cluster** auf einem DRBD-replizierten Linstor CSI Volume. Details zur Architektur, Service-Zuordnung und Backup: [Datenbank-Architektur](./datenbank-architektur.md) | [Backup-Strategie](../backup/index.md)
+Alle datenbank-gestützten Services nutzen den **PostgreSQL Shared Cluster** auf einem DRBD-replizierten Linstor CSI Volume. Details zur Architektur, Service-Zuordnung und Backup: [Datenbank-Architektur](./datenbank-architektur.md) | [Backup-Strategie](../storage/backup/index.md)
 
 ## 3. Litestream Replikation (SQLite) -- Nicht umgesetzt
 
@@ -39,6 +39,6 @@ Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanze
 ## Verwandte Seiten
 
 - [Datenbank-Architektur](./datenbank-architektur.md) -- PostgreSQL Cluster, Service-Zuordnung
-- [Backup-Strategie](../backup/index.md) -- pg_dumpall, Linstor Snapshots, PBS
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports und Garage S3
+- [Backup-Strategie](../storage/backup/index.md) -- pg_dumpall, Linstor Snapshots, PBS
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports und Garage S3
 - [Netzwerk-Topologie](../netzwerk/index.md) -- Thunderbolt-Netzwerk für Replikation

@@ -19,7 +19,7 @@ Karakeep ist ein selbstgehosteter Bookmark-Manager und dient als zentrale Sammel
 | URL | [kara.ackermannprivat.ch](https://kara.ackermannprivat.ch) (nur intern + Tailscale) |
 | Deployment | Nomad Job `services/karakeep.nomad` |
 | Storage | Linstor CSI: `karakeep-data` (SQLite + Assets), `karakeep-meili` (Suchindex) |
-| Backup | App-Level, täglich 03:30, age-verschlüsselt nach `/nfs/backup/karakeep` (Details: [Backup](../backup/index.md)) |
+| Backup | App-Level, täglich 03:30, age-verschlüsselt nach `/nfs/backup/karakeep` (Details: [Backup](../storage/backup/index.md)) |
 | Auth | `intern-api@file` (IP-Allowlist intern + Tailscale) plus Karakeep-Eigen-Login, bewusst ohne Authentik |
 | Secrets | Vault `kv/karakeep` |
 
@@ -112,7 +112,7 @@ Der Meilisearch-Index ist ein abgeleiteter Datenbestand und liesse sich jederzei
 
 - [Karakeep Referenz](./referenz.md) -- Container-Tasks, Volumes, Secrets, Backup-Parameter
 - [Karakeep Betrieb](./betrieb.md) -- Erfassung, Restore, Reindex, Troubleshooting
-- [Backup](../backup/index.md) -- übergeordnetes Backup-Konzept
+- [Backup](../storage/backup/index.md) -- übergeordnetes Backup-Konzept
 - [Obsidian LiveSync](../obsidian-livesync/index.md) -- Verdichtungs- und Schreibschicht
-- [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD)
+- [Linstor CSI](../storage/linstor/index.md) -- replizierter Block-Storage (DRBD)
 - [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware-Kette `intern-api@file`

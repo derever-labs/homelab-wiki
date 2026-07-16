@@ -106,5 +106,5 @@ Falls Consul keine Leader-Wahl mehr durchführen kann (kein Quorum möglich):
 
 - [HashiCorp Stack](../nomad/index.md) -- Architektur und Konfiguration von Consul, Vault, Nomad
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess für einzelne Nomad-Nodes
-- [Linstor/DRBD](../linstor-storage/index.md) -- Storage-Cluster und DRBD-Ressourcen
+- [Linstor/DRBD](../storage/linstor/index.md) -- Storage-Cluster und DRBD-Ressourcen
 - [Batch Jobs](./batch-jobs.md) -- Periodische Jobs die nach einem Restart ggf. manuell angestossen werden müssen

@@ -21,7 +21,7 @@ Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der i
 
 ### NFS Volumes
 
-Persistente Daten liegen auf dem NAS unter `/nfs/docker/<service>/`. Die Volumes werden als `host` Volumes im Job konfiguriert. Details zum NFS-Setup: [NAS-Speicher](../nas-storage/)
+Persistente Daten liegen auf dem NAS unter `/nfs/docker/<service>/`. Die Volumes werden als `host` Volumes im Job konfiguriert. Details zum NFS-Setup: [NAS-Speicher](../storage/nas/)
 
 ### Bridge Networking
 

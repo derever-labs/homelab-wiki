@@ -43,4 +43,4 @@ Der UDM Pro ist über den SFP+-Port (eth9) mit dem ISP-Router verbunden. Der RJ4
 - [Traefik](../edge/traefik/) -- Reverse Proxy (Port-Forwards zeigen auf Traefik VIP)
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Vollständige IP-Zuordnung
 - [Ports und Dienste](../_referenz/ports-und-dienste.md) -- Port-Forwards und Firewall-Regeln
-- [NAS-Speicher](../nas-storage/) -- Synology NAS im Management-Netzwerk
+- [NAS-Speicher](../storage/nas/) -- Synology NAS im Management-Netzwerk

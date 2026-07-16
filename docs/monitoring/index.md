@@ -319,8 +319,8 @@ Die Log-Level je Komponente listet die [Monitoring Referenz](./referenz.md#log-l
 - [InfluxDB & Telegraf](./influxdb.md) -- Metriken-Backend, Buckets, Inputs und Direkt-Schreiber
 - [Grafana Alloy](./alloy.md) -- Log-Collector mit drei Deployment-Arten
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
-- [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
-- [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
+- [Backup-Strategie](../storage/backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
+- [Linstor/DRBD](../storage/linstor/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs
 - [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard (CheckMK-Hardware-Health) mit Alerting
 - [USV (APC)](../ups/index.md) -- USV-Monitoring via NUT und Grafana Alerting

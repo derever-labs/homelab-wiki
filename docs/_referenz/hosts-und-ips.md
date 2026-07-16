@@ -126,7 +126,7 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 | Backup-NAS (DS1525+, Hostname DS1525) | 192.168.2.200 | Aussenstelle Dottikon (Zugriff via Tailscale-Subnet-Router `pve-01-nana`); Active Backup for Business + `backup`-Share; kein NFS/Nomad-Storage |
 | Nana (DS1517+) | 192.168.3.181 | Aussenstelle Dottikon; Zugriff via Tailscale-Subnet-Router `pve-01-nana` |
 
-Alle vier Synology sind einheitlich konfiguriert (DSM-Port 40000/40001, SMART, Logout-Timer, SSH-Key) -- siehe [DSM-Verwaltung](../nas-storage/referenz.md#dsm-verwaltung-alle-synology).
+Alle vier Synology sind einheitlich konfiguriert (DSM-Port 40000/40001, SMART, Logout-Timer, SSH-Key) -- siehe [DSM-Verwaltung](../storage/nas/referenz.md#dsm-verwaltung-alle-synology).
 
 ## Thunderbolt-Netzwerk
 

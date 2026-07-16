@@ -19,7 +19,7 @@ Headless CMS für die strukturierte Recherche von Gravel-Bike-Herstellern und -M
 | URL | Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `infra/nomad-jobs/services/directus-gravel.nomad` |
 | Auth | Authentik Forward-Auth (`intern-auth@file`) + Directus Admin-Login |
-| Storage | PostgreSQL (DB `gravel_recherche`) und Garage S3 (Bucket `gravel-recherche`) -- Details in [Datenbanken](../_referenz/datenbanken.md) und [NAS-Speicher](../nas-storage/) |
+| Storage | PostgreSQL (DB `gravel_recherche`) und Garage S3 (Bucket `gravel-recherche`) -- Details in [Datenbanken](../_referenz/datenbanken.md) und [NAS-Speicher](../storage/nas/) |
 | Secrets | Vault `kv/data/directus-gravel` -- Speicherorte in [Zugangsdaten](../_referenz/credentials.md) |
 
 ## Rolle im Stack
@@ -46,7 +46,7 @@ SSO via OIDC wäre die saubere Lösung -- für den Single-User-Use-Case ist die 
 
 ## Verwandte Seiten
 
-- [NAS-Speicher](../nas-storage/) -- Garage S3 und Bucket-Architektur
+- [NAS-Speicher](../storage/nas/) -- Garage S3 und Bucket-Architektur
 - [Datenbanken](../_referenz/datenbanken.md) -- Postgres-Cluster und DB-Zuordnung
 - [Web-Interfaces](../_referenz/web-interfaces.md) -- URL-Verzeichnis
 - [Zugangsdaten](../_referenz/credentials.md) -- Vault- und 1P-Speicherorte

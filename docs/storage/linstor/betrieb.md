@@ -40,7 +40,7 @@ Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client
 
 ## Credentials
 
-Linstor Controller benötigt keine separate Authentifizierung im internen Netzwerk. LINBIT GUI ist über Authentik ForwardAuth (`intern-auth`) geschützt -- Zugangsdaten: [Zugangsdaten](../_referenz/credentials.md).
+Linstor Controller benötigt keine separate Authentifizierung im internen Netzwerk. LINBIT GUI ist über Authentik ForwardAuth (`intern-auth`) geschützt -- Zugangsdaten: [Zugangsdaten](../../_referenz/credentials.md).
 
 ## Controller Failover
 
@@ -160,9 +160,9 @@ Die allgemeine Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentati
 
 ## Verwandte Seiten
 
-- [Linstor Storage](../linstor-storage/) -- Architektur, HA-Design, CSI-Integration
+- [Linstor Storage](./) -- Architektur, HA-Design, CSI-Integration
 - [Linstor Referenz](./referenz.md) -- Nachschlagewerte (CSI, Metriken, Performance)
 - [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
-- [Proxmox](../proxmox/) -- Host- und VM-Übersicht
-- [Nomad](../nomad/) -- Container-Orchestrierung mit CSI-Volumes
+- [Proxmox](../../proxmox/) -- Host- und VM-Übersicht
+- [Nomad](../../nomad/) -- Container-Orchestrierung mit CSI-Volumes
 - [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes

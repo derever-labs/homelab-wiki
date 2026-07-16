@@ -35,7 +35,7 @@ Wenn die API selbst kaputt ist oder der Token revoked wurde, bleibt der direkte 
 
 Ein täglicher `pg_dumpall`-Job schreibt um 03:00 UTC einen vollständigen Dump aller Datenbanken nach NFS. Die Authentik-DB kann aus jedem Dump der letzten 7 Tage / 4 Wochen / 3 Monate (GFS-Schema) wiederhergestellt werden. Das ist der sauberste Rollback bei katastrophalen Konfigurationsfehlern -- der Preis ist Datenverlust bis zum letzten Backup.
 
-Details zur Backup-Infrastruktur: [Backup](../../backup/index.md).
+Details zur Backup-Infrastruktur: [Backup](../../storage/backup/index.md).
 
 ### Layer 5 -- Re-Bootstrap
 
@@ -182,4 +182,4 @@ OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR
 - [Authentik Betrieb](./betrieb.md) -- Abhängigkeiten, Alerting-Kette, Rollback-Konzepte
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Tier-Mapping, Blueprint-Quelle
-- [Backup](../../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
+- [Backup](../../storage/backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)

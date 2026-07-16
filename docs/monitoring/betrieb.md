@@ -58,4 +58,4 @@ Der Workflow kennt einen `workflow_dispatch` mit Flag `force_all`, der alle Dash
 - [Monitoring Stack](./index.md) -- Übersicht, Architektur und Alert-Routing
 - [Monitoring Referenz](./referenz.md) -- Alert-Regeln, Log-Quellen und Log-Levels
 - [Uptime Kuma](./uptime-kuma/index.md) -- Synthetic-Monitoring und Push-Monitore
-- [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
+- [Backup-Strategie](../storage/backup/index.md) -- Backup-Monitoring via Uptime Kuma Push

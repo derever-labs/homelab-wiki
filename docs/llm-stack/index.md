@@ -118,4 +118,4 @@ Open WebUI authentifiziert über OIDC direkt gegen Authentik (Provider `open-web
 
 - [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress und Middleware-Chains für Ollama und Open WebUI
 - [Authentik](../edge/authentik/index.md) -- OIDC-Provider für Open WebUI
-- [Storage NAS](../nas-storage/index.md) -- NFS-Speicher für Ollama-Modelle
+- [Storage NAS](../storage/nas/index.md) -- NFS-Speicher für Ollama-Modelle

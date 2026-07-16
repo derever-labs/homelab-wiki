@@ -128,7 +128,7 @@ Der Reshape-Fortschritt (`pct`) kommt ausschliesslich aus `/proc/mdstat` -- Chec
 
 ## Verwandte Seiten
 
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Hardware-Details
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports, Garage S3, Hardware-Details
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Alloy, Alerting-Architektur
 - [CheckMK](../monitoring/checkmk/index.md) -- Hardware-Health via SNMPv3, Alarmquelle für das NAS
 - [Hardware-Inventar](../_referenz/hardware-inventar.md#nas) -- NAS-Hardware-Spezifikationen

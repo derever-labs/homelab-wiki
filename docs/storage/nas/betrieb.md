@@ -39,7 +39,7 @@ Der HomeServer ist mit einer Synology E10M20-T1 bestückt (ein 10GbE-Port plus z
 
 ## SSH-Zugang und Hardening
 
-Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../_referenz/ssh-zugang.md) und [Zugangsdaten](../_referenz/credentials.md). Login als `admin` mit Public-Key (`SSH Homelab`) und `sudo` über das Admin-Passwort -- einheitlich auf allen Homelab-Synology (HomeServer, MediaServer, DS1525+, Nana). Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
+Benutzer, IP und Credential-Speicherorte: [SSH-Zugang](../../_referenz/ssh-zugang.md) und [Zugangsdaten](../../_referenz/credentials.md). Login als `admin` mit Public-Key (`SSH Homelab`) und `sudo` über das Admin-Passwort -- einheitlich auf allen Homelab-Synology (HomeServer, MediaServer, DS1525+, Nana). Passwort-Auth deaktiviert. Login-Daten liegen im 1Password Vault `PRIVAT Agent` (Item `NAS Privat Homeserver Admin`), der Key stammt aus `SSH Homelab Kopie`.
 
 Das NAS ist seit 2026-05-01 nach demselben Pattern wie die DCLab-NAS gehärtet -- relevant für das Verständnis der Architektur:
 
@@ -54,11 +54,11 @@ Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederher
 
 - Das NAS verwaltet seine eigene RAID-Konsistenz (SHR/RAID)
 - Snapshots werden auf dem NAS selbst gesteuert
-- Monitoring: Siehe [Synology NAS Monitoring](../synology-monitoring/index.md)
+- Monitoring: Siehe [Synology NAS Monitoring](../../synology-monitoring/index.md)
 
 ## Verwandte Seiten
 
 - [NAS-Speicher](./index.md) -- Steckbrief, Architektur und Rolle im Stack
 - [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Garage-Endpunkte/Buckets, DSM-Konfiguration
 - [E10M20-T1 Freischaltung](./e10m20-freischaltung.md) -- 10GbE/NVMe-Freischaltung im Detail
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting
+- [Synology NAS Monitoring](../../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting

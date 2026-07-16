@@ -65,11 +65,11 @@ Jede Information existiert an genau **einem** Ort. Andere Stellen verlinken mit 
 | Datenbank-Zuordnung | [Datenbanken](./_referenz/datenbanken.md) | System-Seiten |
 | Middleware Chains | [Traefik Referenz](./edge/traefik/referenz.md) | System-Seiten |
 | DNS-Architektur | [DNS](./dns/) | netzwerk/ |
-| Backup-Architektur | [Backup](./backup/) | System-Seiten |
+| Backup-Architektur | [Backup](./storage/backup/) | System-Seiten |
 | LDAP & Benutzerverwaltung | [LDAP im Homelab](./edge/ldap.md) | security/, System-Seiten |
 | CrowdSec | [CrowdSec](./edge/crowdsec/) | security/, traefik/ |
 | Service-Abhängigkeiten | [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | System-Seiten |
-| NFS-Exports, Mount-Pfade | [NAS-Speicher](./nas-storage/) | System-Seiten |
+| NFS-Exports, Mount-Pfade | [NAS-Speicher](./storage/nas/) | System-Seiten |
 
 ::: tip SSOT-Regel anwenden
 Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in einer System-Seite zu wiederholen, schreibe "Authentifizierung über `intern-auth@file` (Details: [Traefik Referenz](./edge/traefik/referenz.md))".

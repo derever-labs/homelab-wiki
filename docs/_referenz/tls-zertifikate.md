@@ -108,7 +108,7 @@ Der früher verwendete `traefik-certs-dumper`-Container exportierte Zertifikate 
 
 ## Pfad 2 -- NAS (DS1825+, `login.ackermannprivat.ch`)
 
-Das Synology-DSM-Webinterface und native Synology-Dienste brauchen ein gültiges TLS-Zertifikat direkt auf dem NAS. Hintergrund: Details zur NAS-Architektur: [NAS Storage](../nas-storage/index.md).
+Das Synology-DSM-Webinterface und native Synology-Dienste brauchen ein gültiges TLS-Zertifikat direkt auf dem NAS. Hintergrund: Details zur NAS-Architektur: [NAS Storage](../storage/nas/index.md).
 
 ### Warum ein direktes Zertifikat auf dem NAS
 
@@ -169,6 +169,6 @@ Die Node-FQDNs (`pveXX.ackermannprivat.ch`, `pve-lu-01.ackermannprivat.ch`, `pve
 ## Verwandte Seiten
 
 - [Traefik](../edge/traefik/) -- Reverse Proxy und Zertifikatsverwaltung
-- [NAS Storage](../nas-storage/) -- Synology DS1825+, DSM-Dienste
+- [NAS Storage](../storage/nas/) -- Synology DS1825+, DSM-Dienste
 - [Vault](../vault/) -- Secrets Management und Security-Entscheidungen
 - [Proxmox](../proxmox/) -- PDM-Anbindung und Node-Übersicht

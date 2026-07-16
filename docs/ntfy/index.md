@@ -68,5 +68,5 @@ Der externe Router nutzt `public-noauth@file` (CrowdSec plus Security-Header); d
 
 - [Todo Ingest](../todo-ingest/index.md) -- erster Konsument, nutzt Topic `todo` für Bestätigungen und Rückfragen
 - [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
-- [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die Datenbanken
+- [Linstor CSI](../storage/linstor/index.md) -- replizierter Block-Storage (DRBD) für die Datenbanken
 - [Credentials](../_referenz/credentials.md) -- Speicherorte der Zugangsdaten

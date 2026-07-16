@@ -128,4 +128,4 @@ Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, soda
 - [Video-Download-Tools](../video-download/index.md) -- Manuelle Download-UIs
 - [Arr-Stack](../arr-stack/index.md) -- Medien-Automatisierung (Sonarr, Radarr, etc.)
 - [Jellyfin](../jellyfin/index.md) -- Media Player
-- [Linstor](../linstor-storage/index.md) -- CSI Storage für beide Instanzen
+- [Linstor](../storage/linstor/index.md) -- CSI Storage für beide Instanzen

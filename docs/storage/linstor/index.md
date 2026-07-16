@@ -98,7 +98,7 @@ csi -> svc: Linstor API (HTTP :3370) {
 }
 ```
 
-Die H2-Controller-Datenbank ist schneller als etcd und liegt auf dem DRBD-Volume repliziert. Netzwerk-Pfade und Quorum-Rollen zeigt das Diagramm; die konkreten Bandbreiten siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+Die H2-Controller-Datenbank ist schneller als etcd und liegt auf dem DRBD-Volume repliziert. Netzwerk-Pfade und Quorum-Rollen zeigt das Diagramm; die konkreten Bandbreiten siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
 
 ### Netzwerk
 
@@ -131,7 +131,7 @@ Lösung analog zum DClab: zwei Node-Connection-Paths auf Cluster-Ebene zwingen D
 Auf `vm-nomad-client-05` und `-06` läuft ein Cron-Skript jede Minute, das zwei Influx-Metriken nach `/var/lib/csi-metrics/csi_health_<hostname>.influx` schreibt (lokaler Pfad, **NFS-frei**). Der lokale Telegraf-Host-Agent liest die Datei via `inputs.file` und routet die Measurements nach InfluxDB-Bucket `telegraf`. Grafana alarmiert mit zwei Alert-Rules in der `Storage Alerts`-Gruppe (`csi-stale-mount-warn`, `csi-plugin-down-crit`) und routet via Keep an Telegram.
 
 ::: danger NFS-Selbstreferenz vermieden
-Der Schreibpfad ist bewusst lokal. Bis 2026-05-29 schrieb das Skript nach `/nfs/docker/telegraf/metrics/`. Bei totem NAS-`nfsd` blockierten `stat` und `mv` im uninterruptiblen D-State; jede Minute liefen neue Crons auf, die nie endeten -- ein NAS-Ausfall riss so die Storage-Nodes selbst in den Wedge. Lokaler Pfad plus `mkdir -p` statt NFS-Existenzprüfung schliesst diese Falle. Details: [InfluxDB & Telegraf](../monitoring/influxdb.md).
+Der Schreibpfad ist bewusst lokal. Bis 2026-05-29 schrieb das Skript nach `/nfs/docker/telegraf/metrics/`. Bei totem NAS-`nfsd` blockierten `stat` und `mv` im uninterruptiblen D-State; jede Minute liefen neue Crons auf, die nie endeten -- ein NAS-Ausfall riss so die Storage-Nodes selbst in den Wedge. Lokaler Pfad plus `mkdir -p` statt NFS-Existenzprüfung schliesst diese Falle. Details: [InfluxDB & Telegraf](../../monitoring/influxdb.md).
 :::
 
 - **`csi_mounts.stale_count`** -- Anzahl Mount-Pfade unter `/opt/nomad/client/csi/.../per-alloc/<id>/`, deren `<id>` nicht in den running Allocs der Node existiert (orphan Mount nach Crash, OOM, Quorum-Stall).
@@ -216,7 +216,7 @@ Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung de
 
 ## Performance
 
-Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit ~20 Gbit/s (Werte siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Dadurch ist die Latenz für synchrone Replikation minimal.
+Die DRBD-Replikation läuft über das Thunderbolt-Netzwerk (10.99.1.0/24) mit ~20 Gbit/s (Werte siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md)). Dadurch ist die Latenz für synchrone Replikation minimal.
 
 Erwartete Kennwerte und der pgbench-Vergleich DRBD gegen lokale SSD stehen in der [Linstor Referenz](./referenz.md#performance-kennwerte).
 
@@ -234,8 +234,8 @@ Erwartete Kennwerte und der pgbench-Vergleich DRBD gegen lokale SSD stehen in de
 - [Linstor Betrieb](./betrieb.md) -- Failover, Troubleshooting, Monitoring, Volume-Übersicht
 - [Linstor Referenz](./referenz.md) -- CSI-Attribute, Performance, Panels und Metriken
 - [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
-- [Proxmox](../proxmox/) -- Host- und VM-Übersicht
-- [Nomad](../nomad/) -- Container-Orchestrierung mit CSI-Volumes
-- [Consul](../consul/) -- Service Discovery für Controller HA
+- [Proxmox](../../proxmox/) -- Host- und VM-Übersicht
+- [Nomad](../../nomad/) -- Container-Orchestrierung mit CSI-Volumes
+- [Consul](../../consul/) -- Service Discovery für Controller HA
 - [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes
-- [Netzwerk](../netzwerk/) -- Thunderbolt und Management-Netzwerk
+- [Netzwerk](../../netzwerk/) -- Thunderbolt und Management-Netzwerk

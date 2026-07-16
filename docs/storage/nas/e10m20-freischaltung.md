@@ -54,7 +54,7 @@ Ein DSM-Update setzt `adapter_cards.conf` und `model.dtb` auf den Auslieferungss
 
 Der Auslöser **Herunterfahren** ist bewusst gewählt: Die `notsup0`-Sperre der NIC greift sehr früh im Boot, bevor der Aufgabenplaner läuft. Ein Shutdown-Task patcht die Konfiguration darum **vor** dem nächsten Start, sodass DSM beim Hochfahren bereits die freigeschaltete Karte sieht. Ein Boot-up-Task käme für den Netzwerk-Teil zu spät.
 
-Das Muster entspricht dem bestehenden Task `ssh-hardening-reapply` (siehe [SSH-Hardening](../security/index.md)). Aufgabenplaner-Tasks bleiben über DSM-Updates erhalten; nur die gepatchten Systemdateien werden zurückgesetzt und beim nächsten Herunterfahren neu geschrieben.
+Das Muster entspricht dem bestehenden Task `ssh-hardening-reapply` (siehe [SSH-Hardening](../../security/index.md)). Aufgabenplaner-Tasks bleiben über DSM-Updates erhalten; nur die gepatchten Systemdateien werden zurückgesetzt und beim nächsten Herunterfahren neu geschrieben.
 
 ::: tip Restfenster nach einem DSM-Update
 Direkt nach einem Update ist die Karte beim ersten Boot noch gesperrt, bis der Shutdown-Task beim nächsten Herunterfahren neu patcht. Erst der darauffolgende Start hat die Karte wieder aktiv.
@@ -75,5 +75,5 @@ Für das Mediathek-Szenario (sequenzielles Streaming, selten geschriebene Dateie
 ## Verwandte Seiten
 
 - [NAS-Speicher](./index.md) -- Übersicht NFS-Exports und Garage S3
-- [Hosts und IPs](../_referenz/hosts-und-ips.md)
-- [Server-Hardware](../_referenz/hardware-inventar.md#nas)
+- [Hosts und IPs](../../_referenz/hosts-und-ips.md)
+- [Server-Hardware](../../_referenz/hardware-inventar.md#nas)
