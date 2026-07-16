@@ -142,7 +142,7 @@ Alle Jobs folgen einheitlichen Mustern (Docker Driver, NFS Volumes, Bridge Netwo
 
 ## Dependencies
 
-Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](betrieb.md#abhängigkeiten). Die wichtigsten Bausteine sind NFS-Storage (`/nfs/docker/`), Docker, Consul, Vault, der PostgreSQL Shared Cluster und Linstor CSI.
+Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](betrieb.md#abhangigkeiten). Die wichtigsten Bausteine sind NFS-Storage (`/nfs/docker/`), Docker, Consul, Vault, der PostgreSQL Shared Cluster und Linstor CSI.
 
 ## Verwandte Seiten
 
