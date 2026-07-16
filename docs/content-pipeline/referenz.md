@@ -14,7 +14,7 @@ Diese Seite listet die Vault-Secrets-Zugriffe der Batch Jobs und die Telegram-Bo
 
 ## Vault Secrets
 
-### reddit-downloader
+### reddit-gallery-dl
 
 | Pfad | Keys |
 | :--- | :--- |
