@@ -23,7 +23,7 @@ Ist-Stand der Coverage in [Monitoring: Coverage](index.md), Correlation-Patterns
 
 Die Empfehlung ist klar: **CheckMK bleibt das Werkzeug erster Wahl für alles, was klassische OS-/Hardware-/Special-Agent-Monitoring ist** (iDRAC Redfish, NAS Synology, Cisco/UniFi/OPNsense SNMP, Windows-AD, Proxmox-VE-Special-Agent, mk_smartmon, mk_zfs, mk_apt, mk_logwatch, mk_systemd). Telegraf bleibt der Pfad für alles **app-, container-, prometheus-metrik-getriebene** (Authentik-Outpost, Loki, Influx, Nomad, Consul, Postgres, Garage, CSI). Loki bleibt für **Log-Pattern-Alerts** (acme-error, ssh-failed, vault-denied), Uptime-Kuma bleibt für **Push-Heartbeats und HTTP-Probes ohne Plugin-Bedarf**.
 
-CheckMK feuert Alerts erst dann an Keep, wenn der CheckMK->Keep-Webhook-Pfad gebaut ist; bis dahin landen Notifications im Mail-Default (DCLab: ohne MTA tot) bzw. über den hardcoded Telegram-Bypass (Homelab: gegen Single-Notifier-Konvention). Dieser Notifier-Pfad ist der strukturelle Bruch der CheckMK-Integration.
+CheckMK Homelab feuert seine Alerts über den Single-Notifier "Keep Hub Notifier" (Webhook-Notification-Plugin, seit 2026-05-01) an Keep; der frühere hardcoded Telegram-Bypass ist entfernt, die Mail-Rule deaktiviert (siehe [CheckMK -- Alarmierung](../checkmk/index.md#alarmierung)). In DCLab fehlt der CheckMK->Keep-Webhook-Pfad weiterhin: Notifications landen dort im Mail-Default, der ohne MTA ins Leere läuft.
 
 ## 2. Aktuelle Stack-Architektur
 
@@ -33,13 +33,13 @@ Beide Cluster identisch aufgesetzt, aber unterschiedlich befüllt:
 - **Alloy -> Loki -> Grafana LogQL -> Webhook -> Keep**: Log-Pattern-Alerts. Beide Cluster aktiv. DCLab hat einen Self-Detection-Alert (`loki-ingester-down`), Homelab keinen
 - **Uptime-Kuma -> Webhook -> Keep**: Push-Heartbeats (cron-jobs), TCP/HTTP-Probes. Single-Notifier-Cleanup live in beiden Clustern
 - **Direct -> Webhook -> Keep**: synthetische Cron-Probes, Watchdog-Skripte
-- **CheckMK -> ??? -> Keep**: hier ist die Lücke. Kein Webhook-Notifier konfiguriert (Inventar-Details auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite)
+- **CheckMK -> Webhook -> Keep**: Homelab live seit 2026-05-01 (Single-Notifier "Keep Hub Notifier"). DCLab: kein Webhook-Notifier konfiguriert -- hier ist die verbleibende Lücke (Inventar-Details auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite)
 
-Single-Notifier-Konvention (Memory `project_monitoring_routing_2026_04`): jede Quelle = genau ein Webhook nach Keep. CheckMK verstösst aktuell strukturell.
+Single-Notifier-Konvention (Memory `project_monitoring_routing_2026_04`): jede Quelle = genau ein Webhook nach Keep. CheckMK Homelab erfüllt sie seit der Keep-Migration; in DCLab fehlt der Webhook-Notifier weiterhin.
 
 ## 3. CheckMK-Inventare
 
-Die vollständige Bestandsaufnahme beider CheckMK-Sites (DCLab und Homelab) -- Hosts, WATO-Struktur, Special- und Standard-Agents, InfluxDB-Forwarder, Notification-Konfig, Severity-Modell und HA-Status -- steht auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite. Kernpunkt für die Strategie: beide Sites sind Single-Instance ohne Failover, und der CheckMK->Keep-Webhook-Notifier fehlt in beiden Clustern.
+Die vollständige Bestandsaufnahme beider CheckMK-Sites (DCLab und Homelab) -- Hosts, WATO-Struktur, Special- und Standard-Agents, InfluxDB-Forwarder, Notification-Konfig, Severity-Modell und HA-Status -- steht auf der [CheckMK](../checkmk/index.md#cluster-inventar)-Seite. Kernpunkt für die Strategie: beide Sites sind Single-Instance ohne Failover; der CheckMK->Keep-Webhook-Notifier ist im Homelab live, in DCLab fehlt er weiterhin.
 
 ## 4. Best-Path-Klassifikation
 
@@ -54,10 +54,9 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 - **CheckMK Single-Instance / HA**: vm-checkmk DCLab + checkmk Homelab haben kein HA. Bei VM-Down sind alle Special-Agent-Targets silent (iDRAC, NAS, Switches, OPNsense, UDM). Telegraf läuft dagegen als Nomad-System-Job auf 3+ Clients -- viel resilienter. Mitigation: externer Watchdog-Probe gegen CheckMK-Web-UI, Disk-Volume-Alert auf vm-checkmk, omd-Status-Cron als Self-Heartbeat
 - **Plugin-Pflege bei Upgrades**: das CheckMK-Major-Upgrade-Regime ist eine eigene Pipeline; ein Custom-Plugin (z.B. eigenes `mk_redfish`) kann beim Major-Upgrade brechen. Mitigation: nur Standard-Plugins nutzen, keine Custom-Plugins
 - **Severity-Modell-Drift**: CheckMK Naemon hat OK/WARN/CRIT/UNKNOWN, Keep-Severity info/warning/critical. Mapping `CRIT->critical`, `WARN->warning`, `UNKNOWN->warning` ist Standard. Drift-Risiko wenn ein Operator WATO-Schwellen oder ein Plugin eigene Severity-Levels nutzt. Mitigation: Severity-Mapping einmal in der CheckMK->Keep-Notifier-URL hartkodieren, nicht pro Plugin
-- **Single-Notifier-Konvention**: CheckMK->Keep-Webhook ist Pflicht; ohne das verstösst CheckMK strukturell. Der Homelab-Telegram-Direct-Notifier muss vor der CheckMK->Keep-Migration entfernt werden, sonst doppeltes Routing
+- **Single-Notifier-Konvention**: CheckMK->Keep-Webhook ist Pflicht; ohne das verstösst CheckMK strukturell. Homelab erfüllt die Konvention seit 2026-05-01 (Keep Hub Notifier; der Telegram-Direct-Notifier wurde vor der Migration entfernt, sonst doppeltes Routing); DCLab hat noch keinen Webhook-Notifier
 - **InfluxDB-Forwarder (Performance-Daten)**: der alerting-Pfad bleibt CheckMK-Core (RRD + Naemon-State + Webhook -> Keep), Severity entsteht im Core, nicht aus InfluxDB. CheckMK kann zusätzlich Performance-Daten an Influx streamen; die RRD bleibt als State-Source notwendig, Influx ist nur ergänzend für Grafana-Dashboards. Cardinality-Risiko: bei ~95 Hosts x 10-20 Services plus Container-Discovery wächst die Series-Zahl schnell. Mitigation: Forwarder nach Aktivierung beobachten, dann Cardinality-Limit aktiv
-- **Mail-Default-Falle**: Default-Plugin `mail` mit `{}`-Config in beiden Clustern, aber kein MTA -- funktional tot, suggeriert aber Coverage. Mitigation: Rule disablen mit Description-Hinweis auf den CheckMK->Keep-Webhook
-- **Token-Security**: Homelab `notifications.mk` hat hardcoded Telegram-Token in einer Repo-tauglichen Datei, der bei Site-Backup oder Cluster-Migration mitgesichert wird -- gegen die 1Password-Konvention. Mitigation: nach der CheckMK->Keep-Migration entfernen
+- **Mail-Default-Falle**: Default-Plugin `mail` ohne MTA ist funktional tot, suggeriert aber Coverage. Homelab: Mail-Rule seit der Keep-Migration deaktiviert (Falle entschärft). DCLab: Default-Rule mit `{}`-Config weiterhin aktiv. Mitigation DCLab: Rule disablen mit Description-Hinweis auf den CheckMK->Keep-Webhook
 - **Doppel-Coverage Telegraf+CheckMK**: pve-Exporter (Telegraf) + `proxmox_ve` Special-Agent (CheckMK) liefern beide Proxmox-Daten. Akzeptiert wegen unterschiedlicher Detail-Tiefe, Risiko zweier Alert-Pfade für dasselbe Problem. Mitigation: Alert-Rules in Telegraf nur für Counter/Rates, in CheckMK nur für State/Health
 - **Proxmox-VM-Memory-Check vs Gast-Innensicht**: Der `proxmox_ve`-Special-Agent liefert pro Gast einen `Proxmox VE Memory Usage`-Check aus der Hypervisor-Sicht. Diese Prozentzahl ist für Memory-Alerts wertlos, sobald der Gast keinen Ballooning-Reclaim erlaubt (`balloon=0`): QEMU-Overhead und der vom Hypervisor als belegt gezählte Page-Cache treiben den Wert über 100% (vm-traefik-01 dauerhaft bei 100.7% CRIT, während der Gast selbst 68% frei meldete). Autoritativ ist deshalb die Gast-Innensicht -- der `Memory`-Check des CheckMK-Agenten in der VM. Mitigation: Der Proxmox-VM-Memory-Check ist per `ignored_services` für jeden Gast mit eigenem Agent-Memory-Check deaktiviert und bleibt nur Fallback-Sicherheitsnetz für noch agentenlose Gäste; auf Host-Ebene (pve00/01/02) bleibt er als Allokations- und Overcommit-Wächter aktiv. Zielbild: der CheckMK-Agent gehört zur VM-Provisionierung, damit jede produktive VM ihre eigene Memory-Innensicht liefert. Deaktivierungs-Liste und Schwellen in der [CheckMK Discovery-Policy](../checkmk/discovery.md#_3-host-spezifische-schwellwert-und-ausnahme-regeln). Die einzige Ausnahme ohne Agent ist homeassistant (immutable), abgedeckt durch einen eigenen HAOS-Memory-Ersatzcheck (Details: [CheckMK](../checkmk/index.md#haos-memory-check-ssh-forced-command))
 
@@ -128,7 +127,7 @@ Der Forwarder liefert nur Dashboard-Daten -- Alerts bleiben im CheckMK-Core (RRD
 
 ### Mail- und Telegram-Direct-Pfade
 
-Die `mail`-Default-Notification-Rule ist in beiden Clustern ohne MTA funktional tot, suggeriert aber Coverage. Der Homelab-Telegram-Direct-Notifier (`check_mk_telegram-notify.sh`, Token im Klartext) umgeht Keep und verstösst gegen die Single-Notifier-Konvention. Beide Pfade werden mit der CheckMK->Keep-Migration abgelöst; das Telegram-Routing übernimmt dann Keep über die normale Source-Workflow-Logik.
+Im Homelab sind beide Direct-Pfade mit der CheckMK->Keep-Migration (2026-05-01) abgelöst: Der frühere Telegram-Direct-Notifier (`check_mk_telegram-notify.sh`, Token im Klartext) umging Keep und verstiess gegen die Single-Notifier-Konvention -- er ist entfernt, die HTML-Mail-Rule deaktiviert. Das Telegram-Routing übernimmt Keep über die normale Source-Workflow-Logik. In DCLab ist die `mail`-Default-Rule weiterhin aktiv und ohne MTA funktional tot -- sie suggeriert Coverage, liefert aber keine.
 
 ## Verwandte Seiten
 
