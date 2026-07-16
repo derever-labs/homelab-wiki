@@ -138,6 +138,7 @@ checkmk -> agents: 3. pollt Agenten (TLS 6556)
 checkmk -> snmp: 4. pollt Hardware (SNMPv3)
 checkmk -> pve: 5. proxmox_ve (HTTPS)
 checkmk -> influx: 6. streamt Perf-Metriken (Forwarder, HTTP)
+kuma -> checkmk: 7. probt die CheckMK-Site (HTTP)
 ```
 
 Lesehilfe:
@@ -148,8 +149,9 @@ Lesehilfe:
 4. Die Hardware beider Synology-NAS (Disks, RAID, Lüfter) fragt CheckMK über SNMPv3 ab.
 5. Der Special-Agent `proxmox_ve` holt VM-Status und Hypervisor-Sicht über die Proxmox-API.
 6. Die Service-Performance-Metriken streamt CheckMK zusätzlich in den `telegraf`-Bucket von [InfluxDB](./influxdb.md#checkmk-als-zusatzliche-quelle) -- nur für Dashboards, der Alert-Zustand bleibt im CheckMK-Core.
+7. Checker prüft Checker: Kuma probt die CheckMK-Web-UI, denn CheckMK ist Single-Instance ohne Failover -- siehe [Ausfallverhalten](#ausfallverhalten).
 
-Die Aufgabenteilung der beiden Checker -- was über CheckMK, was über Telegraf, Loki oder Kuma läuft -- ist in der [Strategie](./coverage/strategie.md) festgehalten.
+Die Aufgabenteilung der beiden Checker -- was über CheckMK, was über Telegraf, Loki oder Kuma läuft -- ist in der [Strategie](./coverage/strategie.md) festgehalten. Wohin beide Checker ihre Befunde melden, zeigt der [Alarm-Pfad](#alarm-pfad-von-der-storung-zur-telegram-nachricht).
 
 ### Alarm-Pfad -- von der Störung zur Telegram-Nachricht
 
