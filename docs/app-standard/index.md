@@ -25,7 +25,7 @@ Die verbindliche Detail-Quelle (Reusable-Workflow, Templates, Gates) ist die Rep
 | Registry | `zot.service.consul:5000/library/<app>:<sha12>` |
 | App-Repo | duenner Caller (`.github/workflows/build.yml` -> `uses: ...@v1`), kein Secrets-Block |
 | Deploy | SHA-Bump-PR auf `homelab-nomad-jobs` -> `deploy-nomad-jobs.yml` (Health-Gate + `auto_revert`) |
-| Pilot | [Keep Mobile](../monitoring/keep-mobile.md) |
+| Pilot | [Keep Mobile](../monitoring/keep/mobile.md) |
 
 ## Bausteine
 
@@ -67,11 +67,11 @@ Liveness-Endpoints (`/api/health`), die ein externer Monitor pruefen soll, bekom
 
 ## Pilot: Keep Mobile
 
-[Keep Mobile](../monitoring/keep-mobile.md) ist die erste produktive App nach diesem Standard: React-SPA + Hono-BFF, Auth-Muster wie oben, Self-Monitoring ueber Uptime-Kuma, vollautomatischer Folge-Deploy ueber den SHA-Bump-PR.
+[Keep Mobile](../monitoring/keep/mobile.md) ist die erste produktive App nach diesem Standard: React-SPA + Hono-BFF, Auth-Muster wie oben, Self-Monitoring ueber Uptime-Kuma, vollautomatischer Folge-Deploy ueber den SHA-Bump-PR.
 
 ## Verwandte Dokumentation
 
-- [Keep Mobile](../monitoring/keep-mobile.md) -- Pilot-App
+- [Keep Mobile](../monitoring/keep/mobile.md) -- Pilot-App
 - [Docker-Registry (ZOT)](../docker-registry/) -- Image-Registry
 - [GitHub-Runner](../github-runner/) -- CI-Ausfuehrung im Homelab
 - [Vault](../vault/) -- Secret-Quelle fuer CI und Laufzeit

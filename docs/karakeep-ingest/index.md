@@ -76,4 +76,4 @@ Alle vier Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real 
 - [Karakeep](../karakeep/index.md) -- Bookmark-Manager und einziger Bestand, in den der Ingest schreibt
 - [Traefik Referenz](../traefik/referenz.md) -- Middleware-Kette `intern-api@file`
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die Job-DB
-- [Monitoring: Coverage](../monitoring/coverage.md) -- Kuma-Probe `Karakeep Ingest` und Coverage-Status
+- [Monitoring: Coverage](../monitoring/coverage/index.md) -- Kuma-Probe `Karakeep Ingest` und Coverage-Status

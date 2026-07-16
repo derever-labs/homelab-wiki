@@ -87,6 +87,6 @@ Die exakte Syntax steht in den Workflows `nomad-jobs/monitoring/keep-workflows/h
 
 ## Verwandt
 
-- [Keep](keep.md) -- Hub-Service, Correlation, Incident-Workflows
+- [Keep](index.md) -- Hub-Service, Correlation, Incident-Workflows
 - [Telegram-Bots](telegram-bots.md) -- Bot-Tokens, Channel-IDs, Severity-Topics
-- [Monitoring-Stack-Übersicht](index.md) -- alle Komponenten und ihre Rollen
+- [Monitoring-Stack-Übersicht](../index.md) -- alle Komponenten und ihre Rollen

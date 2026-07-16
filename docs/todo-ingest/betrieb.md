@@ -204,5 +204,5 @@ Der Betriebszustand liegt in einer SQLite-Datenbank auf dem replizierten Linstor
 - [Todo Ingest Übersicht](./index.md) -- Rolle im Stack, Architektur, Dual-Mode, Instanzen, Exposition
 - [ntfy](../ntfy/index.md) -- Push-Rückkanal für Bestätigungen und Zuordnungs-Rückfragen
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die SQLite-Datenbank
-- [Monitoring: Coverage](../monitoring/coverage.md) -- Kuma-Probe und Coverage-Status
+- [Monitoring: Coverage](../monitoring/coverage/index.md) -- Kuma-Probe und Coverage-Status
 - [github.com/derever-labs/todo-ingest](https://github.com/derever-labs/todo-ingest) -- Code und Design-Doku (`docs/konzept.md`)

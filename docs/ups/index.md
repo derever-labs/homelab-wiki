@@ -153,7 +153,7 @@ Auf jedem Host sendet `/usr/local/bin/ups-notify.sh` Telegram-Nachrichten bei US
 | Batterie ersetzen | replace_indicator > 1 | 5 min | Warning |
 | USV nicht erreichbar | keine Daten | 2 min | Critical |
 
-Die Rules melden wie alle metrikbasierten Alerts per Webhook an [Keep](../monitoring/keep.md), das nach Severity ins Telegram-Topic routet.
+Die Rules melden wie alle metrikbasierten Alerts per Webhook an [Keep](../monitoring/keep/index.md), das nach Severity ins Telegram-Topic routet.
 
 ::: tip Alerts auf Laufzeit, nicht Prozent
 Alerts basieren auf der verbleibenden Laufzeit in Sekunden statt auf Batterie-Prozent. 20% einer degradierten Batterie können nur 30 Sekunden bedeuten.

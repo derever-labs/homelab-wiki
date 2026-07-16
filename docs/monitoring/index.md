@@ -57,12 +57,12 @@ Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `gith
 :::
 
 ### Alerting (Unified Alerting)
-Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-basierte Alert-Rules ausgewertet werden. Der Versand an Telegram läuft seither nicht mehr direkt aus Grafana, sondern über den zentralen Hub [Keep](keep.md).
+Grafana Unified Alerting ist die zentrale Stelle, an der metrikbasierte und log-basierte Alert-Rules ausgewertet werden. Der Versand an Telegram läuft seither nicht mehr direkt aus Grafana, sondern über den zentralen Hub [Keep](keep/index.md).
 
 **Contact Point:** Webhook auf `https://keep.ackermannprivat.ch/alerts/event/grafana`
 **Notification Policy:** Alle Alerts -> Keep, Group-Wait 30s, Repeat 4h
 
-Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet nach Incident-Severity in drei Forum-Topics (Kritisch/Warnung/Info) über den batch-Bot. Details siehe [Keep](keep.md).
+Keep korreliert die Alerts anschliessend zu Incidents, dedupliziert und routet nach Incident-Severity in drei Forum-Topics (Kritisch/Warnung/Info) über den batch-Bot. Details siehe [Keep](keep/index.md).
 
 Die vollständigen metrik- und log-basierten Alert-Regel-Tabellen stehen in der [Monitoring Referenz](./referenz.md#alert-regeln).
 
@@ -162,7 +162,7 @@ bot_batch -> homelab_alerts.info: info / low
 ```
 
 ::: info Routing-Logik
-Keep korreliert eingehende Alerts zu **Incidents** (zwei disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep.md), [Telegram-Bots](telegram-bots.md).
+Keep korreliert eingehende Alerts zu **Incidents** (zwei disjunkte Grouping-Rules). Die vier `type:incident`-Workflows posten je nach **Incident-Severity** über den batch-Bot in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute. Der frühere VIP-Bot-1:1-Pfad ist seit 2026-06-09 abgelöst. Details: [Keep](keep/index.md), [Telegram-Bots](keep/telegram-bots.md).
 :::
 
 Der interne Admin-Zugang zur Grafana-HTTP-API (Service Account) und das Silencing von Alerts über die Alertmanager-API sind im [Monitoring Betrieb](./betrieb.md) beschrieben.
@@ -174,7 +174,7 @@ Uptime Kuma ist seit dem Gatus-Rückbau (2026-06-10) die einzige Synthetic-Monit
 - **Kern-Infrastruktur** (Ingress, SSO, DNS, Nomad/Consul/Vault x3, Speicher) -- jeder Endpoint alarmiert sofort, gruppiert in `Plattform` / `Netz` / `Auth` / `Storage & Backup`.
 - **Flächenabdeckung** (Media, Productivity, AI, IoT, Apps) plus Push-Monitore für Batch-Jobs.
 
-Alle Monitore senden via Single-Notifier "Keep" mit Default Enabled; Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](../uptime-kuma/index.md#alerting).
+Alle Monitore senden via Single-Notifier "Keep" mit Default Enabled; Severity- und Topic-Routing entscheidet Keep. Details: [Uptime Kuma](./uptime-kuma/index.md#alerting).
 
 ## Zentrales Logging (Loki + Alloy)
 
@@ -264,13 +264,13 @@ Die Log-Level je Komponente listet die [Monitoring Referenz](./referenz.md#log-l
 
 - [Monitoring Referenz](./referenz.md) -- Alert-Regeln, Log-Quellen und Log-Levels
 - [Monitoring Betrieb](./betrieb.md) -- Grafana-Admin, Silencing, Backup-Monitoring, Wartung
-- [Coverage](./coverage.md) -- Welcher Host und Service wird wie überwacht und was bewusst ausgelassen
-- [CheckMK Discovery-Policy](./checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
-- [Keep](./keep.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
-- [Telegram-Bots](./telegram-bots.md) -- Bot- und Channel-Inventar (batch-Bot + Severity-Topics; vip idle)
+- [Coverage](./coverage/index.md) -- Welcher Host und Service wird wie überwacht und was bewusst ausgelassen
+- [CheckMK Discovery-Policy](./checkmk/discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
+- [Keep](./keep/index.md) -- Incident-Hub mit Source/Severity-Routing in die Telegram-Forum-Topics
+- [Telegram-Bots](./keep/telegram-bots.md) -- Bot- und Channel-Inventar (batch-Bot + Severity-Topics; vip idle)
 - [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
-- [CheckMK Monitoring](../checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
-- [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push)
+- [CheckMK Monitoring](./checkmk/index.md) -- Host-Level Monitoring (CPU, RAM, Disk)
+- [Uptime Kuma](./uptime-kuma/index.md) -- Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push)
 - [Backup-Strategie](../backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../linstor-storage/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs

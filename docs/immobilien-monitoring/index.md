@@ -410,6 +410,6 @@ Zurückgestellt wegen minimalem Mehrwert (3 Listings) bei überproportionalem Im
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Batch-Jobs](../_querschnitt/batch-jobs.md) -- Übersicht aller Nomad Periodic Jobs
 - [GitHub Runner](../github-runner/) -- Self-Hosted CI/CD Runner
-- [Telegram Bots](../monitoring/telegram-bots.md) -- Benachrichtigungssystem
+- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Benachrichtigungssystem
 - [Docker Registry (ZOT)](../docker-registry/) -- OCI Image Registry
 - [Vault](../vault/) -- Secret Management

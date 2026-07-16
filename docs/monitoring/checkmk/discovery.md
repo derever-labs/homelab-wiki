@@ -1,5 +1,5 @@
 ---
-title: "Monitoring: CheckMK Discovery-Policy"
+title: CheckMK Discovery-Policy
 description: Service-Klassifikation pro Host-Typ und Discovery-Filter (ignored_services-Rules), damit der CheckMK-Free-Tier-Limit von 750 Services nicht durch Bloat erreicht wird
 tags:
   - monitoring
@@ -8,7 +8,7 @@ tags:
   - policy
 ---
 
-# Monitoring: CheckMK Discovery-Policy
+# CheckMK Discovery-Policy
 
 Diese Seite hält fest, welche Service-Klassen pro Host-Typ in CheckMK aktiv überwacht werden und welche Klassen bewusst per `ignored_services`-Rule aus der Discovery ausgeschlossen sind. Quelle: Bloat-Audit 2026-05-02 nach erstmaliger Annäherung an die Free-Tier-Grenze.
 
@@ -112,7 +112,7 @@ Diese Pattern-Filter greifen auf alle Hosts (host_name leer in der Rule):
 
 Über die Discovery-Filter hinaus weichen einzelne Checks bewusst von den CheckMK-Defaults ab. Die konkreten WATO-Rules (IDs, Folder, Match-Order) sind in Setup authoritativ -- hier steht nur, welche Regel warum existiert.
 
-- **Proxmox-VM-Memory-Check deaktiviert wo Gast-Agent** -- Der `proxmox_ve`-Special-Agent liefert pro Gast einen `Proxmox VE Memory Usage`-Check aus Hypervisor-Sicht. Für jeden Gast, der einen eigenen Agent-`Memory`-Check trägt, ist dieser Special-Agent-Check per `ignored_services` deaktiviert (checkmk, vm-traefik-01/02, datacenter-manager sowie homeassistant über seinen Ersatzcheck). Die Gast-Innensicht ist die autoritative Memory-Quelle, der Hypervisor-Wert nur Fallback für noch agentenlose Gäste -- Begründung (Ballooning, QEMU-Overhead) in [Monitoring: Strategie](strategie.md#5-trade-off-analyse-und-risiken). Die `pbs-backup-server`-Ausnahme läuft über eine eigene, ältere Rule und bleibt unberührt. Auf Host-Ebene (pve00/01/02) bleibt der Proxmox-Memory-Check als Allokations-Wächter mit nahe-100%-Schwelle aktiv
+- **Proxmox-VM-Memory-Check deaktiviert wo Gast-Agent** -- Der `proxmox_ve`-Special-Agent liefert pro Gast einen `Proxmox VE Memory Usage`-Check aus Hypervisor-Sicht. Für jeden Gast, der einen eigenen Agent-`Memory`-Check trägt, ist dieser Special-Agent-Check per `ignored_services` deaktiviert (checkmk, vm-traefik-01/02, datacenter-manager sowie homeassistant über seinen Ersatzcheck). Die Gast-Innensicht ist die autoritative Memory-Quelle, der Hypervisor-Wert nur Fallback für noch agentenlose Gäste -- Begründung (Ballooning, QEMU-Overhead) in [Monitoring: Strategie](../coverage/strategie.md#5-trade-off-analyse-und-risiken). Die `pbs-backup-server`-Ausnahme läuft über eine eigene, ältere Rule und bleibt unberührt. Auf Host-Ebene (pve00/01/02) bleibt der Proxmox-Memory-Check als Allokations-Wächter mit nahe-100%-Schwelle aktiv
 - **Systemd Timesyncd -- `last_ntp_message` entschärft** -- Der behaltene `Systemd Timesyncd`-Check ist die Zeitsync-Quelle (der separate `NTP Time`-Service ist als Duplikat ausgeschlossen, siehe oben). Eine globale Rule hebt die `last_ntp_message`-Schwelle auf 90 min (WARN) / 180 min (CRIT), weil `systemd-timesyncd` das Poll-Intervall bei stabilem Takt über eine Stunde dehnt und die Default-Schwelle (1 h / 2 h) reine Artefakt-Alerts bei perfektem Offset erzeugte. Der Offset selbst bleibt auf Default und ist damit der scharfe Drift-Indikator
 - **synology-nas -- CPU-Schwellen für Wartungsfenster** -- Zwei host-spezifische Rules heben die CPU-Schwellen der `synology-nas` an: `CPU load` auf 6.0 / 10.0 pro Core und `CPU utilization` auf 95% / 98% über einen 15-Minuten-Schnitt. Grund sind die nächtlichen Backup- und Scrub-Spitzen (ca. 02:15--05:15), die knapp über den Defaults liegen und selbstheilend sind. Die Rules stehen am Ordner-Anfang (First-Match vor der globalen Regel)
 - **checkmk-VM -- Swap-Wacht** -- Der Agent-`Memory`-Check bringt per Default keine Swap-Schwelle mit. Nur für den Host `checkmk` überwacht eine `levels_swap`-Rule die Swap-Auslastung (WARN 70% / CRIT 85%), weil die CheckMK-VM knapp dimensioniert ist und der Swap-Druck sonst unsichtbar bliebe
@@ -136,6 +136,6 @@ Bei Approach an die 750er-Grenze:
 
 ## Verwandte Seiten
 
-- [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
-- [Monitoring: Coverage](coverage.md) -- Item-SSOT mit allen Coverage-Klassen
-- [Monitoring: Keep](keep.md) -- Severity-Mapping CheckMK → Keep
+- [Monitoring: Strategie](../coverage/strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
+- [Monitoring: Coverage](../coverage/index.md) -- Item-SSOT mit allen Coverage-Klassen
+- [Monitoring: Keep](../keep/index.md) -- Severity-Mapping CheckMK → Keep

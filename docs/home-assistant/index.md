@@ -68,4 +68,4 @@ SSH-Details sind kanonisch in [SSH-Zugang](../_referenz/ssh-zugang.md) geführt.
 - [Proxmox](../proxmox/) -- VM-Verwaltung und Standort-Topologie
 - [Netzwerk -- Standorte](../netzwerk/standorte.md) -- Netzwerk-Kontext der drei Standorte
 - [SSH-Zugang](../_referenz/ssh-zugang.md) -- HAOS-SSH-Details
-- [CheckMK](../checkmk/index.md#haos-memory-check-ssh-forced-command) -- HAOS-Memory-Custom-Check, da HAOS keinen CheckMK-Agent tragen kann
+- [CheckMK](../monitoring/checkmk/index.md#haos-memory-check-ssh-forced-command) -- HAOS-Memory-Custom-Check, da HAOS keinen CheckMK-Agent tragen kann

@@ -10,7 +10,7 @@ tags:
 
 # Telegram Bots
 
-Telegram ist der primäre Output-Channel der [Keep](keep.md)-Pipeline. Alle Alert-Quellen melden an Keep, Keep korreliert sie zu Incidents, und die Incident-Workflows posten über **einen einzigen Bot** (`batch`) nach Severity sortiert in eines von drei Forum-Topics des Channels `Homelab Alerts`. Stummschalten übernimmt Telegrams natives Per-Topic-Mute -- das gehört dem Empfänger, nicht der Routing-Logik.
+Telegram ist der primäre Output-Channel der [Keep](index.md)-Pipeline. Alle Alert-Quellen melden an Keep, Keep korreliert sie zu Incidents, und die Incident-Workflows posten über **einen einzigen Bot** (`batch`) nach Severity sortiert in eines von drei Forum-Topics des Channels `Homelab Alerts`. Stummschalten übernimmt Telegrams natives Per-Topic-Mute -- das gehört dem Empfänger, nicht der Routing-Logik.
 
 ## Rolle im Stack
 
@@ -91,7 +91,7 @@ Drei Pfade alarmieren absichtlich an Keep vorbei, damit ein stiller Keep-Ausfall
 - **Dead-Man-Switch** (`keep-heartbeat-watch.nomad`) -- alle 3 min Kuma-Heartbeat + Watch auf stale-firing Incidents; meldet Keep-interne Fehler direkt.
 - **Kuma-Watchdog-Tier** -- drei Uptime-Kuma-Instanzen (in-cluster Monitor `keep-heartbeat`, `wd-home`, `wd-nana`) mit einem Custom-Template, das die Kuma-Standardmeldung um eine `Kuma-Watchdog`-Kennzeile und den Uptime-Link ergänzt, damit die Herkunft auf einen Blick klar ist.
 
-Details siehe [Keep](keep.md#dead-man-switch-und-watchdog-tier).
+Details siehe [Keep](index.md#dead-man-switch-und-watchdog-tier).
 
 ## Telegram-Relay (Apprise-Bridge)
 
@@ -126,7 +126,7 @@ Direkter Telegram-Bot-Aufruf aus dem Service (alter Stil) ist **nicht** mehr der
 
 ## Verwandte Seiten
 
-- [Keep](keep.md) -- Hub für Korrelation, Incident-Workflows und Severity-Routing
-- [Monitoring](index.md) -- Stack-Übersicht und Datenflüsse
-- [Authentik Alerting](../authentik/betrieb.md) -- Security-Event-Pipeline
-- [Vault](../vault/index.md) -- Secret-Storage für Bot-Tokens
+- [Keep](index.md) -- Hub für Korrelation, Incident-Workflows und Severity-Routing
+- [Monitoring](../index.md) -- Stack-Übersicht und Datenflüsse
+- [Authentik Alerting](../../authentik/betrieb.md) -- Security-Event-Pipeline
+- [Vault](../../vault/index.md) -- Secret-Storage für Bot-Tokens

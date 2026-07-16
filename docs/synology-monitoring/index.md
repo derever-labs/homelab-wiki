@@ -25,7 +25,7 @@ Dreistufiges Monitoring des Synology NAS: Hardware-Health via CheckMK, lokaler T
 
 ## Rolle im Stack
 
-Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. [CheckMK](../checkmk/index.md) fragt beide NAS direkt via SNMPv3 ab und liefert die Hardware-Health (RAID, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem, CPU/RAM, Netzwerk-Durchsatz). Es ist damit die alleinige Alarmquelle für NAS-Hardware. Ergänzend sammelt ein lokaler Telegraf-Container die Metriken, die CheckMK nicht liefert, und ein NAS-autonomer Benchmark misst Disk-Performance und RAID-Reshape. Alle drei schreiben nach InfluxDB, Grafana visualisiert sie im Dashboard `synology-nas-health`.
+Das NAS ist als zentraler Speicherknoten kritische Infrastruktur. [CheckMK](../monitoring/checkmk/index.md) fragt beide NAS direkt via SNMPv3 ab und liefert die Hardware-Health (RAID, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem, CPU/RAM, Netzwerk-Durchsatz). Es ist damit die alleinige Alarmquelle für NAS-Hardware. Ergänzend sammelt ein lokaler Telegraf-Container die Metriken, die CheckMK nicht liefert, und ein NAS-autonomer Benchmark misst Disk-Performance und RAID-Reshape. Alle drei schreiben nach InfluxDB, Grafana visualisiert sie im Dashboard `synology-nas-health`.
 
 ::: info Cutover auf CheckMK (2026-06-05)
 Bis 2026-06-05 fragte der zentrale Telegraf-Nomad-Job das NAS parallel via SNMPv3 ab. Mit dem Cutover wurden der SNMP-Block aus der Telegraf-Config, der MIBs-Mount aus `influx.nomad` und die vier Synology-Alert-Rules aus Grafana entfernt: Hardware-Health hat seither genau eine Quelle statt zwei parallele, und der Alarmpfad läuft einheitlich über Keep. Die Dashboard-Queries nutzen seither das CheckMK-Schema (`host_name` / `service_description`) statt der Telegraf-SNMP-Tags.
@@ -72,7 +72,7 @@ Drei Quellen liefern unterschiedliche Metriken:
 
 ### CheckMK (remote, SNMPv3)
 
-Die CheckMK-Site `homelab` fragt beide NAS agentenlos via SNMPv3 ab und erzeugt daraus die Hardware-Services (RAID-Zustand, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem-Auslastung, CPU/RAM, Netzwerk-Durchsatz). Ein Forwarder schreibt die Service-Performance-Werte zusätzlich nach InfluxDB, wo das Dashboard sie liest -- siehe [InfluxDB & Telegraf](../monitoring/influxdb.md). Welche Service-Klassen behalten und welche per `ignored_services` ausgeschlossen sind, steht in der [CheckMK Discovery-Policy](../monitoring/checkmk-discovery.md).
+Die CheckMK-Site `homelab` fragt beide NAS agentenlos via SNMPv3 ab und erzeugt daraus die Hardware-Services (RAID-Zustand, Disks inkl. Cache/M.2, Lüfter, Netzteil, Filesystem-Auslastung, CPU/RAM, Netzwerk-Durchsatz). Ein Forwarder schreibt die Service-Performance-Werte zusätzlich nach InfluxDB, wo das Dashboard sie liest -- siehe [InfluxDB & Telegraf](../monitoring/influxdb.md). Welche Service-Klassen behalten und welche per `ignored_services` ausgeschlossen sind, steht in der [CheckMK Discovery-Policy](../monitoring/checkmk/discovery.md).
 
 ### Telegraf lokal (Docker Container auf NAS)
 
@@ -99,9 +99,9 @@ Die Dashboard-JSON wird via Git verwaltet und per NFS-Mount als File Provisionin
 
 ## Alerting
 
-NAS-Hardware alarmiert ausschliesslich CheckMK: die Notification geht an Keep, Keep korreliert sie zu einem Incident und routet nach Severity ins passende Telegram-Topic (siehe [Keep](../monitoring/keep.md)). In Grafana existieren seit dem Cutover keine Synology-Alert-Rules mehr -- das Dashboard ist reine Visualisierung.
+NAS-Hardware alarmiert ausschliesslich CheckMK: die Notification geht an Keep, Keep korreliert sie zu einem Incident und routet nach Severity ins passende Telegram-Topic (siehe [Keep](../monitoring/keep/index.md)). In Grafana existieren seit dem Cutover keine Synology-Alert-Rules mehr -- das Dashboard ist reine Visualisierung.
 
-Welche Services CheckMK auf dem NAS überwacht und mit welcher Schwelle (Filesystem `/volume*` bei 95%, CPU-Last mit für die nächtlichen Backup- und Scrub-Spitzen angehobenen Schwellen), steht in der [CheckMK Discovery-Policy](../monitoring/checkmk-discovery.md).
+Welche Services CheckMK auf dem NAS überwacht und mit welcher Schwelle (Filesystem `/volume*` bei 95%, CPU-Last mit für die nächtlichen Backup- und Scrub-Spitzen angehobenen Schwellen), steht in der [CheckMK Discovery-Policy](../monitoring/checkmk/discovery.md).
 
 ## Storage-Benchmark & Reshape
 
@@ -130,5 +130,5 @@ Der Reshape-Fortschritt (`pct`) kommt ausschliesslich aus `/proc/mdstat` -- Chec
 
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Hardware-Details
 - [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Alloy, Alerting-Architektur
-- [CheckMK](../checkmk/index.md) -- Hardware-Health via SNMPv3, Alarmquelle für das NAS
+- [CheckMK](../monitoring/checkmk/index.md) -- Hardware-Health via SNMPv3, Alarmquelle für das NAS
 - [Hardware-Inventar](../_referenz/hardware-inventar.md#nas) -- NAS-Hardware-Spezifikationen

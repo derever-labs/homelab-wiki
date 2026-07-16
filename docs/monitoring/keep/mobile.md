@@ -11,7 +11,7 @@ tags:
 
 # Keep Mobile
 
-Keep Mobile (`keep-mobile`) ist eine schlanke, mobile-first Progressive Web App fuer die Incident-Ansicht aus [Keep](keep.md). Sie zeigt offene Incidents, erlaubt das Quittieren (Acknowledge) und Aufloesen (Resolve) unterwegs und blendet pro Uptime-Kuma-Alert den Live-Status ein. Sie ist der erste produktive Pilot des [Homelab-App-Standards](../app-standard/).
+Keep Mobile (`keep-mobile`) ist eine schlanke, mobile-first Progressive Web App fuer die Incident-Ansicht aus [Keep](index.md). Sie zeigt offene Incidents, erlaubt das Quittieren (Acknowledge) und Aufloesen (Resolve) unterwegs und blendet pro Uptime-Kuma-Alert den Live-Status ein. Sie ist der erste produktive Pilot des [Homelab-App-Standards](../../app-standard/).
 
 ## Uebersicht
 
@@ -24,7 +24,7 @@ Keep Mobile (`keep-mobile`) ist eine schlanke, mobile-first Progressive Web App 
 | Erreichbarkeit | Oeffentlich -- ohne VPN/Tailscale, hinter Authentik + CrowdSec |
 | Auth | Extern: `public-auth@file` (Authentik + CrowdSec). Intern (ClientIP): `intern-auth@file`. `/api/health`: `keep-mobile-health` (`intern-noauth`, nur intern). Authentik-Zugang auf Gruppe `admin` gebunden |
 | Secrets | `kv/data/keep-mobile` (Keep-API-Key, Kuma-API-Key) |
-| Monitoring | Uptime-Kuma HTTP-Monitor 86 auf `/api/health` -- siehe [Coverage](coverage.md) |
+| Monitoring | Uptime-Kuma HTTP-Monitor 86 auf `/api/health` -- siehe [Coverage](../coverage/index.md) |
 
 ## Rolle im Stack
 
@@ -61,7 +61,7 @@ cluster.kuma -> traefik: "/api/health\n(Self-Monitor, no-auth)"
 
 ## Auth-Muster
 
-Keep Mobile folgt dem [Auth-Standard fuer SPAs hinter Authentik](../app-standard/): das zentrale Authentik-ForwardAuth bleibt die Auth-Grenze, die App betreibt **kein** eigenes OIDC. Bei Ablauf der Session faengt die SPA den Redirect transparent ab (ein einmaliger, guarded Top-Level-Reload; bei Blockade ein App-weites "Session abgelaufen"-Overlay). Es ist bewusst **kein** Service Worker im Einsatz -- fuer eine auth-gated Live-Alerting-App ohne Offline-Nutzen war er reiner Ballast und Ursache mehrerer Auth-Sackgassen.
+Keep Mobile folgt dem [Auth-Standard fuer SPAs hinter Authentik](../../app-standard/): das zentrale Authentik-ForwardAuth bleibt die Auth-Grenze, die App betreibt **kein** eigenes OIDC. Bei Ablauf der Session faengt die SPA den Redirect transparent ab (ein einmaliger, guarded Top-Level-Reload; bei Blockade ein App-weites "Session abgelaufen"-Overlay). Es ist bewusst **kein** Service Worker im Einsatz -- fuer eine auth-gated Live-Alerting-App ohne Offline-Nutzen war er reiner Ballast und Ursache mehrerer Auth-Sackgassen.
 
 Damit die App auch unterwegs ohne VPN nutzbar ist, ist m.keep oeffentlich erreichbar -- nach dem Doppel-Router-Muster von `immo-monitor`: Der Catch-all-Router laeuft ueber `public-auth@file` (CrowdSec + Authentik), ein zweiter Router `keep-mobile-internal` faengt interne Quell-IPs (`ClientIP`-Allowlist) ab und laesst sie ohne CrowdSec ueber `intern-auth@file` -- das vermeidet, dass ein interner Fehler die eigene IP bannt. Die einzige Zugangsschicht ist damit Authentik (plus CrowdSec extern); der Provider ist auf die Gruppe `admin` gebunden, sodass nur Administratoren nach Login hineinkommen.
 
@@ -85,11 +85,11 @@ Ist die Keep-Web-UI im Ziel-Tab noch nicht angemeldet, verwirft Keeps NextAuth-S
 
 ## Deploy
 
-Keep Mobile wird nach dem [Homelab-App-Standard](../app-standard/) ausgeliefert: ein Commit ins App-Repo baut das Image und oeffnet einen SHA-Bump-PR auf `homelab-nomad-jobs`; der Merge startet den Nomad-Deploy mit Health-Gate und `auto_revert`. Job-Details und Traefik-Tags stehen in `monitoring/keep-mobile.nomad`.
+Keep Mobile wird nach dem [Homelab-App-Standard](../../app-standard/) ausgeliefert: ein Commit ins App-Repo baut das Image und oeffnet einen SHA-Bump-PR auf `homelab-nomad-jobs`; der Merge startet den Nomad-Deploy mit Health-Gate und `auto_revert`. Job-Details und Traefik-Tags stehen in `monitoring/keep-mobile.nomad`.
 
 ## Verwandte Dokumentation
 
-- [Keep](keep.md) -- Incident-Hub und Alert-Routing
-- [Homelab-App-Standard](../app-standard/) -- Build-/Deploy-Pattern und Auth-Muster
+- [Keep](index.md) -- Incident-Hub und Alert-Routing
+- [Homelab-App-Standard](../../app-standard/) -- Build-/Deploy-Pattern und Auth-Muster
 - [Uptime-Kuma](../uptime-kuma/) -- Monitoring-Backend
-- [Coverage](coverage.md) -- Monitoring-Abdeckung (Layer 8)
+- [Coverage](../coverage/index.md) -- Monitoring-Abdeckung (Layer 8)

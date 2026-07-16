@@ -1,5 +1,5 @@
 ---
-title: "Monitoring: Strategie"
+title: Strategie
 description: Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma -- welcher Pfad für welche Coverage-Klasse
 tags:
   - monitoring
@@ -11,12 +11,12 @@ tags:
   - keep
 ---
 
-# Monitoring: Strategie
+# Strategie
 
 Diese Seite hält die Stack-Aufgabenteilung zwischen CheckMK, Telegraf, Loki und Uptime-Kuma fest -- welche Coverage-Klasse welchen Pfad nutzt und welche Hosts in welchem Cluster wie eingerichtet sind.
 
 ::: info Hinweis
-Ist-Stand der Coverage in [Monitoring: Coverage](coverage.md), Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Drift gegen diese Strategie als ClickUp-Task im jeweiligen Master-Bundle anlegen.
+Ist-Stand der Coverage in [Monitoring: Coverage](index.md), Correlation-Patterns in [Monitoring: Keep-Correlations](../keep/correlations.md). Drift gegen diese Strategie als ClickUp-Task im jeweiligen Master-Bundle anlegen.
 :::
 
 ## 1. Executive Summary
@@ -43,7 +43,7 @@ Die vollständige Bestandsaufnahme beider CheckMK-Sites (DCLab und Homelab) -- H
 
 ## 4. Best-Path-Klassifikation
 
-Die kondensierte Best-Path-Sicht pro Coverage-Item (Item / Cluster / Layer / Coverage / Best-Path / Begründung) steht in [Monitoring: Best-Path-Klassifikation](klassifikation.md). Ist-Stand der Coverage siehe [Monitoring: Coverage](coverage.md).
+Die kondensierte Best-Path-Sicht pro Coverage-Item (Item / Cluster / Layer / Coverage / Best-Path / Begründung) steht in [Monitoring: Best-Path-Klassifikation](klassifikation.md). Ist-Stand der Coverage siehe [Monitoring: Coverage](index.md).
 
 ## 5. Trade-Off-Analyse und Risiken
 
@@ -59,7 +59,7 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 - **Mail-Default-Falle**: Default-Plugin `mail` mit `{}`-Config in beiden Clustern, aber kein MTA -- funktional tot, suggeriert aber Coverage. Mitigation: Rule disablen mit Description-Hinweis auf den CheckMK->Keep-Webhook
 - **Token-Security**: Homelab `notifications.mk` hat hardcoded Telegram-Token in einer Repo-tauglichen Datei, der bei Site-Backup oder Cluster-Migration mitgesichert wird -- gegen die 1Password-Konvention. Mitigation: nach der CheckMK->Keep-Migration entfernen
 - **Doppel-Coverage Telegraf+CheckMK**: pve-Exporter (Telegraf) + `proxmox_ve` Special-Agent (CheckMK) liefern beide Proxmox-Daten. Akzeptiert wegen unterschiedlicher Detail-Tiefe, Risiko zweier Alert-Pfade für dasselbe Problem. Mitigation: Alert-Rules in Telegraf nur für Counter/Rates, in CheckMK nur für State/Health
-- **Proxmox-VM-Memory-Check vs Gast-Innensicht**: Der `proxmox_ve`-Special-Agent liefert pro Gast einen `Proxmox VE Memory Usage`-Check aus der Hypervisor-Sicht. Diese Prozentzahl ist für Memory-Alerts wertlos, sobald der Gast keinen Ballooning-Reclaim erlaubt (`balloon=0`): QEMU-Overhead und der vom Hypervisor als belegt gezählte Page-Cache treiben den Wert über 100% (vm-traefik-01 dauerhaft bei 100.7% CRIT, während der Gast selbst 68% frei meldete). Autoritativ ist deshalb die Gast-Innensicht -- der `Memory`-Check des CheckMK-Agenten in der VM. Mitigation: Der Proxmox-VM-Memory-Check ist per `ignored_services` für jeden Gast mit eigenem Agent-Memory-Check deaktiviert und bleibt nur Fallback-Sicherheitsnetz für noch agentenlose Gäste; auf Host-Ebene (pve00/01/02) bleibt er als Allokations- und Overcommit-Wächter aktiv. Zielbild: der CheckMK-Agent gehört zur VM-Provisionierung, damit jede produktive VM ihre eigene Memory-Innensicht liefert. Deaktivierungs-Liste und Schwellen in der [CheckMK Discovery-Policy](checkmk-discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln). Die einzige Ausnahme ohne Agent ist homeassistant (immutable), abgedeckt durch einen eigenen HAOS-Memory-Ersatzcheck (Details: [CheckMK](../checkmk/index.md#haos-memory-check-ssh-forced-command))
+- **Proxmox-VM-Memory-Check vs Gast-Innensicht**: Der `proxmox_ve`-Special-Agent liefert pro Gast einen `Proxmox VE Memory Usage`-Check aus der Hypervisor-Sicht. Diese Prozentzahl ist für Memory-Alerts wertlos, sobald der Gast keinen Ballooning-Reclaim erlaubt (`balloon=0`): QEMU-Overhead und der vom Hypervisor als belegt gezählte Page-Cache treiben den Wert über 100% (vm-traefik-01 dauerhaft bei 100.7% CRIT, während der Gast selbst 68% frei meldete). Autoritativ ist deshalb die Gast-Innensicht -- der `Memory`-Check des CheckMK-Agenten in der VM. Mitigation: Der Proxmox-VM-Memory-Check ist per `ignored_services` für jeden Gast mit eigenem Agent-Memory-Check deaktiviert und bleibt nur Fallback-Sicherheitsnetz für noch agentenlose Gäste; auf Host-Ebene (pve00/01/02) bleibt er als Allokations- und Overcommit-Wächter aktiv. Zielbild: der CheckMK-Agent gehört zur VM-Provisionierung, damit jede produktive VM ihre eigene Memory-Innensicht liefert. Deaktivierungs-Liste und Schwellen in der [CheckMK Discovery-Policy](../checkmk/discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln). Die einzige Ausnahme ohne Agent ist homeassistant (immutable), abgedeckt durch einen eigenen HAOS-Memory-Ersatzcheck (Details: [CheckMK](../checkmk/index.md#haos-memory-check-ssh-forced-command))
 
 ## 6. Empfehlung -- Pfad-Zuordnung
 
@@ -124,7 +124,7 @@ Jeder Punkt mit Trade-off und der zugehörigen Mitigation:
 
 ### InfluxDB-Forwarder
 
-Der Forwarder liefert nur Dashboard-Daten -- Alerts bleiben im CheckMK-Core (RRD + Naemon -> Webhook -> Keep). Zielbild: einheitliche Grafana-Dashboard-Sicht via Ops-Influx, Hardware via CheckMK, Apps via Telegraf, beides im gleichen Influx. Doppelte Storage akzeptiert, da CheckMK die RRD intern als Naemon-State-Quelle behält (nicht abschaltbar). InfluxDB-Adressen siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+Der Forwarder liefert nur Dashboard-Daten -- Alerts bleiben im CheckMK-Core (RRD + Naemon -> Webhook -> Keep). Zielbild: einheitliche Grafana-Dashboard-Sicht via Ops-Influx, Hardware via CheckMK, Apps via Telegraf, beides im gleichen Influx. Doppelte Storage akzeptiert, da CheckMK die RRD intern als Naemon-State-Quelle behält (nicht abschaltbar). InfluxDB-Adressen siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
 
 ### Mail- und Telegram-Direct-Pfade
 
@@ -132,12 +132,12 @@ Die `mail`-Default-Notification-Rule ist in beiden Clustern ohne MTA funktional 
 
 ## Verwandte Seiten
 
-- [Monitoring](index.md) -- Komponenten-Übersicht
+- [Monitoring](../index.md) -- Komponenten-Übersicht
 - [Monitoring: Best-Path-Klassifikation](klassifikation.md) -- Best-Path pro Coverage-Item
 - [CheckMK](../checkmk/index.md) -- Host-Level-Monitoring inkl. Cluster-Inventar beider Sites
-- [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
-- [Monitoring: CheckMK Discovery-Policy](checkmk-discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
-- [Monitoring: Keep-Correlations](keep-correlations.md) -- Correlation-Patterns für Keep
+- [Monitoring: Coverage](index.md) -- Ist-Stand-Coverage SSOT mit allen Items
+- [Monitoring: CheckMK Discovery-Policy](../checkmk/discovery.md) -- Service-Klassifikation pro Host-Typ und Discovery-Filter (Free-Tier-Limit-Mitigation)
+- [Monitoring: Keep-Correlations](../keep/correlations.md) -- Correlation-Patterns für Keep
 - ClickUp Privat [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
 - ClickUp Privat [`86c9knpgj`](https://app.clickup.com/t/86c9knpgj) -- CheckMK->Keep-Webhook Homelab (Vorbedingung Welle 3)
 - ClickUp Privat [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) -- CheckMK-Coverage-Bundle Homelab
