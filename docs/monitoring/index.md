@@ -175,7 +175,10 @@ apps: Apps + Melde-Jobs {
   class: svc
   tooltip: Authentik, arr-Stack, Immo-Scraper, renovate-backlog-watchdog, Stale-CRIT-Melder, keep-escalate-stale
 }
-checkmk: CheckMK { class: svc }
+checkmk: CheckMK {
+  class: svc
+  tooltip: eine aktive Notification-Rule Keep Hub Notifier (Webhook-Plugin an Keep)
+}
 
 keep: Keep (Incident-Hub) {
   class: svc
@@ -200,11 +203,11 @@ topics: Homelab Alerts (Telegram-Forum) {
 grafana -> keep: 1. Webhook bei Rule-Verletzung { class: async }
 kuma -> keep: 2. Webhook bei Down/Up { class: async }
 apps -> keep: 3. Webhook bei App-Fehler { class: async }
-keep -> bot: 4. Incident-Workflows senden (Bot-API) { class: async }
-bot -> topics.krit: 5. critical / high / fail-open { class: async }
-bot -> topics.warn: 5. warning { class: async }
-bot -> topics.info: 5. info / low { class: async }
-checkmk -> topics: 6. notifiziert direkt (Telegram-Bypass) { class: async }
+checkmk -> keep: 4. Webhook bei Statusänderung { class: async }
+keep -> bot: 5. Incident-Workflows senden (Bot-API) { class: async }
+bot -> topics.krit: 6. critical / high / fail-open { class: async }
+bot -> topics.warn: 6. warning { class: async }
+bot -> topics.info: 6. info / low { class: async }
 wd -> bot: 7. meldet Keep-Ausfall (Keep-unabhängig) { class: async }
 ```
 
@@ -213,9 +216,9 @@ Lesehilfe (alle Kanten ereignisgetrieben, darum durchgehend gestrichelt):
 1. Grafana Unified Alerting postet verletzte Rules als Webhook auf `keep.ackermannprivat.ch/alerts/event/grafana` (Contact Point `keep-webhook`, Group-Wait 30s, Repeat 4h).
 2. Uptime Kuma meldet Down/Up über den Single-Notifier ["Keep"](./uptime-kuma/index.md#alerting) an `/alerts/event/uptime-kuma`.
 3. Apps mit eigenem Alerting (Authentik, arr-Stack, Immo-Scraper) und periodische Melde-Jobs (renovate-backlog-watchdog, [Stale-CRIT-Melder](#ausfallverhalten), keep-escalate-stale) posten direkt an `/alerts/event/...`.
-4. [Keep](./keep/) reichert an, korreliert zu Incidents (zwei Grouping-Rules) und sendet über die vier `type:incident`-Workflows -- alle über den [batch-Bot](./keep/telegram-bots.md).
-5. Der Bot postet nach **Incident-Severity** in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute.
-6. CheckMK umgeht Keep noch: ein Telegram-Plugin mit hartkodiertem Token notifiziert direkt in den Channel -- der strukturelle Bruch der [Single-Notifier-Konvention](./coverage/strategie.md#_2-aktuelle-stack-architektur), der geplante CheckMK-Keep-Webhook fehlt.
+4. [CheckMK](./checkmk/index.md#alarmierung) meldet jede Host- und Service-Statusänderung über seine einzige aktive Benachrichtigungsregel "Keep Hub Notifier" (Webhook-Notification-Plugin, Single-Notifier seit 2026-05-01) an denselben Hub.
+5. [Keep](./keep/) reichert an, korreliert zu Incidents (zwei Grouping-Rules) und sendet über die vier `type:incident`-Workflows -- alle über den [batch-Bot](./keep/telegram-bots.md).
+6. Der Bot postet nach **Incident-Severity** in eines von drei Forum-Topics: Kritisch (`critical`/`high` + fail-open), Warnung (`warning`), Info (`info`/`low`). Stummschalten ist Telegram-natives Per-Topic-Mute.
 7. Das [Watchdog-Tier](./keep/index.md#dead-man-switch-und-watchdog-tier) (Dead-Man-Switch plus drei Kuma-Instanzen) umgeht die Keep-Engine und meldet einen Keep-Ausfall über den batch-Bot direkt ins Kritisch-Topic.
 
 ::: info Routing-Logik
@@ -226,7 +229,7 @@ Keep korreliert eingehende Alerts zu **Incidents** (zwei disjunkte Grouping-Rule
 
 Die Ausfall-Fragen, die das Big Picture beantworten muss -- je mit dem Mechanismus, der den blinden Fleck abdeckt:
 
-- **Was, wenn Keep down ist?** Eingehende Webhooks gehen während der Downtime verloren (kein Retry-Buffer); wiederholende Quellen wie Grafana liefern beim nächsten Re-Send nach, einmalige Events nicht. Sichtbar wird der Ausfall durch das Keep-unabhängige [Watchdog-Tier](./keep/index.md#dead-man-switch-und-watchdog-tier): der Dead-Man-Switch pusht alle 3 Minuten einen Kuma-Heartbeat, drei Kuma-Instanzen (in-cluster, wd-home, wd-nana in Dottikon) alarmieren über den batch-Bot direkt ins Kritisch-Topic. Echte Unabhängigkeit vom Cluster liefert nur `wd-nana`.
+- **Was, wenn Keep down ist?** Dann sind alle vier Quellen betroffen -- seit der Keep-Anbindung von CheckMK gibt es keinen Alarmweg mehr an Keep vorbei. Eingehende Webhooks gehen während der Downtime verloren (kein Retry-Buffer); wiederholende Quellen wie Grafana liefern beim nächsten Re-Send nach, einmalige Events und CheckMK-Zustandswechsel (CheckMK notifiziert nur beim Übergang) nicht. Sichtbar wird der Ausfall durch das Keep-unabhängige [Watchdog-Tier](./keep/index.md#dead-man-switch-und-watchdog-tier): der Dead-Man-Switch pusht alle 3 Minuten einen Kuma-Heartbeat, drei Kuma-Instanzen (in-cluster, wd-home, wd-nana in Dottikon) alarmieren über den batch-Bot direkt ins Kritisch-Topic. Echte Unabhängigkeit vom Cluster liefert nur `wd-nana`.
 
 - **Was, wenn InfluxDB voll oder tot ist?** Telegraf-Writes schlagen fehl und die Metrik-Alerts (Pfad 3) werden blind. Den Totalausfall fängt der periodische Job `metrics-deadman` (alle 5 Minuten): er prüft, ob InfluxDB frische Nomad-Metriken hat, und pusht einen Kuma-Heartbeat -- bleibt der aus, alarmiert Kuma. Hintergrund: Ein Telegraf/InfluxDB-Totalausfall blieb im Juni 2026 neun Tage unbemerkt. Gegen Volllaufen: Retention 90 Tage plus [Downsampling-Tasks](./betrieb.md#influxdb-downsampling-tasks); die Retention-Policies müssen manuell gesetzt sein (siehe [InfluxDB & Telegraf](./influxdb.md#buckets)).
 

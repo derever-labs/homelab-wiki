@@ -82,9 +82,7 @@ Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitorin
 - **Aktive Special-Agents**: `proxmox_ve` für pve00/01/02, `synology_health` für beide NAS
 - **Aktive Standard-Agents**: identisch zu DCLab (`cmk_update_agent`, `mk_apt`, `mk_docker`, `mk_logins`)
 - **InfluxDB-Forwarder**: aktiv seit dem Cutover 2026-06-05 -- schreibt die Service-Performance-Metriken aller monitored Hosts (inkl. beider Synology-NAS) zusätzlich in den `telegraf`-Bucket; für die NAS-Hardware ist er seither die einzige Quelle (Details in [InfluxDB & Telegraf](../influxdb.md))
-- **Notification-Konfig**:
-  1. Telegram-Plugin `check_mk_telegram-notify.sh` mit hardcoded Token und Chat-ID -- bypasses Keep komplett, gegen Single-Notifier-Konvention
-  2. Mail-Plugin (Default-Rule)
+- **Notification-Konfig**: eine einzige aktive Rule "Keep Hub Notifier" (Single-Notifier seit 2026-05-01) mit Webhook-Notification-Plugin an Keep -- Details unter [Alarmierung](#alarmierung). Die frühere HTML-Mail-Rule ist deaktiviert, der frühere Telegram-Direct-Notifier (hardcoded Token) entfernt
 - **Postfix auf checkmk-VM**: `inet_interfaces = loopback-only`, kein Relayhost -- Mails verlassen die VM nicht
 - **Mail-Empfänger**: `cmkadmin` ohne email-Feld
 - **Severity-Modell**: identisch (OK/WARN/CRIT/UNKNOWN)
