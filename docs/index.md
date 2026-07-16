@@ -60,14 +60,14 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [Jellyfin](./jellyfin/) | Media Server |
-| [Arr-Stack](./arr-stack/) | Sonarr, Radarr, Prowlarr, SABnzbd |
-| [Jellyseerr](./jellyseerr/) | Media Requests |
-| [Content Pipeline](./content-pipeline/) | Download-Automatisierung |
+| [Jellyfin](./medien/jellyfin/) | Media Server |
+| [Arr-Stack](./medien/arr-stack/) | Sonarr, Radarr, Prowlarr, SABnzbd |
+| [Jellyseerr](./medien/jellyseerr.md) | Media Requests |
+| [Content Pipeline](./medien/content-pipeline/) | Download-Automatisierung |
 | [Stash](./stash/) | Media Organizer |
-| [AudioBookShelf](./audiobookshelf/) | Hörbücher und E-Books |
+| [AudioBookShelf](./medien/audiobookshelf.md) | Hörbücher und E-Books |
 | [Video Download](./video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./media-tools/) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
+| [Media Tools](./medien/media-tools.md) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
 | [SuggestArr](./suggestarr/) | AI-Empfehlungen für Jellyfin via Jellyseerr |
 
 ## Monitoring

@@ -67,7 +67,7 @@ Syslog ist nicht konfiguriert.
 
 - [Netzwerk](../netzwerk/) -- VLAN-Übersicht und Netzwerk-Architektur
 - [Synology NAS](../storage/nas/) -- NAS-Zugriff und Storage-Konfiguration
-- [Jellyfin](../jellyfin/) -- Media-Streaming-Service
+- [Jellyfin](../medien/jellyfin/) -- Media-Streaming-Service
 - [Traefik](../edge/traefik/) -- Reverse Proxy für sichere externe Dienst-Exposition
 - [Zugangsdaten](../_referenz/credentials.md) -- Kanonische Quelle für alle Zugangsdaten
 - [SSH-Zugang](../_referenz/ssh-zugang.md) -- SSH-Zugangsdaten und -Konfiguration

@@ -18,7 +18,7 @@ Ergänzende Tools rund um den Media Stack. Keines davon ist für den Kernbetrieb
 | Jellystat | Jellyfin-Statistik-Dashboard | `media/jellystat.nomad` |
 | Handbrake | Video-Transcoding (deprecated) | `media/handbrake.nomad.deprecated` |
 | LazyLibrarian | E-Book-/Hörbuch-Verwaltung | `media/lazylibrarian.nomad` |
-| Profilarr | Quality-Profile-/Custom-Format-Sync für Sonarr/Radarr | `services/profilarr.nomad` -- [Eigene Seite](../arr-stack/profilarr.md) |
+| Profilarr | Quality-Profile-/Custom-Format-Sync für Sonarr/Radarr | `services/profilarr.nomad` -- [Eigene Seite](./arr-stack/profilarr.md) |
 
 ## Jellystat
 
@@ -92,17 +92,17 @@ Automatisierte Suche und Verwaltung von E-Books und Hörbüchern. Vergleichbar m
 
 - Separater API-Router mit `intern-api@file` für Zugriff durch andere Services
 - Greift auf die gesamte Jellyfin-Mediathek zu (`/nfs/jellyfin`)
-- Ergänzt [Audiobookshelf](../audiobookshelf/index.md) als Beschaffungs-Tool
+- Ergänzt [Audiobookshelf](./audiobookshelf.md) als Beschaffungs-Tool
 
 ---
 
 ## Profilarr
 
-Profilarr ist seit 2026-06-05 der Nachfolger von notifiarr für die Quality-Profile-Synchronisation. Dokumentiert auf der [Profilarr-Seite](../arr-stack/profilarr.md).
+Profilarr ist seit 2026-06-05 der Nachfolger von notifiarr für die Quality-Profile-Synchronisation. Dokumentiert auf der [Profilarr-Seite](./arr-stack/profilarr.md).
 
 ## Verwandte Seiten
 
-- [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr
-- [Jellyfin](../jellyfin/index.md) -- Media Player, dessen Mediathek Handbrake nutzt
-- [Audiobookshelf](../audiobookshelf/index.md) -- Hörbuch-Server, ergänzt durch LazyLibrarian
+- [Arr Stack](./arr-stack/index.md) -- Sonarr, Radarr, Prowlarr
+- [Jellyfin](./jellyfin/index.md) -- Media Player, dessen Mediathek Handbrake nutzt
+- [Audiobookshelf](./audiobookshelf.md) -- Hörbuch-Server, ergänzt durch LazyLibrarian
 - [NAS-Speicher](../storage/nas/index.md) -- NFS-Storage für alle Media-Tools

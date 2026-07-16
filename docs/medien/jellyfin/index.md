@@ -22,9 +22,9 @@ Die Referenz -- Hardware-Transcoding-Codecs, Storage-Mounts, Traefik-Routing und
 | Deployment | Nomad Job `media/jellyfin.nomad` |
 | Nodes | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
 | Config Storage | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
-| Media Storage | NFS `/nfs/jellyfin` ([NAS](../storage/nas/index.md)) |
-| Auth | LDAP Bind via [Authentik LDAP Outpost](../edge/authentik/index.md) (kein OAuth/ForwardAuth) |
-| GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
+| Media Storage | NFS `/nfs/jellyfin` ([NAS](../../storage/nas/index.md)) |
+| Auth | LDAP Bind via [Authentik LDAP Outpost](../../edge/authentik/index.md) (kein OAuth/ForwardAuth) |
+| GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../../proxmox/index.md) |
 | Transcoding | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
 
 ## Architektur
@@ -75,29 +75,29 @@ Wunsch.ARR -> Storage.NFS: Downloads
 
 ## Beziehung zu Jellyseerr
 
-[Jellyseerr](../jellyseerr/index.md) ist das Wunschsystem für neue Medien. Benutzer (Familie, Gäste) können über `wish.ackermannprivat.ch` Filme und Serien anfordern. Jellyseerr prüft bei Jellyfin die Verfügbarkeit und leitet fehlende Medien an den Arr-Stack weiter.
+[Jellyseerr](../jellyseerr.md) ist das Wunschsystem für neue Medien. Benutzer (Familie, Gäste) können über `wish.ackermannprivat.ch` Filme und Serien anfordern. Jellyseerr prüft bei Jellyfin die Verfügbarkeit und leitet fehlende Medien an den Arr-Stack weiter.
 
 ## Abhängigkeiten
 
-- [Authentik](../edge/authentik/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
-- [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
+- [Authentik](../../edge/authentik/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
+- [Jellyseerr](../jellyseerr.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
-- [NAS-Speicher](../storage/nas/index.md) -- Medienbibliothek unter `/nfs/jellyfin`
-- [Linstor](../storage/linstor/index.md) -- CSI Storage für das Config-Volume
+- [NAS-Speicher](../../storage/nas/index.md) -- Medienbibliothek unter `/nfs/jellyfin`
+- [Linstor](../../storage/linstor/index.md) -- CSI Storage für das Config-Volume
 
 ## Backup
 
-- **Config:** Linstor CSI Volume `jellyfin-config` -- DRBD-repliziert über `client-05/06`. Zusätzlich durch die allgemeine [Backup-Strategie](../storage/backup/index.md) abgedeckt.
+- **Config:** Linstor CSI Volume `jellyfin-config` -- DRBD-repliziert über `client-05/06`. Zusätzlich durch die allgemeine [Backup-Strategie](../../storage/backup/index.md) abgedeckt.
 - **Cache/Transcodes:** Flüchtig auf `/tmp`, kein Backup notwendig.
-- **Mediendaten:** NFS-Share auf dem [NAS](../storage/nas/index.md), unterliegt der NAS-eigenen Backup-Strategie.
+- **Mediendaten:** NFS-Share auf dem [NAS](../../storage/nas/index.md), unterliegt der NAS-eigenen Backup-Strategie.
 
 ## Verwandte Seiten
 
 - [Jellyfin Referenz](./referenz.md) -- Transcoding, Storage, Traefik-Routing, Wartungsbanner
 - [Jellyfin Betrieb](./betrieb.md) -- Authentifizierung, IPv6, täglicher Restart, Kurator-Playlists
-- [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
+- [Jellyseerr](../jellyseerr.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
-- [Audiobookshelf](../audiobookshelf/index.md) -- Teilt die Bücher-Mediathek
-- [Authentik](../edge/authentik/index.md) -- Authentifizierung (LDAP Outpost)
-- [NAS-Speicher](../storage/nas/index.md) -- NFS-Storage für Medien
-- [Batch Jobs](../_querschnitt/batch-jobs.md) -- Täglicher Restart-Job
+- [Audiobookshelf](../audiobookshelf.md) -- Teilt die Bücher-Mediathek
+- [Authentik](../../edge/authentik/index.md) -- Authentifizierung (LDAP Outpost)
+- [NAS-Speicher](../../storage/nas/index.md) -- NFS-Storage für Medien
+- [Batch Jobs](../../_querschnitt/batch-jobs.md) -- Täglicher Restart-Job

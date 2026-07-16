@@ -108,7 +108,7 @@ Vollständige Flow-Dokumentation inklusive Stages, Cache-Verhalten und Sequenz-D
 
 ## Wie Services authentifizieren
 
-Im Homelab nutzt nur ein Service LDAP: [Jellyfin](../jellyfin/index.md) bindet via LDAP-Plugin gegen den Outpost (`authentik-ldap.service.consul:3389`, Base DN `DC=ldap,DC=ackermannprivat,DC=ch`). OIDC- und ForwardAuth-Services verwenden kein LDAP -- Details zu allen drei Authentifizierungswegen: [Authentik](./authentik/index.md).
+Im Homelab nutzt nur ein Service LDAP: [Jellyfin](../medien/jellyfin/index.md) bindet via LDAP-Plugin gegen den Outpost (`authentik-ldap.service.consul:3389`, Base DN `DC=ldap,DC=ackermannprivat,DC=ch`). OIDC- und ForwardAuth-Services verwenden kein LDAP -- Details zu allen drei Authentifizierungswegen: [Authentik](./authentik/index.md).
 
 ## OpenLDAP (Legacy)
 
@@ -121,6 +121,6 @@ Der Nomad Job `databases/open-ldap.nomad` (`osixia/openldap`, Port 389) läuft n
 
 - [Authentik](./authentik/index.md) -- Identity Provider und Stack-Einbindung
 - [Authentik Referenz -- LDAP Authentication Flow](./authentik/referenz.md#ldap-authentication-flow) -- Stages, Cache, Sequenz-Diagramm
-- [Jellyfin](../jellyfin/index.md) -- einziger aktiver LDAP-Consumer
+- [Jellyfin](../medien/jellyfin/index.md) -- einziger aktiver LDAP-Consumer
 - [Sicherheit](../security/index.md) -- Authentifizierungskonzept und Zugriffsgruppen
 - [Traefik Referenz](./traefik/referenz.md) -- ForwardAuth und Middleware-Chains

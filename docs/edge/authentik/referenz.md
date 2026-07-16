@@ -132,7 +132,7 @@ miss -> finish
 
 **Lesehilfe:**
 
-1. Einstieg ist der Jellyfin-Login im Browser. watch.ackermannprivat.ch hat bewusst kein ForwardAuth davor (Schritt 3, [Jellyfin](../../jellyfin/index.md)).
+1. Einstieg ist der Jellyfin-Login im Browser. watch.ackermannprivat.ch hat bewusst kein ForwardAuth davor (Schritt 3, [Jellyfin](../../medien/jellyfin/index.md)).
 2. Entschieden wird im Outpost-RAM: der Hit-Pfad (5a bis 6a) kommt ohne Authentik-Server und ohne Traefik aus.
 3. Nur der Miss-Pfad (5b bis 7b) spricht den Server, und zwar über Traefik via auth.ackermannprivat.ch, nicht intern ([Authentik-Übersicht](./index.md#architektur)).
 4. Traefik oder Authentik-Server down: Hit-Pfad funktioniert weiter, Miss-Pfad scheitert. Gecachte User kommen rein, Erstlogins nicht ([Bekannte Einschränkungen](./betrieb.md#bekannte-einschrankungen)).

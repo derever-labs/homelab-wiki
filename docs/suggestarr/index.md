@@ -77,7 +77,7 @@ Das Anwendungs-Log (`app.log`) liegt im Config-Verzeichnis auf dem CSI-Volume `s
 
 ## Verwandte Seiten
 
-- [Jellyfin](../jellyfin/index.md) -- Liefert die Watch-History als Eingabe
-- [Jellyseerr](../jellyseerr/index.md) -- Empfängt die Pending Requests von SuggestArr
-- [Arr Stack](../arr-stack/index.md) -- Führt genehmigte Requests aus
+- [Jellyfin](../medien/jellyfin/index.md) -- Liefert die Watch-History als Eingabe
+- [Jellyseerr](../medien/jellyseerr.md) -- Empfängt die Pending Requests von SuggestArr
+- [Arr Stack](../medien/arr-stack/index.md) -- Führt genehmigte Requests aus
 - [LLM-Stack](../llm-stack/index.md) -- Ollama-Provider für AI-Empfehlungen

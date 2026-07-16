@@ -77,5 +77,5 @@ Alle Tools haben eine Affinität für `vm-nomad-client-05` oder `06`, werden abe
 ## Verwandte Seiten
 
 - [Stash](../stash/index.md) -- Media Organizer, empfängt Downloads von special-Instanzen
-- [Jellyfin](../jellyfin/index.md) -- Media Player, empfängt Downloads von youtube-dl
-- [Content Pipeline](../content-pipeline/index.md) -- Automatisierte Downloads (Batch Jobs)
+- [Jellyfin](../medien/jellyfin/index.md) -- Media Player, empfängt Downloads von youtube-dl
+- [Content Pipeline](../medien/content-pipeline/index.md) -- Automatisierte Downloads (Batch Jobs)
