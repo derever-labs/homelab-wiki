@@ -43,10 +43,10 @@ Die Instanzen sind unabhängig voneinander -- kein gemeinsamer State, keine Cros
 
 Die Lenzburger Instanz integriert Zigbee-Geräte über den folgenden Stack:
 
-Datenfluss: Zigbee-Geräte -> USB-Dongle (client-06) -> Zigbee2MQTT -> Mosquitto -> Home Assistant. Architektur-Diagramm und Details: [IoT Stack](../iot-stack/).
+Datenfluss: Zigbee-Geräte -> USB-Dongle (client-06) -> Zigbee2MQTT -> Mosquitto -> Home Assistant. Architektur-Diagramm und Details: [IoT Stack](./iot-stack/).
 
-- **Zigbee2MQTT:** Nomad-Job auf `vm-nomad-client-06`, USB-Dongle per Device-Passthrough. Details: [IoT Stack](../iot-stack/)
-- **Mosquitto:** Nomad-Job, MQTT-Broker für alle IoT-Clients. Details: [IoT Referenz](../iot-stack/referenz.md)
+- **Zigbee2MQTT:** Nomad-Job auf `vm-nomad-client-06`, USB-Dongle per Device-Passthrough. Details: [IoT Stack](./iot-stack/)
+- **Mosquitto:** Nomad-Job, MQTT-Broker für alle IoT-Clients. Details: [IoT Referenz](./iot-stack/referenz.md)
 - **MQTT-Credentials:** Mosquitto-User `homeassistant` mit Credentials in `core.config_entries` (HA-Storage, nicht Vault -- HA läuft nicht auf Nomad)
 
 ::: info Netzwerk-Segment
@@ -63,8 +63,8 @@ SSH-Details sind kanonisch in [SSH-Zugang](../_referenz/ssh-zugang.md) geführt.
 
 ## Verwandte Seiten
 
-- [IoT Stack](../iot-stack/) -- Zigbee2MQTT, USB-Passthrough, Pairing
-- [IoT Referenz](../iot-stack/referenz.md) -- Mosquitto MQTT Broker
+- [IoT Stack](./iot-stack/) -- Zigbee2MQTT, USB-Passthrough, Pairing
+- [IoT Referenz](./iot-stack/referenz.md) -- Mosquitto MQTT Broker
 - [Proxmox](../proxmox/) -- VM-Verwaltung und Standort-Topologie
 - [Netzwerk -- Standorte](../netzwerk/standorte.md) -- Netzwerk-Kontext der drei Standorte
 - [SSH-Zugang](../_referenz/ssh-zugang.md) -- HAOS-SSH-Details

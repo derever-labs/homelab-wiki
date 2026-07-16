@@ -102,7 +102,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [IoT Stack](./iot-stack/) | Home Assistant, Zigbee2MQTT, Mosquitto |
+| [IoT Stack](./smart-home/iot-stack/) | Home Assistant, Zigbee2MQTT, Mosquitto |
 | [LLM Stack](./llm-stack/) | Ollama, Open-WebUI, HolLama |
 | [Claude Code](./claude-code/) | Claude-Agent-Setup, MCP-Server, Skills |
 | [Secrets (Claude-Agent)](./secrets/) | PRIVAT-Agent-Vault-Struktur für Claude |

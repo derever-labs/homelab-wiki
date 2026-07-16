@@ -31,7 +31,7 @@ Architektur-Diagramm: [IoT Stack](./index.md).
 Jeder Client hat einen eigenen Benutzer im Mosquitto `passwd`-File. Credentials sind in 1Password (Vault "PRIVAT Agent") hinterlegt.
 
 - **z2m** -- Zigbee2MQTT (Nomad-Container auf vm-nomad-client-06). Credentials werden per Nomad Template aus Vault (`kv/zigbee2mqtt`) als `ZIGBEE2MQTT_CONFIG_MQTT_USER` / `..._PASSWORD` env-vars in den Container injiziert. Kein Klartext in der `configuration.yaml`.
-- **homeassistant** -- Home Assistant (eigene VM, siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Credentials in `core.config_entries` (storage-file, nicht Vault -- HA läuft nicht auf Nomad).
+- **homeassistant** -- Home Assistant (eigene VM, siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md)). Credentials in `core.config_entries` (storage-file, nicht Vault -- HA läuft nicht auf Nomad).
 
 ## Storage
 
@@ -43,7 +43,7 @@ Logs werden direkt auf stdout geschrieben und von Nomad eingesammelt -- kein sep
 
 ## Netzwerk
 
-Mosquitto läuft im Bridge-Netzwerkmodus mit zwei statischen Ports (Protokolle und Consul-Service-Namen siehe [Ports und Dienste](../_referenz/ports-und-dienste.md)). Aufgelöst werden sie über `mosquitto.service.consul:1883` (MQTT) bzw. `mosquitto-websocket.service.consul:9001` (WebSocket).
+Mosquitto läuft im Bridge-Netzwerkmodus mit zwei statischen Ports (Protokolle und Consul-Service-Namen siehe [Ports und Dienste](../../_referenz/ports-und-dienste.md)). Aufgelöst werden sie über `mosquitto.service.consul:1883` (MQTT) bzw. `mosquitto-websocket.service.consul:9001` (WebSocket).
 
 ## Zigbee2MQTT-Konfiguration
 
@@ -54,6 +54,6 @@ Mosquitto läuft im Bridge-Netzwerkmodus mit zwei statischen Ports (Protokolle u
 
 - [IoT Stack](./index.md) -- Zigbee2MQTT und IoT-Architektur
 - [IoT Betrieb](./betrieb.md) -- Passthrough, Pairing, Backup, Rotation, Benutzeranlage
-- [DNS](../dns/) -- Consul DNS für `mosquitto.service.consul`
-- [Linstor](../storage/linstor/index.md) -- CSI Storage für Persistence-Daten
-- [NAS Storage](../storage/nas/) -- NFS für Zigbee2MQTT-Datenpfade
+- [DNS](../../dns/) -- Consul DNS für `mosquitto.service.consul`
+- [Linstor](../../storage/linstor/index.md) -- CSI Storage für Persistence-Daten
+- [NAS Storage](../../storage/nas/) -- NFS für Zigbee2MQTT-Datenpfade
