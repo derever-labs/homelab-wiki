@@ -77,7 +77,6 @@ Storage: Storage {
 Batch: Batch Jobs {
   style.stroke-dash: 4
   PH: ph-downloader { style.border-radius: 8 }
-  RD: reddit-downloader { style.border-radius: 8 }
   GDL: reddit-gallery-dl { style.border-radius: 8 }
 }
 

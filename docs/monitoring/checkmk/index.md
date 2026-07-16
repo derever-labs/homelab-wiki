@@ -76,7 +76,7 @@ Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitorin
   - 2 DNS: lxc-dns-01 (10.0.2.1), lxc-dns-02 (10.0.2.2) -- als `cmk-agent` angelegt
   - 2 Traefik: vm-traefik-01 (10.0.2.21), vm-traefik-02 (10.0.2.22) -- als `cmk-agent` angelegt
   - traefik-vip (10.0.2.20), udm-pro (10.0.0.1) -- ICMP-only Reachability
-  - datacenter-manager (10.0.2.60), reddit-downloader (10.0.2.72) -- als `cmk-agent` angelegt
+  - datacenter-manager (10.0.2.60) -- als `cmk-agent` angelegt
   - homeassistant -- VM-Status-Host
   - Container-Discovery-Einträge (~80 Einträge im Drift-Bereich)
 - **Aktive Special-Agents**: `proxmox_ve` für pve00/01/02, `synology_health` für beide NAS
