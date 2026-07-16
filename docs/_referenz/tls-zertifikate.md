@@ -170,5 +170,5 @@ Die Node-FQDNs (`pveXX.ackermannprivat.ch`, `pve-lu-01.ackermannprivat.ch`, `pve
 
 - [Traefik](../edge/traefik/) -- Reverse Proxy und Zertifikatsverwaltung
 - [NAS Storage](../storage/nas/) -- Synology DS1825+, DSM-Dienste
-- [Vault](../vault/) -- Secrets Management und Security-Entscheidungen
+- [Vault](../plattform/vault/) -- Secrets Management und Security-Entscheidungen
 - [Proxmox](../proxmox/) -- PDM-Anbindung und Node-Übersicht

@@ -27,9 +27,9 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | Thema | Beschreibung |
 | :--- | :--- |
 | [Proxmox](./proxmox/) | Virtualisierungsplattform (3 Nodes, HA-Cluster) |
-| [Vault](./vault/) | Zentrale Secrets-Verwaltung |
-| [Nomad](./nomad/) | Container- und Job-Orchestrierung |
-| [Consul](./consul/) | Service Discovery und Health Checks |
+| [Vault](./plattform/vault/) | Zentrale Secrets-Verwaltung |
+| [Nomad](./plattform/nomad/) | Container- und Job-Orchestrierung |
+| [Consul](./plattform/consul/) | Service Discovery und Health Checks |
 | [Traefik](./edge/traefik/) | Reverse Proxy, SSL-Terminierung |
 | [DNS](./dns/) | Pi-hole, Unbound, Consul-Forwarding |
 | [Netzwerk](./netzwerk/) | VLANs, Subnets, Routing |
@@ -50,7 +50,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | :--- | :--- |
 | [Authentik](./edge/authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
 | [LDAP im Homelab](./edge/ldap.md) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
-| [Docker Registry](./docker-registry/) | Zot OCI Registry |
+| [Docker Registry](./plattform/docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
 | [Wiki](./vitepress-wiki/) | VitePress Dokumentations-Deployment |
 | [Security](./security/) | CrowdSec, Authentik, Zugriffskontrolle |

@@ -11,17 +11,17 @@ tags:
 
 ## Verzeichnisstruktur
 
-Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichnisse gruppiert. Die vollständige Zuordnung Verzeichnis zu Jobs steht in der kanonischen Job-Übersicht: [Nomad Jobs](../_referenz/nomad-jobs.md).
+Alle Nomad Jobs liegen unter `/nfs/nomad/jobs/` und sind thematisch in Verzeichnisse gruppiert. Die vollständige Zuordnung Verzeichnis zu Jobs steht in der kanonischen Job-Übersicht: [Nomad Jobs](../../_referenz/nomad-jobs.md).
 
 ## Job-Konfigurationsmuster
 
 ### Docker Driver
 
-Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der internen [Zot Registry](../docker-registry/) bezogen. Image-Updates laufen kontrolliert über [Renovate](../_querschnitt/renovate.md), das Pull Requests für veraltete Images erstellt.
+Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der internen [Zot Registry](../docker-registry/) bezogen. Image-Updates laufen kontrolliert über [Renovate](../../_querschnitt/renovate.md), das Pull Requests für veraltete Images erstellt.
 
 ### NFS Volumes
 
-Persistente Daten liegen auf dem NAS unter `/nfs/docker/<service>/`. Die Volumes werden als `host` Volumes im Job konfiguriert. Details zum NFS-Setup: [NAS-Speicher](../storage/nas/)
+Persistente Daten liegen auf dem NAS unter `/nfs/docker/<service>/`. Die Volumes werden als `host` Volumes im Job konfiguriert. Details zum NFS-Setup: [NAS-Speicher](../../storage/nas/)
 
 ### Bridge Networking
 
@@ -54,7 +54,7 @@ PostgreSQL hat `reschedule { unlimited = false, attempts = 3, interval = "30m" }
 
 ### PostgreSQL-Abhängigkeiten
 
-Jobs, die PostgreSQL benötigen, enthalten einen `wait-for-postgres` Init-Task. Dieser prüft die Erreichbarkeit der Datenbank bevor der Haupt-Task startet. Details: [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md)
+Jobs, die PostgreSQL benötigen, enthalten einen `wait-for-postgres` Init-Task. Dieser prüft die Erreichbarkeit der Datenbank bevor der Haupt-Task startet. Details: [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md)
 
 ## update-Stanza
 
@@ -124,9 +124,9 @@ Deaktivierung würde CSI-Storage und alle Maintenance-Batch-Jobs brechen.
 
 ## Verwandte Seiten
 
-- [Nomad Übersicht](index.md) -- Cluster-Architektur und Rolle im Stack
-- [Nomad Betrieb](betrieb.md) -- Deployment, Node Drain, Troubleshooting
-- [Nomad Jobs](../_referenz/nomad-jobs.md) -- Kanonische Übersicht aller Jobs pro Verzeichnis
-- [Traefik Middlewares](../edge/traefik/referenz.md) -- Middleware Chains für Service-Zugriffskontrolle
-- [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Vollständiges Abhängigkeitsdiagramm
-- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
+- [Nomad Übersicht](./index.md) -- Cluster-Architektur und Rolle im Stack
+- [Nomad Betrieb](./betrieb.md) -- Deployment, Node Drain, Troubleshooting
+- [Nomad Jobs](../../_referenz/nomad-jobs.md) -- Kanonische Übersicht aller Jobs pro Verzeichnis
+- [Traefik Middlewares](../../edge/traefik/referenz.md) -- Middleware Chains für Service-Zugriffskontrolle
+- [Service-Abhängigkeiten](../../_querschnitt/service-abhaengigkeiten.md) -- Vollständiges Abhängigkeitsdiagramm
+- [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

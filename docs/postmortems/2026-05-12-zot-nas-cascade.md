@@ -51,7 +51,7 @@ NAS-Synology hat unter Garage-S3-Schreiblast einen Performance-Crash erlitten --
 - **Periodischer CSI-GC** (Nomad Batch Job `batch-jobs/csi-gc.nomad`) täglich 03:30 -- präventiv gegen Linstor-Stale-Claims
 - **PostgreSQL Alert-Rules** (3+1) zur Früherkennung von Connection-Storm (parallel zur Authentik #20714 Mitigation) -- siehe [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md)
 - **NAS als Backup-Storage isoliert** -- Garage-S3 bleibt darauf für Backup-Workloads (NAS-Backup-Storage-Schwelle 95%), Hot-Path-Daten bleiben auf Linstor
-- **Pull-Through-Cache Best-Practice dokumentiert** in [docker-registry/index.md](../docker-registry/index.md) inklusive Sync-Reihenfolge, retryDelay, BoltDB-Sizing
+- **Pull-Through-Cache Best-Practice dokumentiert** in [docker-registry/index.md](../plattform/docker-registry/index.md) inklusive Sync-Reihenfolge, retryDelay, BoltDB-Sizing
 - **Restrisiko akzeptiert:** Single-PSU NAS bleibt -- USV-Plan IT 2026 deckt das ab ([USV-Plan](../ups/index.md))
 
 ## 5. ClickUp-Tracking
@@ -65,7 +65,7 @@ NAS-Synology hat unter Garage-S3-Schreiblast einen Performance-Crash erlitten --
 
 ## Verwandte Seiten
 
-- [docker-registry/index.md](../docker-registry/index.md) -- ZOT Pull-Through-Cache, Sync-Reihenfolge und Architektur nach der Migration
+- [docker-registry/index.md](../plattform/docker-registry/index.md) -- ZOT Pull-Through-Cache, Sync-Reihenfolge und Architektur nach der Migration
 - [ups/index.md](../ups/index.md) -- USV-Plan, deckt das Single-PSU-Restrisiko des NAS ab
 - [_querschnitt/datenbank-architektur.md](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Alert-Rules zur Connection-Storm-Früherkennung
 - [_querschnitt/incident-template.md](../_querschnitt/incident-template.md) -- Vorlage für Postmortems und Incident-Dokumentation

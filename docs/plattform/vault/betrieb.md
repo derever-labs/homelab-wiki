@@ -30,7 +30,7 @@ Das ist bewusst **kein** herstellerseitiges Auto-Unseal über einen Cloud-KMS od
 
 ### Audit Log Rotation
 
-Die Audit Logs werden via logrotate verwaltet; ältere Logs werden automatisch gelöscht. Details zu Format und Rotation: [Vault Referenz](referenz.md).
+Die Audit Logs werden via logrotate verwaltet; ältere Logs werden automatisch gelöscht. Details zu Format und Rotation: [Vault Referenz](./referenz.md).
 
 ### Raft Snapshots
 
@@ -38,7 +38,7 @@ Das Raft-Protokoll erstellt automatisch interne Snapshots zur Zustandssicherung.
 
 ## Recovery und Break-Glass {#recovery-break-glass}
 
-Dieser Abschnitt behandelt den administrativen Root-Zugang und die manuellen Eingriffe, wenn die Automatik versagt -- etwa wenn Vault nach einem Neustart versiegelt bleibt. Das Entsiegeln von Hand und der Break-Glass-Weg für einen neuen Root-Token stützen sich auf dieselben Shamir-Key-Shares aus `/etc/vault.d/unseal-keys` (Speicherort und Zugang: [Credentials](../_referenz/credentials.md)).
+Dieser Abschnitt behandelt den administrativen Root-Zugang und die manuellen Eingriffe, wenn die Automatik versagt -- etwa wenn Vault nach einem Neustart versiegelt bleibt. Das Entsiegeln von Hand und der Break-Glass-Weg für einen neuen Root-Token stützen sich auf dieselben Shamir-Key-Shares aus `/etc/vault.d/unseal-keys` (Speicherort und Zugang: [Credentials](../../_referenz/credentials.md)).
 
 ### Vault bleibt versiegelt
 
@@ -80,7 +80,7 @@ Sind 2 von 3 Nodes offline, verliert Vault sein Raft-Quorum und ist vollständig
 
 ## Schlüssel und Zugang
 
-Die Shamir Unseal Keys liegen auf den Server-Nodes unter `/etc/vault.d/unseal-keys`; der permanente Admin-Root-Token liegt in 1Password (Item "Vault Token Privat"). Speicherort und Zugang beider sind in [Credentials](../_referenz/credentials.md) dokumentiert. Ist der 1Password-Token nicht verfügbar, lässt sich Root-Zugang per generate-root aus den Unseal Keys neu erzeugen (siehe [Administrativer Root-Zugang](#root-zugang)).
+Die Shamir Unseal Keys liegen auf den Server-Nodes unter `/etc/vault.d/unseal-keys`; der permanente Admin-Root-Token liegt in 1Password (Item "Vault Token Privat"). Speicherort und Zugang beider sind in [Credentials](../../_referenz/credentials.md) dokumentiert. Ist der 1Password-Token nicht verfügbar, lässt sich Root-Zugang per generate-root aus den Unseal Keys neu erzeugen (siehe [Administrativer Root-Zugang](#root-zugang)).
 
 ::: danger Sicherheitskritisch
 Sowohl der Admin-Root-Token als auch die Unseal Keys (Threshold 2 von 3, über generate-root) ermöglichen vollen administrativen Zugriff auf alle Secrets. Speicherort und Zugang ausschliesslich über den verlinkten Credentials-Eintrag.
@@ -88,7 +88,7 @@ Sowohl der Admin-Root-Token als auch die Unseal Keys (Threshold 2 von 3, über g
 
 ## Verwandte Seiten
 
-- [Vault Übersicht](index.md)
-- [Vault Referenz](referenz.md)
-- [Credentials](../_referenz/credentials.md)
+- [Vault Übersicht](./index.md)
+- [Vault Referenz](./referenz.md)
+- [Credentials](../../_referenz/credentials.md)
 - [Nomad](../nomad/)

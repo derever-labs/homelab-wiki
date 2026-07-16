@@ -79,4 +79,4 @@ Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewus
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess bei Wartungsarbeiten
 - [Monitoring Stack](../monitoring/index.md) -- Uptime Kuma Push-Monitore für Backup-Status
 - [Renovate](./renovate.md) -- Kontrollierte Docker-Image-Updates via GitHub PRs
-- [Zot Container Registry](../docker-registry/index.md) -- Registry für gespiegelte Docker Images
+- [Zot Container Registry](../plattform/docker-registry/index.md) -- Registry für gespiegelte Docker Images

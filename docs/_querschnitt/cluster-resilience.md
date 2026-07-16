@@ -449,7 +449,7 @@ Eigenschaften:
 
 ## Verwandte Seiten
 
-- [Docker Registry (ZOT)](../docker-registry/index.md) -- aktueller ZOT-Stand
+- [Docker Registry (ZOT)](../plattform/docker-registry/index.md) -- aktueller ZOT-Stand
 - [Cluster-Restart-Runbook](./cluster-restart.md) -- konkrete Schritt-für-Schritt-Anleitung
 - [Cold-Start-Runbook](./cold-start-runbook.md) -- Disaster-Recovery-Reihenfolge
 - [Service-Abhängigkeiten](./service-abhaengigkeiten.md) -- Service-Dependency-Mapping

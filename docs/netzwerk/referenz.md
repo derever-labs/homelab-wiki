@@ -108,5 +108,5 @@ Seit 22.02.2026 werden beide TB-Interfaces in einem Bond aggregiert. Löst das P
 ## Verwandte Seiten
 
 - [Linstor & DRBD](../storage/linstor/index.md) -- DRBD-Replikation über das Thunderbolt-Netzwerk
-- [HashiCorp Stack](../nomad/index.md) -- Cluster-VMs auf denen das Netzwerk-Tuning greift
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Cluster-VMs auf denen das Netzwerk-Tuning greift
 - [Proxmox Cluster](../proxmox/index.md) -- Host-Konfiguration und Netzwerk-Interfaces

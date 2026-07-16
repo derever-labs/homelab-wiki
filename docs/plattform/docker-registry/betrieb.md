@@ -53,4 +53,4 @@ ZOT startet mit BoltDB-Index sofort wieder. Keine Wartezeit wie beim früheren S
 ## Verwandte Seiten
 
 - [Zot Container Registry](./index.md) -- Steckbrief, Architektur, Konfiguration
-- [Cluster-Neustart](../_querschnitt/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart
+- [Cluster-Neustart](../../_querschnitt/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart

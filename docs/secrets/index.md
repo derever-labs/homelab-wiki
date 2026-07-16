@@ -55,5 +55,5 @@ Das Secret-Handling arbeitet identisch zum DCLab in drei Stufen:
 
 - [Zugangsdaten](../_referenz/credentials.md) -- kanonische Liste aller Credential-Speicherorte im Homelab
 - [Secrets-Architektur](../_querschnitt/secrets-architecture.md) -- Bootstrap-Trust und 1Password-zu-Vault-Migration
-- [Vault](../vault/) -- Cluster-Secret-Store für Service-Secrets zur Laufzeit
+- [Vault](../plattform/vault/) -- Cluster-Secret-Store für Service-Secrets zur Laufzeit
 - [Claude-Task-Tracking](../_querschnitt/claude-task-tracking.md) -- ClickUp-Integration für Claude-Sessions

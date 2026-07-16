@@ -194,4 +194,4 @@ Alle Konfigurationsdateien liegen im Git unter `standalone-stacks/traefik-proxy/
 - [Sicherheit](../../security/index.md) -- Gesamte Security-Architektur
 - [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection als erste Middleware-Stufe
-- [Nomad Job-Übersicht](../../nomad/index.md) -- Jobs die diese Middleware Chains nutzen
+- [Nomad Job-Übersicht](../../plattform/nomad/index.md) -- Jobs die diese Middleware Chains nutzen

@@ -114,7 +114,7 @@ Der Stack läuft auf 3 Server-Nodes und 3 Worker-Nodes, jeweils 1 pro Proxmox-Ho
   - client-04: Klasse `worker` (kein DRBD)
   - client-05/06: Klasse `storage` (DRBD/Linstor, privileged containers)
 
-Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../proxmox/index.md#cluster-knoten-und-vms)
+Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../../proxmox/index.md#cluster-knoten-und-vms)
 
 ## Scheduler-Konfiguration
 
@@ -134,23 +134,23 @@ Seit dem Right-Sizing vom 09.07.2026 folgen alle Jobs einem festen Schema, damit
 
 Sizing-Grundsatz: CPU-Claims sind p95-basiert (Soft-Gewichte, Bursting bleibt erlaubt, kein `cpu_hard_limit`), `memory` ist die ehrliche Arbeits-Reservation (Scheduling-Währung), `memory_max` der Burst-Deckel -- jeder Task hat einen. Die konkreten Werte pro Job stehen ausschliesslich im Repo `homelab-nomad-jobs` (SSOT).
 
-Konfiguration: `nomad operator scheduler get-config` zum Prüfen, `nomad operator scheduler set-config` zum Ändern. Die Einstellung wird über Raft repliziert. Details: [Betrieb](betrieb.md#automatisierung)
+Konfiguration: `nomad operator scheduler get-config` zum Prüfen, `nomad operator scheduler set-config` zum Ändern. Die Einstellung wird über Raft repliziert. Details: [Betrieb](./betrieb.md#automatisierung)
 
 ## Job Configuration
 
-Alle Jobs folgen einheitlichen Mustern (Docker Driver, NFS Volumes, Bridge Networking, Vault Integration via Workload Identity, Consul Service Registration). CSI-Jobs setzen zusätzlich `restart`/`reschedule` und `max_client_disconnect` für automatische Recovery. PostgreSQL-abhängige Jobs warten via `wait-for-postgres` Init-Task auf die Datenbank. Details: [Nomad Referenz](referenz.md).
+Alle Jobs folgen einheitlichen Mustern (Docker Driver, NFS Volumes, Bridge Networking, Vault Integration via Workload Identity, Consul Service Registration). CSI-Jobs setzen zusätzlich `restart`/`reschedule` und `max_client_disconnect` für automatische Recovery. PostgreSQL-abhängige Jobs warten via `wait-for-postgres` Init-Task auf die Datenbank. Details: [Nomad Referenz](./referenz.md).
 
 ## Dependencies
 
-Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](betrieb.md#abhangigkeiten). Die wichtigsten Bausteine sind NFS-Storage (`/nfs/docker/`), Docker, Consul, Vault, der PostgreSQL Shared Cluster und Linstor CSI.
+Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](./betrieb.md#abhangigkeiten). Die wichtigsten Bausteine sind NFS-Storage (`/nfs/docker/`), Docker, Consul, Vault, der PostgreSQL Shared Cluster und Linstor CSI.
 
 ## Verwandte Seiten
 
-- [Nomad Referenz](referenz.md) -- Verzeichnisstruktur und Job-Konfigurationsmuster
-- [Nomad Betrieb](betrieb.md) -- Deployment, Node Drain, Troubleshooting
+- [Nomad Referenz](./referenz.md) -- Verzeichnisstruktur und Job-Konfigurationsmuster
+- [Nomad Betrieb](./betrieb.md) -- Deployment, Node Drain, Troubleshooting
 - [Consul](../consul/) -- Service Discovery und DNS
 - [Vault](../vault/) -- Secrets Management und Workload Identity
-- [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
-- [Traefik](../edge/traefik/) -- Reverse Proxy mit Consul Catalog Integration
-- [Linstor](../storage/linstor/) -- CSI-Volumes für persistenten Speicher
-- [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
+- [DNS-Architektur](../../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [Traefik](../../edge/traefik/) -- Reverse Proxy mit Consul Catalog Integration
+- [Linstor](../../storage/linstor/) -- CSI-Volumes für persistenten Speicher
+- [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

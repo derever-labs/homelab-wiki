@@ -64,4 +64,4 @@ Die vollstaendige Beschreibung dieser Schutzmechanismen im heutigen Zustand steh
 
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Ist-Zustand des Smart-Shutdown-Verfahrens
 - [Linstor/DRBD](../storage/linstor/index.md) -- Storage-Cluster und DRBD-Ressourcen
-- [HashiCorp Stack](../nomad/index.md) -- Nomad Node Lifecycle und Drain-Konzept
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Nomad Node Lifecycle und Drain-Konzept

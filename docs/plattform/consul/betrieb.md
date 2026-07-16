@@ -40,12 +40,12 @@ Diese Einschränkungen sind dokumentiert und akzeptiert -- sie sollen beim näch
 
 ## Credentials
 
-Der Gossip Encryption Key ist in der Ansible-Konfiguration hinterlegt und wird beim Rollout automatisch auf alle Nodes verteilt. Weitere Zugangsdaten und Tokens: [Credentials](./../_referenz/credentials.md)
+Der Gossip Encryption Key ist in der Ansible-Konfiguration hinterlegt und wird beim Rollout automatisch auf alle Nodes verteilt. Weitere Zugangsdaten und Tokens: [Credentials](../../_referenz/credentials.md)
 
 ## Verwandte Seiten
 
 - [Consul Übersicht](./index.md) -- Architektur und Service Discovery
 - [Consul Konfiguration](./index.md#konfiguration) -- Konfigurationspfade und Autopilot
 - [Nomad](../nomad/) -- Workload Scheduler, der Services in Consul registriert
-- [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
-- [Credentials](./../_referenz/credentials.md) -- Zugangsdaten und Keys
+- [DNS-Architektur](../../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [Credentials](../../_referenz/credentials.md) -- Zugangsdaten und Keys

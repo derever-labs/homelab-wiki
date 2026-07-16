@@ -98,8 +98,8 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 | Entscheidung | Begründung |
 |-------------|-------------|
 | Integrated Storage (Raft) statt Consul-Backend | Weniger Abhängigkeiten: Vault verwaltet seinen eigenen Zustand |
-| Shamir Seal statt Cloud-/Transit-Auto-Unseal | Self-Hosted ohne externen KMS -- die Seal-Keys bleiben lokal auf den Nodes, keine Abhängigkeit von einem Cloud-Anbieter. Das Entsiegeln nach einem Neustart übernimmt ein lokaler Boot-Service (siehe [Betrieb](betrieb.md#unseal-nach-reboot)), kein herstellerseitiges Auto-Unseal. |
-| Permanenter Admin-Root-Token in 1Password | Das Ein-Personen-Homelab hält bewusst einen Root-Token als Admin- und Bootstrap-Zugang im zugriffsgeschützten Passwort-Manager (1Password), nicht als stehendes Secret auf einem Node. Pragmatischer Kompromiss statt Best-Practice-Ideal. Break-Glass bei Token-Verlust: `vault operator generate-root` aus den Shamir-Keys (siehe [Betrieb](betrieb.md#root-zugang)). |
+| Shamir Seal statt Cloud-/Transit-Auto-Unseal | Self-Hosted ohne externen KMS -- die Seal-Keys bleiben lokal auf den Nodes, keine Abhängigkeit von einem Cloud-Anbieter. Das Entsiegeln nach einem Neustart übernimmt ein lokaler Boot-Service (siehe [Betrieb](./betrieb.md#unseal-nach-reboot)), kein herstellerseitiges Auto-Unseal. |
+| Permanenter Admin-Root-Token in 1Password | Das Ein-Personen-Homelab hält bewusst einen Root-Token als Admin- und Bootstrap-Zugang im zugriffsgeschützten Passwort-Manager (1Password), nicht als stehendes Secret auf einem Node. Pragmatischer Kompromiss statt Best-Practice-Ideal. Break-Glass bei Token-Verlust: `vault operator generate-root` aus den Shamir-Keys (siehe [Betrieb](./betrieb.md#root-zugang)). |
 | HTTP statt TLS | Bewusste Homelab-Entscheidung im isolierten Netz: kein Zertifikats-Expiry-Risiko. In einer produktiven Umgebung wäre TLS zwingend. |
 | KV v2 Secret Engine | Versionierung von Secrets, Soft-Delete möglich |
 
@@ -158,7 +158,7 @@ vault.kv -> Task: 5. Secret-Werte {
 }
 ```
 
-Jeder Task, der Vault-Secrets benötigt, braucht eine `vault {}` Stanza und einen `identity` Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](referenz.md)
+Jeder Task, der Vault-Secrets benötigt, braucht eine `vault {}` Stanza und einen `identity` Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](./referenz.md)
 
 ::: warning Pfad-Konvention
 Der Normalfall ist ein Secret-Pfad pro Job unter `kv/<job_id>`. Secrets, die sich mehrere Jobs teilen, liegen dagegen unter einem gemeinsamen `kv/shared/<name>`-Pfad -- der Job `postgres` etwa liest aus `kv/shared/postgres` (Template-Pfad `kv/data/shared/postgres`). Welche Pfade ein Job lesen darf, ist in der Policy festgelegt.
@@ -166,8 +166,8 @@ Der Normalfall ist ein Secret-Pfad pro Job unter `kv/<job_id>`. Secrets, die sic
 
 ## Verwandte Seiten
 
-- [Vault Referenz](referenz.md) -- Auth Methods, Policies, Secret-Pfade
-- [Vault Betrieb](betrieb.md) -- Unseal, Secret-Verwaltung, Troubleshooting
+- [Vault Referenz](./referenz.md) -- Auth Methods, Policies, Secret-Pfade
+- [Vault Betrieb](./betrieb.md) -- Unseal, Secret-Verwaltung, Troubleshooting
 - [Nomad](../nomad/) -- Workload Scheduler mit Vault-Integration
 - [Consul](../consul/) -- Service Discovery im selben Cluster
-- [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Adressen der Vault-Nodes
+- [Hosts und IPs](../../_referenz/hosts-und-ips.md) -- Adressen der Vault-Nodes

@@ -57,5 +57,5 @@ Alle Nomad Jobs setzen folgende Infrastruktur voraus:
 
 ## Verwandte Seiten
 
-- [Nomad](../nomad/) -- Nomad-Plattform und Cluster-Architektur
+- [Nomad](../plattform/nomad/) -- Nomad-Plattform und Cluster-Architektur
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster und Service-Zuordnung

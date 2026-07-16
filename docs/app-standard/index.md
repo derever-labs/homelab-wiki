@@ -72,6 +72,6 @@ Liveness-Endpoints (`/api/health`), die ein externer Monitor pruefen soll, bekom
 ## Verwandte Dokumentation
 
 - [Keep Mobile](../monitoring/keep/mobile.md) -- Pilot-App
-- [Docker-Registry (ZOT)](../docker-registry/) -- Image-Registry
+- [Docker-Registry (ZOT)](../plattform/docker-registry/) -- Image-Registry
 - [GitHub-Runner](../github-runner/) -- CI-Ausfuehrung im Homelab
-- [Vault](../vault/) -- Secret-Quelle fuer CI und Laufzeit
+- [Vault](../plattform/vault/) -- Secret-Quelle fuer CI und Laufzeit

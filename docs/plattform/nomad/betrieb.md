@@ -43,7 +43,7 @@ Ausgerollt via `scripts/install_smart_shutdown.sh` im Homelab-Infra-Repo. Auf al
 - `reschedule` -- Platzierung auf einem anderen Node wenn lokale Restarts erschöpft sind
 - `max_client_disconnect` -- wartet 5 Minuten bei kurzen Netzwerkausfällen bevor rescheduled wird
 
-**CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../storage/linstor/betrieb.md#csi-boot-race-condition)
+**CSI Boot-Reeval Timer** -- auf den Clients 05 und 06 läuft ein `nomad-csi-reeval.timer`, der nach jedem Boot automatisch blockierte Evaluations re-evaluiert. Details: [Linstor Betrieb](../../storage/linstor/betrieb.md#csi-boot-race-condition)
 
 ### Disk-Housekeeping
 
@@ -81,12 +81,12 @@ Trotz `live-restore: true` markiert Nomad Allocations beim `systemctl restart do
 ## Statische vs. dynamische Ports
 
 ::: warning Port-Kollisionen vermeiden
-Die unter [Ports und Dienste](../_referenz/ports-und-dienste.md) gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinzufügen neuer statischer Ports diese Liste prüfen. Services hinter Traefik können alternativ dynamische Ports mit Consul Service Discovery nutzen. Einige Ports bleiben bewusst statisch, weil sie direkt adressiert werden -- etwa Ollama (`11434`, von mehreren AI-Jobs referenziert) und Jellyfin (`8096`, von externen Clients wie Infuse/Apple TV direkt angesprochen).
+Die unter [Ports und Dienste](../../_referenz/ports-und-dienste.md) gelisteten Ports sind statisch im Host-Netzwerk gebunden. Vor dem Hinzufügen neuer statischer Ports diese Liste prüfen. Services hinter Traefik können alternativ dynamische Ports mit Consul Service Discovery nutzen. Einige Ports bleiben bewusst statisch, weil sie direkt adressiert werden -- etwa Ollama (`11434`, von mehreren AI-Jobs referenziert) und Jellyfin (`8096`, von externen Clients wie Infuse/Apple TV direkt angesprochen).
 :::
 
 ## Credentials
 
-Token und Zugangsdaten für die Nomad API: [Credentials](../_referenz/credentials.md)
+Token und Zugangsdaten für die Nomad API: [Credentials](../../_referenz/credentials.md)
 
 Für den regulären Betrieb wird ein ACL-Token mit der Policy `operator` benötigt (erlaubt Jobs deployen, Logs lesen, Allocs verwalten).
 
@@ -95,6 +95,6 @@ Für den regulären Betrieb wird ein ACL-Token mit der Policy `operator` benöti
 - [Nomad Übersicht](./index.md) -- Architektur und Komponenten des Clusters
 - [Nomad Referenz](./referenz.md) -- Nodes, Ports und Konfigurationsdetails
 - [Nomad Timeouts](./timeouts.md) -- Timeout-Parameter für Deploys und Pulls
-- [Linstor Betrieb](../storage/linstor/betrieb.md) -- CSI-Storage, Boot-Race und Failover
+- [Linstor Betrieb](../../storage/linstor/betrieb.md) -- CSI-Storage, Boot-Race und Failover
 - [Consul](../consul/index.md) -- Service Discovery und Health Checks
 - [Vault](../vault/index.md) -- Secret-Injection für Jobs

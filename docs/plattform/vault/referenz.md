@@ -20,7 +20,7 @@ tags:
 
 Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JWT-Signatur gegen diesen Endpunkt und stellt bei erfolgreicher Prüfung ein Vault-Token mit der Policy `nomad-workloads` aus.
 
-Dieselbe Auth Method trägt auch die CD-Pipeline-Rolle `github-runner-deploy`, über die sich der GitHub-Runner authentifiziert. Details: [github-runner Referenz](../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
+Dieselbe Auth Method trägt auch die CD-Pipeline-Rolle `github-runner-deploy`, über die sich der GitHub-Runner authentifiziert. Details: [github-runner Referenz](../../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ## Policies
 
@@ -32,7 +32,7 @@ Die `nomad-workload` Policy (nicht zu verwechseln mit der JWT-Rolle `nomad-workl
 
 ## KV-Pfade
 
-Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste aller Secret-Pfade und Credentials: [Credentials](../_referenz/credentials.md)
+Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste aller Secret-Pfade und Credentials: [Credentials](../../_referenz/credentials.md)
 
 | Beispiel-Pfad | Verwendung |
 |----------------|-----------|
@@ -48,7 +48,7 @@ Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste
 | `kv/` | KV v2 | Versionierte Service-Secrets, Pfad-Konvention `kv/<job_id>` |
 | `nomad/` | Nomad Secret Engine | Stellt kurzlebige Nomad-Client-Tokens für die CD-Pipeline aus (Rolle `github-deploy`) |
 
-Die Nomad Secret Engine ersetzt statische Deploy-Tokens: Der GitHub-Runner holt pro Deployment über `nomad/creds/github-deploy` einen Token mit begrenzter TTL und widerruft ihn am Ende des Workflows. Verfahren und Policies: [github-runner Referenz](../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
+Die Nomad Secret Engine ersetzt statische Deploy-Tokens: Der GitHub-Runner holt pro Deployment über `nomad/creds/github-deploy` einen Token mit begrenzter TTL und widerruft ihn am Ende des Workflows. Verfahren und Policies: [github-runner Referenz](../../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ## Audit Logging
 
@@ -80,7 +80,7 @@ Nomad verbindet sich zu Vault über Consul DNS statt einer hardcodierten IP (`ht
 
 ## Verwandte Seiten
 
-- [Vault Übersicht](index.md) -- Architektur und Designentscheide
-- [Vault Betrieb](betrieb.md) -- Unseal, Secret-Verwaltung, Troubleshooting
-- [Credentials](../_referenz/credentials.md) -- Vollständige Secret-Pfade und Speicherorte
+- [Vault Übersicht](./index.md) -- Architektur und Designentscheide
+- [Vault Betrieb](./betrieb.md) -- Unseal, Secret-Verwaltung, Troubleshooting
+- [Credentials](../../_referenz/credentials.md) -- Vollständige Secret-Pfade und Speicherorte
 - [Nomad](../nomad/) -- Workload Identity Integration

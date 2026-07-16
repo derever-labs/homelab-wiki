@@ -164,5 +164,5 @@ Die allgemeine Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentati
 - [Linstor Referenz](./referenz.md) -- Nachschlagewerte (CSI, Metriken, Performance)
 - [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
 - [Proxmox](../../proxmox/) -- Host- und VM-Übersicht
-- [Nomad](../../nomad/) -- Container-Orchestrierung mit CSI-Volumes
+- [Nomad](../../plattform/nomad/) -- Container-Orchestrierung mit CSI-Volumes
 - [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes

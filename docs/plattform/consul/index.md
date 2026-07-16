@@ -114,7 +114,7 @@ Nomad registriert jeden Service mit der `service` Stanza automatisch in Consul. 
 
 ## DNS-Integration
 
-Consul DNS läuft auf Port 8600 und löst Services nach dem Schema `<service>.service.consul` auf. Pi-hole (lxc-dns-01 und lxc-dns-02) ist so konfiguriert, dass alle DNS-Anfragen für die Domain `.consul` an die drei Consul-Server weitergeleitet werden. Dadurch können alle Geräte im Netzwerk Services auflösen, ohne den Consul-Client lokal betreiben zu müssen. Vollständige DNS-Dokumentation: [DNS-Architektur](../dns/).
+Consul DNS läuft auf Port 8600 und löst Services nach dem Schema `<service>.service.consul` auf. Pi-hole (lxc-dns-01 und lxc-dns-02) ist so konfiguriert, dass alle DNS-Anfragen für die Domain `.consul` an die drei Consul-Server weitergeleitet werden. Dadurch können alle Geräte im Netzwerk Services auflösen, ohne den Consul-Client lokal betreiben zu müssen. Vollständige DNS-Dokumentation: [DNS-Architektur](../../dns/).
 
 ## KV Store
 
@@ -141,6 +141,6 @@ Autopilot ist mit `cleanup_dead_servers = true` aktiv; Verhalten und manuelle Ei
 
 - [Nomad](../nomad/) -- Workload Scheduler, der Services in Consul registriert
 - [Vault](../vault/) -- Secrets Management für den Cluster
-- [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
-- [Traefik](../edge/traefik/) -- Consul Catalog Integration für automatisches Routing
-- [Ports und Dienste](../_referenz/ports-und-dienste.md) -- Consul-Ports (HashiCorp Stack)
+- [DNS-Architektur](../../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [Traefik](../../edge/traefik/) -- Consul Catalog Integration für automatisches Routing
+- [Ports und Dienste](../../_referenz/ports-und-dienste.md) -- Consul-Ports (HashiCorp Stack)

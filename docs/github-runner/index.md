@@ -114,4 +114,4 @@ Zwei Deploy-Muster laufen über den Runner: die zentrale `deploy-nomad-jobs.yml`
 
 - [Wiki](../vitepress-wiki/index.md) -- CI/CD Pipeline und Deployment-Ablauf
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-Nodes (Placement)
-- [HashiCorp Stack](../nomad/index.md) -- Vault-Integration und Nomad-Job-Übersicht
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Vault-Integration und Nomad-Job-Übersicht

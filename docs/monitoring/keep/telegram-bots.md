@@ -129,4 +129,4 @@ Direkter Telegram-Bot-Aufruf aus dem Service (alter Stil) ist **nicht** mehr der
 - [Keep](index.md) -- Hub für Korrelation, Incident-Workflows und Severity-Routing
 - [Monitoring](../index.md) -- Stack-Übersicht und Datenflüsse
 - [Authentik Alerting](../../edge/authentik/betrieb.md) -- Security-Event-Pipeline
-- [Vault](../../vault/index.md) -- Secret-Storage für Bot-Tokens
+- [Vault](../../plattform/vault/index.md) -- Secret-Storage für Bot-Tokens

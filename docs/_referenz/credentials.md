@@ -57,10 +57,10 @@ Vollständige Service-Datenbank-Zuordnung: [Datenbanken](./datenbanken.md)
 
 | Methode | Beschreibung |
 | :--- | :--- |
-| Admin-Root-Token | Permanenter Root-Token als Admin-/Bootstrap-Zugang, abgelegt in 1Password (Item "Vault Token Privat", siehe 1Password-Tabelle oben). Break-Glass bei Verlust: per generate-root aus den Unseal Keys neu erzeugen (siehe [Vault Betrieb](../vault/betrieb.md#root-zugang)) |
+| Admin-Root-Token | Permanenter Root-Token als Admin-/Bootstrap-Zugang, abgelegt in 1Password (Item "Vault Token Privat", siehe 1Password-Tabelle oben). Break-Glass bei Verlust: per generate-root aus den Unseal Keys neu erzeugen (siehe [Vault Betrieb](../plattform/vault/betrieb.md#root-zugang)) |
 | Workload Identity (JWT) | Nomad Jobs authentifizieren sich automatisch über `jwt-nomad` Auth Method |
 
 ## Verwandte Seiten
 
-- [Vault](../vault/) -- Vault-Architektur und Konfiguration
+- [Vault](../plattform/vault/) -- Vault-Architektur und Konfiguration
 - [Datenbanken](./datenbanken.md) -- Vollständige DB-Service-Zuordnung mit Vault-Pfaden

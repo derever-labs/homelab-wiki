@@ -211,4 +211,4 @@ Neben den beiden oben beschriebenen Workflows existiert im immo-monitor Repo die
 
 - [GitHub Actions Runner](./index.md) -- Übersicht und Architektur
 - [GitHub Actions Runner Betrieb](./betrieb.md) -- Wartung und Recovery
-- [HashiCorp Stack](../nomad/index.md) -- Vault und Nomad im Homelab
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Vault und Nomad im Homelab

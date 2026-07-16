@@ -149,6 +149,6 @@ Die Umstellung einer VM-Disk von scsi auf virtio-blk als Betriebsprozedur: [Betr
 - [Backup](../storage/backup/) -- Backup-Strategie und PBS
 - [Hardware-Inventar](../_referenz/hardware-inventar.md) -- Physische Hardware-Details
 - [Linstor Storage](../storage/linstor/) -- DRBD-replizierter Block-Storage
-- [Nomad](../nomad/) -- Container-Orchestrierung auf den VMs
-- [Consul](../consul/) -- Service Discovery und KV Store
-- [Vault](../vault/) -- Secrets Management
+- [Nomad](../plattform/nomad/) -- Container-Orchestrierung auf den VMs
+- [Consul](../plattform/consul/) -- Service Discovery und KV Store
+- [Vault](../plattform/vault/) -- Secrets Management
