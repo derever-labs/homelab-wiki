@@ -17,7 +17,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 
 | Verzeichnis | Jobs |
 | :--- | :--- |
-| batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, Zot Consistency Check, fstrim, DNS Performance, Authentik Audit, Authentik SHM Check, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Downloader, Reddit Gallery DL, PH Downloader |
+| batch-jobs/ | Renovate, Renovate Backlog Watchdog, Docker Prune, PostgreSQL Backup, InfluxDB Backup, MariaDB Backup, Vault Backup, Consul Snapshot, Nomad Snapshot, CSI GC, DRBD Verify, Zot Verify, Zot Consistency Check, fstrim, DNS Performance, Authentik Audit, Authentik SHM Check, Daily Cleanup, Daily Container Restart, Daily Restart Jellyfin, Jellyfin Adult Sync, Reddit Gallery DL, PH Downloader |
 | databases/ | PostgreSQL (DRBD), MariaDB (DRBD), DbGate, OpenLDAP (Legacy) |
 | identity/ | Authentik |
 | infrastructure/ | SMTP Relay, Nebula Sync, Zot Registry, GitHub Runner, ntfy |
