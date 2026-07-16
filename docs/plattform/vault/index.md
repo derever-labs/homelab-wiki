@@ -120,7 +120,7 @@ Nomad: Nomad Server {
 
 Task: Nomad Task {
   class: node
-  tooltip: "Container mit vault-Stanza und identity-Block (env = true, file = true)"
+  tooltip: "Container mit vault-Stanza (role nomad-workloads) -- Workload Identity kommt aus der default_identity der Nomad-Config"
 }
 
 vault: Vault {
@@ -132,7 +132,7 @@ vault: Vault {
   }
   kv: KV v2 Secret Engine {
     class: node
-    tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workloads beschränkt Zugriff auf eigenen Pfad"
+    tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workload beschränkt Zugriff auf eigenen Pfad"
   }
 }
 
@@ -143,7 +143,7 @@ Task -> vault.auth: 2. JWT vorzeigen (HTTP :8200) {
   style.stroke: "#7c3aed"
   tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token nötig"
 }
-vault.auth -> Task: 3. Vault Token (Policy nomad-workloads) {
+vault.auth -> Task: 3. Vault Token (Policy nomad-workload) {
   style.stroke: "#7c3aed"
   style.stroke-dash: 3
   tooltip: "Vault prüft JWT-Signatur via Nomad JWKS, dann Token mit eingeschränkter Policy"
@@ -158,7 +158,7 @@ vault.kv -> Task: 5. Secret-Werte {
 }
 ```
 
-Jeder Task, der Vault-Secrets benötigt, braucht eine `vault {}` Stanza und einen `identity` Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](./referenz.md)
+Ein Task, der Vault-Secrets benötigt, deklariert eine `vault {}` Stanza (in der Regel mit `role = "nomad-workloads"`). Die Workload Identity liefert die clusterweite `default_identity` aus der Nomad-Agent-Konfiguration, darum kommen die meisten Jobs ohne eigenen `identity`-Block aus. Nur Jobs, die das JWT zusätzlich als Umgebungsvariable oder Datei im Container brauchen, ergänzen einen `identity`-Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](./referenz.md)
 
 ::: warning Pfad-Konvention
 Der Normalfall ist ein Secret-Pfad pro Job unter `kv/<job_id>`. Secrets, die sich mehrere Jobs teilen, liegen dagegen unter einem gemeinsamen `kv/shared/<name>`-Pfad -- der Job `postgres` etwa liest aus `kv/shared/postgres` (Template-Pfad `kv/data/shared/postgres`). Welche Pfade ein Job lesen darf, ist in der Policy festgelegt.
