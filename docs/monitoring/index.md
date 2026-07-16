@@ -110,12 +110,12 @@ classes: {
 kuma: Uptime Kuma { class: svc }
 checkmk: CheckMK {
   class: svc
-  tooltip: Eigenstaendige VM auf pve02 (Site homelab), kein Nomad-Job
+  tooltip: Eigenständige VM auf pve02 (Site homelab), kein Nomad-Job
 }
 
 endpoints: Service-Endpoints {
   class: svc
-  tooltip: Kern-Infra (Nomad/Consul/Vault, DNS, Ingress, Storage) plus Flaeche (Media, Apps, IoT)
+  tooltip: Kern-Infra (Nomad/Consul/Vault, DNS, Ingress, Storage) plus Fläche (Media, Apps, IoT)
 }
 batch: Batch-Jobs {
   class: svc
@@ -125,7 +125,7 @@ agents: Agent-Hosts {
   class: svc
   tooltip: VMs und Proxmox-Hosts mit CheckMK-Agent, Nomad-Container via Docker-Piggyback
 }
-snmp: SNMP-Geraete {
+snmp: SNMP-Geräte {
   class: svc
   tooltip: Beide Synology-NAS (synology-nas, nana-nas via Tailscale)
 }
@@ -205,7 +205,7 @@ bot -> topics.krit: 5. critical / high / fail-open { class: async }
 bot -> topics.warn: 5. warning { class: async }
 bot -> topics.info: 5. info / low { class: async }
 checkmk -> topics: 6. notifiziert direkt (Telegram-Bypass) { class: async }
-wd -> bot: 7. meldet Keep-Ausfall (Keep-unabhaengig) { class: async }
+wd -> bot: 7. meldet Keep-Ausfall (Keep-unabhängig) { class: async }
 ```
 
 Lesehilfe (alle Kanten ereignisgetrieben, darum durchgehend gestrichelt):
