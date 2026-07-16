@@ -98,7 +98,7 @@ Karakeep.MEILI -> KV: Master-Key
 
 Karakeep steht bewusst **nicht** hinter der Authentik-ForwardAuth-Kette, sondern nur hinter dem IP-Allowlist-Filter `intern-api@file` (interne Netze plus Tailscale-Bereich). Der Grund: Die Mobile-App und die Browser-Extension sprechen mit Bearer-Token gegen `/api`, und eine Authentik-Weiterleitung würde diesen Token-Fluss brechen. Die Anmeldung übernimmt Karakeep selbst; wer nicht im Netz oder auf Tailscale ist, erreicht die Login-Seite gar nicht erst. Als Folge setzt mobiles Erfassen ein aktives Tailscale-Profil voraus.
 
-Weil vor Karakeep keine SSO-Schicht liegt, sind die Registrierung deaktiviert und das Rate-Limiting aktiv -- neben CrowdSec der einzige Brute-Force-Schutz auf dem Login. Details zur Middleware-Kette: [Traefik Referenz](../traefik/referenz.md).
+Weil vor Karakeep keine SSO-Schicht liegt, sind die Registrierung deaktiviert und das Rate-Limiting aktiv -- neben CrowdSec der einzige Brute-Force-Schutz auf dem Login. Details zur Middleware-Kette: [Traefik Referenz](../edge/traefik/referenz.md).
 
 ## Storage und Suche
 
@@ -115,4 +115,4 @@ Der Meilisearch-Index ist ein abgeleiteter Datenbestand und liesse sich jederzei
 - [Backup](../backup/index.md) -- übergeordnetes Backup-Konzept
 - [Obsidian LiveSync](../obsidian-livesync/index.md) -- Verdichtungs- und Schreibschicht
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD)
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware-Kette `intern-api@file`
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware-Kette `intern-api@file`

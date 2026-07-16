@@ -62,4 +62,4 @@ Nomad.ABS -> Storage.BOOKS
 
 - [Jellyfin](../jellyfin/index.md) -- Media Player, teilt die Bücher-Mediathek
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Mediathek
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware Chains für Authentifizierung

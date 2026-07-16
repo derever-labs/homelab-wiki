@@ -14,7 +14,7 @@ Diese Dokumentation beschreibt die verfügbaren Middleware Chains für Traefik u
 
 ## Übersicht
 
-Alle Services werden über Traefik ([Hosts und IPs](../_referenz/hosts-und-ips.md)) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
+Alle Services werden über Traefik ([Hosts und IPs](../../_referenz/hosts-und-ips.md)) geroutet. Die Authentifizierung erfolgt über Authentik als Identity Provider via ForwardAuth.
 
 ::: info Migration von OAuth2-Proxy/Keycloak auf Authentik
 Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie alle OAuth2-Callback-Routen wurden im Rahmen der Keycloak-Abschaltung entfernt. Alle Services nutzen neu die unten dokumentierten Authentik-Chains.
@@ -172,7 +172,7 @@ Siehe `standalone-stacks/traefik-proxy/configurations/tls-options.yml` für die 
 
 Für jeden Service wird im Nomad Job oder Docker Label die gewünschte Chain angegeben, z.B. `intern-auth@file` oder `public-noauth@file`. Für Authentik-geschützte Services wird zusätzlich keine separate Callback-Route benötigt -- die zentrale `auth-routes.yml` deckt den Callback ab.
 
-Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](../security/index.md).
+Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](../../security/index.md).
 
 ## Konfigurationsdateien
 
@@ -191,7 +191,7 @@ Alle Konfigurationsdateien liegen im Git unter `standalone-stacks/traefik-proxy/
 
 - [Traefik Übersicht](./index.md) -- Architektur und Deployment
 - [Traefik Betrieb](./betrieb.md) -- Failover-, Failback- und Split-Brain-Prozeduren
-- [Sicherheit](../security/index.md) -- Gesamte Security-Architektur
+- [Sicherheit](../../security/index.md) -- Gesamte Security-Architektur
 - [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection als erste Middleware-Stufe
-- [Nomad Job-Übersicht](../nomad/index.md) -- Jobs die diese Middleware Chains nutzen
+- [Nomad Job-Übersicht](../../nomad/index.md) -- Jobs die diese Middleware Chains nutzen

@@ -118,5 +118,5 @@ Der Auto-Push zielt auf die aktuelle Node-IP des Gitea-Allocs; Gitea wandert zwi
 - [Tailscale](../netzwerk/tailscale.md) -- Overlay-VPN, über das der HA-Luzern-Config-Push läuft
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Linstor](../linstor-storage/index.md) -- CSI Storage für Gitea-Daten
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration
 - [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept

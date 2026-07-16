@@ -105,7 +105,7 @@ Die Instanz ist in Betrieb; auf Danis iPhone stehen noch der Diktat-Kurzbefehl u
 
 ## Exposition und Authentifizierung
 
-Der externe Router steht bewusst **nicht** hinter der Authentik-ForwardAuth-Kette, sondern nutzt `public-noauth@file` (CrowdSec plus Security-Header) zusammen mit einer Rate-Limit-Middleware. Der Grund: Der iOS-Kurzbefehl kann keinen SSO-Login durchlaufen -- eine Authentik-Weiterleitung würde den fire-and-forget-POST brechen. Die Authentifizierung übernimmt stattdessen der Dienst selbst über einen Bearer-Token. Das ist eine bewusste Abweichung vom App-Standard, abgesichert durch Bearer-Token, CrowdSec und Rate-Limit. Ein interner Router mit `intern-noauth@file` deckt den Zugriff aus den internen Netzen ab; `/api/health` läuft über einen eigenen, hoch priorisierten no-auth-Router für den Kuma-Monitor. Details zu den Ketten: [Traefik Referenz](../traefik/referenz.md).
+Der externe Router steht bewusst **nicht** hinter der Authentik-ForwardAuth-Kette, sondern nutzt `public-noauth@file` (CrowdSec plus Security-Header) zusammen mit einer Rate-Limit-Middleware. Der Grund: Der iOS-Kurzbefehl kann keinen SSO-Login durchlaufen -- eine Authentik-Weiterleitung würde den fire-and-forget-POST brechen. Die Authentifizierung übernimmt stattdessen der Dienst selbst über einen Bearer-Token. Das ist eine bewusste Abweichung vom App-Standard, abgesichert durch Bearer-Token, CrowdSec und Rate-Limit. Ein interner Router mit `intern-noauth@file` deckt den Zugriff aus den internen Netzen ab; `/api/health` läuft über einen eigenen, hoch priorisierten no-auth-Router für den Kuma-Monitor. Details zu den Ketten: [Traefik Referenz](../edge/traefik/referenz.md).
 
 Die **Web-Inbox** hat einen eigenen Host mit ausschliesslich Authentik-Routern (`public-auth@file` extern, `intern-auth@file` intern) und der Authentik-Applikation `todo-inbox` (Gruppe `admin`). Der Dienst bindet die Inbox-Routen zusätzlich an den Host (`INBOX_HOST`): Über die Bearer-Router von todo.ackermannprivat.ch sind sie nicht erreichbar. Jede Instanz bringt dabei ihren eigenen Inbox-Host mit -- weil die Authentik-Proxy-Provider pro Hostname greifen, gehört zu jedem weiteren Host eine eigene Applikation; die vorbereitete Instanz Dani nutzt inbox-dani.ackermannprivat.ch. Alle mutierenden Inbox-Aktionen tragen HMAC-Tokens (dieselbe Mechanik wie die ntfy-Buttons) plus einen exakten Origin-Check -- der Schutz hängt damit nicht am Cookie-Verhalten. Die Sicherheits-Herleitung inkl. adversarialem Challenge steht im Service-Repo (`docs/konzept.md`, Stufe 6).
 
@@ -121,8 +121,8 @@ Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Cod
 
 - [Todo Ingest Betrieb](./betrieb.md) -- Bedienung, Daily Digest, Dialog-Mechanik, Persistenz
 - [ntfy](../ntfy/index.md) -- Push-Rückkanal für Bestätigungen und Zuordnungs-Rückfragen
-- [Authentik](../authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
+- [Authentik](../edge/authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die SQLite-Datenbank
 - [Homelab App-Standard](../app-standard/index.md) -- Build- und Deploy-Muster des Dienstes
 - [Monitoring: Coverage](../monitoring/coverage/index.md) -- Kuma-Probe und Coverage-Status

@@ -85,4 +85,4 @@ Der Build läuft auf dem org-weiten Self-Hosted Runner (`derever-labs`). Details
 - [VitePress Wiki](./index.md) -- Steckbrief und Rolle im Stack
 - [Referenz](./referenz.md) -- Nomad-Tasks, VitePress-Konfiguration und Vault-Secrets
 - [GitHub Runner](../github-runner/index.md) -- Self-Hosted Runner für CI/CD des Wiki-Builds
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress und SSL-Terminierung für wiki.ackermannprivat.ch
+- [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress und SSL-Terminierung für wiki.ackermannprivat.ch

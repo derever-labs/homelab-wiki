@@ -35,5 +35,5 @@ Inhaltliche Regeln und Formatierungs-Konventionen: [Wiki-Richtlinien](../wiki-ri
 - [Referenz](./referenz.md) -- Nomad-Tasks, VitePress-Konfiguration und Vault-Secrets
 - [Betrieb](./betrieb.md) -- Build-, Webhook- und Deploy-Automatik
 - [GitHub Runner](../github-runner/index.md) -- Self-Hosted Runner für CI/CD des Wiki-Builds
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress und SSL-Terminierung für wiki.ackermannprivat.ch
+- [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress und SSL-Terminierung für wiki.ackermannprivat.ch
 - [Wiki-Richtlinien](../wiki-richtlinien.md) -- Formatierungs- und Inhaltskonventionen

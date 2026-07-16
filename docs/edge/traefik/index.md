@@ -15,9 +15,9 @@ Traefik läuft als HA-Reverse-Proxy auf zwei VMs mit Keepalived VIP. Alle Homela
 
 | Attribut | Wert |
 |----------|------|
-| Dashboard | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
+| Dashboard | [traefik.ackermannprivat.ch](https://traefik.ackermannprivat.ch) \| Siehe [Web-Interfaces](../../_referenz/web-interfaces.md) |
 | Deployment | Docker Compose auf vm-traefik-01 + vm-traefik-02 (Ansible rolling deployed) |
-| IPs | [Hosts und IPs](../_referenz/hosts-und-ips.md) |
+| IPs | [Hosts und IPs](../../_referenz/hosts-und-ips.md) |
 | Auth | `intern-auth@file` (Authentik) |
 
 ## Architektur
@@ -136,7 +136,7 @@ providers.File -> backend.Standalone: definiert Routen {
 | BACKUP | Priorität 100 |
 | Health-Check | Keepalived VRRP-Script prüft Traefik `/ping` |
 
-VIP und Node-Zuordnung: siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+VIP und Node-Zuordnung: siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
 
 Keepalived prüft per VRRP-Script ob Traefik antwortet. Bei Ausfall wechselt die VIP automatisch zum BACKUP-Node.
 
@@ -154,7 +154,7 @@ Drei Massnahmen verhindern, dass beide Nodes gleichzeitig die VIP halten:
 
 Wildcard-Zertifikate für `*.ackermannprivat.ch` und `*.ackermann.systems` werden automatisch via Let's Encrypt (ACME, Cloudflare DNS Challenge, EC256) bezogen. Beide Nodes haben eigene `acme.json` mit gültigen Zertifikaten.
 
-Der früher hier laufende `traefik-certs-dumper` (PEM-Export nach `/nfs/cert/`) ist mit dem NAS-Cutover 2026-06 abgelöst und entfernt -- er hatte keine Konsumenten mehr. Details: [TLS-Zertifikate](../_referenz/tls-zertifikate.md).
+Der früher hier laufende `traefik-certs-dumper` (PEM-Export nach `/nfs/cert/`) ist mit dem NAS-Cutover 2026-06 abgelöst und entfernt -- er hatte keine Konsumenten mehr. Details: [TLS-Zertifikate](../../_referenz/tls-zertifikate.md).
 
 TLS ist mit expliziten Cipher Suites und `minVersion: TLS 1.2` gehärtet. Details: [Traefik Referenz -- TLS-Options](./referenz.md#tls-options)
 
@@ -220,6 +220,6 @@ Falls Traefik nach einem Reboot nicht läuft: Docker Compose Stack manuell start
 - [Traefik Middleware Chains](./referenz.md) -- Vollständige Middleware-Dokumentation
 - [Traefik Betrieb](./betrieb.md) -- Failover-, Failback- und Split-Brain-Prozeduren
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking und Threat Intelligence
-- [DNS-Architektur](../dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
+- [DNS-Architektur](../../dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
 - [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
-- [Netzwerk-Topologie](../netzwerk/index.md) -- Netzwerkarchitektur und Routing
+- [Netzwerk-Topologie](../../netzwerk/index.md) -- Netzwerkarchitektur und Routing

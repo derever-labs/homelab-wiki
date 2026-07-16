@@ -23,7 +23,7 @@ Die Referenz -- Hardware-Transcoding-Codecs, Storage-Mounts, Traefik-Routing und
 | Nodes | `vm-nomad-client-05/06` (Constraint, folgt dem CSI Volume) |
 | Config Storage | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
 | Media Storage | NFS `/nfs/jellyfin` ([NAS](../nas-storage/index.md)) |
-| Auth | LDAP Bind via [Authentik LDAP Outpost](../authentik/index.md) (kein OAuth/ForwardAuth) |
+| Auth | LDAP Bind via [Authentik LDAP Outpost](../edge/authentik/index.md) (kein OAuth/ForwardAuth) |
 | GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../proxmox/index.md) |
 | Transcoding | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
 
@@ -79,7 +79,7 @@ Wunsch.ARR -> Storage.NFS: Downloads
 
 ## Abhängigkeiten
 
-- [Authentik](../authentik/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
+- [Authentik](../edge/authentik/index.md) -- LDAP Bind Authentifizierung (via LDAP Outpost)
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
 - [NAS-Speicher](../nas-storage/index.md) -- Medienbibliothek unter `/nfs/jellyfin`
@@ -98,6 +98,6 @@ Wunsch.ARR -> Storage.NFS: Downloads
 - [Jellyseerr](../jellyseerr/index.md) -- Media Request Management
 - [Arr Stack](../arr-stack/index.md) -- Automatisierte Medien-Akquisition
 - [Audiobookshelf](../audiobookshelf/index.md) -- Teilt die Bücher-Mediathek
-- [Authentik](../authentik/index.md) -- Authentifizierung (LDAP Outpost)
+- [Authentik](../edge/authentik/index.md) -- Authentifizierung (LDAP Outpost)
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Medien
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Täglicher Restart-Job

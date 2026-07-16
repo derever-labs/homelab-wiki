@@ -61,4 +61,4 @@ Ein Browserless-Chrome-Container läuft als Nomad Sidecar-Task und stellt über 
 
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Nutzt ChangeDetection für Webseiten-Überwachung
 - [n8n](../n8n/index.md) -- Workflow-Automation für Benachrichtigungen
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration

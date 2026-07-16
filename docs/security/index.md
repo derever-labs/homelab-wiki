@@ -57,23 +57,23 @@ Authentik ist der zentrale Identity Store für alle User-Accounts. Die User-Date
 
 - **OIDC** für native Clients wie Grafana, Gitea, Proxmox
 - **ForwardAuth** für Web-UIs ohne OIDC-Support (via Traefik Middleware Chains)
-- **LDAP Bind** für Jellyfin über den [Authentik LDAP Outpost](../ldap/index.md)
+- **LDAP Bind** für Jellyfin über den [Authentik LDAP Outpost](../edge/ldap.md)
 
-Details: [Authentik](../authentik/index.md) -- Übersicht und Architektur. LDAP-Schichten im Homelab: [LDAP im Homelab](../ldap/index.md).
+Details: [Authentik](../edge/authentik/index.md) -- Übersicht und Architektur. LDAP-Schichten im Homelab: [LDAP im Homelab](../edge/ldap.md).
 
 ### CrowdSec (natives Traefik-Plugin)
 
 CrowdSec läuft als natives Traefik-Plugin (`maxlerebourg/crowdsec-bouncer-traefik-plugin`) im Stream-Modus. Es ist kein separater ForwardAuth-Container mehr nötig. Das Plugin ist in den `public-*` Chains sowie auf der Authentik-Login-Route aktiv.
 
-Details: [CrowdSec](../crowdsec/index.md)
+Details: [CrowdSec](../edge/crowdsec/index.md)
 
 ## Zugriffsgruppen
 
-Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Gruppen und Bindings](../authentik/gruppen-bindings.md#gruppen).
+Gruppen und Zugriffs-Tiers (inkl. MFA-Hinweisen): [Authentik Gruppen und Bindings](../edge/authentik/gruppen-bindings.md#gruppen).
 
 ## Middleware Chains
 
-Services werden über Traefik Middleware Chains geschützt. Die vier Basis-Chains sind `intern-api`, `intern-auth`, `public-auth` und `public-noauth`; für Apps mit UI- oder JSON-untauglichen 401/403-Antworten kommen zusätzlich die strict-Varianten `intern-auth-strict` und `public-auth-strict` zum Einsatz. Die kanonische Chain-Definition inklusive Komponenten-Reihenfolge und IP-Allowlist-Ranges liegt in [Traefik Middlewares](../traefik/referenz.md).
+Services werden über Traefik Middleware Chains geschützt. Die vier Basis-Chains sind `intern-api`, `intern-auth`, `public-auth` und `public-noauth`; für Apps mit UI- oder JSON-untauglichen 401/403-Antworten kommen zusätzlich die strict-Varianten `intern-auth-strict` und `public-auth-strict` zum Einsatz. Die kanonische Chain-Definition inklusive Komponenten-Reihenfolge und IP-Allowlist-Ranges liegt in [Traefik Middlewares](../edge/traefik/referenz.md).
 
 ## Konfiguration neuer Services
 
@@ -81,7 +81,7 @@ Um einen Service zu schützen, wird im Nomad Job die entsprechende Middleware al
 
 ## Verwandte Seiten
 
-- [Traefik Middlewares](../traefik/referenz.md) -- Vollständige Middleware-Chain-Dokumentation
-- [CrowdSec](../crowdsec/index.md) -- Intrusion Detection und IP-Blocking
-- [LDAP im Homelab](../ldap/index.md) -- LDAP-Schichten, Outpost, OpenLDAP-Legacy
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Vollständige Middleware-Chain-Dokumentation
+- [CrowdSec](../edge/crowdsec/index.md) -- Intrusion Detection und IP-Blocking
+- [LDAP im Homelab](../edge/ldap.md) -- LDAP-Schichten, Outpost, OpenLDAP-Legacy
 - [DNS-Architektur](../dns/index.md) -- DNS-Kette inkl. lxc-dns-01/02

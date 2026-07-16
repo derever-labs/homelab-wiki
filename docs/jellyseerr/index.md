@@ -71,7 +71,7 @@ Der Job ist auf `vm-nomad-client-05/06` eingeschränkt (Constraint), mit Affinit
 Seerr nutzt `public-auth` statt der internen Auth-Chain. Das ermöglicht Familienmitgliedern und Gästen den Zugriff über Authentik ForwardAuth ohne interne Netzwerkzugehörigkeit.
 :::
 
-Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Seerr und enthält den nativen Recovery-Link. Zusätzlich rendert Seerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt auch in Seerr 3.x. Details: [Authentik Recovery -- Recovery-Eingangspfade aus Apps](../authentik/recovery.md#recovery-eingangspfade-aus-apps).
+Passwort-Recovery: Authentik-Login erscheint via ForwardAuth bereits vor Seerr und enthält den nativen Recovery-Link. Zusätzlich rendert Seerr auf der "Sign in with Jellyfin"-Maske einen Forgot-Link auf den Authentik-Recovery-Flow -- aktiviert via Settings → Jellyfin: External URL (`externalHostname`) **plus** Forgot Password URL (`jellyfinForgotPasswordUrl`). Beide URLs ohne trailing slash. Native OIDC fehlt auch in Seerr 3.x. Details: [Authentik Recovery -- Recovery-Eingangspfade aus Apps](../edge/authentik/recovery.md#recovery-eingangspfade-aus-apps).
 
 ## Request Sync Sidecar
 
@@ -101,5 +101,5 @@ Seerr darf nicht über externe URLs (`*.ackermannprivat.ch`) mit Sonarr/Radarr/J
 - [Arr Stack](../arr-stack/index.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
 - [Jellyfin](../jellyfin/index.md) -- Medienserver, dessen Verfügbarkeit Seerr abfragt
 - [SuggestArr](../suggestarr/index.md) -- Erstellt automatisch Pending Requests in Seerr
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware Chains für Authentifizierung
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

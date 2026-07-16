@@ -35,7 +35,7 @@ Wenn die API selbst kaputt ist oder der Token revoked wurde, bleibt der direkte 
 
 Ein täglicher `pg_dumpall`-Job schreibt um 03:00 UTC einen vollständigen Dump aller Datenbanken nach NFS. Die Authentik-DB kann aus jedem Dump der letzten 7 Tage / 4 Wochen / 3 Monate (GFS-Schema) wiederhergestellt werden. Das ist der sauberste Rollback bei katastrophalen Konfigurationsfehlern -- der Preis ist Datenverlust bis zum letzten Backup.
 
-Details zur Backup-Infrastruktur: [Backup](../backup/index.md).
+Details zur Backup-Infrastruktur: [Backup](../../backup/index.md).
 
 ### Layer 5 -- Re-Bootstrap
 
@@ -161,7 +161,7 @@ PwChange -> PG: "7. Argon2-Hash schreiben" { style.stroke: "#854d0e" }
 1. Alle Einstiege (1a bis 1c) münden im selben default-recovery-flow. Passwort-Policy und Mail-Template werden genau einmal gepflegt ([Flows](./referenz.md#flows)).
 2. Jellyseerr hat zwei Hürden: zuerst ForwardAuth (2 und 3a), danach der eigene Sign-in mit Forgot-Link (3c). Der rendert nur mit gesetztem externalHostname (Warning unten).
 3. Jellyfin hat kein ForwardAuth davor, der Disclaimer-Link (3d) ist dort das einzige Recovery-Sprungbrett ([Recovery-Eingangspfade](#recovery-eingangspfade-aus-apps)).
-4. Der Token-Link (4) ist 30 Minuten gültig und kommt über den SMTP-Relay ([SMTP-Relay](../smtp-relay/index.md)).
+4. Der Token-Link (4) ist 30 Minuten gültig und kommt über den SMTP-Relay ([SMTP-Relay](../../smtp-relay/index.md)).
 5. Ausfall-Sicht: ohne SMTP-Relay bricht der Flow bei Schritt 4 ab, einen zweiten Mail-Weg gibt es nicht.
 6. Das neue Passwort (6 und 7) unterliegt der Password Policy und landet als Argon2-Hash in PostgreSQL ([Password Policy](./referenz.md#password-policy)).
 7. App-interne Reset-Mechanismen sind wirkungslos, weil kein Passwort in den Apps liegt (Info-Box unten).
@@ -182,4 +182,4 @@ OIDC ist kein Ausweg: weder Jellyseerr noch Seerr haben nativen OIDC-Support (PR
 - [Authentik Betrieb](./betrieb.md) -- Abhängigkeiten, Alerting-Kette, Rollback-Konzepte
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Tier-Mapping, Blueprint-Quelle
-- [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
+- [Backup](../../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)

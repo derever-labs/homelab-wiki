@@ -73,4 +73,4 @@ Verbindungskonfigurationen und gespeicherte Queries werden im Container unter `/
 
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster und Datenbankzuordnung
 - [Backup-Strategie](../backup/index.md) -- PostgreSQL Backup via pg_dumpall
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress mit intern-auth Middleware
+- [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress mit intern-auth Middleware

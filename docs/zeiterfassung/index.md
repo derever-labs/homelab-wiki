@@ -206,7 +206,7 @@ solidtime hat keine Plugins installiert und bietet kein GPS-Tracking (weder nati
 ## Verwandte Seiten
 
 - [n8n](../n8n/index.md) -- Automations-Plattform für die Geofence- und Git-Commit-Webhooks
-- [Traefik Referenz](../traefik/referenz.md) -- Router, Middleware-Chains und ForwardAuth
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Router, Middleware-Chains und ForwardAuth
 - [Datenbanken](../_referenz/datenbanken.md) -- PostgreSQL- und MariaDB-Instanzen
 - [Web-Interfaces](../_referenz/web-interfaces.md) -- URLs der erreichbaren Dienste
 - [Credentials](../_referenz/credentials.md) -- Vault-Pfade und Secret-Konventionen

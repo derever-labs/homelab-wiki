@@ -54,5 +54,5 @@ Das gesamte Root-Dateisystem des Hosts wird **read-only** unter `/srv` im Contai
 
 - [Proxmox Cluster](../proxmox/index.md) -- Nomad-Client-Nodes
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Mounts die über Filebrowser inspiziert werden
-- [Traefik Middlewares](../traefik/referenz.md) -- `intern-auth` Authentifizierung
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- `intern-auth` Authentifizierung
 - [Nomad Architektur](../nomad/index.md) -- System Job Deployment

@@ -76,4 +76,4 @@ USB-Passthrough, Pairing, Troubleshooting, Backup, Passwort-Rotation und Benutze
 - [IoT Betrieb](./betrieb.md) -- Passthrough, Pairing, Backup, Rotation
 - [IoT Referenz](./referenz.md) -- Mosquitto MQTT Broker Details
 - [NAS Storage](../nas-storage/) -- NFS-Speicher für Konfiguration und Daten
-- [Traefik](../traefik/) -- Ingress mit intern-auth für Web-Frontend
+- [Traefik](../edge/traefik/) -- Ingress mit intern-auth für Web-Frontend

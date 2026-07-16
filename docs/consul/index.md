@@ -142,5 +142,5 @@ Autopilot ist mit `cleanup_dead_servers = true` aktiv; Verhalten und manuelle Ei
 - [Nomad](../nomad/) -- Workload Scheduler, der Services in Consul registriert
 - [Vault](../vault/) -- Secrets Management für den Cluster
 - [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
-- [Traefik](../traefik/) -- Consul Catalog Integration für automatisches Routing
+- [Traefik](../edge/traefik/) -- Consul Catalog Integration für automatisches Routing
 - [Ports und Dienste](../_referenz/ports-und-dienste.md) -- Consul-Ports (HashiCorp Stack)

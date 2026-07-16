@@ -164,6 +164,6 @@ Uptime Kuma überwacht die Service-Verfügbarkeit (Kern-Infra und Flächenabdeck
 
 - [Infrastruktur-Übersicht](../index.md) -- Vollständige Service-Liste mit URLs
 - [Datenbank-Architektur](./datenbank-architektur.md) -- PostgreSQL Cluster und Service-Zuordnung
-- [Traefik Middlewares](../traefik/referenz.md) -- Middleware Chains für Authentifizierung
-- [Authentik](../authentik/index.md) -- Identity Provider und SSO
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Middleware Chains für Authentifizierung
+- [Authentik](../edge/authentik/index.md) -- Identity Provider und SSO
 - [Nomad Architektur](../nomad/index.md) -- Job-Scheduling und Constraints

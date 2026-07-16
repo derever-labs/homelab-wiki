@@ -127,6 +127,6 @@ Deaktivierung würde CSI-Storage und alle Maintenance-Batch-Jobs brechen.
 - [Nomad Übersicht](index.md) -- Cluster-Architektur und Rolle im Stack
 - [Nomad Betrieb](betrieb.md) -- Deployment, Node Drain, Troubleshooting
 - [Nomad Jobs](../_referenz/nomad-jobs.md) -- Kanonische Übersicht aller Jobs pro Verzeichnis
-- [Traefik Middlewares](../traefik/referenz.md) -- Middleware Chains für Service-Zugriffskontrolle
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Middleware Chains für Service-Zugriffskontrolle
 - [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Vollständiges Abhängigkeitsdiagramm
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

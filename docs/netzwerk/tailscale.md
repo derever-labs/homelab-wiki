@@ -238,4 +238,4 @@ Der API-Key liegt im 1Password-Item `Tailscale` im `PRIVAT Agent`-Vault.
 - [Netzwerk-Übersicht](./) -- Topologie, VLANs, Hardware
 - [Standorte](./standorte.md) -- standortübergreifende Netz-Architektur über das Tailscale-Overlay
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- vollständige IP-Zuordnung
-- [Traefik](../traefik/) -- Reverse Proxy mit Tailscale-CGNAT-Whitelist
+- [Traefik](../edge/traefik/) -- Reverse Proxy mit Tailscale-CGNAT-Whitelist

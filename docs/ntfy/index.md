@@ -62,11 +62,11 @@ Der Zugriff ist auf `deny-all` gestellt: Ohne Benutzer oder Token ist weder Lese
 - **`samuel`** -- Admin-Benutzer für die App und die Verwaltung. Das Passwort liegt in 1Password (`ntfy Homelab Admin Password`).
 - **`todo-ingest`** -- Service-Benutzer mit reiner Schreibberechtigung auf das Topic `todo`. Der Token liegt in 1Password (`ntfy todo-ingest Token`) und in Vault `kv/todo-ingest`.
 
-Der externe Router nutzt `public-noauth@file` (CrowdSec plus Security-Header); die eigentliche Zugriffskontrolle macht ntfy selbst. Ein interner Router (`intern-noauth@file`) deckt den Zugriff aus den internen Netzen ab, und `/v1/health` läuft über einen eigenen, hoch priorisierten no-auth-Router. Details zu den Ketten: [Traefik Referenz](../traefik/referenz.md).
+Der externe Router nutzt `public-noauth@file` (CrowdSec plus Security-Header); die eigentliche Zugriffskontrolle macht ntfy selbst. Ein interner Router (`intern-noauth@file`) deckt den Zugriff aus den internen Netzen ab, und `/v1/health` läuft über einen eigenen, hoch priorisierten no-auth-Router. Details zu den Ketten: [Traefik Referenz](../edge/traefik/referenz.md).
 
 ## Verwandte Seiten
 
 - [Todo Ingest](../todo-ingest/index.md) -- erster Konsument, nutzt Topic `todo` für Bestätigungen und Rückfragen
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../linstor-storage/index.md) -- replizierter Block-Storage (DRBD) für die Datenbanken
 - [Credentials](../_referenz/credentials.md) -- Speicherorte der Zugangsdaten

@@ -151,6 +151,6 @@ Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](betrieb.md#abh
 - [Consul](../consul/) -- Service Discovery und DNS
 - [Vault](../vault/) -- Secrets Management und Workload Identity
 - [DNS-Architektur](../dns/) -- DNS-Kette inkl. Consul-Forwarding
-- [Traefik](../traefik/) -- Reverse Proxy mit Consul Catalog Integration
+- [Traefik](../edge/traefik/) -- Reverse Proxy mit Consul Catalog Integration
 - [Linstor](../linstor-storage/) -- CSI-Volumes für persistenten Speicher
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

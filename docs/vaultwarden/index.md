@@ -85,7 +85,7 @@ Linstor repliziert es zwischen `vm-nomad-client-05` und `vm-nomad-client-06`. De
 
 ### Sicherheit
 
-- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist (Range-Details: [Traefik Referenz](../traefik/referenz.md)). Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
+- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist (Range-Details: [Traefik Referenz](../edge/traefik/referenz.md)). Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
 - Externe Zugriffe (Mobile, unterwegs) laufen über das Tailscale-Netz, dessen Bereich in der Allowlist enthalten ist.
 - TLS terminiert Traefik mit dem Default-Wildcard-Zertifikat.
 
@@ -108,5 +108,5 @@ Die zwei Datenpfade werden separat gesichert:
 
 - [Backup-Strategie](../backup/index.md)
 - [Linstor / DRBD-Storage](../linstor-storage/index.md)
-- [Traefik Middlewares](../traefik/referenz.md)
+- [Traefik Middlewares](../edge/traefik/referenz.md)
 - [SMTP-Relay](../smtp-relay/index.md)

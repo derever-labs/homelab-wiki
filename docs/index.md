@@ -30,7 +30,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | [Vault](./vault/) | Zentrale Secrets-Verwaltung |
 | [Nomad](./nomad/) | Container- und Job-Orchestrierung |
 | [Consul](./consul/) | Service Discovery und Health Checks |
-| [Traefik](./traefik/) | Reverse Proxy, SSL-Terminierung |
+| [Traefik](./edge/traefik/) | Reverse Proxy, SSL-Terminierung |
 | [DNS](./dns/) | Pi-hole, Unbound, Consul-Forwarding |
 | [Netzwerk](./netzwerk/) | VLANs, Subnets, Routing |
 | [UniFi](./unifi/) | Netzwerk-Hardware, Access Points, VLAN-Segmentierung |
@@ -48,8 +48,8 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [Authentik](./authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
-| [LDAP im Homelab](./ldap/) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
+| [Authentik](./edge/authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
+| [LDAP im Homelab](./edge/ldap.md) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
 | [Docker Registry](./docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
 | [Wiki](./vitepress-wiki/) | VitePress Dokumentations-Deployment |
@@ -76,7 +76,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | :--- | :--- |
 | [Monitoring Stack](./monitoring/) | Grafana, InfluxDB, Loki, Alloy |
 | [CheckMK](./monitoring/checkmk/) | Infrastructure Monitoring |
-| [CrowdSec](./crowdsec/) | Intrusion Prevention |
+| [CrowdSec](./edge/crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |
 | [Uptime Kuma](./monitoring/uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
 | [Synology NAS Monitoring](./synology-monitoring/) | CheckMK-Hardware-Health, lokaler Telegraf, Grafana NAS-Dashboard |

@@ -50,4 +50,4 @@ SSO via OIDC wäre die saubere Lösung -- für den Single-User-Use-Case ist die 
 - [Datenbanken](../_referenz/datenbanken.md) -- Postgres-Cluster und DB-Zuordnung
 - [Web-Interfaces](../_referenz/web-interfaces.md) -- URL-Verzeichnis
 - [Zugangsdaten](../_referenz/credentials.md) -- Vault- und 1P-Speicherorte
-- [Traefik](../traefik/) -- Middleware-Chains und ForwardAuth
+- [Traefik](../edge/traefik/) -- Middleware-Chains und ForwardAuth

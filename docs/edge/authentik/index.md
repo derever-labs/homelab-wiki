@@ -147,7 +147,7 @@ Authentik.WRK -> TG: "Webhook --\nSecurity-Events" {
 1. Alles läuft über Traefik: Benutzer-Logins, der OIDC-Backchannel und sogar der Kontrollkanal des LDAP-Outposts. Einzig der Proxy-Outpost spricht den Server direkt über die Node-IP an ([Komponenten](#komponenten)).
 2. ForwardAuth: Traefik fragt bei jedem Request den Proxy-Outpost. Die Antwort ist 200 mit Identitäts-Headern oder 302 zur Login-Seite. Die vollständige Kette zeigt der [Login-Ablauf ohne Session](#login-ablauf-ohne-session).
 3. OIDC-Apps zeigen ihren eigenen Login und tauschen Code gegen Token über auth.ackermannprivat.ch ([OIDC Providers](./referenz.md#oidc-providers)).
-4. Jellyfin prüft Logins selbst per LDAP Simple Bind gegen den LDAP-Outpost ([LDAP im Homelab](../ldap/index.md)).
+4. Jellyfin prüft Logins selbst per LDAP Simple Bind gegen den LDAP-Outpost ([LDAP im Homelab](../ldap.md)).
 5. Der LDAP-Outpost erreicht den Server nur über Traefik. Ist Traefik down, funktionieren nur noch gecachte Jellyfin-Logins, Erstlogins scheitern ([LDAP Authentication Flow](./referenz.md#ldap-authentication-flow)).
 6. Ist der Proxy-Outpost nicht erreichbar, liefert ForwardAuth einen 500 und Traefik zeigt die Wartungsseite ([Traefik-Referenz](../traefik/referenz.md#authentik-forwardauth)).
 7. PostgreSQL trägt alles: User, Flows, Sessions und seit dem Redis-Aus auch die Task-Queue. Ohne PG steht Authentik ([Performance-Konzept](./betrieb.md#performance-konzept)).
@@ -230,8 +230,8 @@ Details und Mechanik: siehe [Referenz](./referenz.md) -- Recovery-Layer, Breakgl
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
 - [Authentik Betrieb](./betrieb.md) -- Alerting-Kette, Rotation, Performance
-- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
+- [Telegram Bots](../../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking als erste Middleware-Stufe
-- [Security](../security/index.md) -- Sicherheitskonzept Übersicht
-- [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht
+- [Security](../../security/index.md) -- Sicherheitskonzept Übersicht
+- [Service-Abhängigkeiten](../../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht

@@ -21,7 +21,7 @@ Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (serv
 
 - **PostgreSQL** (`postgres.service.consul`) -- primärer Datenspeicher, muss vor Authentik starten
 - **Vault** (`kv/data/authentik`, `kv/data/authentik-outpost`) -- Secret-Store für alle Schlüssel und Tokens
-- **Traefik** ([VIP](../_referenz/hosts-und-ips.md)) -- Routing und ForwardAuth; Authentik benötigt Traefik für OIDC Discovery
+- **Traefik** ([VIP](../../_referenz/hosts-und-ips.md)) -- Routing und ForwardAuth; Authentik benötigt Traefik für OIDC Discovery
 - **SMTP Relay** (`smtp.service.consul`) -- für Recovery-Mails und Alerting-Fallback
 
 ## Automatisierung
@@ -134,5 +134,5 @@ Die Schritt-für-Schritt-Reihenfolge des Erstdeploys (Vault-Secrets, PostgreSQL-
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
-- [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
-- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
+- [Backup](../../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
+- [Telegram Bots](../../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay

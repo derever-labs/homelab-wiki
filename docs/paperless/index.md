@@ -77,4 +77,4 @@ Der Consumer-Prozess überwacht das Consume-Verzeichnis und verarbeitet neue Dat
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept
 - [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Dokumente
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration

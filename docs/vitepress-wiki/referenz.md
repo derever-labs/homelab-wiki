@@ -44,4 +44,4 @@ Technische Referenz für das VitePress Wiki. Für den Steckbrief siehe [VitePres
 - [VitePress Wiki](./index.md) -- Steckbrief und Rolle im Stack
 - [Betrieb](./betrieb.md) -- Build-, Webhook- und Deploy-Automatik
 - [GitHub Runner](../github-runner/index.md) -- Self-Hosted Runner für den Wiki-Build
-- [Traefik Reverse Proxy](../traefik/index.md) -- Ingress und SSL-Terminierung
+- [Traefik Reverse Proxy](../edge/traefik/index.md) -- Ingress und SSL-Terminierung

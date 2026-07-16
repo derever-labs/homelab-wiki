@@ -236,4 +236,4 @@ Auf dem Telefon trägt die Bottom-Leiste sechs Ziele: fünf Tabs (Home, Inserate
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Datenpipeline: Scraper, Enrichment, Foto-Download, Frühsignal-Ingest und DB-Schema
 - [NAS Storage](../nas-storage/index.md) -- NFS-Share für das Photo-Archiv
 - [Metabase](../metabase/index.md) -- alternatives BI-Dashboard auf denselben Daten
-- [Traefik Referenz](../traefik/referenz.md) -- Middleware Chains für die Authentifizierung
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware Chains für die Authentifizierung

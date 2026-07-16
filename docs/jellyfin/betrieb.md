@@ -13,7 +13,7 @@ Betriebsprozeduren von Jellyfin: die LDAP-Authentifizierung, das IPv6-Handling f
 
 ## Authentifizierung
 
-Jellyfin nutzt LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
+Jellyfin nutzt LDAP-Bind-Authentifizierung gegen den [Authentik LDAP Outpost](../edge/authentik/index.md) -- kein OAuth2 oder Traefik-Middleware. Das LDAP-Plugin in Jellyfin verbindet sich über Consul DNS (`authentik-ldap.service.consul:3389`) und prüft Benutzer-Credentials gegen Authentik. Benutzer werden über ihre E-Mail-Adresse (`mail`-Attribut) mit bestehenden Jellyfin-Accounts verknüpft.
 
 Der Bind-User ist `svc-jellyfin-ldap` (dedizierter Account, Typ `internal`). Dieser hat über die Rolle `ldap-searcher` die `search_full_directory`-Permission und kann das gesamte LDAP-Directory durchsuchen. Wer sich via LDAP anmelden darf, wird durch eine Expression-Policy auf der LDAP-Applikation gesteuert: nur Mitglieder der Gruppen `family` oder `guest` sind zugelassen.
 
@@ -23,7 +23,7 @@ Der LDAP Provider nutzt **Cached Bind + Cached Search Mode**: Der erste Login pr
 Anders als die meisten Services hat Jellyfin keine Traefik-Middleware-Chain für OAuth. Die Authentifizierung erfolgt vollständig in der Applikation selbst über LDAP. Dadurch können auch Mediaplayer-Clients (TV, Apps) ohne Browser-OAuth zugreifen.
 :::
 
-Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürliche Recovery-Sprungbrett. Stattdessen rendert die Jellyfin-Login-Maske unterhalb des Anmelde-Formulars einen "Passwort vergessen?"-Link, der auf den Authentik-Recovery-Flow zeigt -- konfiguriert über den Branding-Endpoint `LoginDisclaimer` und persistiert im CSI-Volume. Konzept und Diagramm: [Authentik Recovery -- Recovery-Eingangspfade aus Apps](../authentik/recovery.md#recovery-eingangspfade-aus-apps).
+Weil keine Authentik-Login-Seite vor Jellyfin geschaltet ist, fehlt der natürliche Recovery-Sprungbrett. Stattdessen rendert die Jellyfin-Login-Maske unterhalb des Anmelde-Formulars einen "Passwort vergessen?"-Link, der auf den Authentik-Recovery-Flow zeigt -- konfiguriert über den Branding-Endpoint `LoginDisclaimer` und persistiert im CSI-Volume. Konzept und Diagramm: [Authentik Recovery -- Recovery-Eingangspfade aus Apps](../edge/authentik/recovery.md#recovery-eingangspfade-aus-apps).
 
 ## TMDb-Metadata ohne IPv6
 
@@ -57,5 +57,5 @@ Secrets werden aus `kv/data/jellyfin-adult-sync` in Vault gelesen (Radarr-Key, J
 
 - [Jellyfin (Übersicht)](./index.md) -- Steckbrief, Architektur und Abhängigkeiten
 - [Jellyfin Referenz](./referenz.md) -- Transcoding, Storage, Traefik-Routing, Wartungsbanner
-- [Authentik](../authentik/index.md) -- Authentifizierung (LDAP Outpost)
+- [Authentik](../edge/authentik/index.md) -- Authentifizierung (LDAP Outpost)
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Täglicher Restart-Job

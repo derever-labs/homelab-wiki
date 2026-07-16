@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generiert docs/authentik/.generated/zugriffsmatrix.md aus der Authentik-API.
+// Generiert docs/edge/authentik/.generated/zugriffsmatrix.md aus der Authentik-API.
 // Listet welche Applications welchen Gruppen offenstehen und vergleicht mit der
 // Traefik-Router-API um Cluster-Apps ohne SSO-Middleware zu identifizieren.
 //
@@ -8,7 +8,7 @@
 //   AUTHENTIK_TOKEN  API-Token (Bearer)
 //   TRAEFIK_URL      optional, z.B. http://traefik.service.consul:8080
 //   SSO_MIDDLEWARES  optional, Komma-Liste von Middleware-Namen die als SSO zaehlen
-//   OUT_FILE         optional, Default docs/authentik/.generated/zugriffsmatrix.md
+//   OUT_FILE         optional, Default docs/edge/authentik/.generated/zugriffsmatrix.md
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -17,7 +17,7 @@ const env = process.env;
 const url = (env.AUTHENTIK_URL ?? '').replace(/\/+$/, '');
 const token = env.AUTHENTIK_TOKEN ?? '';
 const traefikUrl = (env.TRAEFIK_URL ?? '').replace(/\/+$/, '');
-const outFile = resolve(env.OUT_FILE ?? 'docs/authentik/.generated/zugriffsmatrix.md');
+const outFile = resolve(env.OUT_FILE ?? 'docs/edge/authentik/.generated/zugriffsmatrix.md');
 const ssoMiddlewares = (env.SSO_MIDDLEWARES ??
   'public-auth@file,intern-auth@file,authentik-forward-auth@docker,authentik-forward-auth@file,auth-outpost@docker,auth-outpost@file,authentik@file,authentik@docker'
 ).split(',').map(s => s.trim()).filter(Boolean);

@@ -9,7 +9,7 @@ tags:
 
 # LDAP im Homelab
 
-LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen und Credentials leben ausschliesslich in [Authentik](../authentik/index.md). Der Begriff "LDAP" taucht trotzdem an zwei Stellen auf:
+LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen und Credentials leben ausschliesslich in [Authentik](./authentik/index.md). Der Begriff "LDAP" taucht trotzdem an zwei Stellen auf:
 
 - **Authentik LDAP Outpost** -- stellt ein LDAP-Bind-Interface bereit, damit Services wie Jellyfin ohne OAuth-Flow gegen Authentik authentifizieren können
 - **OpenLDAP (Legacy)** -- ehemaliger zentraler Verzeichnisdienst, Nomad Job läuft noch, hat aber keinen aktiven Consumer mehr
@@ -19,7 +19,7 @@ LDAP ist im Homelab **kein eigenständiges Identity-System mehr**. User, Gruppen
 | Attribut | Wert |
 |----------|------|
 | Deployment | Nomad Job `identity/authentik.nomad`, Task `ldap` |
-| Storage | [Authentik](../authentik/index.md) -- PostgreSQL-Backend (`postgres.service.consul`) |
+| Storage | [Authentik](./authentik/index.md) -- PostgreSQL-Backend (`postgres.service.consul`) |
 
 ## Rolle im Stack
 
@@ -93,22 +93,22 @@ Outpost -> Traefik: "Kontrollkanal --\ngleicher Weg" {
 3. Der Weg zum Server führt über Traefik und auth.ackermannprivat.ch. Traefik down heisst: Cache-Hits laufen weiter, Erstlogins scheitern.
 4. Auch Registrierung und Config-Abruf des Outposts laufen über denselben Weg (gestrichelte Kante).
 5. OpenLDAP läuft nur noch als Legacy-Job ohne Consumer ([OpenLDAP (Legacy)](#openldap-legacy)).
-6. Die vollständige Login-Sequenz mit Hit- und Miss-Pfad: [Authentik Referenz](../authentik/referenz.md#ldap-authentication-flow).
-7. OIDC- und ForwardAuth-Services berühren LDAP nicht, deren Wege zeigt die [Authentik-Übersicht](../authentik/index.md#architektur).
+6. Die vollständige Login-Sequenz mit Hit- und Miss-Pfad: [Authentik Referenz](./authentik/referenz.md#ldap-authentication-flow).
+7. OIDC- und ForwardAuth-Services berühren LDAP nicht, deren Wege zeigt die [Authentik-Übersicht](./authentik/index.md#architektur).
 
 ## LDAP Outpost
 
-Der LDAP Outpost ist ein Task im [Authentik Nomad Job](../authentik/index.md#komponenten) und bietet Services ein klassisches LDAP-Bind-Interface. Intern übersetzt er jeden Bind in einen Authentik-Flow-Execute-Call und cached das Ergebnis im RAM.
+Der LDAP Outpost ist ein Task im [Authentik Nomad Job](./authentik/index.md#komponenten) und bietet Services ein klassisches LDAP-Bind-Interface. Intern übersetzt er jeden Bind in einen Authentik-Flow-Execute-Call und cached das Ergebnis im RAM.
 
 - **Cached Bind + Cached Search Mode** -- erster Login durchläuft den vollen Authentik-Flow (~1-2s), jeder weitere Bind desselben Users antwortet aus dem Outpost-RAM (<5ms)
 - **Eigener Flow** -- der Outpost verwendet `ldap-authentication-flow` (Identification → Password → User-Login) ohne MFA, damit native Jellyfin-Clients ohne Browser funktionieren
 - **Reputation-Policy** -- Brute-Force-Schutz auf der Password-Stage (Threshold −3 auf Username + IP)
 
-Vollständige Flow-Dokumentation inklusive Stages, Cache-Verhalten und Sequenz-Diagramm: [Authentik Referenz -- LDAP Authentication Flow](../authentik/referenz.md#ldap-authentication-flow).
+Vollständige Flow-Dokumentation inklusive Stages, Cache-Verhalten und Sequenz-Diagramm: [Authentik Referenz -- LDAP Authentication Flow](./authentik/referenz.md#ldap-authentication-flow).
 
 ## Wie Services authentifizieren
 
-Im Homelab nutzt nur ein Service LDAP: [Jellyfin](../jellyfin/index.md) bindet via LDAP-Plugin gegen den Outpost (`authentik-ldap.service.consul:3389`, Base DN `DC=ldap,DC=ackermannprivat,DC=ch`). OIDC- und ForwardAuth-Services verwenden kein LDAP -- Details zu allen drei Authentifizierungswegen: [Authentik](../authentik/index.md).
+Im Homelab nutzt nur ein Service LDAP: [Jellyfin](../jellyfin/index.md) bindet via LDAP-Plugin gegen den Outpost (`authentik-ldap.service.consul:3389`, Base DN `DC=ldap,DC=ackermannprivat,DC=ch`). OIDC- und ForwardAuth-Services verwenden kein LDAP -- Details zu allen drei Authentifizierungswegen: [Authentik](./authentik/index.md).
 
 ## OpenLDAP (Legacy)
 
@@ -119,8 +119,8 @@ Der Nomad Job `databases/open-ldap.nomad` (`osixia/openldap`, Port 389) läuft n
 
 ## Verwandte Seiten
 
-- [Authentik](../authentik/index.md) -- Identity Provider und Stack-Einbindung
-- [Authentik Referenz -- LDAP Authentication Flow](../authentik/referenz.md#ldap-authentication-flow) -- Stages, Cache, Sequenz-Diagramm
+- [Authentik](./authentik/index.md) -- Identity Provider und Stack-Einbindung
+- [Authentik Referenz -- LDAP Authentication Flow](./authentik/referenz.md#ldap-authentication-flow) -- Stages, Cache, Sequenz-Diagramm
 - [Jellyfin](../jellyfin/index.md) -- einziger aktiver LDAP-Consumer
 - [Sicherheit](../security/index.md) -- Authentifizierungskonzept und Zugriffsgruppen
-- [Traefik Referenz](../traefik/referenz.md) -- ForwardAuth und Middleware-Chains
+- [Traefik Referenz](./traefik/referenz.md) -- ForwardAuth und Middleware-Chains

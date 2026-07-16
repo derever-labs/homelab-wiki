@@ -30,10 +30,10 @@ Getestete Szenarien (G2-Test bestanden):
 - Nur ein Node darf die VIP halten
 - Falls beide die VIP halten: VRRP-Auth-Konfiguration und Keepalived-Status prüfen
 
-Node-Namen und konkrete IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md).
+Node-Namen und konkrete IPs siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
 
 ## Verwandte Seiten
 
 - [Traefik Übersicht](./index.md) -- Architektur, HA-Setup und Split-Brain-Prevention
 - [Traefik Referenz](./referenz.md) -- Middleware Chains und TLS-Options
-- [Hosts und IPs](../_referenz/hosts-und-ips.md) -- VIP und Node-Zuordnung
+- [Hosts und IPs](../../_referenz/hosts-und-ips.md) -- VIP und Node-Zuordnung

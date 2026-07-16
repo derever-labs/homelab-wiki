@@ -111,5 +111,5 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 ## Verwandte Seiten
 
 - [Hosts und IPs](./hosts-und-ips.md) -- IP-Adressen aller Systeme
-- [Traefik](../traefik/) -- Reverse Proxy und Routing-Konfiguration
+- [Traefik](../edge/traefik/) -- Reverse Proxy und Routing-Konfiguration
 - [Credentials](./credentials.md) -- Speicherorte von Zugangsdaten

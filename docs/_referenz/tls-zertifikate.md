@@ -95,7 +95,7 @@ path3.PVE -> CF: "_acme-challenge\nje Node-FQDN" {
 
 ## Pfad 1 -- Traefik (Wildcard `*.ackermannprivat.ch`)
 
-Traefik ist der ACME-Client für alle reverse-proxied Services. Details zur Traefik-Architektur, dem HA-Setup und der Zertifikatsspeicherung: [Traefik Reverse Proxy](../traefik/index.md).
+Traefik ist der ACME-Client für alle reverse-proxied Services. Details zur Traefik-Architektur, dem HA-Setup und der Zertifikatsspeicherung: [Traefik Reverse Proxy](../edge/traefik/index.md).
 
 - Challenge: Cloudflare DNS-01, Algorithmus EC256
 - Speicherort: `/opt/traefik/acme/acme.json` (lokal auf beiden Traefik-VMs, je eigene Kopie)
@@ -168,7 +168,7 @@ Die Node-FQDNs (`pveXX.ackermannprivat.ch`, `pve-lu-01.ackermannprivat.ch`, `pve
 
 ## Verwandte Seiten
 
-- [Traefik](../traefik/) -- Reverse Proxy und Zertifikatsverwaltung
+- [Traefik](../edge/traefik/) -- Reverse Proxy und Zertifikatsverwaltung
 - [NAS Storage](../nas-storage/) -- Synology DS1825+, DSM-Dienste
 - [Vault](../vault/) -- Secrets Management und Security-Entscheidungen
 - [Proxmox](../proxmox/) -- PDM-Anbindung und Node-Übersicht
