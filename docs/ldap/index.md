@@ -27,6 +27,8 @@ LDAP ist im Homelab ein Kompatibilitäts-Shim: Authentik ist der einzige Identit
 
 ## Architektur
 
+**Leitfragen:** Welche Rolle spielt LDAP noch, wenn Authentik der einzige Identity Store ist? Wovon hängt der LDAP-Weg im Betrieb ab?
+
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
@@ -36,68 +38,63 @@ classes: {
 
 direction: down
 
-Services: Services {
-  class: container
-
-  JF: Jellyfin {
-    class: node
-    tooltip: "LDAP-Plugin bindet gegen Outpost -- kein OAuth-Flow"
-  }
-  OIDC: "OIDC-Clients\n(Grafana, Gitea, Proxmox)" {
-    class: node
-    tooltip: "Native OpenID-Connect-Integration"
-  }
-  FWD: "ForwardAuth-Services\n(alle anderen Web-UIs)" {
-    class: node
-    tooltip: "Traefik Middleware-Chain mit Authentik Proxy Outpost"
-  }
+JF: Jellyfin {
+  class: node
+  tooltip: "LDAP-Plugin -- einziger aktiver LDAP-Consumer"
 }
 
-Outpost: LDAP Outpost {
+Outpost: LDAP-Outpost {
   class: node
-  tooltip: "authentik-ldap.service.consul:3389 -- Go-Prozess im Authentik Nomad Job"
+  tooltip: "authentik-ldap.service.consul:3389 -- Go-Prozess im Authentik-Nomad-Job, Bind- und Search-Cache im RAM"
+}
+
+Traefik: Traefik {
+  class: node
+  tooltip: "Der Outpost erreicht den Authentik-Server nur über auth.ackermannprivat.ch -- ohne Traefik keine Cache-Miss-Logins"
 }
 
 Store: Authentik (Identity Store) {
   class: container
 
-  AK: Authentik Server {
+  AK: Authentik-Server {
     class: node
-    tooltip: "FlowExecutor, Policy Engine, OIDC Provider, API"
+    tooltip: "FlowExecutor, Policy Engine, API"
   }
   PG: PostgreSQL {
     class: node
     shape: cylinder
     tooltip: "postgres.service.consul -- User, Gruppen, Policies"
   }
-  AK -> PG: "User-Lookup"
 }
 
 Legacy: Legacy (inaktiv) {
   class: container
 
-  OLDAP: "OpenLDAP (ldap Job)" {
+  OLDAP: "OpenLDAP (ldap-Job)" {
     class: legacy
-    tooltip: "Nomad Job databases/open-ldap.nomad -- kein aktiver Consumer"
+    tooltip: "Nomad-Job databases/open-ldap.nomad -- kein aktiver Consumer"
   }
 }
 
-Services.JF -> Outpost: "LDAP Simple Bind" {
-  style.stroke: "#7c3aed"
-}
-Outpost -> Store.AK: "Flow Executor\n+ check_access + users/me" {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-}
-Services.OIDC -> Store.AK: "OIDC Token Exchange" {
-  style.stroke: "#2563eb"
-  style.stroke-dash: 3
-}
-Services.FWD -> Store.AK: "ForwardAuth" {
-  style.stroke: "#16a34a"
+JF -> Outpost: "1. LDAP Simple Bind Port 3389\nbei jedem Jellyfin-Login" { style.stroke: "#7c3aed" }
+Outpost -> Traefik: "2. nur bei Cache-Miss -- Flow-Execute,\ncheck_access und users/me\nvia auth.ackermannprivat.ch" { style.stroke: "#7c3aed" }
+Traefik -> Store.AK: "3. Router authentik" { style.stroke: "#7c3aed" }
+Store.AK -> Store.PG: "4. User-Lookup und\nArgon2-Prüfung" { style.stroke: "#854d0e" }
+Outpost -> Traefik: "Kontrollkanal --\ngleicher Weg" {
+  style.stroke: "#6b7280"
   style.stroke-dash: 3
 }
 ```
+
+**Lesehilfe:**
+
+1. Der Outpost ist ein Protokoll-Shim: LDAP rein, Authentik-Flow raus. User, Gruppen und Hashes leben ausschliesslich in PostgreSQL ([LDAP Outpost](#ldap-outpost)).
+2. Schritt 2 läuft nur bei Cache-Miss. Gecachte Binds beantwortet der Outpost aus dem RAM in unter 5 ms.
+3. Der Weg zum Server führt über Traefik und auth.ackermannprivat.ch. Traefik down heisst: Cache-Hits laufen weiter, Erstlogins scheitern.
+4. Auch Registrierung und Config-Abruf des Outposts laufen über denselben Weg (gestrichelte Kante).
+5. OpenLDAP läuft nur noch als Legacy-Job ohne Consumer ([OpenLDAP (Legacy)](#openldap-legacy)).
+6. Die vollständige Login-Sequenz mit Hit- und Miss-Pfad: [Authentik Referenz](../authentik/referenz.md#ldap-authentication-flow).
+7. OIDC- und ForwardAuth-Services berühren LDAP nicht, deren Wege zeigt die [Authentik-Übersicht](../authentik/index.md#architektur).
 
 ## LDAP Outpost
 

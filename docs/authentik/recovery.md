@@ -84,6 +84,8 @@ Der Recovery-Flow hat einen stabilen Slug (`default-recovery-flow`), die Einstie
 
 Alle drei Wege führen denselben Recovery-Flow aus -- damit gibt es genau eine Stelle, an der Passwort, Policy und Mail-Template gepflegt werden.
 
+**Leitfragen:** Wie kommt ein User von jeder Login-Seite aus zu einem neuen Passwort? Warum zeigen die App-Links auf den Authentik-Recovery-Flow statt auf App-eigene Resets?
+
 ```d2
 classes: {
   app: { style: { border-radius: 8 } }
@@ -101,11 +103,11 @@ Apps: Login-Seiten {
 
   AuthLogin: "auth.ackermannprivat.ch\nAuthentik (nativ)" {
     class: app
-    tooltip: "Recovery-Link via Identification-Stage + Custom-CSS"
+    tooltip: "Recovery-Link via Identification-Stage und Custom-CSS"
   }
   JSLogin: "wish.ackermannprivat.ch\nJellyseerr Sign-in" {
     class: app
-    tooltip: "Forgot-Link rendert nur wenn externalHostname UND jellyfinForgotPasswordUrl gesetzt -- Wrapper {baseUrl && ...}"
+    tooltip: "Forgot-Link rendert nur wenn externalHostname UND jellyfinForgotPasswordUrl gesetzt sind"
   }
   JFLogin: "watch.ackermannprivat.ch\nJellyfin Login" {
     class: app
@@ -113,19 +115,19 @@ Apps: Login-Seiten {
   }
 }
 
-FWD: "Authentik ForwardAuth\n(public-auth@file)" {
+FWD: "Authentik ForwardAuth\n(public-auth)" {
   class: recovery
-  tooltip: "Schaltet die Authentik-Login-Seite VOR Jellyseerr -- nativer Recovery-Link greift hier zuerst"
+  tooltip: "Schaltet die Authentik-Login-Seite VOR Jellyseerr -- der native Recovery-Link greift hier zuerst"
 }
 
-Recovery: "default-recovery-flow" {
+Recovery: default-recovery-flow {
   class: recovery
-  tooltip: "Identification + Recovery-Mail + Token + Password-Change-Stage"
+  tooltip: "Identification, Recovery-Mail, Token und Password-Change-Stage"
 }
 
 Mail: "Recovery-Mail\nToken 30 min" {
   class: store
-  tooltip: "SMTP Relay -- smtp.service.consul"
+  tooltip: "SMTP-Relay -- smtp.service.consul"
 }
 
 PwChange: "Password-Change-Stage\n(Password Policy aktiv)" { class: recovery }
@@ -135,21 +137,34 @@ PG: "PostgreSQL\nUser-Hash" {
   shape: cylinder
 }
 
-User -> Apps.AuthLogin: "ruft Login auf" { style.stroke: "#2563eb" }
-User -> Apps.JSLogin: "ruft Login auf" { style.stroke: "#2563eb" }
-User -> Apps.JFLogin: "ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.AuthLogin: "1a. ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JSLogin: "1b. ruft Login auf" { style.stroke: "#2563eb" }
+User -> Apps.JFLogin: "1c. ruft Login auf" { style.stroke: "#2563eb" }
 
-Apps.JSLogin -> FWD: "Redirect vor App-Login" { style.stroke: "#6b7280" }
-FWD -> Recovery: "nativer Recovery-Link" { style.stroke: "#7c3aed" }
-Apps.AuthLogin -> Recovery: "Passwort vergessen?" { style.stroke: "#7c3aed" }
-Apps.JSLogin -> Recovery: "Forgot-Link\n(rendert wenn externalHostname gesetzt)" { style.stroke: "#7c3aed"; style.stroke-dash: 3 }
-Apps.JFLogin -> Recovery: "Disclaimer-Link" { style.stroke: "#7c3aed" }
+Apps.JSLogin -> FWD: "2. ForwardAuth greift\nvor dem App-Login" { style.stroke: "#6b7280" }
+FWD -> Recovery: "3a. nativer Recovery-Link der\nAuthentik-Login-Seite" { style.stroke: "#7c3aed" }
+Apps.AuthLogin -> Recovery: "3b. Link Passwort vergessen" { style.stroke: "#7c3aed" }
+Apps.JSLogin -> Recovery: "3c. Forgot-Link der zweiten Hürde\n(braucht externalHostname)" { style.stroke: "#7c3aed" }
+Apps.JFLogin -> Recovery: "3d. Disclaimer-Link unter\ndem Login-Formular" { style.stroke: "#7c3aed" }
 
-Recovery -> Mail: "sendet Token-Link" { style.stroke: "#854d0e" }
-Mail -> User: "User klickt Link" { style.stroke: "#16a34a"; style.stroke-dash: 3 }
-User -> PwChange: "neues Passwort" { style.stroke: "#2563eb" }
-PwChange -> PG: "Hash schreiben" { style.stroke: "#854d0e" }
+Recovery -> Mail: "4. sendet Token-Link --\n30 Minuten gültig" { style.stroke: "#854d0e" }
+Mail -> User: "5. User klickt den Link\nin der Mail" {
+  style.stroke: "#16a34a"
+  style.stroke-dash: 3
+}
+User -> PwChange: "6. setzt neues Passwort" { style.stroke: "#2563eb" }
+PwChange -> PG: "7. Argon2-Hash schreiben" { style.stroke: "#854d0e" }
 ```
+
+**Lesehilfe:**
+
+1. Alle Einstiege (1a bis 1c) münden im selben default-recovery-flow. Passwort-Policy und Mail-Template werden genau einmal gepflegt ([Flows](./referenz.md#flows)).
+2. Jellyseerr hat zwei Hürden: zuerst ForwardAuth (2 und 3a), danach der eigene Sign-in mit Forgot-Link (3c). Der rendert nur mit gesetztem externalHostname (Warning unten).
+3. Jellyfin hat kein ForwardAuth davor, der Disclaimer-Link (3d) ist dort das einzige Recovery-Sprungbrett ([Recovery-Eingangspfade](#recovery-eingangspfade-aus-apps)).
+4. Der Token-Link (4) ist 30 Minuten gültig und kommt über den SMTP-Relay ([SMTP-Relay](../smtp-relay/index.md)).
+5. Ausfall-Sicht: ohne SMTP-Relay bricht der Flow bei Schritt 4 ab, einen zweiten Mail-Weg gibt es nicht.
+6. Das neue Passwort (6 und 7) unterliegt der Password Policy und landet als Argon2-Hash in PostgreSQL ([Password Policy](./referenz.md#password-policy)).
+7. App-interne Reset-Mechanismen sind wirkungslos, weil kein Passwort in den Apps liegt (Info-Box unten).
 
 ::: info Warum kein App-internes Forgot-Password
 Jellyfin und Jellyseerr haben jeweils eigene Reset-Mechanismen (Jellyfin Quick-Connect-Code, Jellyseerr E-Mail-Reset). Beide setzen voraus, dass das Passwort lokal in der App-DB liegt. Im Homelab ist das nicht der Fall: Jellyfin nutzt den LDAP-Outpost (Passwort in Authentik-PG), Jellyseerr nutzt "Sign in with Jellyfin" (Passwort via LDAP wieder in Authentik). Die App-internen Resets würden die Authentik-User-DB nicht ändern und beim nächsten LDAP-Bind nicht greifen -- deshalb zeigt der UI-Link direkt auf den Authentik-Recovery-Flow.
