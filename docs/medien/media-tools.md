@@ -80,7 +80,7 @@ Web-basierte Oberfläche für Video-Transcoding. Ermöglicht das Konvertieren vo
 |----------|------|
 | URL | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `media/lazylibrarian.nomad` |
-| Storage | NFS `/nfs/docker/lazylibrarian/config/` |
+| Storage | Linstor CSI Volume `lazylibrarian-config` (Migration von NFS) |
 | Mediathek | NFS `/nfs/jellyfin/` |
 | Auth | `intern-auth@file` |
 
@@ -92,6 +92,7 @@ Automatisierte Suche und Verwaltung von E-Books und Hörbüchern. Vergleichbar m
 
 - Separater API-Router mit `intern-api@file` für Zugriff durch andere Services
 - Greift auf die gesamte Jellyfin-Mediathek zu (`/nfs/jellyfin`)
+- Config auf repliziertem Linstor CSI Volume, daher auf die Storage Nodes `vm-nomad-client-05/06` eingeschränkt
 - Ergänzt [Audiobookshelf](./audiobookshelf.md) als Beschaffungs-Tool
 
 ---
