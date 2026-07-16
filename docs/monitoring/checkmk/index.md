@@ -143,12 +143,11 @@ Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscal
 
 ## Alarmierung
 
-CheckMK benachrichtigt über zwei Kanäle:
+CheckMK alarmiert nicht selbst, sondern ist als Alert-Quelle an [Keep](../keep/index.md) angebunden. Eine einzige aktive Benachrichtigungsregel ("Keep Hub Notifier", Single-Notifier seit 2026-05-01) leitet jede Host- und Service-Statusänderung über ein Webhook-Notification-Plugin an den zentralen Incident-Hub weiter. Keep übernimmt Korrelation, Deduplizierung und das Routing nach Severity in die Telegram-Topics.
 
-- **E-Mail:** Über den zentralen [SMTP Relay](../../smtp-relay/index.md)
-- **Gotify:** Push-Benachrichtigungen auf mobile Geräte
+Die frühere HTML-Mail-Benachrichtigungsregel ist deaktiviert (2026-05-01, abgelöst durch Keep). CheckMK versendet damit weder direkt Mails noch Telegram- oder Push-Nachrichten -- der Weg über Keep ist der einzige Kanal.
 
-Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden Warnungen (WARN) und kritische Zustände (CRIT) sofort gemeldet. Für geplante Wartungsfenster können Downtimes gesetzt werden.
+Standardmässig lösen Warnungen (WARN) und kritische Zustände (CRIT) eine Benachrichtigung aus. Für geplante Wartungsfenster können in CheckMK Downtimes gesetzt werden, die die Weitergabe an Keep unterdrücken.
 
 ## Wartung
 
@@ -161,5 +160,5 @@ Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden
 - [Monitoring: Best-Path-Klassifikation](../coverage/klassifikation.md) -- Best-Path pro Coverage-Item
 - [Monitoring Stack](../index.md) -- Grafana, Loki, Uptime Kuma und Alloy für Metriken und Logs
 - [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring für Endpoint-Verfügbarkeit
-- [SMTP Relay](../../smtp-relay/index.md) -- Mail-Versand für CheckMK-Alerts
+- [Keep](../keep/index.md) -- Incident-Hub, an den CheckMK alle Alerts weiterleitet
 - [Proxmox Backup Server](../../backup/referenz.md) -- VM-Backup von CheckMK
