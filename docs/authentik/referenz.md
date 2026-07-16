@@ -74,6 +74,8 @@ Nach einem Outpost-Neustart (z.B. Redeployment) ist der Bind-Cache leer. Der ers
 
 Der Pfad vom Browser bis zur Jellyfin-Session mit Cache-Entscheidung (Hit vs. Miss) und den API-Roundtrips im Outpost:
 
+**Leitfragen:** Wie wird ein Jellyfin-Login geprüft, ohne dass Jellyfin ein Passwort kennt? Was passiert mit Jellyfin-Logins, wenn Traefik oder der Authentik-Server down ist?
+
 ```d2
 direction: right
 
@@ -83,51 +85,60 @@ classes: {
   jf: { style: { border-radius: 8; stroke: "#d93025" } }
   outpost: { style: { border-radius: 8; stroke: "#188038" } }
   ak: { style: { border-radius: 8; stroke: "#8430ce" } }
-  pg: { style: { border-radius: 8; stroke: "#c29c10" } }
   phase: { style: { border-radius: 8; stroke-dash: 4 } }
 }
 
-entry: 1. Login bis LDAP-Bind {
+entry: Login bis LDAP-Bind {
   class: phase
   direction: down
-  input: "Nutzer E-Mail + Passwort\nim Browser" { class: user }
-  post: "Browser POST\n/Users/AuthenticateByName" { class: proxy }
-  fwd: "Traefik -> Jellyfin\nkein ForwardAuth auf /Users/*" { class: proxy }
-  bind: "Jellyfin LDAP Simple Bind\ncn=USER,ou=users,..." { class: jf }
+  input: "1. Nutzer gibt E-Mail und Passwort\nim Browser ein" { class: user }
+  post: "2. Browser POST\n/Users/AuthenticateByName" { class: proxy }
+  fwd: "3. Traefik leitet direkt an Jellyfin --\nkein ForwardAuth auf watch." { class: proxy }
+  bind: "4. Jellyfin LDAP Simple Bind\nan den Outpost Port 3389" { class: jf }
   input -> post -> fwd -> bind
 }
 
-hit: "Hit-Pfad -- bind_mode=cached" {
+hit: "Hit-Pfad -- Cache im Outpost-RAM" {
   class: phase
   direction: down
-  check: "Outpost prüft boundUsers\n+ Argon2 gegen Cache-Hash" { class: outpost }
-  ok: "Outpost -> Jellyfin\nLDAPResult Success" { class: outpost }
+  check: "5a. Outpost prüft boundUsers\nund Argon2 gegen den Cache-Hash" { class: outpost }
+  ok: "6a. LDAPResult Success aus dem Cache --\nohne Authentik-Server, ohne Traefik" { class: outpost }
   check -> ok
 }
 
-miss: "Miss-Pfad -- Cache-Miss / Erstlogin" {
+miss: "Miss-Pfad -- Erstlogin oder Cache leer" {
   class: phase
   direction: down
-  flow: "Voller LDAP-Flow gegen Authentik\nidentification -> password -> user-login\n(PostgreSQL-Lookup, Reputation, Argon2, Session)" { class: ak }
-  api: "Zwei API-Calls mit Session-Cookie\ncheck_access (Provider-ACL)\ncore/users/me (pk, groups, mail)" { class: outpost }
-  cache: "Outpost schreibt boundUsers in Cache\n-> Outpost LDAPResult Success" { class: outpost }
+  flow: "5b. Voller Authentik-Flow via Traefik\n(auth.ackermannprivat.ch) --\nidentification, password, user-login" { class: ak }
+  api: "6b. Zwei API-Calls mit Session-Cookie --\ncheck_access und core/users/me" { class: outpost }
+  cache: "7b. Outpost schreibt boundUsers\nin den Cache -- LDAPResult Success" { class: outpost }
   flow -> api -> cache
 }
 
-finish: Jellyfin Session {
+finish: Jellyfin-Session {
   class: phase
   direction: down
-  match: "Jellyfin User-Match\nvia mail-Attribut" { class: jf }
-  token: "Jellyfin -> Browser\nAccessToken + SessionID" { class: jf }
-  home: "Browser zeigt\nStartseite / Bibliothek" { class: user }
+  match: "8. Jellyfin matcht den User\nüber das mail-Attribut" { class: jf }
+  token: "9. Jellyfin gibt AccessToken und\nSessionID an den Browser" { class: jf }
+  home: "10. Browser zeigt\ndie Bibliothek" { class: user }
   match -> token -> home
 }
 
-entry -> hit
-entry -> miss
+entry -> hit: Cache-Hit
+entry -> miss: Cache-Miss oder Erstlogin
 hit -> finish
 miss -> finish
 ```
+
+**Lesehilfe:**
+
+1. Einstieg ist der Jellyfin-Login im Browser. watch.ackermannprivat.ch hat bewusst kein ForwardAuth davor (Schritt 3, [Jellyfin](../jellyfin/index.md)).
+2. Entschieden wird im Outpost-RAM: der Hit-Pfad (5a bis 6a) kommt ohne Authentik-Server und ohne Traefik aus.
+3. Nur der Miss-Pfad (5b bis 7b) spricht den Server, und zwar über Traefik via auth.ackermannprivat.ch, nicht intern ([Authentik-Übersicht](./index.md#architektur)).
+4. Traefik oder Authentik-Server down: Hit-Pfad funktioniert weiter, Miss-Pfad scheitert. Gecachte User kommen rein, Erstlogins nicht ([Bekannte Einschränkungen](./betrieb.md#bekannte-einschrankungen)).
+5. Outpost-Neustart leert den Cache, der nächste Login jedes Users nimmt den Miss-Pfad (Warning oben zur Cache-Invalidierung).
+6. Die zwei API-Calls in 6b brauchen den Session-Cookie aus dem Flow-Execute (Info-Box unten).
+7. MFA gibt es auf diesem Pfad bewusst nicht, native Jellyfin-Clients können keine zweite Stufe abfragen ([LDAP Authentication Flow](#ldap-authentication-flow)).
 
 ::: info Wieso zwei API-Calls nach dem Flow-Execute?
 Der Outpost ruft nach dem erfolgreichen Bind zusätzlich `check_access` (prüft die Provider-ACL) und `core/users/me` (holt UID, GID, Gruppen und Mail für die LDAP-Response). Beide Calls tragen den `authentik_session`-Cookie aus dem Flow-Execute — ohne diesen Cookie liefert der Authentik-Server `403 Authentication credentials were not provided`, was in der Vergangenheit zu Debugging-Schleifen geführt hat.
