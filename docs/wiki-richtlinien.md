@@ -262,6 +262,19 @@ Verbindliche D2-Konventionen:
 Die TALA-Layout-Engine läuft unlizenziert. Die generierten Diagramme tragen einen `UNLICENSED-COPY`-Schriftzug -- das ist bewusst akzeptiert.
 :::
 
+#### Mechanik-Katalog (R1-R8)
+
+Verbindliche Regeln für Architektur-Diagramme aus der Diagramm-Vertiefung 2026-07. Sie ergänzen die D2-Konventionen oben und legen fest, wie ein Diagramm die Mechanik eines Systems lesbar macht.
+
+- **R1 Leitfragen:** Jedes Architektur-Diagramm benennt explizit die Leitfrage(n), die es beantwortet. Mehrere verwandte Leitfragen sind erlaubt. Wird das Diagramm dadurch überladen, lieber 1-3 Szenario-Diagramme pro System zeichnen (z.B. Übersicht, Request-Fluss, Ausfall-Sicht).
+- **R2 Zwei Ebenen:** Der synchrone Request-Pfad wird durchgezogen dargestellt, der asynchrone Kontroll- oder Datenpfad gestrichelt. Die Lesekonvention wird einmal zentral erklärt, nicht pro Diagramm wiederholt.
+- **R3 Pfeilsemantik:** Der Pfeil zeigt, wer initiiert. Das Label sagt, was fliesst (Protokoll und Inhalt). Request und Response sind ein Pfeil. Zwei Kanten mit je eigenem Label nur bei zwei semantisch verschiedenen Flüssen.
+- **R4 Nummerierung:** Fluss-Diagramme nummerieren die Schritte in den Kantenlabels.
+- **R5 Lesehilfe:** Direkt unter jedem Architektur-Diagramm steht ein nummerierter Kurzablauf (5-8 Zeilen) mit Anker-Links in die Detailabschnitte. Die Details bleiben SSOT in den Abschnitten, die Lesehilfe fasst nur zusammen.
+- **R6 Mechanik-Test:** Nach Diagramm plus Lesehilfe muss ein Leser beantworten können: Wer initiiert? Wo wird entschieden oder gecacht? Was passiert bei Ausfall von x?
+- **R7 Beleg-Pflicht:** Jede Kante ist gegen Configs, Repos oder Live-Systeme belegt. Fehlende Kanten sind Befunde, erfundene Kanten sind verboten, Wissenslücken kommen in die Fragen-Queue statt ins Diagramm.
+- **R8 Farbkodierung:** Zeigt ein Diagramm mehrere unterscheidbare Wege, bekommen die Wege konsistente, dezente Farben über D2-Klassen (Theme-nahe Töne, Shapes neutral). Farbe kodiert den Weg, nicht Dekoration, und bleibt pro Seite konsistent.
+
 ## Verlinkung
 
 - Relative Pfade verwenden: `[Text](../traefik/referenz.md)`
