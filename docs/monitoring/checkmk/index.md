@@ -122,7 +122,7 @@ Die Skripte liegen unter `homelab-hashicorp-stack/ansible/files/` und werden nac
 
 ### HAOS-Memory-Check (SSH forced-command)
 
-Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent tragen. Damit trotzdem die Gast-Memory-Innensicht überwacht wird -- der Proxmox-Hypervisor-Wert ist wegen QEMU-Overhead als Alert-Quelle wertlos (siehe [Discovery-Policy](./discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln)) -- liefert ein Custom-Check die Werte über den QEMU-Guest-Agent:
+Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent tragen. Damit trotzdem die Gast-Memory-Innensicht überwacht wird -- der Proxmox-Hypervisor-Wert ist wegen QEMU-Overhead als Alert-Quelle wertlos (siehe [Discovery-Policy](./discovery.md#_3-host-spezifische-schwellwert-und-ausnahme-regeln)) -- liefert ein Custom-Check die Werte über den QEMU-Guest-Agent:
 
 - **Datenweg:** Der CheckMK-Host (`10.0.2.150`) öffnet eine SSH-Verbindung mit forced command auf pve02 und führt dort `/usr/local/bin/haos-meminfo.sh` aus. Das Skript liest die HAOS-VM über `pvesh` und den QEMU-Guest-Agent (`/proc/meminfo`) aus -- der `pvesh`-Weg ist cluster-robust und findet die VM auch nach einer Migration auf einen anderen Node.
 - **CheckMK-Seite:** dediziertes Keypair `/omd/sites/homelab/.ssh/haos_meminfo_ed25519`, Hostkey-Pin in `known_hosts`, Auswerte-Skript `/omd/sites/homelab/local/bin/check_haos_memory`. Der `custom_check` `HAOS Memory` läuft im 5-Minuten-Intervall; die Schwelle auf `MemAvailable` liegt bei WARN unter 15% / CRIT unter 8%.
