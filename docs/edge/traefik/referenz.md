@@ -128,7 +128,13 @@ Variante von `error-pages`, die zusätzlich 401 und 403 auf die Maintenance-Page
 
 ### error-pages-callback
 
-Variante von `error-pages`, die zusätzlich 400 abfängt. Ausschliesslich am Router `authentik-callback` (`auth-routes.yml`) eingesetzt: Der Authentik-Go-Outpost liefert bei state/session-Mismatch im OAuth-Callback (typisch nach Session-Ablauf) einen leeren HTTP 400 ohne Content-Type -- zusammen mit `contentTypeNosniff` bot Safari diese Antwort als Datei-Download "callback" an. Der Callback-Router spricht nie ein App-Backend mit eigenen 400-JSON-Bodies an, darum ist 400 dort gefahrlos abfangbar (in den App-Chains bleibt 400 bewusst ausgenommen).
+Variante von `error-pages` für den Router `authentik-callback` (`auth-routes.yml`), gleiche Statuscodes wie `error-pages` (404-405, 408, 429, 500-599). Der Status 400 wird am Callback-Router separat von `error-pages-callback-400` behandelt.
+
+### error-pages-callback-400
+
+Fängt ausschliesslich 400 am Router `authentik-callback` ab und liefert statt einer statischen Fehlerseite die Auto-Neustart-Seite `callback-400.html`. Hintergrund: Der Authentik-Go-Outpost liefert bei state/session-Mismatch im OAuth-Callback einen leeren HTTP 400 ohne Content-Type. Die Pre-Auth-Session des Outposts lebt nur im Arbeitsspeicher -- setzt Safari (besonders iOS) einen eingefrorenen Login-Redirect erst später fort, ist sie weg und der Callback scheitert. Danach klebt der Tab auf der verbrauchten Callback-URL und jeder Tab-Resume zeigt erneut den Fehler. Upstream-Bugklasse goauthentik Issue 17033, ohne verfügbaren Fix.
+
+Die Auto-Neustart-Seite startet per `location.replace('/')` sofort einen frischen Login-Flow auf dem betroffenen Host und ersetzt dabei die verbrauchte Callback-URL in der Tab-History. Eine sessionStorage-Bremse erlaubt maximal zwei automatische Neustarts pro 60 Sekunden, danach bleibt die Seite mit einem manuellen Anmelde-Button stehen (ebenso ohne JavaScript). Das entspricht dem Muster des upstream vorgeschlagenen, aber nicht gemergten PR 20831, umgesetzt am Edge. Der Callback-Router spricht nie ein App-Backend mit eigenen 400-JSON-Bodies an, darum ist 400 dort gefahrlos abfangbar (in den App-Chains bleibt 400 bewusst ausgenommen).
 
 ::: warning Nicht global einsetzen
 API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-Renewal-Trigger). Strict-Chain würde diese Semantik brechen. Deshalb gezielt nur für die vier Media-Tool-Apps aktiviert.
@@ -136,7 +142,7 @@ API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-R
 
 **Fallback:** Für unbekannte Codes (z.B. 418, 422) existieren generische Fallback-Seiten (`4xx.html`, `5xx.html`) via nginx `try_files`. Die Catch-All-Seiten enthalten bewusst keine Links zu internen Services um Information Disclosure bei Subdomain-Scans zu vermeiden.
 
-**Cache-Verhalten:** 5xx-Seiten werden mit `Cache-Control: no-store` ausgeliefert (temporäre Serverfehler nicht cachen). 4xx-Seiten werden mit `Cache-Control: public, max-age=30` kurz gecached -- knapp genug, damit der 404-Flicker während eines Nomad-Alloc-Cutover (neuer Container ersetzt alten, Consul-Service-Registration braucht wenige Sekunden) nicht im Browser hängenbleibt, aber hoch genug um Bot- und Scanner-Requests auf echte 404s zu dämpfen. Definiert in `standalone-stacks/traefik-proxy/configs/nginx/config/default.conf`.
+**Cache-Verhalten:** 5xx-Seiten und die Auto-Neustart-Seite `callback-400.html` werden mit `Cache-Control: no-store` ausgeliefert (temporäre Fehler und Redirect-Logik nicht cachen). 4xx-Seiten werden mit `Cache-Control: public, max-age=300` kurz gecached -- knapp genug, damit der 404-Flicker während eines Nomad-Alloc-Cutover (neuer Container ersetzt alten, Consul-Service-Registration braucht wenige Sekunden) nicht im Browser hängenbleibt, aber hoch genug um Bot- und Scanner-Requests auf echte 404s zu dämpfen. Definiert in `standalone-stacks/traefik-ha/configs/nginx/config/default.conf`.
 
 **Error Pages generieren:** `standalone-stacks/traefik-ha/configs/nginx/generate-error-pages.sh` ist die einzige Source-of-Truth. Nach Textänderungen Script ausführen, Dateien einchecken, auf beide Stacks deployen.
 
