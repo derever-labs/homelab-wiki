@@ -20,7 +20,7 @@ CrowdSec ist ein kollaboratives Intrusion-Detection-System, das Traefik Access L
 
 ## Architektur
 
-Die Architektur trennt zwei Pfade, die in den Diagrammen farblich kodiert sind: blau der synchrone Request-Pfad, ocker der asynchrone Detection-Datenfluss.
+Die Architektur trennt zwei Pfade, die in den Diagrammen farblich kodiert sind: blau der synchrone Request-Pfad, ocker der asynchrone Detection-Datenfluss. In der Ausfall-Sicht markiert grün die Failover-Insel, die Cloud-Kanten bleiben bewusst neutral grau.
 
 ### Enforcement (synchroner Request-Pfad)
 
