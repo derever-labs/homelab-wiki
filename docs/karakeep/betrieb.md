@@ -41,4 +41,4 @@ Die offizielle Safari-Extension speichert zwar Lesezeichen, sendet das im Browse
 
 - [Karakeep](./index.md) -- Architektur und Rolle im Stack
 - [Karakeep Referenz](./referenz.md) -- Container-Tasks, Volumes, Secrets, Backup-Parameter
-- [Uptime Kuma](../uptime-kuma/index.md) -- Push-Monitore und Alerting
+- [Uptime Kuma](../monitoring/uptime-kuma/index.md) -- Push-Monitore und Alerting

@@ -202,7 +202,7 @@ Details und Mechanik: siehe [Referenz](./referenz.md) -- Recovery-Layer, Breakgl
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
 - [Authentik Betrieb](./betrieb.md) -- Alerting-Kette, Rotation, Performance
-- [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay
+- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking als erste Middleware-Stufe
 - [Security](../security/index.md) -- Sicherheitskonzept Übersicht

@@ -1,5 +1,5 @@
 ---
-title: "Monitoring: Coverage"
+title: Coverage
 description: Single Source of Truth für die Homelab-Monitoring-Coverage -- pro Item welcher Pfad, welcher Status, welche offene Lücke
 tags:
   - monitoring
@@ -11,9 +11,9 @@ tags:
   - ssot
 ---
 
-# Monitoring: Coverage
+# Coverage
 
-Diese Seite ist die **Single Source of Truth** für den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Priorität, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](index.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](keep-correlations.md). Stand: 2026-06-10 (Gatus zurückgebaut, Uptime Kuma ist alleinige Synthetic-Schicht; Schwarm-Audit-Nachführung -- siehe Abschnitt unten).
+Diese Seite ist die **Single Source of Truth** für den Ist-Zustand der Homelab-Monitoring-Coverage. Sie listet pro Layer jedes Item mit Adresse, Pfad, Status, Priorität, Silent-Fail-Risiko und ClickUp-Task. Architektur-Hintergrund in [Monitoring](../index.md), Strategie in [Monitoring: Strategie](strategie.md), Keep-Correlation-Patterns in [Monitoring: Keep-Correlations](../keep/correlations.md). Stand: 2026-06-10 (Gatus zurückgebaut, Uptime Kuma ist alleinige Synthetic-Schicht; Schwarm-Audit-Nachführung -- siehe Abschnitt unten).
 
 ::: info Single Source of Truth
 Diese Tabelle ist der Pflege-Punkt für Coverage-Status. Andere Agenten, die Drift erkennen oder neue Coverage einrichten, aktualisieren **diese** Seite -- nicht die Audit-Files (sind eingefroren) und nicht andere Wiki-Seiten. Offene Arbeit gehört in den ClickUp-Master [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4). Wiki-Änderungen erfolgen erst nach Implementation.
@@ -39,7 +39,7 @@ PBS bei 91% (Stand 2026-04-30) liegt damit unter der 95%-Schwelle und ist kein a
 
 ## Memory-Monitoring-Konvention
 
-Die autoritative Memory-Quelle jeder produktiven VM ist die Gast-Innensicht -- der `Memory`-Check des CheckMK-Agenten in der VM. Der Proxmox-VM-Memory-Check (`Proxmox VE Memory Usage` aus dem `proxmox_ve`-Special-Agent) ist pro Gast deaktiviert, sobald ein Gast-Check läuft, und bleibt nur Fallback-Sicherheitsnetz für noch agentenlose Gäste -- die Hypervisor-Prozentzahl ist bei `balloon=0` durch QEMU-Overhead und mitgezählten Page-Cache als Alert-Quelle wertlos (Werte über 100% real beobachtet). Auf Host-Ebene (pve00/01/02) bleibt der Proxmox-Memory-Check als Allokations-Wächter aktiv. Zielbild: 100% Gast-Innensicht, der CheckMK-Agent gehört zur VM-Provisionierung. Einzige Ausnahme ist homeassistant (immutable, kein Agent) mit einem eigenen HAOS-Memory-Ersatzcheck. Begründung und Deaktivierungs-Liste in [Monitoring: Strategie](strategie.md#5-trade-off-analyse-und-risiken).
+Die autoritative Memory-Quelle jeder produktiven VM ist die Gast-Innensicht -- der `Memory`-Check des CheckMK-Agenten in der VM. Der Proxmox-VM-Memory-Check (`Proxmox VE Memory Usage` aus dem `proxmox_ve`-Special-Agent) ist pro Gast deaktiviert, sobald ein Gast-Check läuft, und bleibt nur Fallback-Sicherheitsnetz für noch agentenlose Gäste -- die Hypervisor-Prozentzahl ist bei `balloon=0` durch QEMU-Overhead und mitgezählten Page-Cache als Alert-Quelle wertlos (Werte über 100% real beobachtet). Auf Host-Ebene (pve00/01/02) bleibt der Proxmox-Memory-Check als Allokations-Wächter aktiv. Zielbild: 100% Gast-Innensicht, der CheckMK-Agent gehört zur VM-Provisionierung. Einzige Ausnahme ist homeassistant (immutable, kein Agent) mit einem eigenen HAOS-Memory-Ersatzcheck. Begründung und Deaktivierungs-Liste in [Monitoring: Strategie](strategie.md#_5-trade-off-analyse-und-risiken).
 
 ## Layer 1 -- Hardware / Power
 
@@ -134,7 +134,7 @@ Die autoritative Memory-Quelle jeder produktiven VM ist die Gast-Innensicht -- d
 | vm-nomad-client-04/05/06 | 10.0.2.124/.125/.126 | checkmk + influx + uptime | partial | P0 | analog | Drift 2026-05-01: `Nomad Task Restart-Storm` 158 Transitions / 50h Homelab vs. nur 6 DCLab -- Cluster-Parity-Drift, Investigation [`86c9ktgb7`](https://app.clickup.com/t/86c9ktgb7) (umfasst auch `Nomad Client Node Down` 104/50h flap und `Nomad Failed Allocations` 100/50h). CheckMK Standard-Agent + Docker-Piggyback live. Reschedule-Storm-Detection via Telegraf-File-Input live seit 2026-05-01. Linstor-CSI-Health auf c05/c06. Kuma HTTP-Monitore `Nomad Client API 04/05/06` (eingerichtet 2026-05-13 nach c04-OOM-Vorfall, siehe [`86c9rx6cv`](https://app.clickup.com/t/86c9rx6cv) und [`86c9rx664`](https://app.clickup.com/t/86c9rx664)) + Push `Nomad Token -- vm-nomad-client-04/05/06`. Schwarm-Audit 2026-06-10: die Client-API-Monitore (Kuma id=79/80/81) haben `notificationIDList=[]` -> Client-Down lautlos, kein Keep-Routing; `notif=[1]` setzen analog Server-API [`86ca7bm2y`](https://app.clickup.com/t/86ca7bm2y) |
 | Consul Cluster | vm-nomad-server-04/05/06 | influx | partial | P0 | Quorum-Loss kein Alert -- KASKADE: kein Leader -> alle `*.service.consul`-Lookups SERVFAIL -> Grafana/Keep/Authentik (postgres.service.consul) + Alloy (loki.service.consul) gleichzeitig blind, gesamte Alert-Pipeline tot | Telegraf-Prometheus auf `:8500`. Quorum-Loss-Alert (`consul_raft_leader`/peers) fehlt -- bisher nur Einzel-Server-Reachability. Prio P0 hochgestuft Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc). Schwarm-Audit 2026-06-10 (DRIFT): Grafana-Rule `Consul Service Check Critical` hat NoDataState=NoData + ExecErrState=OK -> bei Consul-Scrape-Ausfall wechselt sie still statt zu feuern; beide auf Alerting setzen + Quorum-Loss-Rule [`86ca7bm5m`](https://app.clickup.com/t/86ca7bm5m) |
 | Vault HA Cluster | vm-nomad-server-04/05/06 | loki + influx | partial | P0 | Per-Node-Sealed silent; Synthetic-Heartbeat fehlt | Coverage-Audit 2026-06-09: 3 Grafana-Loki-Rules live (`Vault Sealed` critical via Pattern `core: vault is sealed`, `vault-unseal.service failed nach Boot` critical, `Vault Service Restart-Loop` warning) + `Vault Permission Denied`. Status `missing`->`partial`. Offen: Influx-Synthetic-Heartbeat + Per-Node-Sealed-Probe (Loki-Pattern erkennt nur den Log-Moment, nicht Dauer-Sealed). `vault-unseal.service` liest `/etc/vault.d/unseal-keys` (NICHT von Ansible deployt). Memory `reference_vault_unseal_token_on_disk` |
-| NTP / Zeit-Drift | alle VMs | checkmk | partial | P0 | Drift >Sekunden bricht GLEICHZEITIG Vault-JWT-Auth, TLS-Gültigkeit (notBefore/notAfter), Consul-Gossip, Authentik-TOTP | 2026-07-14: CheckMK-Check `Systemd Timesyncd` überwacht den Zeitsync auf allen Agent-Linux-Hosts; globale Rule entschärft `last_ntp_message` auf 90/180 min (Poll-Intervall-Dehnung von `systemd-timesyncd`), der Offset bleibt scharf (Default). Details in [Discovery-Policy](checkmk-discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln). Status `missing`->`partial`, Pfad `none`->`checkmk`: verbleibende Category-Schliessung (agentenlose Hosts, einheitlicher Alarmpfad) [`86ca7bm49`](https://app.clickup.com/t/86ca7bm49) |
+| NTP / Zeit-Drift | alle VMs | checkmk | partial | P0 | Drift >Sekunden bricht GLEICHZEITIG Vault-JWT-Auth, TLS-Gültigkeit (notBefore/notAfter), Consul-Gossip, Authentik-TOTP | 2026-07-14: CheckMK-Check `Systemd Timesyncd` überwacht den Zeitsync auf allen Agent-Linux-Hosts; globale Rule entschärft `last_ntp_message` auf 90/180 min (Poll-Intervall-Dehnung von `systemd-timesyncd`), der Offset bleibt scharf (Default). Details in [Discovery-Policy](../checkmk/discovery.md#_3-host-spezifische-schwellwert-und-ausnahme-regeln). Status `missing`->`partial`, Pfad `none`->`checkmk`: verbleibende Category-Schliessung (agentenlose Hosts, einheitlicher Alarmpfad) [`86ca7bm49`](https://app.clickup.com/t/86ca7bm49) |
 | etcd Server-Cluster (Legacy?) | vm-nomad-server-04/05/06 | none | skip | P2 | -- | Coverage-Audit 2026-06-07: kein etcd-Job in nomad-jobs, kein Ansible-Play in infra-stack (`git log`/`find` beide leer) -- nie deployed bzw. bereits bereinigt, kein Monitoring nötig |
 | Postgres (DRBD Single, Affinity c05) | vm-nomad-client-06 | influx | partial | P0 | Connection-Pool-Storm bekannt | `inputs.postgresql` + Synthetic-Probe. Memory `feedback_authentik_pg_connection_storm`, `project_pg_storage_bottleneck_2026` |
 | MariaDB (DRBD Single, Affinity c05) | client-05/06, Port 3306 | none | missing | P0 | komplett silent -- backt die `uptime_kuma`-DB: MariaDB-Down = Uptime-Kuma-Down = Monitoring-Pfad weg UND Keep-Dead-Man-Switch blind (Kuma empfängt den keep-heartbeat-watch-Push) | `databases/mariadb-drbd.nomad`, Vault `kv/data/shared/mariadb`. Kein Health-Probe, kein `inputs.mysql`. Erfasst Coverage-Audit 2026-06-07 [`86ca5geqc`](https://app.clickup.com/t/86ca5geqc). Schwarm-Audit 2026-06-10: 0 Treffer für `mariadb` in den 87 Kuma-Monitoren bestätigt -- Monitoring MUSS ausserhalb Kuma erfolgen (`inputs.mysql` + Grafana-Rule oder CheckMK mysql-Plugin + externer Watchdog pve-01-nana) |
@@ -253,7 +253,7 @@ Breiter Coverage-Gap-Schwarm über Homelab + DCLab (11-Lens-Finder -> Dedup -> a
 
 ## Verfolgte Risiken (ausserhalb Monitoring-Scope)
 
-- **Single-NAS-Abhängigkeit** -- PBS, Linstor-S3, NFS-Mounts (jellyfin-streams, cert, logs, docker), Garage terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down. (Node-Metrik-Crons csi/lvm/nomad-health seit 2026-05-29 NFS-frei, siehe [InfluxDB & Telegraf](influxdb.md))
+- **Single-NAS-Abhängigkeit** -- PBS, Linstor-S3, NFS-Mounts (jellyfin-streams, cert, logs, docker), Garage terminieren alle in 10.0.0.200. Komplettverlust bei NAS-Down. (Node-Metrik-Crons csi/lvm/nomad-health seit 2026-05-29 NFS-frei, siehe [InfluxDB & Telegraf](../influxdb.md))
 - **Homelab Single-PSU pve-Hosts** (Memory `project_ups_psu_2026`) -- Konsumer-Hardware, jeder Power-Loss kann FS-Korruption verursachen. Restrisiko bleibt nach USV-Aufbau
 - **Corosync Single ring0** -- Network-Partition kann Quorum killen
 - **Internes Self-Monitoring auf gleicher Hardware** -- der interne Dead-Man-Switch (Kuma-Heartbeat) läuft auf demselben Cluster wie die überwachten Dienste. Externer Watchdog `pve-01-nana` in Dottikon ist die geplante Mitigation (Plattform live seit 2026-05-01; Stack-Deployment [`86c9km53e`](https://app.clickup.com/t/86c9km53e))
@@ -268,13 +268,13 @@ Breiter Coverage-Gap-Schwarm über Homelab + DCLab (11-Lens-Finder -> Dedup -> a
 
 ## Verwandte Seiten
 
-- [Monitoring](index.md) -- Komponenten-Übersicht
+- [Monitoring](../index.md) -- Komponenten-Übersicht
 - [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
-- [Monitoring: Keep-Correlations](keep-correlations.md) -- Correlation-Patterns für Keep
+- [Monitoring: Keep-Correlations](../keep/correlations.md) -- Correlation-Patterns für Keep
 - [CheckMK](../checkmk/index.md) -- Host-Monitoring-Details
-- [InfluxDB & Telegraf](influxdb.md) -- Metriken-Pfad
-- [Alloy](alloy.md) -- Log-Forwarding
-- [Keep](keep.md) -- Alert-Hub
+- [InfluxDB & Telegraf](../influxdb.md) -- Metriken-Pfad
+- [Alloy](../alloy.md) -- Log-Forwarding
+- [Keep](../keep/index.md) -- Alert-Hub
 - ClickUp-Bundle [`86c9knpm4`](https://app.clickup.com/t/86c9knpm4) -- offene CheckMK-Coverage-Items Homelab
 - ClickUp-Master [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
 - ClickUp Pilot [`86c9ktagw`](https://app.clickup.com/t/86c9ktagw) -- Keep Alert-Fatigue Tuning Homelab (5 Subtasks: Status-quo, Reschedule for:, Heartbeat, Auth-Correlation, 7d-Beobachtung)

@@ -41,7 +41,7 @@ Der Docker-Plugin auf den Nomad Client-Nodes übergibt Container-Checks als Pigg
 
 ## Cluster-Inventar
 
-Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitoring: Strategie](../monitoring/strategie.md), damit die Strategie-Seite auf die Pfad-Zuordnung fokussiert bleibt.
+Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitoring: Strategie](../coverage/strategie.md), damit die Strategie-Seite auf die Pfad-Zuordnung fokussiert bleibt.
 
 ### CheckMK DCLab Inventar
 
@@ -81,7 +81,7 @@ Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitorin
   - Container-Discovery-Einträge (~80 Einträge im Drift-Bereich)
 - **Aktive Special-Agents**: `proxmox_ve` für pve00/01/02, `synology_health` für beide NAS
 - **Aktive Standard-Agents**: identisch zu DCLab (`cmk_update_agent`, `mk_apt`, `mk_docker`, `mk_logins`)
-- **InfluxDB-Forwarder**: aktiv seit dem Cutover 2026-06-05 -- schreibt die Service-Performance-Metriken aller monitored Hosts (inkl. beider Synology-NAS) zusätzlich in den `telegraf`-Bucket; für die NAS-Hardware ist er seither die einzige Quelle (Details in [InfluxDB & Telegraf](../monitoring/influxdb.md))
+- **InfluxDB-Forwarder**: aktiv seit dem Cutover 2026-06-05 -- schreibt die Service-Performance-Metriken aller monitored Hosts (inkl. beider Synology-NAS) zusätzlich in den `telegraf`-Bucket; für die NAS-Hardware ist er seither die einzige Quelle (Details in [InfluxDB & Telegraf](../influxdb.md))
 - **Notification-Konfig**:
   1. Telegram-Plugin `check_mk_telegram-notify.sh` mit hardcoded Token und Chat-ID -- bypasses Keep komplett, gegen Single-Notifier-Konvention
   2. Mail-Plugin (Default-Rule)
@@ -92,7 +92,7 @@ Kondensierte Bestandsaufnahme beider CheckMK-Sites -- ausgelagert aus [Monitorin
 
 ## Agent-Deployment
 
-Der CheckMK Agent läuft auf jedem überwachten Host und kommuniziert über TCP Port 6556 (siehe [Ports und Dienste](../_referenz/ports-und-dienste.md)). Der Agent wird als Paket (`check-mk-agent`) installiert und meldet bei Abfrage durch den CheckMK Server die aktuellen Systemmetriken.
+Der CheckMK Agent läuft auf jedem überwachten Host und kommuniziert über TCP Port 6556 (siehe [Ports und Dienste](../../_referenz/ports-und-dienste.md)). Der Agent wird als Paket (`check-mk-agent`) installiert und meldet bei Abfrage durch den CheckMK Server die aktuellen Systemmetriken.
 
 Die Installation erfolgt über Ansible (`ansible/playbooks/checkmk-agent-deploy.yml` im Repo `homelab-hashicorp-stack`):
 - **Standard-Agent:** `playbooks/checkmk-agent-deploy.yml`
@@ -122,7 +122,7 @@ Die Skripte liegen unter `homelab-hashicorp-stack/ansible/files/` und werden nac
 
 ### HAOS-Memory-Check (SSH forced-command)
 
-Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent tragen. Damit trotzdem die Gast-Memory-Innensicht überwacht wird -- der Proxmox-Hypervisor-Wert ist wegen QEMU-Overhead als Alert-Quelle wertlos (siehe [Discovery-Policy](../monitoring/checkmk-discovery.md#3-host-spezifische-schwellwert-und-ausnahme-regeln)) -- liefert ein Custom-Check die Werte über den QEMU-Guest-Agent:
+Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent tragen. Damit trotzdem die Gast-Memory-Innensicht überwacht wird -- der Proxmox-Hypervisor-Wert ist wegen QEMU-Overhead als Alert-Quelle wertlos (siehe [Discovery-Policy](./discovery.md#_3-host-spezifische-schwellwert-und-ausnahme-regeln)) -- liefert ein Custom-Check die Werte über den QEMU-Guest-Agent:
 
 - **Datenweg:** Der CheckMK-Host (`10.0.2.150`) öffnet eine SSH-Verbindung mit forced command auf pve02 und führt dort `/usr/local/bin/haos-meminfo.sh` aus. Das Skript liest die HAOS-VM über `pvesh` und den QEMU-Guest-Agent (`/proc/meminfo`) aus -- der `pvesh`-Weg ist cluster-robust und findet die VM auch nach einer Migration auf einen anderen Node.
 - **CheckMK-Seite:** dediziertes Keypair `/omd/sites/homelab/.ssh/haos_meminfo_ed25519`, Hostkey-Pin in `known_hosts`, Auswerte-Skript `/omd/sites/homelab/local/bin/check_haos_memory`. Der `custom_check` `HAOS Memory` läuft im 5-Minuten-Intervall; die Schwelle auf `MemAvailable` liegt bei WARN unter 15% / CRIT unter 8%.
@@ -133,19 +133,19 @@ Home Assistant OS (`homeassistant`) ist immutable und kann keinen CheckMK-Agent 
 
 ### Synology als SNMP-Host
 
-Beide Synology-NAS sind SNMP-only-Hosts (SNMPv3-Credentials siehe [Credentials](../_referenz/credentials.md)). CheckMK fragt die Synology Built-in-Plugins ab und liefert Hardware-Health (Disks/Cache/M.2, RAID, Fans, Power), Filesystem-Auslastung der `/volume*`-Hauptmounts, CPU- und RAM-Last sowie Network-Interface-Throughput. Disk-IO wird auf RAID-Aggregate-Ebene gemessen. SMART-Detail-Counter sind nicht via SNMP, dafür DSM Resource Monitor.
+Beide Synology-NAS sind SNMP-only-Hosts (SNMPv3-Credentials siehe [Credentials](../../_referenz/credentials.md)). CheckMK fragt die Synology Built-in-Plugins ab und liefert Hardware-Health (Disks/Cache/M.2, RAID, Fans, Power), Filesystem-Auslastung der `/volume*`-Hauptmounts, CPU- und RAM-Last sowie Network-Interface-Throughput. Disk-IO wird auf RAID-Aggregate-Ebene gemessen. SMART-Detail-Counter sind nicht via SNMP, dafür DSM Resource Monitor.
 
-Generische SNMP-Sub-Devices sind via `ignored_services`-Rule aus der Discovery ausgeschlossen, damit das Free-Tier-Limit nicht durch Bloat erreicht wird -- die Discovery-Policy ist kanonisch in [CheckMK Discovery](../monitoring/checkmk-discovery.md) dokumentiert.
+Generische SNMP-Sub-Devices sind via `ignored_services`-Rule aus der Discovery ausgeschlossen, damit das Free-Tier-Limit nicht durch Bloat erreicht wird -- die Discovery-Policy ist kanonisch in [CheckMK Discovery](./discovery.md) dokumentiert.
 
 ::: info Tailscale-Vorbedingung für Dottikon Nana
-Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscale erreichbar (Subnet-Route via `pve-01-nana`, siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)). Damit CheckMK darauf pollen kann, läuft auf der CheckMK-VM ein Tailscale-Client mit Tag `tag:homelab` und `--accept-routes`.
+Der `nana-nas`-Host steht physisch am Standort Dottikon und ist nur via Tailscale erreichbar (Subnet-Route via `pve-01-nana`, siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md)). Damit CheckMK darauf pollen kann, läuft auf der CheckMK-VM ein Tailscale-Client mit Tag `tag:homelab` und `--accept-routes`.
 :::
 
 ## Alarmierung
 
 CheckMK benachrichtigt über zwei Kanäle:
 
-- **E-Mail:** Über den zentralen [SMTP Relay](../smtp-relay/index.md)
+- **E-Mail:** Über den zentralen [SMTP Relay](../../smtp-relay/index.md)
 - **Gotify:** Push-Benachrichtigungen auf mobile Geräte
 
 Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden Warnungen (WARN) und kritische Zustände (CRIT) sofort gemeldet. Für geplante Wartungsfenster können Downtimes gesetzt werden.
@@ -153,13 +153,13 @@ Die Benachrichtigungsregeln sind in CheckMK konfiguriert. Standardmässig werden
 ## Wartung
 
 - **Update:** Erfolgt über das OMD-Paketmanagement (`omd update`) innerhalb der VM
-- **Backup:** Die gesamte VM wird täglich vom [Proxmox Backup Server](../backup/referenz.md) gesichert
+- **Backup:** Die gesamte VM wird täglich vom [Proxmox Backup Server](../../backup/referenz.md) gesichert
 
 ## Verwandte Seiten
 
-- [Monitoring: Strategie](../monitoring/strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
-- [Monitoring: Best-Path-Klassifikation](../monitoring/klassifikation.md) -- Best-Path pro Coverage-Item
-- [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, Uptime Kuma und Alloy für Metriken und Logs
+- [Monitoring: Strategie](../coverage/strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
+- [Monitoring: Best-Path-Klassifikation](../coverage/klassifikation.md) -- Best-Path pro Coverage-Item
+- [Monitoring Stack](../index.md) -- Grafana, Loki, Uptime Kuma und Alloy für Metriken und Logs
 - [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring für Endpoint-Verfügbarkeit
-- [SMTP Relay](../smtp-relay/index.md) -- Mail-Versand für CheckMK-Alerts
-- [Proxmox Backup Server](../backup/referenz.md) -- VM-Backup von CheckMK
+- [SMTP Relay](../../smtp-relay/index.md) -- Mail-Versand für CheckMK-Alerts
+- [Proxmox Backup Server](../../backup/referenz.md) -- VM-Backup von CheckMK

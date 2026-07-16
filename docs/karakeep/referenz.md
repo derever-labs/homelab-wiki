@@ -64,11 +64,11 @@ Warum App-Level und nicht das VM-Backup: PBS sichert nur ganze VMs, und für die
 
 ## Monitoring
 
-Der Backup-Sidecar sendet nach erfolgreichem Lauf einen Push an den Uptime-Kuma-Monitor **Karakeep Backup** (Gruppe *Storage & Backup*, 26-Stunden-Fenster). Bleibt der Heartbeat aus, geht der Monitor auf DOWN. Coverage-Einordnung: [Monitoring: Coverage](../monitoring/coverage.md).
+Der Backup-Sidecar sendet nach erfolgreichem Lauf einen Push an den Uptime-Kuma-Monitor **Karakeep Backup** (Gruppe *Storage & Backup*, 26-Stunden-Fenster). Bleibt der Heartbeat aus, geht der Monitor auf DOWN. Coverage-Einordnung: [Monitoring: Coverage](../monitoring/coverage/index.md).
 
 ## Verwandte Seiten
 
 - [Karakeep](./index.md) -- Architektur und Rolle im Stack
 - [Karakeep Betrieb](./betrieb.md) -- Erfassung, Restore, Reindex, Troubleshooting
 - [Backup](../backup/index.md) -- Gesamtübersicht aller Backup-Schichten
-- [Uptime Kuma](../uptime-kuma/index.md) -- Push-Monitore und Alerting
+- [Uptime Kuma](../monitoring/uptime-kuma/index.md) -- Push-Monitore und Alerting

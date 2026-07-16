@@ -135,4 +135,4 @@ Die Schritt-für-Schritt-Reihenfolge des Erstdeploys (Vault-Secrets, PostgreSQL-
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
 - [Backup](../backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
-- [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay
+- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay

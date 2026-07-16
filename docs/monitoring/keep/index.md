@@ -106,7 +106,7 @@ Die Bedingungen nutzen `size(service) > 0` statt `service != null`. Keeps Rules-
 :::
 
 ::: warning service = Alertname bei Grafana-Alerts -- Spam-Vektor bei Node-Ausfall
-Grafana-Alerts tragen als `service` den Rule-Titel (z.B. `DRBD Out-of-Sync > 1 MiB`), keinen kanonischen Dienst. Die Service-Correlation bündelt daher nur INNERHALB eines Alertnamens, nicht darüber hinaus: ein Storage-Node-Ausfall erzeugt einen Incident pro DRBD-/Linstor-Alertname, und bei Flapping je Zyklus einen neuen. Das ist der dominante Spam-Vektor bei Node-Ausfällen (siehe [Coverage](coverage.md) Layer 3: „DRBD Verbindung getrennt" flappte historisch 8601 Transitions/50h). Primär an der Quelle zu dämpfen (Grafana `for`/`keep_firing_for`), nicht in Keep.
+Grafana-Alerts tragen als `service` den Rule-Titel (z.B. `DRBD Out-of-Sync > 1 MiB`), keinen kanonischen Dienst. Die Service-Correlation bündelt daher nur INNERHALB eines Alertnamens, nicht darüber hinaus: ein Storage-Node-Ausfall erzeugt einen Incident pro DRBD-/Linstor-Alertname, und bei Flapping je Zyklus einen neuen. Das ist der dominante Spam-Vektor bei Node-Ausfällen (siehe [Coverage](../coverage/index.md) Layer 3: „DRBD Verbindung getrennt" flappte historisch 8601 Transitions/50h). Primär an der Quelle zu dämpfen (Grafana `for`/`keep_firing_for`), nicht in Keep.
 :::
 
 ## Incident-Workflows -- Severity-Routing & Lifecycle
@@ -187,7 +187,7 @@ batch -> krit: "Kuma-Watchdog\n+ Uptime-Link"
 - **Kuma-Watchdog-Tier** -- drei Uptime-Kuma-Instanzen alarmieren mit einem Custom-Template, das die Kuma-Standardmeldung um eine `Kuma-Watchdog`-Kennzeile und den Uptime-Link ergänzt, sodass die Herkunft klar ist.
 
 ::: danger Stack-Single-Point bleibt
-Der interne Backstop ist **nicht** vollständig unabhängig: er pusht an Kuma (MariaDB), Keep läuft auf Postgres -- beide DRBD-Single auf client-05/06. Ein Postgres- oder MariaDB-Ausfall killt Keep UND den Backstop gleichzeitig. Echte Unabhängigkeit liefert nur der externe Watchdog `wd-nana` in Dottikon. Siehe [Coverage](coverage.md) Layer 7.
+Der interne Backstop ist **nicht** vollständig unabhängig: er pusht an Kuma (MariaDB), Keep läuft auf Postgres -- beide DRBD-Single auf client-05/06. Ein Postgres- oder MariaDB-Ausfall killt Keep UND den Backstop gleichzeitig. Echte Unabhängigkeit liefert nur der externe Watchdog `wd-nana` in Dottikon. Siehe [Coverage](../coverage/index.md) Layer 7.
 :::
 
 ## Deduplizierung
@@ -214,7 +214,7 @@ Workflows und Provider sind in `keep.nomad` per `file()` eingebettet und werden 
 
 ## Konfiguration
 
-- **URL** -- [keep.ackermannprivat.ch](https://keep.ackermannprivat.ch); mobile PWA für Deep-Links: `m.keep.ackermannprivat.ch` (siehe [Keep Mobile](keep-mobile.md))
+- **URL** -- [keep.ackermannprivat.ch](https://keep.ackermannprivat.ch); mobile PWA für Deep-Links: `m.keep.ackermannprivat.ch` (siehe [Keep Mobile](mobile.md))
 - **Consul-Service** -- `keep` (Frontend), `keep-backend` (API + Webhook-Endpoint)
 - **Auth UI** -- Authentik ForwardAuth (`authentik-app@file`)
 - **Auth Webhooks** -- `chain-no-auth@file` auf `/alerts/event/*`, damit Quellen ohne Token pushen können
@@ -230,9 +230,9 @@ Workflows und Provider sind in `keep.nomad` per `file()` eingebettet und werden 
 ## Verwandte Dokumentation
 
 - [Telegram-Bots](telegram-bots.md) -- Bot- und Topic-Inventar, Severity-Topics, Watchdog-Sender
-- [Keep Master-Template](keep-master-template.md) -- Aufbau der Telegram-Nachricht
-- [Keep-Correlations](keep-correlations.md) -- Correlation-Patterns
-- [Keep Mobile](keep-mobile.md) -- mobile Incident-PWA für Deep-Links
-- [Monitoring](index.md) -- Stack-Übersicht und Datenflüsse
-- [Coverage](coverage.md) -- Monitoring-Coverage inkl. Keep-Self-Monitoring (Layer 7)
+- [Keep Master-Template](master-template.md) -- Aufbau der Telegram-Nachricht
+- [Keep-Correlations](correlations.md) -- Correlation-Patterns
+- [Keep Mobile](mobile.md) -- mobile Incident-PWA für Deep-Links
+- [Monitoring](../index.md) -- Stack-Übersicht und Datenflüsse
+- [Coverage](../coverage/index.md) -- Monitoring-Coverage inkl. Keep-Self-Monitoring (Layer 7)
 - DCLab-Pendant: HSLU IT-Wiki `monitoring/ops/keep.md`

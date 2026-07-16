@@ -263,7 +263,7 @@ Authentik verwaltet Benutzer intern; Passwort-Änderungen und Gruppen-Management
 
 ## Alerting und Events
 
-Sicherheitsrelevante Events lösen Telegram-Benachrichtigungen über den [Telegram-Relay](../monitoring/telegram-bots.md) aus. Die Pipeline:
+Sicherheitsrelevante Events lösen Telegram-Benachrichtigungen über den [Telegram-Relay](../monitoring/keep/telegram-bots.md) aus. Die Pipeline:
 
 - **Event Matchers:** `login_failed`, `policy_exception`, `suspicious_request`, `password_set`, `configuration_error`, zusätzlich ein LDAP-spezifischer Matcher (`app=authentik.providers.ldap`)
 - **Notification Rule `rule-security-events-telegram`:** Severity `alert`, Empfänger-Gruppe `authentik Admins`, Transports `telegram-critical` + `default-email-transport` (redundant)
@@ -278,4 +278,4 @@ Zusätzlich wurden die vier Default-Rules (`default-notify-configuration-error/w
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Rollback
 - [Authentik Betrieb](./betrieb.md) -- Blueprint-Workflow, Alerting, Performance
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
-- [Telegram Bots](../monitoring/telegram-bots.md) -- Alert-Transport via Relay
+- [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay

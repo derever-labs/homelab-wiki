@@ -1,5 +1,5 @@
 ---
-title: "Monitoring: Keep-Correlations"
+title: Keep-Correlations
 description: Correlation-Patterns für Keep -- Gruppierung mehrerer Alerts zu einem Incident, mit Severity- und Inhibit-Logik
 tags:
   - monitoring
@@ -9,7 +9,7 @@ tags:
   - incident
 ---
 
-# Monitoring: Keep-Correlations
+# Keep-Correlations
 
 Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-Correlation** (zwei Rules, die jeden Alert zu einem Incident gruppieren -- siehe unten) und die geplanten **cross-service-Inhibit-Patterns** (Pattern-Katalog, Status Design). Beide gruppieren mehrere Alerts zu einem Incident, damit der Operator nicht 12 Telegram-Pings für ein einzelnes Storage-Outage bekommt.
 
@@ -20,7 +20,7 @@ Diese Seite dokumentiert zwei Ebenen der Keep-Correlation: die **live Grouping-C
 
 ## Live: Grouping-Correlation (2 Rules)
 
-Seit Layer 3 erzeugen zwei disjunkte Grouping-Rules die Incidents, auf denen die [Incident-Workflows](keep.md#incident-workflows-severity-routing-lifecycle) aufsetzen: Service-Correlation (nach `service`) und Catch-all (nach `fingerprint`). SSOT dieser Ebene ist [Keep](keep.md#correlation-zwei-rules) -- dort stehen die Rules, die CEL-null-Falle (CON-25) und der Spam-Vektor bei Grafana-Alerts, deren `service` der Rule-Titel statt eines kanonischen Dienstes ist.
+Seit Layer 3 erzeugen zwei disjunkte Grouping-Rules die Incidents, auf denen die [Incident-Workflows](index.md#incident-workflows-severity-routing-lifecycle) aufsetzen: Service-Correlation (nach `service`) und Catch-all (nach `fingerprint`). SSOT dieser Ebene ist [Keep](index.md#correlation-zwei-rules) -- dort stehen die Rules, die CEL-null-Falle (CON-25) und der Spam-Vektor bei Grafana-Alerts, deren `service` der Rule-Titel statt eines kanonischen Dienstes ist.
 
 Der folgende Pattern-Katalog ist die darauf aufbauende, noch nicht implementierte cross-service-Schicht.
 
@@ -156,10 +156,10 @@ Beide Subtasks referenzieren dieses Design und führen die 9 Patterns einzeln al
 
 ## Verwandte Doku
 
-- [Monitoring](index.md) -- Komponenten-Übersicht
-- [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
-- [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
-- [Keep](keep.md) -- Alert-Hub Komponentenbeschreibung
+- [Monitoring](../index.md) -- Komponenten-Übersicht
+- [Monitoring: Coverage](../coverage/index.md) -- Ist-Stand-Coverage SSOT mit allen Items
+- [Monitoring: Strategie](../coverage/strategie.md) -- Stack-Aufgabenteilung CheckMK vs Telegraf vs Loki vs Uptime-Kuma
+- [Keep](index.md) -- Alert-Hub Komponentenbeschreibung
 - ClickUp HSLU [`86c9jqvtj`](https://app.clickup.com/t/86c9jqvtj) -- Welle-3-Master DCLab
 - ClickUp Privat [`86c9jqw24`](https://app.clickup.com/t/86c9jqw24) -- Welle-3-Master Homelab
 

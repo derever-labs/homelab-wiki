@@ -1,5 +1,5 @@
 ---
-title: Monitoring Best-Path-Klassifikation
+title: Best-Path-Klassifikation
 description: Best-Path-Zuordnung pro Coverage-Item -- welcher Pfad (CheckMK, Telegraf, Loki, Uptime-Kuma, Direct) welches Item in welchem Cluster abdeckt
 tags:
   - monitoring
@@ -9,11 +9,11 @@ tags:
   - coverage
 ---
 
-# Monitoring Best-Path-Klassifikation
+# Best-Path-Klassifikation
 
 Diese Seite hält die kondensierte Best-Path-Sicht pro Coverage-Item fest -- ausgelagert aus [Monitoring: Strategie](strategie.md).
 
-Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. Status laut Coverage-Audit (Ist-Stand siehe [Monitoring: Coverage](coverage.md)).
+Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. Status laut Coverage-Audit (Ist-Stand siehe [Monitoring: Coverage](index.md)).
 
 | Item | Cluster | Layer | Coverage | Best-Path | Begründung |
 | --- | --- | --- | --- | --- | --- |
@@ -87,11 +87,11 @@ Spalten: Item / Cluster / Layer / Aktuelle Coverage / Best-Path / Begründung. S
 | Loki / InfluxDB / Grafana / Telegraf / Alloy / Keep / CheckMK / UK Self Homelab | Homelab | L7 | partial | Telegraf + UK | absent + cardinality + volume-fill + extern-probe |
 | External Watchdog Platform pve-01-nana | Homelab | L7 | partial | Direct | Stack-Deployment ausstehend [`86c9km53e`](https://app.clickup.com/t/86c9km53e) |
 
-Die vollständige Item-Tabelle steht in [Monitoring: Coverage](coverage.md) -- diese Sektion ist die kondensierte Best-Path-Sicht.
+Die vollständige Item-Tabelle steht in [Monitoring: Coverage](index.md) -- diese Sektion ist die kondensierte Best-Path-Sicht.
 
 ## Verwandte Seiten
 
 - [Monitoring: Strategie](strategie.md) -- Stack-Aufgabenteilung und Pfad-Zuordnung
-- [Monitoring: Coverage](coverage.md) -- Ist-Stand-Coverage SSOT mit allen Items
+- [Monitoring: Coverage](index.md) -- Ist-Stand-Coverage SSOT mit allen Items
 - [CheckMK](../checkmk/index.md) -- Host-Level-Monitoring inkl. Cluster-Inventar
-- [Monitoring: Keep-Correlations](keep-correlations.md) -- Correlation-Patterns für Keep
+- [Monitoring: Keep-Correlations](../keep/correlations.md) -- Correlation-Patterns für Keep

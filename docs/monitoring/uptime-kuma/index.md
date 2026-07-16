@@ -17,7 +17,7 @@ Uptime Kuma ist seit dem Gatus-Rückbau (2026-06-10) die **einzige** Synthetic-M
 |----------|------|
 | URL | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
 | Deployment | Nomad Job `monitoring/uptime-kuma.nomad` |
-| Storage | Live-DB in zentraler MariaDB (`mariadb.service.consul`, Datenbank `uptime_kuma`, siehe [Datenbanken](../_referenz/datenbanken.md)); Uploads/Screenshots auf Linstor CSI Volume `uptime-kuma-data-r2` |
+| Storage | Live-DB in zentraler MariaDB (`mariadb.service.consul`, Datenbank `uptime_kuma`, siehe [Datenbanken](../../_referenz/datenbanken.md)); Uploads/Screenshots auf Linstor CSI Volume `uptime-kuma-data-r2` |
 | Auth | `intern-auth@file` (Authentik ForwardAuth, Gruppe `admin`); Kuma-Eigen-Login deaktiviert (`disableAuth=true`, seit 2026-06-08 -- Authentik ist die alleinige Schutzschicht); Push-Pfad `/api/push/` via `intern-noauth@file` ohne Auth |
 | Secrets | DB-Passwort aus Vault `kv/data/shared/mariadb` (`uptime_kuma_password`); Prometheus-Metrics-API-Key in 1Password `PRIVAT Agent / Monitoring Uptime Kuma` |
 
@@ -33,12 +33,12 @@ Die Monitore sind in sieben thematische Gruppen organisiert (Plattform, Netz, St
 
 Batch-Jobs senden nach erfolgreichem Lauf einen HTTP GET an `https://uptime.ackermannprivat.ch/api/push/<token>`. Der `intern-noauth@file`-Middleware-Bypass auf dem Pfad-Prefix `/api/push/` umgeht Authentik, damit Jobs ohne OIDC-Handshake pushen können.
 
-Beispiele aus der aktuellen Belegung (die gepflegte Gesamtliste steht in [Monitoring: Coverage](../monitoring/coverage.md)):
+Beispiele aus der aktuellen Belegung (die gepflegte Gesamtliste steht in [Monitoring: Coverage](../coverage/index.md)):
 
 - **Keepalived T-01 / T-02** -- Heartbeat aus dem Traefik-HA-Keepalived-Notify-Script
-- **PostgreSQL Backup** -- Tägliches pg_dumpall auf NFS, siehe [Monitoring Betrieb](../monitoring/betrieb.md#backup-monitoring)
-- **Karakeep Backup** -- Tägliches App-Level-Backup (SQLite + Assets) in der Gruppe *Storage & Backup*, siehe [Karakeep Referenz](../karakeep/referenz.md#backup)
-- **InfluxDB Downsampling-Tasks** -- 6 Flux-Tasks mit Heartbeat pro Task, siehe [Monitoring Betrieb](../monitoring/betrieb.md#influxdb-downsampling-tasks)
+- **PostgreSQL Backup** -- Tägliches pg_dumpall auf NFS, siehe [Monitoring Betrieb](../betrieb.md#backup-monitoring)
+- **Karakeep Backup** -- Tägliches App-Level-Backup (SQLite + Assets) in der Gruppe *Storage & Backup*, siehe [Karakeep Referenz](../../karakeep/referenz.md#backup)
+- **InfluxDB Downsampling-Tasks** -- 6 Flux-Tasks mit Heartbeat pro Task, siehe [Monitoring Betrieb](../betrieb.md#influxdb-downsampling-tasks)
 
 ## Kern-Infra-Mindestabdeckung
 
@@ -46,7 +46,7 @@ Uptime Kuma überwacht die Kern-Infrastruktur direkt -- jeder Endpoint alarmiert
 
 ### Nomad / Consul / Vault Stack
 
-Server- und Client-VMs werden getrennt gemonitort -- die Server-VMs `vm-nomad-server-04/05/06` sind die Control-Plane (kleine VMs auf pve00-02), die Client-VMs `vm-nomad-client-04/05/06` sind die Worker-Nodes mit Linstor-CSI-Storage (IPs siehe [Hosts und IPs](../_referenz/hosts-und-ips.md)).
+Server- und Client-VMs werden getrennt gemonitort -- die Server-VMs `vm-nomad-server-04/05/06` sind die Control-Plane (kleine VMs auf pve00-02), die Client-VMs `vm-nomad-client-04/05/06` sind die Worker-Nodes mit Linstor-CSI-Storage (IPs siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md)).
 
 - `Consul Server API 04/05/06` -- `/v1/status/leader` auf Consul der drei Server-VMs (Port 8500)
 - `Vault Server Health 04/05/06` -- `/v1/sys/health?standbyok=true&perfstandbyok=true` auf Vault der Server-VMs (Port 8200)
@@ -67,7 +67,7 @@ Uptime Kuma nutzt den Webhook-Notifier "Keep" (ID 1) als Standardweg.
 - **HTTP-Method** -- POST mit JSON-Payload
 - **Default Enabled** -- aktiviert
 
-Severity-Klasse, Topic-Wahl und Bot-Routing entscheidet Keep (siehe [Keep](../monitoring/keep.md)). Discord, Email oder andere Notifier in Uptime Kuma sind nicht Teil der Architektur und werden nicht angelegt.
+Severity-Klasse, Topic-Wahl und Bot-Routing entscheidet Keep (siehe [Keep](../keep/index.md)). Discord, Email oder andere Notifier in Uptime Kuma sind nicht Teil der Architektur und werden nicht angelegt.
 
 ::: danger `Default Enabled` schützt nicht vor Coverage-Gaps
 Die Annahme, `Default Enabled` hänge den Notifier automatisch an jeden Monitor, ist **falsch**. Sie greift nur beim Anlegen über die Weboberfläche. Per API (`uptime-kuma-api`) angelegte Monitore bekommen ohne explizite `notificationIDList` **keine** Notification und alarmieren dann nie -- auch nicht beim ersten DOWN.
@@ -104,7 +104,7 @@ Die Nachschlage-Details zu Uptime Kuma stehen in der [Uptime Kuma Referenz](./re
 ## Verwandte Seiten
 
 - [Uptime Kuma Referenz](./referenz.md) -- resendInterval, API-Cache-Falle, Kuma-CRUD
-- [Monitoring Stack](../monitoring/index.md) -- Grafana, Loki, InfluxDB, Alloy
-- [Telegram-Bots](../monitoring/telegram-bots.md) -- Telegram-Relay-Architektur
-- [Backup-Strategie](../backup/index.md) -- Push-Monitore für Backup-Jobs
-- [Traefik Referenz](../traefik/referenz.md) -- `intern-auth` und `intern-noauth`-Middleware-Chains
+- [Monitoring Stack](../index.md) -- Grafana, Loki, InfluxDB, Alloy
+- [Telegram-Bots](../keep/telegram-bots.md) -- Telegram-Relay-Architektur
+- [Backup-Strategie](../../backup/index.md) -- Push-Monitore für Backup-Jobs
+- [Traefik Referenz](../../traefik/referenz.md) -- `intern-auth` und `intern-noauth`-Middleware-Chains

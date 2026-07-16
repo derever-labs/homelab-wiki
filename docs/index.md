@@ -75,10 +75,10 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | Thema | Beschreibung |
 | :--- | :--- |
 | [Monitoring Stack](./monitoring/) | Grafana, InfluxDB, Loki, Alloy |
-| [CheckMK](./checkmk/) | Infrastructure Monitoring |
+| [CheckMK](./monitoring/checkmk/) | Infrastructure Monitoring |
 | [CrowdSec](./crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |
-| [Uptime Kuma](./uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
+| [Uptime Kuma](./monitoring/uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
 | [Synology NAS Monitoring](./synology-monitoring/) | CheckMK-Hardware-Health, lokaler Telegraf, Grafana NAS-Dashboard |
 
 ## Produktivität
