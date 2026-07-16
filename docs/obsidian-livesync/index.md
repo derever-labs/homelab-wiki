@@ -76,6 +76,6 @@ Der Service ist bewusst nur intern erreichbar (`intern-noauth@file`). Obsidian-C
 
 ## Verwandte Seiten
 
-- [Traefik Middlewares](../traefik/referenz.md) -- CORS-Middleware und IP-Whitelist
-- [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept
-- [Linstor CSI](../linstor-storage/index.md) -- Replizierter Block-Storage (DRBD)
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- CORS-Middleware und IP-Whitelist
+- [Backup-Strategie](../storage/backup/index.md) -- Übergeordnetes Backup-Konzept
+- [Linstor CSI](../storage/linstor/index.md) -- Replizierter Block-Storage (DRBD)

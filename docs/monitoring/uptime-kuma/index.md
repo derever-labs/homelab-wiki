@@ -106,5 +106,5 @@ Die Nachschlage-Details zu Uptime Kuma stehen in der [Uptime Kuma Referenz](./re
 - [Uptime Kuma Referenz](./referenz.md) -- resendInterval, API-Cache-Falle, Kuma-CRUD
 - [Monitoring Stack](../index.md) -- Grafana, Loki, InfluxDB, Alloy
 - [Telegram-Bots](../keep/telegram-bots.md) -- Telegram-Relay-Architektur
-- [Backup-Strategie](../../backup/index.md) -- Push-Monitore für Backup-Jobs
-- [Traefik Referenz](../../traefik/referenz.md) -- `intern-auth` und `intern-noauth`-Middleware-Chains
+- [Backup-Strategie](../../storage/backup/index.md) -- Push-Monitore für Backup-Jobs
+- [Traefik Referenz](../../edge/traefik/referenz.md) -- `intern-auth` und `intern-noauth`-Middleware-Chains

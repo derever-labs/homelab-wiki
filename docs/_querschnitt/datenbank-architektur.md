@@ -90,7 +90,7 @@ Neue Datenbanken und User werden über den idempotenten `mariadb-setup`-Batch-Jo
 
 ## Backup
 
-Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
+Die vollständige Backup-Dokumentation befindet sich unter [Backup](../storage/backup/).
 
 | Methode | Zeitplan | Retention | Ziel |
 | :--- | :--- | :--- | :--- |
@@ -100,5 +100,5 @@ Die vollständige Backup-Dokumentation befindet sich unter [Backup](../backup/).
 ## Verwandte Seiten
 
 - [Datenbanken](../_referenz/datenbanken.md) -- Service-zu-Datenbank-Zuordnung, Vault-Pfade, Nomad Jobs
-- [Backup](../backup/) -- PostgreSQL Dumps, PBS-VM-Backups und Retention
-- [Linstor Storage](../linstor-storage/) -- DRBD-Storage und Linstor CSI
+- [Backup](../storage/backup/) -- PostgreSQL Dumps, PBS-VM-Backups und Retention
+- [Linstor Storage](../storage/linstor/) -- DRBD-Storage und Linstor CSI

@@ -60,7 +60,7 @@ Das Backup läuft als Poststart-Sidecar in derselben Group und nicht als eigener
 | Ziel | `/nfs/backup/karakeep` auf dem NAS (NFS-Guard prüft das Ziel vor dem Schreiben) |
 | Rotation | GFS 7 täglich / 28 wöchentlich (Sonntag) / 90 monatlich (Monatserster) |
 
-Warum App-Level und nicht das VM-Backup: PBS sichert nur ganze VMs, und für die DRBD-Volumes gibt es keinen Einzelvolume-Restore. Ein konsistenter Snapshot der Live-Datenbank ist nur über die SQLite-Online-Backup-API möglich. Einordnung in die übrigen Backup-Ebenen: [Backup](../backup/index.md).
+Warum App-Level und nicht das VM-Backup: PBS sichert nur ganze VMs, und für die DRBD-Volumes gibt es keinen Einzelvolume-Restore. Ein konsistenter Snapshot der Live-Datenbank ist nur über die SQLite-Online-Backup-API möglich. Einordnung in die übrigen Backup-Ebenen: [Backup](../storage/backup/index.md).
 
 ## Monitoring
 
@@ -70,5 +70,5 @@ Der Backup-Sidecar sendet nach erfolgreichem Lauf einen Push an den Uptime-Kuma-
 
 - [Karakeep](./index.md) -- Architektur und Rolle im Stack
 - [Karakeep Betrieb](./betrieb.md) -- Erfassung, Restore, Reindex, Troubleshooting
-- [Backup](../backup/index.md) -- Gesamtübersicht aller Backup-Schichten
+- [Backup](../storage/backup/index.md) -- Gesamtübersicht aller Backup-Schichten
 - [Uptime Kuma](../monitoring/uptime-kuma/index.md) -- Push-Monitore und Alerting

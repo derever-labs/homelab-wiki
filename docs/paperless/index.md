@@ -68,13 +68,13 @@ Der Consumer-Prozess überwacht das Consume-Verzeichnis und verarbeitet neue Dat
 
 ## Backup
 
-- **Dokumente:** Linstor-CSI-Volume `paperless-data-r2`, abgedeckt durch die allgemeine [Backup-Strategie](../backup/index.md)
+- **Dokumente:** Linstor-CSI-Volume `paperless-data-r2`, abgedeckt durch die allgemeine [Backup-Strategie](../storage/backup/index.md)
 - **Datenbank:** PostgreSQL Shared Cluster, siehe [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md)
 - **Export:** Paperless bietet einen eingebauten Export-Mechanismus (Ziel `/paperless-storage/export` im CSI-Volume)
 
 ## Verwandte Seiten
 
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
-- [Backup-Strategie](../backup/index.md) -- Übergeordnetes Backup-Konzept
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Storage für Dokumente
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Backup-Strategie](../storage/backup/index.md) -- Übergeordnetes Backup-Konzept
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Storage für Dokumente
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration

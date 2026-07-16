@@ -34,5 +34,5 @@ MeshCommander läuft mit Nomad-Priority 50 (Nomad-Standardwert). Bei Ressourcenk
 
 ## Verwandte Seiten
 
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration
 - [Proxmox Cluster](../proxmox/index.md) -- MeshCommander verwaltet AMT-fähige Hardware

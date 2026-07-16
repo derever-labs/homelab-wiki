@@ -36,7 +36,7 @@ Stash ist ein selbstgehosteter Media Organizer für Videos und Bilder. Er bietet
 
 ## Rolle im Stack
 
-Stash ist der zentrale Media Organizer für heruntergeladene Inhalte. Die Batch Jobs ([Content Pipeline](../content-pipeline/index.md)) laden neue Medien herunter und triggern anschliessend über die Stash GraphQL-API automatisch einen Library Scan und die Generierung von Vorschaubildern, Sprites und Thumbnails.
+Stash ist der zentrale Media Organizer für heruntergeladene Inhalte. Die Batch Jobs ([Content Pipeline](../medien/content-pipeline/index.md)) laden neue Medien herunter und triggern anschliessend über die Stash GraphQL-API automatisch einen Library Scan und die Generierung von Vorschaubildern, Sprites und Thumbnails.
 
 ### Zwei Instanzen -- warum?
 
@@ -124,8 +124,8 @@ Der `stash-jellyfin-proxy` emuliert die Jellyfin-API vor der Haupt-Instanz, soda
 
 ## Verwandte Seiten
 
-- [Content Pipeline](../content-pipeline/index.md) -- Batch Jobs die Stash füttern
+- [Content Pipeline](../medien/content-pipeline/index.md) -- Batch Jobs die Stash füttern
 - [Video-Download-Tools](../video-download/index.md) -- Manuelle Download-UIs
-- [Arr-Stack](../arr-stack/index.md) -- Medien-Automatisierung (Sonarr, Radarr, etc.)
-- [Jellyfin](../jellyfin/index.md) -- Media Player
-- [Linstor](../linstor-storage/index.md) -- CSI Storage für beide Instanzen
+- [Arr-Stack](../medien/arr-stack/index.md) -- Medien-Automatisierung (Sonarr, Radarr, etc.)
+- [Jellyfin](../medien/jellyfin/index.md) -- Media Player
+- [Linstor](../storage/linstor/index.md) -- CSI Storage für beide Instanzen

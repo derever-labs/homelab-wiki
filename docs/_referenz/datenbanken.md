@@ -95,4 +95,4 @@ DbGate (`dbgate.ackermannprivat.ch`) steht als Web-UI für die Datenbankverwaltu
 ## Verwandte Seiten
 
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- Architekturkonzept und DRBD-Replikation
-- [Backup](../backup/) -- PostgreSQL Dumps, DRBD Snapshots und Retention
+- [Backup](../storage/backup/) -- PostgreSQL Dumps, DRBD Snapshots und Retention

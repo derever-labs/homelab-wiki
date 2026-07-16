@@ -27,10 +27,10 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | Thema | Beschreibung |
 | :--- | :--- |
 | [Proxmox](./proxmox/) | Virtualisierungsplattform (3 Nodes, HA-Cluster) |
-| [Vault](./vault/) | Zentrale Secrets-Verwaltung |
-| [Nomad](./nomad/) | Container- und Job-Orchestrierung |
-| [Consul](./consul/) | Service Discovery und Health Checks |
-| [Traefik](./traefik/) | Reverse Proxy, SSL-Terminierung |
+| [Vault](./plattform/vault/) | Zentrale Secrets-Verwaltung |
+| [Nomad](./plattform/nomad/) | Container- und Job-Orchestrierung |
+| [Consul](./plattform/consul/) | Service Discovery und Health Checks |
+| [Traefik](./edge/traefik/) | Reverse Proxy, SSL-Terminierung |
 | [DNS](./dns/) | Pi-hole, Unbound, Consul-Forwarding |
 | [Netzwerk](./netzwerk/) | VLANs, Subnets, Routing |
 | [UniFi](./unifi/) | Netzwerk-Hardware, Access Points, VLAN-Segmentierung |
@@ -40,17 +40,17 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [NAS Storage](./nas-storage/) | Synology NFS-Exports und Garage S3 |
-| [Linstor Storage](./linstor-storage/) | DRBD-repliziertes Block-Storage (CSI) |
-| [Backup](./backup/) | Backup-Strategie, PBS, pg_dumpall |
+| [NAS Storage](./storage/nas/) | Synology NFS-Exports und Garage S3 |
+| [Linstor Storage](./storage/linstor/) | DRBD-repliziertes Block-Storage (CSI) |
+| [Backup](./storage/backup/) | Backup-Strategie, PBS, pg_dumpall |
 
 ## Kerndienste
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [Authentik](./authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
-| [LDAP im Homelab](./ldap/) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
-| [Docker Registry](./docker-registry/) | Zot OCI Registry |
+| [Authentik](./edge/authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
+| [LDAP im Homelab](./edge/ldap.md) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
+| [Docker Registry](./plattform/docker-registry/) | Zot OCI Registry |
 | [SMTP Relay](./smtp-relay/) | Mail-Relay für Services |
 | [Wiki](./vitepress-wiki/) | VitePress Dokumentations-Deployment |
 | [Security](./security/) | CrowdSec, Authentik, Zugriffskontrolle |
@@ -60,14 +60,14 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [Jellyfin](./jellyfin/) | Media Server |
-| [Arr-Stack](./arr-stack/) | Sonarr, Radarr, Prowlarr, SABnzbd |
-| [Jellyseerr](./jellyseerr/) | Media Requests |
-| [Content Pipeline](./content-pipeline/) | Download-Automatisierung |
+| [Jellyfin](./medien/jellyfin/) | Media Server |
+| [Arr-Stack](./medien/arr-stack/) | Sonarr, Radarr, Prowlarr, SABnzbd |
+| [Jellyseerr](./medien/jellyseerr.md) | Media Requests |
+| [Content Pipeline](./medien/content-pipeline/) | Download-Automatisierung |
 | [Stash](./stash/) | Media Organizer |
-| [AudioBookShelf](./audiobookshelf/) | Hörbücher und E-Books |
+| [AudioBookShelf](./medien/audiobookshelf.md) | Hörbücher und E-Books |
 | [Video Download](./video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./media-tools/) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
+| [Media Tools](./medien/media-tools.md) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
 | [SuggestArr](./suggestarr/) | AI-Empfehlungen für Jellyfin via Jellyseerr |
 
 ## Monitoring
@@ -76,7 +76,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 | :--- | :--- |
 | [Monitoring Stack](./monitoring/) | Grafana, InfluxDB, Loki, Alloy |
 | [CheckMK](./monitoring/checkmk/) | Infrastructure Monitoring |
-| [CrowdSec](./crowdsec/) | Intrusion Prevention |
+| [CrowdSec](./edge/crowdsec/) | Intrusion Prevention |
 | [Dashboards](./dashboards/) | Flame, Homepage |
 | [Uptime Kuma](./monitoring/uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
 | [Synology NAS Monitoring](./synology-monitoring/) | CheckMK-Hardware-Health, lokaler Telegraf, Grafana NAS-Dashboard |
@@ -102,7 +102,7 @@ Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentati
 
 | Thema | Beschreibung |
 | :--- | :--- |
-| [IoT Stack](./iot-stack/) | Home Assistant, Zigbee2MQTT, Mosquitto |
+| [IoT Stack](./smart-home/iot-stack/) | Home Assistant, Zigbee2MQTT, Mosquitto |
 | [LLM Stack](./llm-stack/) | Ollama, Open-WebUI, HolLama |
 | [Claude Code](./claude-code/) | Claude-Agent-Setup, MCP-Server, Skills |
 | [Secrets (Claude-Agent)](./secrets/) | PRIVAT-Agent-Vault-Struktur für Claude |

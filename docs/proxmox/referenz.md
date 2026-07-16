@@ -13,7 +13,7 @@ Referenz-Details zum Proxmox VE Cluster "lenzburg": iGPU-Passthrough, VM-Disk- u
 
 ## iGPU Passthrough
 
-Die Intel Iris Xe iGPU (Alder Lake, 96 EU) auf pve01 und pve02 wird per **Full Passthrough** an die Nomad-Client VMs durchgereicht. Hauptanwendung: [Jellyfin](../jellyfin/index.md) Hardware-Transcoding (QSV).
+Die Intel Iris Xe iGPU (Alder Lake, 96 EU) auf pve01 und pve02 wird per **Full Passthrough** an die Nomad-Client VMs durchgereicht. Hauptanwendung: [Jellyfin](../medien/jellyfin/index.md) Hardware-Transcoding (QSV).
 
 | Host | iGPU | PCI-Adresse | Ziel-VM | Machine Type |
 |------|------|-------------|---------|--------------|

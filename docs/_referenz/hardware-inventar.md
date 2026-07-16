@@ -199,7 +199,7 @@ Seit dem NAS-Cutover (2026-06) laufen zwei Synology-NAS im Homelab.
 | Funktion | Rollback-Anker nach Cutover; serviert die Jellyfin-Mediathek von USB-Shares per NFS an die Media-Worker |
 | Festplatten | unbekannt (Anzahl, Grösse, RAID-Level) |
 
-NFS-Exports und Mount-Pfade: [NAS-Speicher](../nas-storage/index.md)
+NFS-Exports und Mount-Pfade: [NAS-Speicher](../storage/nas/index.md)
 
 ## UniFi Netzwerk-Hardware
 
@@ -237,5 +237,5 @@ IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwe
 ## Verwandte Seiten
 
 - [Proxmox Cluster](../proxmox/index.md) -- VM-Zuordnung und IPs der Hosts
-- [NAS-Speicher](../nas-storage/index.md) -- NFS-Exports, Garage S3, Wartung
+- [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports, Garage S3, Wartung
 - [Netzwerk](../netzwerk/index.md) -- Switches, Access Points, Thunderbolt-Topologie

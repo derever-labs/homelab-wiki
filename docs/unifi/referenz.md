@@ -121,4 +121,4 @@ Die Root-Partition (`/boot/firmware`) enthält genau 2 Firmware-Images (aktiv + 
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- IP-Adressen aller UniFi-Geräte
 - [Ports und Dienste](../_referenz/ports-und-dienste.md) -- Vollständige Port-Übersicht
 - [Zugangsdaten](../_referenz/credentials.md) -- Speicherorte für UniFi-Credentials
-- [Traefik Referenz](../traefik/referenz.md) -- Routing und Middleware Chains hinter dem Port-Forward
+- [Traefik Referenz](../edge/traefik/referenz.md) -- Routing und Middleware Chains hinter dem Port-Forward

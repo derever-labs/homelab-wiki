@@ -175,7 +175,7 @@ Aktive Hardening-Optionen: `harden-below-nxdomain`, `harden-algo-downgrade` und 
 
 ### Consul DNS
 
-Service Discovery für den HashiCorp-Cluster. Alle drei Consul Server (vm-nomad-server-04/05/06) stellen DNS auf Port 8600 bereit -- Adressen siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) und [HashiCorp Stack](../nomad/index.md).
+Service Discovery für den HashiCorp-Cluster. Alle drei Consul Server (vm-nomad-server-04/05/06) stellen DNS auf Port 8600 bereit -- Adressen siehe [Hosts und IPs](../_referenz/hosts-und-ips.md) und [HashiCorp Stack](../plattform/nomad/index.md).
 
 ## Synchronisation (Nebula-Sync)
 
@@ -228,6 +228,6 @@ Ein periodischer Batch Job (`batch-jobs/dns-performance.nomad`) misst alle 5 Min
 ## Verwandte Seiten
 
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Kanonische IP-Adresstabelle
-- [HashiCorp Stack](../nomad/index.md) -- Consul-Cluster Details
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Consul-Cluster Details
 - [Netzwerk](../netzwerk/index.md) -- VLANs, DNS, Routing
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Alle periodischen Nomad Jobs

@@ -263,7 +263,7 @@ Das Tailscale-Overlay (CGNAT-Bereich `100.64.0.0/10`) verbindet die drei Standor
 
 Alle externen Services sind über `*.ackermannprivat.ch` erreichbar. Traefik (Keepalived HA, VIP: [Hosts und IPs](../_referenz/hosts-und-ips.md)) terminiert TLS mit Cloudflare-Zertifikaten.
 
-Middleware-Chains und Zugangssteuerung: [Traefik](../traefik/)
+Middleware-Chains und Zugangssteuerung: [Traefik](../edge/traefik/)
 
 ## Hardware-Inventar
 
@@ -294,5 +294,5 @@ Der UDM Pro ist nicht direkt am Glasfaser-Endpunkt angeschlossen, sondern per SF
 - [UniFi](../unifi/) -- Controller, WLAN, Firewall-Konfiguration
 - [Proxmox](../proxmox/) -- Cluster-Knoten und VM-Übersicht
 - [DNS](../dns/) -- Pi-hole, Unbound, Consul DNS
-- [Traefik](../traefik/) -- Reverse Proxy und Middleware Chains
+- [Traefik](../edge/traefik/) -- Reverse Proxy und Middleware Chains
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Vollständige IP-Zuordnung

@@ -26,7 +26,7 @@ export default defineConfig({
     },
 
     nav: [
-      { text: 'Systeme', link: '/traefik/' },
+      { text: 'Systeme', link: '/edge/traefik/' },
       { text: 'Referenz', link: '/_referenz/hosts-und-ips' },
       { text: 'Richtlinien', link: '/wiki-richtlinien' },
     ],

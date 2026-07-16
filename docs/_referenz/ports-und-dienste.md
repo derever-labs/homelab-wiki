@@ -65,7 +65,7 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 
 ## Nomad Jobs -- Statische Ports
 
-Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln siehe [Nomad Betrieb](../nomad/betrieb.md#statische-vs-dynamische-ports).
+Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln siehe [Nomad Betrieb](../plattform/nomad/betrieb.md#statische-vs-dynamische-ports).
 
 ### Datenbanken und Infrastruktur
 

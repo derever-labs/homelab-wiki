@@ -1,0 +1,168 @@
+---
+title: Linstor Betrieb
+description: Betriebshandbuch für Linstor/DRBD -- HA-Failover, Troubleshooting, Volume-Verwaltung
+tags:
+  - linstor
+  - drbd
+  - betrieb
+  - troubleshooting
+---
+
+# Linstor Betrieb
+
+## Übersicht
+
+Linstor/DRBD läuft im Active/Passive HA-Modus auf client-05 (ACTIVE) und client-06 (STANDBY), mit client-04 als disklosem Quorum-Witness. Der Controller wird durch DRBD Reactor automatisch verwaltet.
+
+## Abhängigkeiten
+
+- **DRBD Reactor** auf client-05 und client-06 -- steuert Controller-Failover
+- **Consul** -- Service Discovery für CSI Plugin (`linstor-controller.service.consul:3370`)
+- **Nomad CSI Plugin** (`system/linstor-csi.nomad`) -- ermöglicht persistente Volumes in Nomad Jobs
+- **Thunderbolt-Netzwerk** (10.99.1.0/24) -- DRBD-Replikationspfad
+
+## Automatisierung
+
+- DRBD Reactor: Startet/stoppt den Linstor Controller automatisch bei Quorum-Änderungen
+- `nomad-csi-reeval.timer` auf client-05/client-06: Löst blockierte CSI-Evaluations nach Boot auf
+- Linstor Consul Registration Script: Registriert den aktiven Controller bei Consul
+- fstrim (`batch-jobs/fstrim.nomad`, sysbatch client-05/client-06, wöchentlich So 06:00): Gibt ungenutzte Blöcke an den LVM-Thin-Pool zurück (Voraussetzung seit `noatime` statt `discard`)
+- drbd-verify (`batch-jobs/drbd-verify.nomad`, periodic So 07:00): Sequenzielles `drbdadm verify` über alle replizierten Ressourcen ausser `linstor_db` (eigene io-error-Quorum-Policy) als Bit-Rot-Schutz; Kuma-Push am Run-Ende
+
+## Bekannte Einschränkungen
+
+- CSI Boot Race Condition nach Node-Reboot (mitigiert durch `nomad-csi-reeval.timer`, Details: [CSI Boot Race Condition](#csi-boot-race-condition))
+- LVM Thin Pool Monitoring weicht von Linstor-Kapazitätsangaben ab -- beide Quellen prüfen
+- Split-Brain theoretisch möglich wenn Quorum-Mechanismus versagt (Prozess: [Split-Brain Recovery Runbook](./split-brain-runbook.md))
+- Offizielles LINBIT Image (drbd.io) erfordert Registrierung -- `kvaps/linstor-csi` als Alternative
+- **peer-tiebreaker nie manuell setzen:** Ein manuelles `DrbdOptions/PeerDevice/peer-tiebreaker` auf einer resource-connection entzieht LINSTOR das Tiebreaker-Management (`Vote=No`). Korrektur: Property leeren und die client-04-Ressource mit `--keep-tiebreaker` neu anlegen lassen.
+- **MaxOversubscriptionRatio=30:** Auf c05/c06 gesetzt (Default 5). Stark overcommitteter Thin Pool -- bei Pool-Full-Episode können DRBD-Bitmaps korrupt werden.
+
+## Credentials
+
+Linstor Controller benötigt keine separate Authentifizierung im internen Netzwerk. LINBIT GUI ist über Authentik ForwardAuth (`intern-auth`) geschützt -- Zugangsdaten: [Zugangsdaten](../../_referenz/credentials.md).
+
+## Controller Failover
+
+### Automatischer Failover
+
+DRBD Reactor überwacht das `linstor_db` DRBD-Volume und steuert den Controller automatisch:
+
+1. DRBD Reactor erkennt Quorum-Verlust auf dem ausgefallenen Node
+2. Standby-Node erhält Quorum und wird DRBD Primary
+3. drbd-reactor mounted `/var/lib/linstor` und startet `linstor-controller`
+4. Satellites reconnecten automatisch zum neuen Controller
+5. CSI Plugin verbindet automatisch (Consul Service Discovery)
+6. Failover dauert ca. 10-15 Sekunden
+
+### Manueller Failover
+
+Manuelles Eviction über `drbd-reactorctl evict linstor_db` (ca. 20 Sekunden).
+
+### Failover-Szenarien
+
+| Szenario | Verhalten | Failover-Zeit |
+|----------|-----------|---------------|
+| Controller-Node down | Automatischer Failover zum Standby | ~10-15 Sekunden |
+| Netzwerk-Partition | Quorum entscheidet (2-von-3 Nodes) | ~10-15 Sekunden |
+| Manueller Failover | `drbd-reactorctl evict linstor_db` | ~20 Sekunden |
+| DRBD Split-Brain | Verhindert durch Quorum-Mechanismus | - |
+
+## Split-Brain Recovery
+
+Ein Split-Brain (beide Nodes sehen sich als Primary) wird im Normalbetrieb durch das Quorum (2-von-3) verhindert. Falls er dennoch eintritt, ist die destruktive Recovery mit Datenverlust auf dem Secondary im [Split-Brain Recovery Runbook](./split-brain-runbook.md) beschrieben.
+
+## Volume-Management
+
+### Aktive Volumes (Homelab)
+
+| Volume | Grösse | Verwendung |
+|--------|---------|------------|
+| **linstor_db** | 500 MiB | Linstor Controller H2 Datenbank (HA) |
+| flame-data | 1 GiB | Flame Dashboard |
+| flame-intra-data | 1 GiB | Flame-Intra Dashboard |
+| gitea-data | 5 GiB | Gitea Git Server |
+| influxdb-data-r2 | 30 GiB | InfluxDB Time Series DB |
+| jellyfin-config-r2 | 30 GiB | Jellyfin Media Server Config |
+| loki-data | 20 GiB | Loki Log Aggregation |
+| mosquitto-data | 1 GiB | MQTT Persistence |
+| obsidian-livesync-data | 1 GiB | CouchDB |
+| paperless-data-r2 | 20 GiB | Paperless-ngx Dokumente |
+| postgres-data-r2 | 20 GiB | PostgreSQL Datenbank (zentral) |
+| sabnzbd-config-r2 | 1 GiB | SABnzbd Download Client |
+| stash-data-r2 | 10 GiB | Stash Media Organizer |
+| stash-secure-data | 2 GiB | Stash-Secure Config/Cache/Metadata |
+| uptime-kuma-data-r2 | 5 GiB | Uptime Kuma Monitoring |
+| vaultwarden-data-r2 | 1 GiB | Vaultwarden Password Manager |
+
+Alle Volumes sind 2-fach repliziert (client-05 + client-06) mit Diskless TieBreaker auf client-04. Die -r2-Volumes wurden am 2026-05-30 via CSI-nativer Neu-Erstellung (autoPlace=2, rg-replicated) + Datenmigration aus day0-defekten Single-Replica-Volumes migriert.
+
+::: warning linstor_db
+`linstor_db` ist ein spezielles Volume für die Controller-Datenbank. Es wird von drbd-reactor verwaltet und sollte nicht manuell geändert werden.
+:::
+
+### Storage Nodes
+
+| Node | Disk | Pool | Kapazität |
+|------|------|------|-----------|
+| vm-nomad-client-05 | /dev/sdb | linstor_pool | 200 GB |
+| vm-nomad-client-06 | /dev/sdb | linstor_pool | 200 GB |
+
+## Monitoring
+
+### Grafana Dashboard
+
+URL: `https://graf.ackermannprivat.ch/d/linstor-storage/linstor-storage`. Die Panel-Übersicht steht in der [Linstor Referenz](./referenz.md#grafana-panels).
+
+### LVM Thin Pool Monitoring
+
+Linstor meldet `storage_pool_capacity_free_bytes`, aber dies bildet die tatsächliche LVM-Thin-Pool-Auslastung (inkl. Snapshot-Overhead) nicht korrekt ab. Beim Thin-Pool-Overflow-Incident zeigte Linstor noch freien Platz, während LVM bei 100% war.
+
+Die LVM-Metriken werden per Cron (1 Min) als InfluxDB Line Protocol exportiert und über Telegraf nach InfluxDB geschrieben. Zusätzlich läuft ein CheckMK Local Check direkt auf dem Host (75% WARN, 85% CRIT) als Safety Net -- funktioniert auch wenn der gesamte Container-Stack ausfällt.
+
+### Wichtige Metriken
+
+Die Prometheus-/InfluxDB-Metriken sind in der [Linstor Referenz](./referenz.md#linstor-metriken) tabelliert.
+
+## LINBIT GUI
+
+::: warning Archiviert 14.04.2026
+Der `linstor-gui`-Job wurde archiviert (`system/linstor-gui.nomad.deprecated`). Grund: LINBIT publiziert `linstor-gui` nirgends öffentlich als Docker-Image, der bisher verwendete Tag `v2.4.0` liess sich nicht mehr nachvollziehen. Operations laufen über die `linstor` CLI auf den Controller-Nodes; eine GUI ist für den Betrieb nicht erforderlich. Bei Bedarf kann das Image aus dem GitHub-Repo (`LINBIT/linstor-gui`, letzter Release `v1.8.2`) selbst gebaut werden.
+:::
+
+## CSI Boot Race Condition
+
+### Problem
+
+Nach einem Node-Reboot kann es vorkommen, dass CSI-abhängige Nomad Jobs (Postgres, Vaultwarden, etc.) in `pending` hängen bleiben. Die Ursache ist eine Timing-Lücke: Die Jobs werden evaluiert bevor das Linstor CSI Plugin als "healthy" registriert ist. Nomad erstellt eine "blocked eval", die normalerweise aufgelöst wird wenn das Plugin healthy wird -- aber in manchen Fällen bleibt sie stecken (dokumentiert in GitHub Issues #8994, #13028, #11784).
+
+### Lösung: nomad-csi-reeval Timer
+
+Auf client-05 und client-06 läuft ein systemd Timer (`nomad-csi-reeval.timer`), der 60 Sekunden nach dem Boot ein poll-basiertes Script startet:
+
+1. Wartet bis die Nomad API erreichbar ist
+2. Wartet bis das CSI Plugin `linstor.csi.linbit.com` mindestens einen healthy Node hat
+3. Sucht nach blockierten Evaluations und re-evaluiert diese
+
+Das Script ist idempotent -- bei bereits laufenden Jobs passiert nichts.
+
+### Troubleshooting
+
+Bei Problemen den Timer-Status und das Journal des `nomad-csi-reeval`-Services auf den betroffenen Nodes prüfen. Blockierte Evaluations sind über die Nomad-UI unter Evaluations (Filter: Status=blocked) sichtbar.
+
+### Dateien
+
+Script, Service, Timer und Env-Datei sind in der [Linstor Referenz](./referenz.md#csi-boot-reeval-dateien) tabelliert.
+
+## Backup
+
+Die allgemeine Backup-Strategie für DRBD-Volumes ist in der [Backup-Dokumentation](../backup/) beschrieben.
+
+## Verwandte Seiten
+
+- [Linstor Storage](./) -- Architektur, HA-Design, CSI-Integration
+- [Linstor Referenz](./referenz.md) -- Nachschlagewerte (CSI, Metriken, Performance)
+- [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
+- [Proxmox](../../proxmox/) -- Host- und VM-Übersicht
+- [Nomad](../../plattform/nomad/) -- Container-Orchestrierung mit CSI-Volumes
+- [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes

@@ -150,7 +150,7 @@ Standardmässig lösen Warnungen (WARN) und kritische Zustände (CRIT) eine Bena
 ## Wartung
 
 - **Update:** Erfolgt über das OMD-Paketmanagement (`omd update`) innerhalb der VM
-- **Backup:** Die gesamte VM wird täglich vom [Proxmox Backup Server](../../backup/referenz.md) gesichert
+- **Backup:** Die gesamte VM wird täglich vom [Proxmox Backup Server](../../storage/backup/referenz.md) gesichert
 
 ## Verwandte Seiten
 
@@ -159,4 +159,4 @@ Standardmässig lösen Warnungen (WARN) und kritische Zustände (CRIT) eine Bena
 - [Monitoring Stack](../index.md) -- Grafana, Loki, Uptime Kuma und Alloy für Metriken und Logs
 - [Uptime Kuma](../uptime-kuma/index.md) -- Synthetic-Monitoring für Endpoint-Verfügbarkeit
 - [Keep](../keep/index.md) -- Incident-Hub, an den CheckMK alle Alerts weiterleitet
-- [Proxmox Backup Server](../../backup/referenz.md) -- VM-Backup von CheckMK
+- [Proxmox Backup Server](../../storage/backup/referenz.md) -- VM-Backup von CheckMK

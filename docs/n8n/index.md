@@ -53,4 +53,4 @@ Zu jedem freigeschalteten Pfad ist der parallele `/webhook-test/*`-Testpfad eben
 - [Zeiterfassung](../zeiterfassung/index.md) -- Geofence-Automation und Git-Commit Tracking via n8n Workflows
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Scraper Post-Processing und KI-Enrichment
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
-- [Traefik Middlewares](../traefik/referenz.md) -- Webhook-Routing und IP-Whitelist
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Webhook-Routing und IP-Whitelist

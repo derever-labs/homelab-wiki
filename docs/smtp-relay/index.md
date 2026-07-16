@@ -137,6 +137,6 @@ Die Ansible-Role `postfix-relay` konfiguriert Postfix auf den PVE-Nodes, dem Bac
 ## Verwandte Seiten
 
 - [CheckMK Monitoring](../monitoring/checkmk/index.md) -- Nutzt SMTP Relay für Alert-E-Mails
-- [Proxmox Backup Server](../backup/referenz.md) -- Sendet Backup-Benachrichtigungen via SMTP
+- [Proxmox Backup Server](../storage/backup/referenz.md) -- Sendet Backup-Benachrichtigungen via SMTP
 - [Proxmox-Cluster](../proxmox/index.md) -- PVE-Nodes als Postfix Satellites
 - [DNS-Architektur](../dns/index.md) -- Consul DNS für smtp.service.consul

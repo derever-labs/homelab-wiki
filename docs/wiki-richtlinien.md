@@ -63,16 +63,16 @@ Jede Information existiert an genau **einem** Ort. Andere Stellen verlinken mit 
 | Nomad Job-Verzeichnis | [Nomad Jobs](./_referenz/nomad-jobs.md) | System-Seiten (eigener Job-Pfad OK) |
 | TLS-Zertifikate | [TLS-Zertifikate](./_referenz/tls-zertifikate.md) | System-Seiten |
 | Datenbank-Zuordnung | [Datenbanken](./_referenz/datenbanken.md) | System-Seiten |
-| Middleware Chains | [Traefik Referenz](./traefik/referenz.md) | System-Seiten |
+| Middleware Chains | [Traefik Referenz](./edge/traefik/referenz.md) | System-Seiten |
 | DNS-Architektur | [DNS](./dns/) | netzwerk/ |
-| Backup-Architektur | [Backup](./backup/) | System-Seiten |
-| LDAP & Benutzerverwaltung | [LDAP im Homelab](./ldap/) | security/, System-Seiten |
-| CrowdSec | [CrowdSec](./crowdsec/) | security/, traefik/ |
+| Backup-Architektur | [Backup](./storage/backup/) | System-Seiten |
+| LDAP & Benutzerverwaltung | [LDAP im Homelab](./edge/ldap.md) | security/, System-Seiten |
+| CrowdSec | [CrowdSec](./edge/crowdsec/) | security/, traefik/ |
 | Service-Abhängigkeiten | [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | System-Seiten |
-| NFS-Exports, Mount-Pfade | [NAS-Speicher](./nas-storage/) | System-Seiten |
+| NFS-Exports, Mount-Pfade | [NAS-Speicher](./storage/nas/) | System-Seiten |
 
 ::: tip SSOT-Regel anwenden
-Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in einer System-Seite zu wiederholen, schreibe "Authentifizierung über `intern-auth@file` (Details: [Traefik Referenz](./traefik/referenz.md))".
+Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, verlinke statt kopieren. Beispiel: Statt die Middleware-Chain-Tabelle in einer System-Seite zu wiederholen, schreibe "Authentifizierung über `intern-auth@file` (Details: [Traefik Referenz](./edge/traefik/referenz.md))".
 :::
 
 ## Struktur

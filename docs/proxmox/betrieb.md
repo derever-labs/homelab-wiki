@@ -52,7 +52,7 @@ Die Nodes `pve-01-nana` (Dottikon) und `pve-lu-01` (Luzern) sind **kein** Cluste
 
 - **Lokale ZFS-Disk** -- jede Node speichert ihre VMs auf der eigenen NVMe. Keine Live-Migration zwischen den Standorten (kein Shared Storage).
 - **Reboot unkritisch** -- da kein Quorum gehalten werden muss, ist ein Reboot jederzeit möglich; die VMs kommen über `onboot` automatisch zurück (z.B. homeassistant-luzern / homeassistant-dottikon).
-- **Backup via PBS** -- die externen Nodes sichern ihre VMs über den gemeinsamen [Proxmox Backup Server](../backup/referenz.md) (push über Tailscale).
+- **Backup via PBS** -- die externen Nodes sichern ihre VMs über den gemeinsamen [Proxmox Backup Server](../storage/backup/referenz.md) (push über Tailscale).
 - **Wartung via Ansible** -- angesprochen über die Inventory-Gruppe `proxmox_external` (gemeinsame Plays via `all_proxmox_hosts`).
 
 ::: tip Cross-Cluster-Migration: keine Snapshots
@@ -75,8 +75,8 @@ Zugangsdaten: [Credentials](../_referenz/credentials.md). SSO via Authentik, Fal
 
 - [Proxmox Übersicht](index.md) -- Komponenten, Architektur und Steckbrief des Clusters
 - [Proxmox Referenz](referenz.md) -- iGPU-Passthrough, VM-Disk-/ZFS-Tuning, SSO/OIDC-Felder und PDM-Konfiguration
-- [Backup](../backup/) -- PBS-Datastore und Backup-Strategie
-- [Linstor Storage](../linstor-storage/) -- DRBD-replizierter Block-Storage für VM-Disks
+- [Backup](../storage/backup/) -- PBS-Datastore und Backup-Strategie
+- [Linstor Storage](../storage/linstor/) -- DRBD-replizierter Block-Storage für VM-Disks
 - [Netzwerk](../netzwerk/) -- VLANs, VIPs und Routing im Homelab
 - [Hardware-Inventar](../_referenz/hardware-inventar.md) -- Node-Specs und verbaute Hardware
 - [Credentials](../_referenz/credentials.md) -- Zugangsdaten für Proxmox und PBS

@@ -85,7 +85,7 @@ Linstor repliziert es zwischen `vm-nomad-client-05` und `vm-nomad-client-06`. De
 
 ### Sicherheit
 
-- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist (Range-Details: [Traefik Referenz](../traefik/referenz.md)). Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
+- Traefik-Middleware-Chain `intern-noauth@file` ist eine reine IP-Allowlist (Range-Details: [Traefik Referenz](../edge/traefik/referenz.md)). Es läuft kein Authentik-ForwardAuth davor -- die Bitwarden-Clients authentisieren direkt gegen Vaultwarden mit Master-Passwort und 2FA.
 - Externe Zugriffe (Mobile, unterwegs) laufen über das Tailscale-Netz, dessen Bereich in der Allowlist enthalten ist.
 - TLS terminiert Traefik mit dem Default-Wildcard-Zertifikat.
 
@@ -102,11 +102,11 @@ Vaultwarden verschickt Mails (Einladungen, Hinweise, Master-Password-Hint) über
 Die zwei Datenpfade werden separat gesichert:
 
 - **PostgreSQL-DB `vaultwarden`** -- Teil der `postgres-backup`-Pipeline aus dem zentralen Postgres-Cluster
-- **CSI-Volume `vaultwarden-data-r2`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
+- **CSI-Volume `vaultwarden-data-r2`** -- DRBD-Replikation zwischen client-05/06; die [Backup-Strategie](../storage/backup/index.md) deckt darüber hinaus Off-Cluster-Snapshots ab
 
 ## Verwandte Seiten
 
-- [Backup-Strategie](../backup/index.md)
-- [Linstor / DRBD-Storage](../linstor-storage/index.md)
-- [Traefik Middlewares](../traefik/referenz.md)
+- [Backup-Strategie](../storage/backup/index.md)
+- [Linstor / DRBD-Storage](../storage/linstor/index.md)
+- [Traefik Middlewares](../edge/traefik/referenz.md)
 - [SMTP-Relay](../smtp-relay/index.md)

@@ -92,4 +92,4 @@ Das CSI-Plugin (`system/linstor-csi.nomad`) steht **nicht** auf der Blocklist: E
 
 - [GitHub Actions Runner](./index.md) -- Übersicht und Architektur
 - [GitHub Actions Runner Referenz](./referenz.md) -- Vault-Konfiguration, Pipeline-Details
-- [HashiCorp Stack](../nomad/index.md) -- Vault und Nomad
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Vault und Nomad

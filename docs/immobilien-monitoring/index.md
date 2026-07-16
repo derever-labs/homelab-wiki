@@ -411,5 +411,5 @@ Zurückgestellt wegen minimalem Mehrwert (3 Listings) bei überproportionalem Im
 - [Batch-Jobs](../_querschnitt/batch-jobs.md) -- Übersicht aller Nomad Periodic Jobs
 - [GitHub Runner](../github-runner/) -- Self-Hosted CI/CD Runner
 - [Telegram Bots](../monitoring/keep/telegram-bots.md) -- Benachrichtigungssystem
-- [Docker Registry (ZOT)](../docker-registry/) -- OCI Image Registry
-- [Vault](../vault/) -- Secret Management
+- [Docker Registry (ZOT)](../plattform/docker-registry/) -- OCI Image Registry
+- [Vault](../plattform/vault/) -- Secret Management

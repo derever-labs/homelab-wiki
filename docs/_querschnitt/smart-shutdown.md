@@ -129,7 +129,7 @@ Der Weg zur heutigen Version (Iterationen v9 bis v10.2 mit den jeweils verworfen
 ## Verwandte Seiten
 
 - [Cluster-Neustart](./cluster-restart.md) -- Vollständiger Neustart des gesamten HashiCorp Stacks
-- [Linstor/DRBD](../linstor-storage/index.md) -- Storage-Cluster und DRBD-Ressourcen
-- [HashiCorp Stack](../nomad/index.md) -- Nomad Node Lifecycle und Drain-Konzept
+- [Linstor/DRBD](../storage/linstor/index.md) -- Storage-Cluster und DRBD-Ressourcen
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Nomad Node Lifecycle und Drain-Konzept
 - [Batch Jobs](./batch-jobs.md) -- Täglicher Reboot-Job der den Smart Shutdown nutzt
-- [Nomad Betrieb](../nomad/betrieb.md) -- Automatisierung und Policies im Nomad-Cluster
+- [Nomad Betrieb](../plattform/nomad/betrieb.md) -- Automatisierung und Policies im Nomad-Cluster

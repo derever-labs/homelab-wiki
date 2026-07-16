@@ -52,7 +52,7 @@ Alternative falls Pre-Load fehlt: Notfall-Job-Spec mit `image = "docker.io/proje
 
 Wenn ZOT down ist und Keep oder Uptime-Kuma neu gestartet werden müssen, blockiert ein `localhost:5000/...`-Image-Pfad den Restart -- genau dann wenn man Alerts oder Status-Sicht am dringendsten braucht. Resultat: ZOT-Outage wird nicht alarmiert.
 
-Lösung: Diese Jobs pullen direkt vom Upstream (bare Hub-Name oder expliziter Hostname). Bei bare Hub-Names greift der `registry-mirror` im Normalfall trotzdem über ZOT (Cache nutzt), fällt aber bei ZOT-404/down auf Docker Hub zurück. Details und Liste der Bootstrap-Klasse in [docker-registry/index.md](../docker-registry/index.md#proxy-cache-registries).
+Lösung: Diese Jobs pullen direkt vom Upstream (bare Hub-Name oder expliziter Hostname). Bei bare Hub-Names greift der `registry-mirror` im Normalfall trotzdem über ZOT (Cache nutzt), fällt aber bei ZOT-404/down auf Docker Hub zurück. Details und Liste der Bootstrap-Klasse in [docker-registry/index.md](../plattform/docker-registry/index.md#proxy-cache-registries).
 
 ### 5. Pi-hole-Upstream darf nicht auf Consul
 

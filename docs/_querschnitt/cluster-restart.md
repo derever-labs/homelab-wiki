@@ -71,7 +71,7 @@ Service-Jobs mit CSI-Volumes (u.a. ZOT selbst) starten erst, wenn Linstor das Vo
 
 - Linstor-Controller muss auf einem der Clients laufen
 - DRBD-Ressourcen müssen synchron sein (kein `Outdated` oder `StandAlone` Status)
-- Bei Stale-Claims nach unclean Shutdown: `nomad system gc` (siehe [Docker Registry](../docker-registry/betrieb.md#failover-wiederanlauf))
+- Bei Stale-Claims nach unclean Shutdown: `nomad system gc` (siehe [Docker Registry](../plattform/docker-registry/betrieb.md#failover-wiederanlauf))
 
 #### 4b. ZOT-Registry zuerst hochfahren
 
@@ -104,7 +104,7 @@ Falls Consul keine Leader-Wahl mehr durchführen kann (kein Quorum möglich):
 
 ## Verwandte Seiten
 
-- [HashiCorp Stack](../nomad/index.md) -- Architektur und Konfiguration von Consul, Vault, Nomad
+- [HashiCorp Stack](../plattform/nomad/index.md) -- Architektur und Konfiguration von Consul, Vault, Nomad
 - [Kontrolliertes Herunterfahren](./smart-shutdown.md) -- Drain-Prozess für einzelne Nomad-Nodes
-- [Linstor/DRBD](../linstor-storage/index.md) -- Storage-Cluster und DRBD-Ressourcen
+- [Linstor/DRBD](../storage/linstor/index.md) -- Storage-Cluster und DRBD-Ressourcen
 - [Batch Jobs](./batch-jobs.md) -- Periodische Jobs die nach einem Restart ggf. manuell angestossen werden müssen

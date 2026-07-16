@@ -18,7 +18,7 @@ Metabase ist die Business-Intelligence-Plattform für Datenvisualisierung. Prim�
 | URL | [metabase.ackermannprivat.ch](https://metabase.ackermannprivat.ch) \| Siehe [Web-Interfaces](../_referenz/web-interfaces.md) |
 | Deployment | Nomad Job `services/metabase.nomad` |
 | Storage | Linstor CSI `metabase-data` (`/plugins`) |
-| Auth | `intern-auth@file` (Authentik ForwardAuth + IP-Allowlist), siehe [Traefik Middlewares](../traefik/referenz.md) |
+| Auth | `intern-auth@file` (Authentik ForwardAuth + IP-Allowlist), siehe [Traefik Middlewares](../edge/traefik/referenz.md) |
 
 ## Rolle im Stack
 
@@ -39,4 +39,4 @@ Metabase hält seine eigenen Metadaten in der PostgreSQL-Datenbank `metabase` (U
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Primärer Use Case für Metabase-Dashboards
 - [n8n](../n8n/index.md) -- Datenquelle (PostgreSQL `n8n` Datenbank)
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
-- [Traefik Middlewares](../traefik/referenz.md) -- Auth-Chain-Konfiguration
+- [Traefik Middlewares](../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration
