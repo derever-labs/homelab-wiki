@@ -17,6 +17,7 @@ Diese Seite listet die Konfigurationsparameter von Engine und Bouncer, die verwe
 | Attribut | Wert |
 | :--- | :--- |
 | **Log-Quelle** | Docker-Socket (`/var/run/docker.sock:ro`), `source: docker` + `container_name: [traefik]` in `acquis.yaml` |
+| **Ban-Dauer** | 4 h (`duration: 4h` im Default-Profil, `profiles.yaml` im config-Volume beider Nodes, nicht im Repo) |
 | **Config** | `/home/sam/docker/crowdsec/config` |
 | **Daten** | `/home/sam/docker/crowdsec/data` |
 
@@ -41,6 +42,10 @@ Die Engine verwendet folgende Collections zur Angriffserkennung:
 | `crowdsecurity/sshd` | SSH Brute-Force-Erkennung |
 | `LePresidente/jellyfin` | Jellyfin-spezifische Szenarien |
 | `firix/authentik` | Authentik-spezifische Szenarien |
+
+::: warning sshd- und authentik-Collections ohne Datenquelle
+Die Acquisition liest ausschliesslich die Logs des Traefik-Containers (siehe Log-Quelle in den [Engine-Parametern](#engine-parameter)). `crowdsecurity/sshd` und `firix/authentik` sind installiert und aktiv, erhalten aber keine passenden Events und bleiben damit wirkungslos.
+:::
 
 ## Lokale Whitelists
 
