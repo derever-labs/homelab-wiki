@@ -59,7 +59,7 @@ Die Cache- und Transcode-Verzeichnisse liegen bewusst auf der lokalen SSD statt 
 
 Vor Jellyfin laufen drei Traefik-Router nebeneinander:
 
-- **`jellyfin`** -- Default-Router für die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../../banner/index.md) kommt nicht mehr aus dieser Chain, sondern über Jellyfins Custom-CSS (siehe unten).
+- **`jellyfin`** -- Default-Router für die Web-UI und Item-/Image-/JSON-Endpoints. Middleware-Chain `public-noauth@file` mit Crowdsec, Security-Headers und Error-Pages. Der [Wartungsbanner](../../dienste/banner/index.md) kommt nicht mehr aus dieser Chain, sondern über Jellyfins Custom-CSS (siehe unten).
 - **`jellyfin-login`** (Priority 10) -- nur `/Users/AuthenticateByName`. Gleiche Chain plus Rate-Limit gegen Brute-Force.
 - **`jellyfin-stream`** (Priority 100) -- alle binären oder streaming-ähnlichen Pfade. Chain bewusst kürzer: nur `crowdsec@file` und `secure-headers@file` -- **kein `error-pages`** (das würde sonst HTML in Binär-/Range-Antworten schreiben). Historisch lief hier auch kein `banner-inject`/`force-identity-encoding`; beide sind inzwischen global zurückgebaut.
 
@@ -84,7 +84,7 @@ Web-UI (`/web/*`), JSON-APIs (`/Users/...`, `/Library/...`, `/Sessions/*`, `/Ite
 
 ## Wartungsbanner via Custom-CSS
 
-Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern über Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile lädt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollständige Mechanik und Pflege: [Wartungsbanner](../../banner/index.md).
+Der Wartungsbanner wird nicht mehr von Traefik in die HTML-Antwort injiziert, sondern über Jellyfins **Benutzerdefiniertes CSS** (Dashboard -> Allgemein) eingebunden: eine `@import`-Zeile lädt `banner.ackermannprivat.ch/banner.css`, das Pocketbase je nach `banner_config` server-seitig rendert. Der Import steht hinter dem Ultrachromic-Theme-Import und ist inaktiv, solange kein Banner geschaltet ist. Vollständige Mechanik und Pflege: [Wartungsbanner](../../dienste/banner/index.md).
 
 Damit entfällt der ursprüngliche `banner-inject`-Grund des Streaming-Bypass oben -- die `plugin-rewritebody`-Pufferung berührt Jellyfin nicht mehr. Der Stream-Router bleibt trotzdem sinnvoll, weil er auch `error-pages` von binären Pfaden fernhält.
 
@@ -92,5 +92,5 @@ Damit entfällt der ursprüngliche `banner-inject`-Grund des Streaming-Bypass ob
 
 - [Jellyfin (Übersicht)](./index.md) -- Steckbrief, Architektur und Abhängigkeiten
 - [Jellyfin Betrieb](./betrieb.md) -- Authentifizierung, IPv6, täglicher Restart, Kurator-Playlists
-- [Proxmox](../../proxmox/index.md) -- GPU Full Passthrough der Iris Xe
-- [Wartungsbanner](../../banner/index.md) -- Banner-Mechanik und Pflege
+- [Proxmox](../../infrastruktur/proxmox/index.md) -- GPU Full Passthrough der Iris Xe
+- [Wartungsbanner](../../dienste/banner/index.md) -- Banner-Mechanik und Pflege

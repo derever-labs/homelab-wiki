@@ -184,5 +184,5 @@ folgt über CSI ohne Daten-Sync) ist oben unter Architektur beschrieben.
 
 - [Zot Container Registry - Betrieb](./betrieb.md) -- Failover, Backup, Troubleshooting
 - [Storage NAS](../../storage/nas/index.md) -- Garage S3 (ehemaliges ZOT-Backend)
-- [DNS-Architektur](../../dns/index.md) -- DNS-Auflösung für Upstream-Registries
+- [DNS-Architektur](../../netz/dns/index.md) -- DNS-Auflösung für Upstream-Registries
 - [Cluster-Neustart](../../_querschnitt/cluster-restart.md) -- Verhalten der Registry nach Cluster-Restart

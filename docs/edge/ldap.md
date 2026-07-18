@@ -122,5 +122,5 @@ Der Nomad Job `databases/open-ldap.nomad` (`osixia/openldap`, Port 389) läuft n
 - [Authentik](./authentik/index.md) -- Identity Provider und Stack-Einbindung
 - [Authentik Referenz -- LDAP Authentication Flow](./authentik/referenz.md#ldap-authentication-flow) -- Stages, Cache, Sequenz-Diagramm
 - [Jellyfin](../medien/jellyfin/index.md) -- einziger aktiver LDAP-Consumer
-- [Sicherheit](../security/index.md) -- Authentifizierungskonzept und Zugriffsgruppen
+- [Sicherheit](../_querschnitt/security/index.md) -- Authentifizierungskonzept und Zugriffsgruppen
 - [Traefik Referenz](./traefik/referenz.md) -- ForwardAuth und Middleware-Chains

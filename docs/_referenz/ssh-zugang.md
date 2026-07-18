@@ -23,7 +23,7 @@ Im Homelab sind drei SSH-Ports mit klar getrennter Funktion im Einsatz:
 | 2222 | Gitea-SSH (Git über SSH) | Nomad-Clients (Consul-Service `gitea-ssh`) |
 | 22222 | HAOS Developer-SSH | -- (bewusst nicht verwendet) |
 
-Port 2222 ist ausschliesslich der Gitea-Daemon (siehe [Gitea](../gitea/)) und läuft auf den Nomad-Clients, nicht auf einer HA-VM -- gleicher Port, anderer Host. Der HAOS-eigene Developer-SSH (22222) wird **nicht** genutzt: Er lässt sich nur über ein `CONFIG`-beschriftetes Medium aktivieren und ist damit nicht fernkonfigurierbar.
+Port 2222 ist ausschliesslich der Gitea-Daemon (siehe [Gitea](../dienste/gitea/)) und läuft auf den Nomad-Clients, nicht auf einer HA-VM -- gleicher Port, anderer Host. Der HAOS-eigene Developer-SSH (22222) wird **nicht** genutzt: Er lässt sich nur über ein `CONFIG`-beschriftetes Medium aktivieren und ist damit nicht fernkonfigurierbar.
 
 ### Home-Assistant-VMs (HAOS)
 
@@ -45,7 +45,7 @@ Diese Konvention gilt standortübergreifend. Lenzburg ist im Homelab dokumentier
 ## Proxmox Nodes
 
 ::: warning Zugriff aus dem Tailnet: native Tailscale-IP verwenden
-Hosts mit eigenem tailscaled verwerfen Tailnet-Pakete auf ihre LAN-IP ([Tailscale](../netzwerk/tailscale.md)). Aus dem Tailnet gelten: pve00 = `100.89.174.31`, pve01 = `100.107.162.51`, pve02 = `100.83.119.111`, vm-traefik-01 = `100.101.37.122`, vm-traefik-02 = `100.91.238.106`, checkmk = `100.114.224.117`. Die LAN-IPs unten gelten für Zugriff aus dem LAN.
+Hosts mit eigenem tailscaled verwerfen Tailnet-Pakete auf ihre LAN-IP ([Tailscale](../netz/netzwerk/tailscale.md)). Aus dem Tailnet gelten: pve00 = `100.89.174.31`, pve01 = `100.107.162.51`, pve02 = `100.83.119.111`, vm-traefik-01 = `100.101.37.122`, vm-traefik-02 = `100.91.238.106`, checkmk = `100.114.224.117`. Die LAN-IPs unten gelten für Zugriff aus dem LAN.
 :::
 
 SSH-Zugang als `root` auf den Management-IPs.
@@ -107,5 +107,5 @@ LXC-Container sind nicht direkt per SSH erreichbar. Zugriff via ProxyJump über 
 ## Verwandte Seiten
 
 - [Hosts und IPs](./hosts-und-ips.md) -- Vollständige IP-Tabelle
-- [Proxmox](../proxmox/) -- Virtualisierungsplattform
+- [Proxmox](../infrastruktur/proxmox/) -- Virtualisierungsplattform
 - [Credentials](./credentials.md) -- Token-Speicherorte

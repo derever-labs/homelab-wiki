@@ -47,5 +47,5 @@ Der Gossip Encryption Key ist in der Ansible-Konfiguration hinterlegt und wird b
 - [Consul Übersicht](./index.md) -- Architektur und Service Discovery
 - [Consul Konfiguration](./index.md#konfiguration) -- Konfigurationspfade und Autopilot
 - [Nomad](../nomad/) -- Workload Scheduler, der Services in Consul registriert
-- [DNS-Architektur](../../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [DNS-Architektur](../../netz/dns/) -- DNS-Kette inkl. Consul-Forwarding
 - [Credentials](../../_referenz/credentials.md) -- Zugangsdaten und Keys

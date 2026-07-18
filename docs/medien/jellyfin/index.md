@@ -24,7 +24,7 @@ Die Referenz -- Hardware-Transcoding-Codecs, Storage-Mounts, Traefik-Routing und
 | Config Storage | Linstor CSI Volume `jellyfin-config` (DRBD-repliziert) |
 | Media Storage | NFS `/nfs/jellyfin` ([NAS](../../storage/nas/index.md)) |
 | Auth | LDAP Bind via [Authentik LDAP Outpost](../../edge/authentik/index.md) (kein OAuth/ForwardAuth) |
-| GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../../proxmox/index.md) |
+| GPU | Intel Iris Xe (i9-12900H) via Full Passthrough von [Proxmox](../../infrastruktur/proxmox/index.md) |
 | Transcoding | Intel QSV (Hardware), OpenCL Tone Mapping (HDR→SDR) |
 
 ## Architektur

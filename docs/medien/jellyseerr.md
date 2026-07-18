@@ -100,6 +100,6 @@ Seerr darf nicht über externe URLs (`*.ackermannprivat.ch`) mit Sonarr/Radarr/J
 
 - [Arr Stack](./arr-stack/index.md) -- Sonarr, Radarr, Prowlarr und SABnzbd
 - [Jellyfin](./jellyfin/index.md) -- Medienserver, dessen Verfügbarkeit Seerr abfragt
-- [SuggestArr](../suggestarr/index.md) -- Erstellt automatisch Pending Requests in Seerr
+- [SuggestArr](./suggestarr/index.md) -- Erstellt automatisch Pending Requests in Seerr
 - [Traefik Referenz](../edge/traefik/referenz.md) -- Middleware Chains für Authentifizierung
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

@@ -220,6 +220,6 @@ Falls Traefik nach einem Reboot nicht läuft: Docker Compose Stack manuell start
 - [Traefik Middleware Chains](./referenz.md) -- Vollständige Middleware-Dokumentation
 - [Traefik Betrieb](./betrieb.md) -- Failover-, Failback- und Split-Brain-Prozeduren
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking und Threat Intelligence
-- [DNS-Architektur](../../dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
+- [DNS-Architektur](../../netz/dns/index.md) -- DNS-Auflösung für *.ackermannprivat.ch
 - [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
-- [Netzwerk-Topologie](../../netzwerk/index.md) -- Netzwerkarchitektur und Routing
+- [Netzwerk-Topologie](../../netz/netzwerk/index.md) -- Netzwerkarchitektur und Routing

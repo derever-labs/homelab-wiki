@@ -15,7 +15,7 @@ Diese Seite ist die kanonische Quelle für alle IP-Adressen im Homelab. Andere S
 
 ## Netzwerk-Bereiche
 
-Die VLAN-Segmente gehören zum Hauptstandort **Lenzburg**; darunter die Standort-LANs der Aussenstellen und das standortübergreifende Tailscale-Overlay. Topologie: [Netzwerk](../netzwerk/), Standort-Details: [Standorte](../netzwerk/standorte.md).
+Die VLAN-Segmente gehören zum Hauptstandort **Lenzburg**; darunter die Standort-LANs der Aussenstellen und das standortübergreifende Tailscale-Overlay. Topologie: [Netzwerk](../netz/netzwerk/), Standort-Details: [Standorte](../netz/netzwerk/standorte.md).
 
 | Netzwerk | Bereich | VLAN | Verwendung |
 | :--- | :--- | :--- | :--- |
@@ -139,6 +139,6 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration 
 
 ## Verwandte Seiten
 
-- [Proxmox](../proxmox/) -- Virtualisierungsplattform und Cluster-Konfiguration
-- [Netzwerk](../netzwerk/) -- VLANs, DNS, Routing
+- [Proxmox](../infrastruktur/proxmox/) -- Virtualisierungsplattform und Cluster-Konfiguration
+- [Netzwerk](../netz/netzwerk/) -- VLANs, DNS, Routing
 - [Hardware](./hardware-inventar.md) -- Physische Server-Details

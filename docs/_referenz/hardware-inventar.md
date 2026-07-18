@@ -102,7 +102,7 @@ luzern -> internet: Tailscale {
 
 ## Server-Übersicht
 
-Detaillierte VM-Zuordnung: [Proxmox Cluster](../proxmox/index.md). IP-Adressen: [Hosts und IPs](./hosts-und-ips.md).
+Detaillierte VM-Zuordnung: [Proxmox Cluster](../infrastruktur/proxmox/index.md). IP-Adressen: [Hosts und IPs](./hosts-und-ips.md).
 
 | Server | Rolle | CPU (Kerne) | RAM | Storage | Modell |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -203,7 +203,7 @@ NFS-Exports und Mount-Pfade: [NAS-Speicher](../storage/nas/index.md)
 
 ## UniFi Netzwerk-Hardware
 
-Switches und Access Points stehen am Hauptstandort **Lenzburg** (Spalte Standort = Raum). Die beiden Aussenstellen haben je ein eigenes UniFi-Gateway (am Tabellenende). Standort-Kontext: [Standorte](../netzwerk/standorte.md).
+Switches und Access Points stehen am Hauptstandort **Lenzburg** (Spalte Standort = Raum). Die beiden Aussenstellen haben je ein eigenes UniFi-Gateway (am Tabellenende). Standort-Kontext: [Standorte](../netz/netzwerk/standorte.md).
 
 | Gerät | Modell | Typ | Ports | Standort |
 | :--- | :--- | :--- | :--- | :--- |
@@ -236,6 +236,6 @@ IP-Adressen aller UniFi-Geräte: [Hosts und IPs](./hosts-und-ips.md#unifi-netzwe
 
 ## Verwandte Seiten
 
-- [Proxmox Cluster](../proxmox/index.md) -- VM-Zuordnung und IPs der Hosts
+- [Proxmox Cluster](../infrastruktur/proxmox/index.md) -- VM-Zuordnung und IPs der Hosts
 - [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports, Garage S3, Wartung
-- [Netzwerk](../netzwerk/index.md) -- Switches, Access Points, Thunderbolt-Topologie
+- [Netzwerk](../netz/netzwerk/index.md) -- Switches, Access Points, Thunderbolt-Topologie

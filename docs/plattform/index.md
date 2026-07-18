@@ -87,9 +87,9 @@ traefik -> consul: 8. Catalog beobachten, Router bauen { class: disco-async }
 
 Lesehilfe:
 
-1. Ein Deploy erreicht die Nomad-Server über die ACL-geschützte HTTPS-API -- im Normalfall durch den CI-Workflow `deploy-nomad-jobs.yml` im Repo `homelab-nomad-jobs`, der seinen kurzlebigen Nomad-Token über Vault bezieht (Muster: [GitHub Runner Referenz](../github-runner/referenz.md)).
+1. Ein Deploy erreicht die Nomad-Server über die ACL-geschützte HTTPS-API -- im Normalfall durch den CI-Workflow `deploy-nomad-jobs.yml` im Repo `homelab-nomad-jobs`, der seinen kurzlebigen Nomad-Token über Vault bezieht (Muster: [GitHub Runner Referenz](../dienste/github-runner/referenz.md)).
 2. Der [Scheduler](./nomad/#scheduler-konfiguration) wählt den Ziel-Client (Spread-Algorithmus, Preemption nach Prioritäts-Schema) und übergibt die Allokation per RPC an dessen Nomad-Agent.
-3. Der Docker-Daemon des Clients pullt das Image -- die Job-Files referenzieren `zot.service.consul:5000/...` explizit statt sich auf den [Mirror-Mechanismus](./docker-registry/#daemon-json-mirror-pattern) zu verlassen; die Namensauflösung läuft über Pi-hole an Consul DNS ([DNS-Architektur](../dns/)).
+3. Der Docker-Daemon des Clients pullt das Image -- die Job-Files referenzieren `zot.service.consul:5000/...` explizit statt sich auf den [Mirror-Mechanismus](./docker-registry/#daemon-json-mirror-pattern) zu verlassen; die Namensauflösung läuft über Pi-hole an Consul DNS ([DNS-Architektur](../netz/dns/)).
 4. Fehlt das Image im Cache, spiegelt Zot es on-demand von [Docker Hub, ghcr.io oder quay.io](./docker-registry/#proxy-cache-registries) und liefert es danach aus dem eigenen Volume.
 5. Für Secrets zeigt der Task sein von Nomad ausgestelltes JWT bei Vault vor ([Workload Identity](./vault/#workload-identity)); Vault validiert die Signatur gegen den JWKS-Endpunkt der Nomad-Server und stellt einen Token mit der Policy `nomad-workload` aus -- lesbar ist im Kern der eigene Pfad `kv/<job_id>` plus die geteilten Pfade unter `kv/shared/`; wenige Cross-Job-Ausnahmen regelt die Policy explizit.
 6. Der lokale Consul-Agent registriert die `service`-Stanza des Jobs und führt die Health Checks aus -- erst mit bestandenem Check ist der Service im Catalog und per DNS sichtbar ([Service Discovery](./consul/#service-discovery)).
@@ -188,7 +188,7 @@ Lesehilfe:
 - [Zot Container Registry](./docker-registry/) -- Pull-Through-Cache, Mirror-Pattern, Bootstrap-Klasse
 - [Nomad Timeout-Matrix](./nomad/timeouts.md) -- Timeout-Zusammenspiel von Cluster-, Job- und Plugin-Ebene
 - [Traefik](../edge/traefik/) -- Reverse Proxy mit Consul-Catalog-Discovery
-- [DNS-Architektur](../dns/) -- Kette von Pi-hole zu Consul DNS
+- [DNS-Architektur](../netz/dns/) -- Kette von Pi-hole zu Consul DNS
 - [Cluster-Neustart](../_querschnitt/cluster-restart.md) -- Startreihenfolge nach Komplett-Ausfall
 - [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeiten der App-Ebene
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- Adressen aller Cluster-VMs

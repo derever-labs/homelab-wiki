@@ -26,7 +26,7 @@ PBS sichert alle VMs und Container des Proxmox-Clusters täglich. Die Backup-Job
 Fleecing adressiert dieselbe Fehlerklasse, die die log-basierte Alert-Regel `Proxmox QMP Call Failed` überwacht (siehe [Monitoring](../../monitoring/index.md#alerting-unified-alerting)): QMP-Timeouts während vzdump/PBS-Backup, die ohne Fleecing zu eingefrorener VM-I/O führen können.
 :::
 
-Auch die externen [Standalone-Nodes](../../proxmox/index.md#externe-standalone-nodes) `pve-lu-01` (Luzern) und `pve-01-nana` (Dottikon) sichern ihre VMs auf denselben PBS -- der Backup-Push läuft über Tailscale. PBS wird dabei über die **lokale IP** (`10.0.2.50`) als Storage eingebunden (VPN-agnostisch), mit dediziertem Token `root@pam!pve-backup` (Rolle `DatastoreBackup`).
+Auch die externen [Standalone-Nodes](../../infrastruktur/proxmox/index.md#externe-standalone-nodes) `pve-lu-01` (Luzern) und `pve-01-nana` (Dottikon) sichern ihre VMs auf denselben PBS -- der Backup-Push läuft über Tailscale. PBS wird dabei über die **lokale IP** (`10.0.2.50`) als Storage eingebunden (VPN-agnostisch), mit dediziertem Token `root@pam!pve-backup` (Rolle `DatastoreBackup`).
 
 ### DRBD-Datendisk des Storage-Nodes c06 ausgenommen
 
@@ -59,5 +59,5 @@ Falls der Heartbeat ausbleibt (Backup fehlgeschlagen oder PBS nicht erreichbar),
 ## Verwandte Seiten
 
 - [Backup](./index.md) -- Gesamtübersicht aller Backup-Schichten
-- [Proxmox](../../proxmox/) -- Proxmox VE Cluster-Konfiguration und VM-Übersicht
+- [Proxmox](../../infrastruktur/proxmox/) -- Proxmox VE Cluster-Konfiguration und VM-Übersicht
 - [Monitoring](../../monitoring/) -- Uptime Kuma und Grafana für Backup-Monitoring
