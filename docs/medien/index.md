@@ -36,6 +36,9 @@ Die Details bleiben auf den Systemseiten: Transcoding und Routing in der [Jellyf
 | **[LazyLibrarian](./media-tools.md#lazylibrarian)** | Beschaffung von E-Books und Hörbüchern | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) |
 | **[Content Pipeline](./content-pipeline/index.md)** | Automatisierte Downloads mit Telegram-Steuerung | — (headless) |
 | **[Media-Hilfstools](./media-tools.md)** | Jellystat (Statistik), [Profilarr](./arr-stack/profilarr.md) (Profile-Sync) | siehe Seite |
+| **[Stash](./stash/index.md)** | Media Organizer und Metadata Manager (zwei getrennte Instanzen) | [s.](https://s.ackermannprivat.ch) / [secure.ackermannprivat.ch](https://secure.ackermannprivat.ch) |
+| **[SuggestArr](./suggestarr/index.md)** | AI-Empfehlungen für Jellyfin via Jellyseerr | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) |
+| **[Video-Download-Tools](./video-download/index.md)** | Web-UIs für manuelle Video-Downloads von diversen Plattformen | siehe Seite |
 
 ## Das Gesamtbild in drei Sichten
 
