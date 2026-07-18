@@ -20,7 +20,7 @@ Bedienung, Daily Digest, Dialog-Mechanik und Persistenz stehen im [Todo Ingest B
 |----------|------|
 | URL | [todo.ackermannprivat.ch](https://todo.ackermannprivat.ch) (API, öffentlich via Traefik) |
 | Web-Inbox | [inbox.ackermannprivat.ch](https://inbox.ackermannprivat.ch) (hinter Authentik, Gruppe `admin`) |
-| Daily Digest | [inbox.ackermannprivat.ch/digest](https://inbox.ackermannprivat.ch/digest) (Morgen-Automation + on-demand) |
+| Daily Digest | [inbox.ackermannprivat.ch/digest](https://inbox.ackermannprivat.ch/digest) (Morgen-Automation, Abend-Planung, on-demand) |
 | Deployment | Nomad Job `tools/todo-ingest.nomad`, Image aus [github.com/derever-labs/todo-ingest](https://github.com/derever-labs/todo-ingest) |
 | Storage | Linstor CSI: `todo-ingest-data` (SQLite, Betriebszustand) |
 | Auth | API: Bearer-Token im Service (kein Authentik); Inbox: Authentik-ForwardAuth plus HMAC-Aktions-Tokens |
@@ -65,7 +65,7 @@ Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
 Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
 Ingest.CTX -> Ingest.AI: "Duplikat- und\nAntwort-Kontext"
-Ingest.AI -> ClickUp: "neu anlegen / Kommentar /\nDuplikat überspringen" { style.stroke: "#16a34a" }
+Ingest.AI -> ClickUp: "neu anlegen / anpassen /\nKommentar / Duplikat überspringen" { style.stroke: "#16a34a" }
 Ingest.AI -> Ntfy: "Bestätigung oder Rückfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
 Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#2563eb" }
 Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
