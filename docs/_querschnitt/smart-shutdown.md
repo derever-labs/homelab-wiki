@@ -124,7 +124,7 @@ Solange die Sentinel-Datei existiert, setzt `nomad-boot-enable.service` die Elig
 
 ## Entscheidungsweg
 
-Der Weg zur heutigen Version (Iterationen v9 bis v10.2 mit den jeweils verworfenen Zwischenstaenden und ihren Fehlermodi) ist im [ADR: Smart-Shutdown-Entscheidungsweg](./adr-smart-shutdown.md) dokumentiert.
+Der Weg zur heutigen Version (Iterationen v9 bis v10.2 mit den jeweils verworfenen Zwischenstaenden und ihren Fehlermodi) ist in der Git-History nachvollziehbar.
 
 ## Verwandte Seiten
 

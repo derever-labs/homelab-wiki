@@ -102,7 +102,7 @@ Nomad.ST -> Nomad.PG
 
 ## Rolle im Stack
 
-solidtime und Kimai sind Endnutzer-Services hinter Traefik, das die externe TLS-Terminierung und das Routing übernimmt. Die UIs sind über Authentik ForwardAuth (`intern-auth`) abgesichert, während die API-Pfade die App-eigene Token-Auth nutzen. Daten liegen im Shared PostgreSQL Cluster (solidtime) bzw. einem MariaDB-Sidecar (Kimai); Secrets kommen aus Vault. n8n liefert als Automations-Schicht die Geofence- und Git-Commit-Anbindung.
+solidtime und Kimai sind Endnutzer-Services hinter Traefik, das die externe TLS-Terminierung und das Routing übernimmt. Die UIs sind über Authentik ForwardAuth (`intern-auth`) abgesichert, während die API-Pfade die App-eigene Token-Auth nutzen. Daten liegen im Shared PostgreSQL Cluster (solidtime) bzw. einem MariaDB-Sidecar (Kimai); Secrets kommen aus Vault. Kimai läuft bewusst nicht im Shared PostgreSQL Cluster, weil das Kimai-Docker-Image im Startup-Script nur MySQL/MariaDB unterstützt und PostgreSQL nicht out-of-the-box funktioniert. n8n liefert als Automations-Schicht die Geofence- und Git-Commit-Anbindung.
 
 ## Geofence-Automation
 
@@ -194,14 +194,6 @@ Neue Webhooks müssen explizit in der Traefik-Rule im Nomad Job (`services/n8n.n
 | KimaiMobileGPSInfoBundle | GPS-Standort-Aufzeichnung für Kimai Mobile App (nur Android) |
 
 solidtime hat keine Plugins installiert und bietet kein GPS-Tracking (weder nativ noch via Plugin) -- die standortbasierte Erfassung erfolgt deshalb über die Geofence-Automation.
-
-## Entscheidungslog
-
-- **2026-03-18:** solidtime und Kimai deployed zum Vergleich. solidtime als Haupttool gewählt wegen moderner UI, PWA, und Toggl-Ähnlichkeit. Kimai bleibt als Backup.
-- **2026-03-18:** Kimai Docker-Image unterstützt nur MySQL/MariaDB im Startup-Script. PostgreSQL ging nicht out-of-the-box, darum MariaDB-Sidecar statt Shared PostgreSQL Cluster.
-- **2026-03-18:** Geofence-Automation via n8n Webhooks + iOS Shortcuts implementiert, da solidtime und Kimai kein natives iOS-Geofencing bieten.
-- **2026-03-18:** Git-Commit Tracking für Finanzen und Tieffurt Repos. Ansatz: 1h-Blöcke pro Commit mit automatischer Zusammenfassung bei Überlappung. Bewusst einfach gehalten statt Editor-Plugin (Wakapi), da Commit-basiert ausreichend genau.
-- **2026-03-20:** solidtime Storage von NFS auf Redis Sidecar (ephemeral) migriert -- kein persistenter Storage mehr nötig, Cache und Sessions laufen über Redis. Kimai MariaDB von NFS auf Linstor CSI (`kimai-data`) migriert für bessere Performance; NFS bleibt nur noch für data/plugins.
 
 ## Verwandte Seiten
 

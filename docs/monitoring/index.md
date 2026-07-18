@@ -320,7 +320,7 @@ Die Log-Level je Komponente listet die [Monitoring Referenz](./referenz.md#log-l
 - [Telegram-Bots](./keep/telegram-bots.md) -- Bot- und Channel-Inventar (batch-Bot + Severity-Topics; vip idle)
 - [InfluxDB & Telegraf](./influxdb.md) -- Metriken-Backend, Buckets, Inputs und Direkt-Schreiber
 - [Grafana Alloy](./alloy.md) -- Log-Collector mit drei Deployment-Arten
-- [Migration Flux → InfluxQL](./migration-flux-zu-influxql.md) -- Retrospektive der April-2026 Query-Sprach-Migration, Trade-offs, HART-Budget, entdeckte Source-Drifts
+- Die Migration der Grafana-Dashboards und Alert-Rules von Flux auf InfluxQL erfolgte im April 2026, Details in der Git-History.
 - [Backup-Strategie](../storage/backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../storage/linstor/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs

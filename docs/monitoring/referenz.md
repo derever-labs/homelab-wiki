@@ -32,6 +32,8 @@ Grafana Unified Alerting wertet die folgenden metrik- und log-basierten Alert-Ru
 | Nomad Restart-Storm | `non_negative_difference(nomad_alloc_restarts.count) > 5` in 10min (per Alloc) | 2min | Warning |
 | Nomad Reschedule-Storm | `nomad_job_health.failed_10m > 5` (per Job, Host) | 5min | Critical |
 
+Die metrik-basierten Regeln laufen auf der InfluxQL-Datasource. Drei Alerts bleiben bewusst auf der parallel bestehenden Flux-Datasource: `nomad-memory-warn`, `nomad-memory-crit` und `synology-volume-warn`. Ihre arithmetische Verknüpfung zwischen verschiedenen `last()`-Aggregaten scheitert in InfluxQL, sobald die Felder unterschiedliche Tag-Strukturen haben, und eine Umstellung würde zu viel Grafana-Transformations-Komplexität in die Alerting-YAML einführen (HART-Budget).
+
 Die DRBD-Überwachung ist seit 2026-07-05 zustandsbasiert: Alarmiert wird auf die One-Hot-kodierten Zustände von Verbindung, Disk und Rolle (`drbd_connection_state`, `drbd_device_state`, `drbd_resource_role`), nicht mehr auf Out-of-Sync-Bytes. Der frühere byteweise Out-of-Sync-Alarm wurde entfernt: Der periodische `drbd-verify` erzeugt auf aktiven Thin-LVM-Volumes systembedingt Out-of-Sync-Spikes, obwohl die Replica `UpToDate` ist -- jede Byte-Schwelle löste dabei falsch aus. Echte Degradierung deckt die zustandsbasierte Regel `DRBD Degraded Replica` ab.
 
 ### Log-basierte Alert Rules (Loki)
