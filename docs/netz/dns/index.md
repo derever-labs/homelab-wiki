@@ -219,7 +219,7 @@ Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer e
 
 ## Historie
 
-Die Migrations-Chronologie der DNS-Infrastruktur (dnsmasq -> Pi-hole -> Bare-Metal-LXC) ist in der [ADR DNS-Migration Bare-Metal](./adr-migration-bare-metal.md) dokumentiert.
+Die Migrations-Chronologie der DNS-Infrastruktur (dnsmasq -> Pi-hole -> Bare-Metal-LXC) ist in der Git-History nachvollziehbar.
 
 ## DNS-Performance-Monitoring
 
