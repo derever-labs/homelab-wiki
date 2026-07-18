@@ -34,6 +34,8 @@ Die Referenz-Tabellen (Alert-Regeln, Log-Quellen, Log-Levels) stehen in der [Mon
 | **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
 | **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
 | **Uptime Kuma** | Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push) | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
+| **USV (APC)** | USV-Monitoring via NUT-Server und Grafana Alerting | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (`ups-apc-dashboard`) |
+| **Synology NAS Monitoring** | NAS-Hardware-Health via CheckMK, lokaler Telegraf und NAS-Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (`synology-nas-health`) |
 
 ## Das Gesamtbild in drei Pfaden
 
