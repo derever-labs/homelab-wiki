@@ -59,7 +59,7 @@ ClickUp: "ClickUp\n(HSLU oder Privat)" { class: node }
 Ntfy: "ntfy\n(Push aufs iPhone)" { class: node }
 Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
   class: node
-  tooltip: "Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rückfragen, zuletzt erstellte Tasks und die Diktat-Historie. Antworten und Reprocess laufen über HMAC-signierte Aktionen, Text-Erfassung über dieselbe Pipeline wie das Diktat"
+  tooltip: "Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rückfragen, zuletzt erstellte Tasks und die Diktat-Historie. Antworten, Anpassen und Reprocess laufen über HMAC-signierte Aktionen, Text-Erfassung über dieselbe Pipeline wie das Diktat"
 }
 
 Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
