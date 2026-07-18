@@ -453,5 +453,5 @@ Eigenschaften:
 - [Cluster-Restart-Runbook](./cluster-restart.md) -- konkrete Schritt-für-Schritt-Anleitung
 - [Cold-Start-Runbook](./cold-start-runbook.md) -- Disaster-Recovery-Reihenfolge
 - [Service-Abhängigkeiten](./service-abhaengigkeiten.md) -- Service-Dependency-Mapping
-- [Postmortem 2026-05-12](../postmortems/2026-05-12-zot-nas-cascade.md) -- Auslöser für
+- [Postmortem 2026-05-12](./postmortems/2026-05-12-zot-nas-cascade.md) -- Auslöser für
   diese Strategie

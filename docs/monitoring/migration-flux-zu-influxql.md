@@ -78,7 +78,7 @@ Diese Drifts wurden während der Source-Health-Prüfung erkannt und in ClickUp e
 
 ## GitOps-Workflow
 
-Die Dashboard-Verteilung ist Teil dieser Migration umgebaut worden. Vorher lag ein NFS-Mount `/nfs/docker/grafana/dashboards:ro` im Grafana-Container und Grafana nutzte den File-Provider -- ohne Git-Sync-Automation, ohne Audit-Spur, mit impliziter NAS-Kopplung. Neu: ein GitHub-Actions-Workflow (`deploy-grafana-dashboards.yml`) holt sich via Vault-Workload-Identity das Grafana Service-Account-Token und pusht geänderte Dashboards per `POST /api/dashboards/db`. Die Grafana-Adresse wird dynamisch aus dem Consul-Catalog gelöst, damit der Workflow unabhängig von dynamischen Nomad-Ports funktioniert und Authentik umgeht. Details: [GitHub Runner Referenz](../github-runner/referenz.md).
+Die Dashboard-Verteilung ist Teil dieser Migration umgebaut worden. Vorher lag ein NFS-Mount `/nfs/docker/grafana/dashboards:ro` im Grafana-Container und Grafana nutzte den File-Provider -- ohne Git-Sync-Automation, ohne Audit-Spur, mit impliziter NAS-Kopplung. Neu: ein GitHub-Actions-Workflow (`deploy-grafana-dashboards.yml`) holt sich via Vault-Workload-Identity das Grafana Service-Account-Token und pusht geänderte Dashboards per `POST /api/dashboards/db`. Die Grafana-Adresse wird dynamisch aus dem Consul-Catalog gelöst, damit der Workflow unabhängig von dynamischen Nomad-Ports funktioniert und Authentik umgeht. Details: [GitHub Runner Referenz](../dienste/github-runner/referenz.md).
 
 ## Lessons Learned
 
@@ -92,6 +92,6 @@ Die Dashboard-Verteilung ist Teil dieser Migration umgebaut worden. Vorher lag e
 
 - [Monitoring-Stack Übersicht](./index.md) -- Gesamtarchitektur des Monitoring-Stacks
 - [InfluxDB-Details](./influxdb.md) -- Datasource, Buckets, Downsampling-Tasks
-- [GitHub Runner Referenz](../github-runner/referenz.md) -- CD-Pipelines inkl. Dashboard-Deployment
+- [GitHub Runner Referenz](../dienste/github-runner/referenz.md) -- CD-Pipelines inkl. Dashboard-Deployment
 
 Betroffene Repo-Pfade: `nomad-jobs/monitoring/grafana-dashboards/`, `nomad-jobs/monitoring/grafana.nomad`, `nomad-jobs/monitoring/influxdb-tasks/`. Follow-up Source-Fixes (UPS/NUT, Telegraf prometheus-Input, Proxmox-Collector, raid_benchmark) sind in ClickUp erfasst.

@@ -41,4 +41,4 @@ Die Idee war, SQLite-Datenbanken über Litestream in Echtzeit auf MinIO-Instanze
 - [Datenbank-Architektur](./datenbank-architektur.md) -- PostgreSQL Cluster, Service-Zuordnung
 - [Backup-Strategie](../storage/backup/index.md) -- pg_dumpall, Linstor Snapshots, PBS
 - [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports und Garage S3
-- [Netzwerk-Topologie](../netzwerk/index.md) -- Thunderbolt-Netzwerk für Replikation
+- [Netzwerk-Topologie](../netz/netzwerk/index.md) -- Thunderbolt-Netzwerk für Replikation

@@ -36,6 +36,9 @@ Die Details bleiben auf den Systemseiten: Transcoding und Routing in der [Jellyf
 | **[LazyLibrarian](./media-tools.md#lazylibrarian)** | Beschaffung von E-Books und Hörbüchern | [lazylibrarian.ackermannprivat.ch](https://lazylibrarian.ackermannprivat.ch) |
 | **[Content Pipeline](./content-pipeline/index.md)** | Automatisierte Downloads mit Telegram-Steuerung | — (headless) |
 | **[Media-Hilfstools](./media-tools.md)** | Jellystat (Statistik), [Profilarr](./arr-stack/profilarr.md) (Profile-Sync) | siehe Seite |
+| **[Stash](./stash/index.md)** | Media Organizer und Metadata Manager (zwei getrennte Instanzen) | [s.](https://s.ackermannprivat.ch) / [secure.ackermannprivat.ch](https://secure.ackermannprivat.ch) |
+| **[SuggestArr](./suggestarr/index.md)** | AI-Empfehlungen für Jellyfin via Jellyseerr | [suggest.ackermannprivat.ch](https://suggest.ackermannprivat.ch) |
+| **[Video-Download-Tools](./video-download/index.md)** | Web-UIs für manuelle Video-Downloads von diversen Plattformen | siehe Seite |
 
 ## Das Gesamtbild in drei Sichten
 
@@ -101,7 +104,7 @@ Lesehilfe:
 8. Sonarr und Radarr importieren fertige Downloads als [Hardlink statt Kopie](./arr-stack/index.md#speicher) in die Mediathek und benennen sie nach ihrem Schema um.
 9. Jellyfin liest `media/` vom Share ([Storage-Mounts](./jellyfin/referenz.md#storage)) -- nach dem nächsten Library-Scan ist der Titel abspielbar.
 
-Drei asynchrone Helfer laufen neben dem Pfad: [SuggestArr](../suggestarr/index.md) erstellt aus der Watch-History Pending Requests in Seerr, der [request-sync Sidecar](./jellyseerr.md#request-sync-sidecar) stösst hängen gebliebene Requests periodisch neu an, und [Profilarr](./arr-stack/profilarr.md) hält die Quality-Profile in Sonarr und Radarr synchron.
+Drei asynchrone Helfer laufen neben dem Pfad: [SuggestArr](./suggestarr/index.md) erstellt aus der Watch-History Pending Requests in Seerr, der [request-sync Sidecar](./jellyseerr.md#request-sync-sidecar) stösst hängen gebliebene Requests periodisch neu an, und [Profilarr](./arr-stack/profilarr.md) hält die Quality-Profile in Sonarr und Radarr synchron.
 
 ### Storage-Sicht -- ein Share und drei Speicherklassen
 
@@ -209,7 +212,7 @@ Lesehilfe:
 1. **Bücherweg (grün):** [LazyLibrarian](./media-tools.md#lazylibrarian) beschafft E-Books und Hörbücher nach `media/books/` (B1). [Audiobookshelf](./audiobookshelf.md) serviert sie mit Kapitel-Navigation und geräteübergreifendem Fortschritt (B2), Jellyfin zeigt dieselbe Bibliothek (B3) -- ein Bestand, zwei Player.
 2. **Content-Pipeline (orange):** Zwei periodische Batch-Jobs laden nachts gestaffelt eigene Inhalte (P1); zusätzlich lassen sie sich per Telegram-Befehl über den `phdler-telegram-bot` triggern (P2, P3). Details: [Content Pipeline](./content-pipeline/index.md).
 3. Die Pipeline-Downloads landen im NFS-Volume `nfs-logs` (P4) -- bewusst getrennt von der Jellyfin-Mediathek.
-4. Nach neuen Downloads stossen die Jobs einen Scan in [Stash](../stash/index.md) an (P5) und melden das Ergebnis über den `telegram-relay` (P6) -- beides ereignisgetrieben, darum gestrichelt.
+4. Nach neuen Downloads stossen die Jobs einen Scan in [Stash](./stash/index.md) an (P5) und melden das Ergebnis über den `telegram-relay` (P6) -- beides ereignisgetrieben, darum gestrichelt.
 
 ## Zugriff und Authentifizierung
 
@@ -246,9 +249,9 @@ Die Ausfall-Fragen, die das Big Picture beantworten muss:
 - [Audiobookshelf](./audiobookshelf.md) -- Hörbücher und Podcasts
 - [Media-Hilfstools](./media-tools.md) -- Jellystat, LazyLibrarian, Handbrake (deprecated)
 - [Content Pipeline](./content-pipeline/index.md) -- Batch-Downloads mit Telegram-Steuerung
-- [SuggestArr](../suggestarr/index.md) -- automatische Empfehlungen als Pending Requests
-- [Stash](../stash/index.md) -- Ziel der Content-Pipeline-Scans
-- [Video-Download-Tools](../video-download/index.md) -- manuelle Download-UIs
+- [SuggestArr](./suggestarr/index.md) -- automatische Empfehlungen als Pending Requests
+- [Stash](./stash/index.md) -- Ziel der Content-Pipeline-Scans
+- [Video-Download-Tools](./video-download/index.md) -- manuelle Download-UIs
 - [NAS-Speicher](../storage/nas/index.md) -- NFS-Exports und Mount-Pfade (SSOT)
 - [Linstor/DRBD](../storage/linstor/index.md) -- CSI-Volumes für die Configs
 - [Datenbank-Architektur](../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

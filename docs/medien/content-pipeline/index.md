@@ -99,5 +99,5 @@ Die Batch Jobs laufen gestaffelt (reddit-gallery-dl 02:00 UTC, ph-downloader 02:
 ## Verwandte Seiten
 
 - [Content-Pipeline Referenz](./referenz.md) -- Vault-Secrets-Zugriffe und Telegram-Bot-Befehle
-- [Stash](../../stash/index.md) -- Media Organizer, wird von den Batch Jobs über die API aktualisiert
-- [Video-Download-Tools](../../video-download/index.md) -- Manuelle Download-UIs
+- [Stash](../stash/index.md) -- Media Organizer, wird von den Batch Jobs über die API aktualisiert
+- [Video-Download-Tools](../video-download/index.md) -- Manuelle Download-UIs

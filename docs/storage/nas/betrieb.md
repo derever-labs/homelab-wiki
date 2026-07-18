@@ -54,11 +54,11 @@ Bei DSM-Major-Updates wird `/etc/ssh/sshd_config` aus den DSM-Defaults wiederher
 
 - Das NAS verwaltet seine eigene RAID-Konsistenz (SHR/RAID)
 - Snapshots werden auf dem NAS selbst gesteuert
-- Monitoring: Siehe [Synology NAS Monitoring](../../synology-monitoring/index.md)
+- Monitoring: Siehe [Synology NAS Monitoring](../../monitoring/synology-monitoring/index.md)
 
 ## Verwandte Seiten
 
 - [NAS-Speicher](./index.md) -- Steckbrief, Architektur und Rolle im Stack
 - [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Garage-Endpunkte/Buckets, DSM-Konfiguration
 - [E10M20-T1 Freischaltung](./e10m20-freischaltung.md) -- 10GbE/NVMe-Freischaltung im Detail
-- [Synology NAS Monitoring](../../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting
+- [Synology NAS Monitoring](../../monitoring/synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting

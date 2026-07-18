@@ -34,7 +34,7 @@ Die konkreten Export-Pfade und Mounts, die Garage-Endpunkte und -Buckets sowie d
 
 ## Monitoring
 
-Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitoring](../../synology-monitoring/index.md).
+Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitoring](../../monitoring/synology-monitoring/index.md).
 
 ## Verwandte Seiten
 
@@ -44,5 +44,5 @@ Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitor
 - [Datenstrategie](../../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
 - [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Backup-Ziele
-- [Proxmox Cluster](../../proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
-- [Synology NAS Monitoring](../../synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting
+- [Proxmox Cluster](../../infrastruktur/proxmox/index.md) -- Nomad-Client-VMs, die NFS mounten
+- [Synology NAS Monitoring](../../monitoring/synology-monitoring/index.md) -- CheckMK-Hardware-Health, Grafana Dashboard, Alerting

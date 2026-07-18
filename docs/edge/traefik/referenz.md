@@ -178,7 +178,7 @@ Siehe `standalone-stacks/traefik-proxy/configurations/tls-options.yml` für die 
 
 Für jeden Service wird im Nomad Job oder Docker Label die gewünschte Chain angegeben, z.B. `intern-auth@file` oder `public-noauth@file`. Für Authentik-geschützte Services wird zusätzlich keine separate Callback-Route benötigt -- die zentrale `auth-routes.yml` deckt den Callback ab.
 
-Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](../../security/index.md).
+Beispiele für die Verwendung der Chains stehen in der [Security-Dokumentation](../../_querschnitt/security/index.md).
 
 ## Konfigurationsdateien
 
@@ -197,7 +197,7 @@ Alle Konfigurationsdateien liegen im Git unter `standalone-stacks/traefik-proxy/
 
 - [Traefik Übersicht](./index.md) -- Architektur und Deployment
 - [Traefik Betrieb](./betrieb.md) -- Failover-, Failback- und Split-Brain-Prozeduren
-- [Sicherheit](../../security/index.md) -- Gesamte Security-Architektur
+- [Sicherheit](../../_querschnitt/security/index.md) -- Gesamte Security-Architektur
 - [Authentik](../authentik/index.md) -- Identity Provider für ForwardAuth
 - [CrowdSec](../crowdsec/index.md) -- Intrusion Detection als erste Middleware-Stufe
 - [Nomad Job-Übersicht](../../plattform/nomad/index.md) -- Jobs die diese Middleware Chains nutzen

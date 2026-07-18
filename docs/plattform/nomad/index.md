@@ -114,7 +114,7 @@ Der Stack läuft auf 3 Server-Nodes und 3 Worker-Nodes, jeweils 1 pro Proxmox-Ho
   - client-04: Klasse `worker` (kein DRBD)
   - client-05/06: Klasse `storage` (DRBD/Linstor, privileged containers)
 
-Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../../proxmox/index.md#cluster-knoten-und-vms)
+Vollständige Host-/IP-/Spec-Tabellen: [Proxmox Cluster](../../infrastruktur/proxmox/index.md#cluster-knoten-und-vms)
 
 ## Scheduler-Konfiguration
 
@@ -150,7 +150,7 @@ Externe Abhängigkeiten und ihr Ausfallverhalten: [Nomad Betrieb](./betrieb.md#a
 - [Nomad Betrieb](./betrieb.md) -- Deployment, Node Drain, Troubleshooting
 - [Consul](../consul/) -- Service Discovery und DNS
 - [Vault](../vault/) -- Secrets Management und Workload Identity
-- [DNS-Architektur](../../dns/) -- DNS-Kette inkl. Consul-Forwarding
+- [DNS-Architektur](../../netz/dns/) -- DNS-Kette inkl. Consul-Forwarding
 - [Traefik](../../edge/traefik/) -- Reverse Proxy mit Consul Catalog Integration
 - [Linstor](../../storage/linstor/) -- CSI-Volumes für persistenten Speicher
 - [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster

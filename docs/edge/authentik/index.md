@@ -233,5 +233,5 @@ Details und Mechanik: siehe [Referenz](./referenz.md) -- Recovery-Layer, Breakgl
 - [Telegram Bots](../../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
 - [Traefik Middleware Chains](../traefik/referenz.md) -- ForwardAuth und Rate-Limits
 - [CrowdSec](../crowdsec/index.md) -- IP-Blocking als erste Middleware-Stufe
-- [Security](../../security/index.md) -- Sicherheitskonzept Übersicht
+- [Security](../../_querschnitt/security/index.md) -- Sicherheitskonzept Übersicht
 - [Service-Abhängigkeiten](../../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht

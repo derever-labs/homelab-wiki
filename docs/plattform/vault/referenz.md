@@ -20,7 +20,7 @@ tags:
 
 Nomad stellt auf jedem Server einen JWKS-Endpunkt bereit. Vault validiert die JWT-Signatur gegen diesen Endpunkt und stellt bei erfolgreicher Prüfung ein Vault-Token mit der Policy `nomad-workloads` aus.
 
-Dieselbe Auth Method trägt auch die CD-Pipeline-Rolle `github-runner-deploy`, über die sich der GitHub-Runner authentifiziert. Details: [github-runner Referenz](../../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
+Dieselbe Auth Method trägt auch die CD-Pipeline-Rolle `github-runner-deploy`, über die sich der GitHub-Runner authentifiziert. Details: [github-runner Referenz](../../dienste/github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ## Policies
 
@@ -48,7 +48,7 @@ Secrets für Nomad-Jobs folgen der Konvention `kv/<job_id>`. Vollständige Liste
 | `kv/` | KV v2 | Versionierte Service-Secrets, Pfad-Konvention `kv/<job_id>` |
 | `nomad/` | Nomad Secret Engine | Stellt kurzlebige Nomad-Client-Tokens für die CD-Pipeline aus (Rolle `github-deploy`) |
 
-Die Nomad Secret Engine ersetzt statische Deploy-Tokens: Der GitHub-Runner holt pro Deployment über `nomad/creds/github-deploy` einen Token mit begrenzter TTL und widerruft ihn am Ende des Workflows. Verfahren und Policies: [github-runner Referenz](../../github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
+Die Nomad Secret Engine ersetzt statische Deploy-Tokens: Der GitHub-Runner holt pro Deployment über `nomad/creds/github-deploy` einen Token mit begrenzter TTL und widerruft ihn am Ende des Workflows. Verfahren und Policies: [github-runner Referenz](../../dienste/github-runner/referenz.md#cd-pipeline-vault-nomad-secret-engine).
 
 ## Audit Logging
 

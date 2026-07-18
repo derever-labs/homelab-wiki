@@ -19,7 +19,7 @@ Die Mechanik der einzelnen Systeme steht auf den Systemseiten: [Traefik](./traef
 | :--- | :--- |
 | Eintrittspunkt | Keepalived-VIP auf dem Traefik-HA-Paar -- [Hosts und IPs](../_referenz/hosts-und-ips.md) |
 | DNS extern | Cloudflare-Zonen, nur Namensauflösung auf die WAN-IP (kein Proxying) |
-| DNS intern | Pi-hole Split-DNS direkt auf die VIP -- [DNS-Architektur](../dns/) |
+| DNS intern | Pi-hole Split-DNS direkt auf die VIP -- [DNS-Architektur](../netz/dns/) |
 | Deployment | Traefik + CrowdSec: Docker Compose auf beiden Traefik-VMs (Ansible `traefik-ha`); Authentik: Nomad Job `identity/authentik.nomad` |
 
 ### Systeme
@@ -105,7 +105,7 @@ Lesehilfe:
 
 1. Extern löst Cloudflare den Namen auf: Der A-Record zeigt direkt auf die WAN-IP -- Cloudflare macht reine Namensauflösung, kein Proxying und kein Tunnel, TLS endet erst bei Traefik ([SSL-Terminierung](./traefik/index.md#ssl-terminierung)). Die wechselnde WAN-IP hält ein Cloudflare-DDNS-Update aktuell.
 2. Der UDM Pro forwarded 80/443 auf die VIP; keepalived hält sie auf genau einem der beiden Traefik-Nodes ([Hochverfügbarkeit](./traefik/index.md#hochverfugbarkeit-keepalived)).
-3. Interne Clients nehmen die Abkürzung: Pi-hole antwortet für die Homelab-Domains direkt mit der VIP ([DNS-Kette](../dns/index.md#dns-kette)) -- derselbe Traefik, nur ohne WAN-Schleife.
+3. Interne Clients nehmen die Abkürzung: Pi-hole antwortet für die Homelab-Domains direkt mit der VIP ([DNS-Kette](../netz/dns/index.md#dns-kette)) -- derselbe Traefik, nur ohne WAN-Schleife.
 4. Erster Stopper: Der CrowdSec-Bouncer ist die erste Middleware aller public-Chains und beantwortet gebannte IPs sofort mit 403 -- die Entscheidung fällt lokal gegen den Banlisten-Cache, ohne API-Call ([Enforcement](./crowdsec/index.md#enforcement-synchroner-request-pfad)). Interne Netze prüft er nie; die intern-Chains ersetzen ihn durch eine IP-Allowlist ([Middleware Chains](./traefik/referenz.md#middleware-chains)).
 5. Zweiter Stopper: Die ForwardAuth-Middleware fragt pro Request den Authentik Proxy-Outpost -- die Antwort ist 200 mit Identitäts-Headern oder 302 zur Login-Seite. Die vollständige Sequenz inklusive Callback-Route zeigt der [Login-Ablauf ohne Session](./authentik/index.md#login-ablauf-ohne-session); die Login-Route selbst schützen Rate-Limit und CrowdSec statt einer IP-Allowlist ([Integration mit Traefik](./authentik/index.md#integration-mit-traefik)).
 6. Eingeloggt heisst nicht durch: Jede App hat eine explizite Gruppen-Bindung im 3-Tier-Modell admin/family/guest ([Gruppen und Bindings](./authentik/gruppen-bindings.md)).
@@ -198,7 +198,7 @@ Die Ausfall-Fragen, die das Big Picture beantworten muss -- je mit dem Mechanism
 - [Authentik](./authentik/) -- Identity Provider, Outposts, Login-Abläufe
 - [Authentik Gruppen und Bindings](./authentik/gruppen-bindings.md) -- 3-Tier-Zugriffskontrolle
 - [LDAP im Homelab](./ldap.md) -- LDAP-Outpost als Bind-Interface für Jellyfin
-- [DNS-Architektur](../dns/) -- Split-DNS, Pi-hole und die DNS-Kette
-- [Netzwerk-Topologie](../netzwerk/) -- Router, VLANs und Standorte
-- [Sicherheit](../security/index.md) -- Gesamte Security-Architektur
+- [DNS-Architektur](../netz/dns/) -- Split-DNS, Pi-hole und die DNS-Kette
+- [Netzwerk-Topologie](../netz/netzwerk/) -- Router, VLANs und Standorte
+- [Sicherheit](../_querschnitt/security/index.md) -- Gesamte Security-Architektur
 - [Service-Abhängigkeiten](../_querschnitt/service-abhaengigkeiten.md) -- Abhängigkeits-Übersicht

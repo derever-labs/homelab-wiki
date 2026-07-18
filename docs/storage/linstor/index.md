@@ -234,8 +234,8 @@ Erwartete Kennwerte und der pgbench-Vergleich DRBD gegen lokale SSD stehen in de
 - [Linstor Betrieb](./betrieb.md) -- Failover, Troubleshooting, Monitoring, Volume-Übersicht
 - [Linstor Referenz](./referenz.md) -- CSI-Attribute, Performance, Panels und Metriken
 - [Split-Brain Recovery Runbook](./split-brain-runbook.md) -- Notfall-Runbook (destruktiv)
-- [Proxmox](../../proxmox/) -- Host- und VM-Übersicht
+- [Proxmox](../../infrastruktur/proxmox/) -- Host- und VM-Übersicht
 - [Nomad](../../plattform/nomad/) -- Container-Orchestrierung mit CSI-Volumes
 - [Consul](../../plattform/consul/) -- Service Discovery für Controller HA
 - [Backup](../backup/) -- Backup-Strategie für DRBD-Volumes
-- [Netzwerk](../../netzwerk/) -- Thunderbolt und Management-Netzwerk
+- [Netzwerk](../../netz/netzwerk/) -- Thunderbolt und Management-Netzwerk

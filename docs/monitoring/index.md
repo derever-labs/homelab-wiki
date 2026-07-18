@@ -34,6 +34,8 @@ Die Referenz-Tabellen (Alert-Regeln, Log-Quellen, Log-Levels) stehen in der [Mon
 | **Grafana Alloy** | Log-Collector (System-Job + systemd + Docker) | — (läuft auf 15 Nodes) |
 | **CheckMK** | Host-Level Monitoring (CPU, RAM, Disk, SMART) | [monitoring.ackermannprivat.ch](https://monitoring.ackermannprivat.ch) |
 | **Uptime Kuma** | Synthetic-Monitoring (Kern-Infra + Flächenabdeckung + Push) | [uptime.ackermannprivat.ch](https://uptime.ackermannprivat.ch) |
+| **USV (APC)** | USV-Monitoring via NUT-Server und Grafana Alerting | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (`ups-apc-dashboard`) |
+| **Synology NAS Monitoring** | NAS-Hardware-Health via CheckMK, lokaler Telegraf und NAS-Dashboard | [graf.ackermannprivat.ch](https://graf.ackermannprivat.ch) (`synology-nas-health`) |
 
 ## Das Gesamtbild in drei Pfaden
 
@@ -261,7 +263,7 @@ Grafana nutzt PostgreSQL (`postgres.service.consul`) als Backend-Datenbank für 
 - **Scheduling:** Kein Node-Constraint mehr (CSI-Abhängigkeit entfällt), Affinität auf client-05/06 beibehalten.
 
 ::: info Auth-Kette für den GitOps-Push
-Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `github-runner-deploy` (gebunden an `nomad_job_id=github-runner`) bekommt die Policy `grafana-deploy-fetch`, die nur das Feld `service_account_token` in `kv/data/grafana` lesen darf. Die Grafana-Adresse wird dynamisch über den Consul-Catalog aufgelöst, damit der Workflow unabhängig von dynamischen Nomad-Ports funktioniert und Authentik umgeht. Pattern ist symmetrisch zu `nomad-deploy-fetch` -- siehe [GitHub Runner Referenz](../github-runner/referenz.md).
+Der Runner holt sich das Grafana Service-Account Token aus Vault: JWT-Role `github-runner-deploy` (gebunden an `nomad_job_id=github-runner`) bekommt die Policy `grafana-deploy-fetch`, die nur das Feld `service_account_token` in `kv/data/grafana` lesen darf. Die Grafana-Adresse wird dynamisch über den Consul-Catalog aufgelöst, damit der Workflow unabhängig von dynamischen Nomad-Ports funktioniert und Authentik umgeht. Pattern ist symmetrisch zu `nomad-deploy-fetch` -- siehe [GitHub Runner Referenz](../dienste/github-runner/referenz.md).
 :::
 
 ### Alerting (Unified Alerting)
@@ -322,5 +324,5 @@ Die Log-Level je Komponente listet die [Monitoring Referenz](./referenz.md#log-l
 - [Backup-Strategie](../storage/backup/index.md) -- Backup-Monitoring via Uptime Kuma Push
 - [Linstor/DRBD](../storage/linstor/index.md) -- CSI Volume für Loki
 - [Batch Jobs](../_querschnitt/batch-jobs.md) -- Periodische Monitoring- und Wartungs-Jobs
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- Dediziertes NAS-Dashboard (CheckMK-Hardware-Health) mit Alerting
-- [USV (APC)](../ups/index.md) -- USV-Monitoring via NUT und Grafana Alerting
+- [Synology NAS Monitoring](./synology-monitoring/index.md) -- Dediziertes NAS-Dashboard (CheckMK-Hardware-Health) mit Alerting
+- [USV (APC)](./ups/index.md) -- USV-Monitoring via NUT und Grafana Alerting

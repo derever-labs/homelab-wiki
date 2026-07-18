@@ -162,6 +162,6 @@ Für InfluxQL-Zugriff existieren DBRP-Mappings (Database Retention Policy) für 
 ## Verwandte Seiten
 
 - [Monitoring Stack](./index.md) -- Grafana, Alerting, Loki
-- [Synology NAS Monitoring](../synology-monitoring/index.md) -- CheckMK-Hardware-Health, lokaler Telegraf, Dashboard
-- [USV (APC)](../ups/index.md) -- USV-Metriken via `inputs.upsd` und NUT
+- [Synology NAS Monitoring](./synology-monitoring/index.md) -- CheckMK-Hardware-Health, lokaler Telegraf, Dashboard
+- [USV (APC)](./ups/index.md) -- USV-Metriken via `inputs.upsd` und NUT
 - [Linstor/DRBD](../storage/linstor/index.md) -- Prometheus-Exporter für Linstor-Metriken

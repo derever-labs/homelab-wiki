@@ -46,7 +46,7 @@ Renovate verwendet drei Custom Regex Manager, um verschiedene Image-Formate in N
 - **devDependencies-Minor** (npm Build-/Lint-/Test-Tooling, z.B. `prettier`, `postcss`, `eslint-*`, `tsx`): Automatisch gemerged, zusätzliches Label `devdeps`. Diese Pakete sind Build-Zeit-only und brechen keine Laufzeit -- das eliminiert den Review-Stau im Single-Maintainer-Betrieb. Greift nur bei `depType: devDependencies`; Runtime-`dependencies` und Docker-Image-Tags (`.nomad`, kein depType) bleiben review-pflichtig.
 - **Major-Updates** (z.B. 1.x → 2.x): Pull Request mit Label `major-update`, kein Auto-Merge
 
-Kombiniert mit der schlanken CD-Pipeline-Blocklist bedeutet das: Patches, Digests und Security-Fixes landen nach Merge automatisch im Cluster (Merge = Review-Gate). Siehe [github-runner/referenz.md](../github-runner/referenz.md#blocklist).
+Kombiniert mit der schlanken CD-Pipeline-Blocklist bedeutet das: Patches, Digests und Security-Fixes landen nach Merge automatisch im Cluster (Merge = Review-Gate). Siehe [github-runner/referenz.md](../dienste/github-runner/referenz.md#blocklist).
 
 ::: warning Kein CI-Gate -- ignoreTests
 Die `derever-labs`-Repositories haben keine CI-Status-Checks. Renovate würde per Default vor jedem Auto-Merge auf grüne Checks warten und ohne Checks niemals mergen. Darum ist `ignoreTests` für die automergenden Regeln gesetzt -- der Merge entscheidet sich allein über Update-Typ und Stateful-Blocklist, ohne Test-Gate. Das ist bewusst: Patches, Digests und Security-Fixes sind risikoarm, das Review-Gate ist der Merge selbst.

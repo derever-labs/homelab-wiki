@@ -233,6 +233,6 @@ CrowdSec ist als erste Middleware in allen `public-*` Chains eingebunden. Damit 
 ## Verwandte Seiten
 
 - [CrowdSec Referenz](./referenz.md) -- Engine-/Bouncer-Parameter, Collections, Whitelists
-- [Sicherheit](../../security/index.md) -- Gesamte Security-Architektur
+- [Sicherheit](../../_querschnitt/security/index.md) -- Gesamte Security-Architektur
 - [Traefik Middlewares](../traefik/referenz.md) -- Middleware Chains mit CrowdSec
 - [Authentik](../authentik/index.md) -- Ergänzende Schutzschicht (Reputation Policy)

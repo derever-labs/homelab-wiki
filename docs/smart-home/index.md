@@ -159,11 +159,11 @@ luzern.ha3 -> lenzburg.gitea: 3. nächtlicher Config-Push (Git-SSH via Tailscale
 
 Lesehilfe:
 
-1. [Tandoor](../tandoor/index.md#einkaufsliste-sync-mit-bring) ruft beim Anlegen oder Löschen eines Einkaufslisten-Eintrags die REST-API der Lenzburger Instanz auf (`todo.add_item` / `todo.remove_item` auf der Todo-Entität).
+1. [Tandoor](../dienste/tandoor/index.md#einkaufsliste-sync-mit-bring) ruft beim Anlegen oder Löschen eines Einkaufslisten-Eintrags die REST-API der Lenzburger Instanz auf (`todo.add_item` / `todo.remove_item` auf der Todo-Entität).
 2. Home Assistant spiegelt die Todo-Liste über die Bring!-Integration in die Bring!-Cloud -- der einzige cloud-abhängige Teil des Smart-Home-Verbunds.
-3. Die Luzerner Instanz versioniert ihre `/config` im privaten Gitea-Repo: eine HA-Automation pusht nächtlich über das Tailscale-Overlay direkt auf den Gitea-Node, an Traefik und Authentik vorbei. Details und Warum: [Gitea -- Config-Anbindung HA-Luzern](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale).
+3. Die Luzerner Instanz versioniert ihre `/config` im privaten Gitea-Repo: eine HA-Automation pusht nächtlich über das Tailscale-Overlay direkt auf den Gitea-Node, an Traefik und Authentik vorbei. Details und Warum: [Gitea -- Config-Anbindung HA-Luzern](../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale).
 
-Die Instanz in Dottikon hat keine standortübergreifenden System-Kanten -- sie läuft vollständig autonom. Der Fernzugriff auf alle drei Instanzen läuft über das [Tailscale-Overlay](../netzwerk/tailscale.md): Lenzburg und Dottikon sind über die Subnet-Router ihrer Standorte erreichbar, die Luzerner VM ist zusätzlich selbst Tailnet-Client.
+Die Instanz in Dottikon hat keine standortübergreifenden System-Kanten -- sie läuft vollständig autonom. Der Fernzugriff auf alle drei Instanzen läuft über das [Tailscale-Overlay](../netz/netzwerk/tailscale.md): Lenzburg und Dottikon sind über die Subnet-Router ihrer Standorte erreichbar, die Luzerner VM ist zusätzlich selbst Tailnet-Client.
 
 ## Ausfallverhalten
 
@@ -175,7 +175,7 @@ Die Ausfall-Fragen, die das Big Picture beantworten muss:
 
 - **Was, wenn `vm-nomad-client-06` down ist?** Zigbee ist komplett tot: Zigbee2MQTT ist per Hard Constraint an diesen Node gebunden, weil der USB-Dongle physisch dort steckt -- [kein Failover ohne Umstecken](./iot-stack/betrieb.md#usb-device-passthrough).
 
-- **Was, wenn Tailscale down ist?** Alle drei Instanzen arbeiten lokal autonom weiter -- sie teilen keinen State. Es brechen nur der Fernzugriff und der nächtliche Config-Push der Luzerner Instanz; dessen Fehler meldet die HA-Automation selbst per Push aufs Handy ([Gitea -- Config-Anbindung](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)).
+- **Was, wenn Tailscale down ist?** Alle drei Instanzen arbeiten lokal autonom weiter -- sie teilen keinen State. Es brechen nur der Fernzugriff und der nächtliche Config-Push der Luzerner Instanz; dessen Fehler meldet die HA-Automation selbst per Push aufs Handy ([Gitea -- Config-Anbindung](../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)).
 
 ## Verwandte Seiten
 
@@ -183,9 +183,9 @@ Die Ausfall-Fragen, die das Big Picture beantworten muss:
 - [IoT Stack](./iot-stack/) -- Zigbee2MQTT-Architektur mit USB-Passthrough
 - [IoT Referenz](./iot-stack/referenz.md) -- Mosquitto, MQTT-Benutzer, Zigbee-Konfiguration
 - [IoT Betrieb](./iot-stack/betrieb.md) -- Passthrough, Pairing, Backup, Passwort-Rotation
-- [Netzwerk -- Standorte](../netzwerk/standorte.md) -- die drei Standorte im Netzwerk-Detail
-- [Tailscale](../netzwerk/tailscale.md) -- Overlay, Subnet-Router und der HA-Luzern-Tailnet-Client
-- [Gitea](../gitea/index.md#config-anbindung-ha-luzern-uber-tailscale) -- Config-Anbindung der Luzerner Instanz
-- [Tandoor](../tandoor/index.md#einkaufsliste-sync-mit-bring) -- Einkaufslisten-Sync über die HA-REST-API nach Bring!
+- [Netzwerk -- Standorte](../netz/netzwerk/standorte.md) -- die drei Standorte im Netzwerk-Detail
+- [Tailscale](../netz/netzwerk/tailscale.md) -- Overlay, Subnet-Router und der HA-Luzern-Tailnet-Client
+- [Gitea](../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale) -- Config-Anbindung der Luzerner Instanz
+- [Tandoor](../dienste/tandoor/index.md#einkaufsliste-sync-mit-bring) -- Einkaufslisten-Sync über die HA-REST-API nach Bring!
 - [Monitoring-Coverage](../monitoring/coverage/) -- Überwachungs-Stand der Smart-Home-Komponenten
 - [Hosts und IPs](../_referenz/hosts-und-ips.md) -- IP-Zuordnung aller Standorte

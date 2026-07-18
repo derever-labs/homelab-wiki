@@ -65,7 +65,7 @@ SSH-Details sind kanonisch in [SSH-Zugang](../_referenz/ssh-zugang.md) geführt.
 
 - [IoT Stack](./iot-stack/) -- Zigbee2MQTT, USB-Passthrough, Pairing
 - [IoT Referenz](./iot-stack/referenz.md) -- Mosquitto MQTT Broker
-- [Proxmox](../proxmox/) -- VM-Verwaltung und Standort-Topologie
-- [Netzwerk -- Standorte](../netzwerk/standorte.md) -- Netzwerk-Kontext der drei Standorte
+- [Proxmox](../infrastruktur/proxmox/) -- VM-Verwaltung und Standort-Topologie
+- [Netzwerk -- Standorte](../netz/netzwerk/standorte.md) -- Netzwerk-Kontext der drei Standorte
 - [SSH-Zugang](../_referenz/ssh-zugang.md) -- HAOS-SSH-Details
 - [CheckMK](../monitoring/checkmk/index.md#haos-memory-check-ssh-forced-command) -- HAOS-Memory-Custom-Check, da HAOS keinen CheckMK-Agent tragen kann

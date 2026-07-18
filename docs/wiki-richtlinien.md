@@ -64,7 +64,7 @@ Jede Information existiert an genau **einem** Ort. Andere Stellen verlinken mit 
 | TLS-Zertifikate | [TLS-Zertifikate](./_referenz/tls-zertifikate.md) | System-Seiten |
 | Datenbank-Zuordnung | [Datenbanken](./_referenz/datenbanken.md) | System-Seiten |
 | Middleware Chains | [Traefik Referenz](./edge/traefik/referenz.md) | System-Seiten |
-| DNS-Architektur | [DNS](./dns/) | netzwerk/ |
+| DNS-Architektur | [DNS](./netz/dns/) | netzwerk/ |
 | Backup-Architektur | [Backup](./storage/backup/) | System-Seiten |
 | LDAP & Benutzerverwaltung | [LDAP im Homelab](./edge/ldap.md) | security/, System-Seiten |
 | CrowdSec | [CrowdSec](./edge/crowdsec/) | security/, traefik/ |
