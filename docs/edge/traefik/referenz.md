@@ -26,23 +26,24 @@ Die v2-Chains (`admin-chain-v2`, `family-chain-v2`, `public-*-chain-v2`) sowie a
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `intern-auth` | secure-headers → error-pages → authentik-forward-auth → intern-noauth | Sicherheits-Header + Error Pages + Authentik ForwardAuth + IP-Allowlist. Default für interne Apps. `error-pages` steht **vor** `authentik-forward-auth`, damit ein nicht erreichbarer Authentik-Outpost (leerer HTTP 500) die Wartungsseite zeigt statt eines rohen Fehlers |
-| `intern-auth-strict` | secure-headers → error-pages-strict → authentik-forward-auth → intern-noauth | Wie `intern-auth`, aber fängt zusätzlich 401/403 vom Backend ab (Maintenance-Page statt rohem Fehler). Für yt-dlp, special-youtube-dl, special-yt-dlp, video-grabber |
+| `intern-auth` | secure-headers → error-pages-strict → authentik-forward-auth → intern-noauth | Sicherheits-Header + Error Pages + Authentik ForwardAuth + IP-Allowlist. Default für interne Apps. `error-pages-strict` steht **vor** `authentik-forward-auth`, damit ein nicht erreichbarer Authentik-Outpost (leerer HTTP 500) die Wartungsseite zeigt statt eines rohen Fehlers, und fängt zusätzlich 401/403 ab (Begründung bei [error-pages-strict](#error-pages-strict)) |
+| `intern-auth-strict` | secure-headers → error-pages-strict → authentik-forward-auth → intern-noauth | Seit `intern-auth` selbst `error-pages-strict` nutzt inhaltlich identisch -- als Alias erhalten, gebunden an die Media-Tool-Router (yt-dlp, special-youtube-dl, special-yt-dlp, video-grabber) |
 
 ### Für externen Zugriff mit Authentik-Login
 
 | Chain | Komponenten (Reihenfolge) | Beschreibung |
 |-------|--------------------------|--------------|
-| `public-auth` | crowdsec → secure-headers → error-pages → authentik-forward-auth | CrowdSec + Sicherheits-Header + Error Pages + Authentik ForwardAuth. `crowdsec` bleibt vor `error-pages`, damit Ban-Antworten (403) nicht durch die Wartungsseite ersetzt werden |
-| `public-auth-strict` | crowdsec → secure-headers → error-pages-strict → authentik-forward-auth | Wie `public-auth`, aber mit 401/403 in Error Pages. Für externe Apps mit UI-kaputten Backend-401/403-Responses |
+| `public-auth` | crowdsec → secure-headers → error-pages-strict → authentik-forward-auth | CrowdSec + Sicherheits-Header + Error Pages + Authentik ForwardAuth. `crowdsec` bleibt vor `error-pages-strict`, damit die Ban-Antwort des Bouncers nicht durch die Wartungsseite ersetzt wird |
+| `public-auth-strict` | crowdsec → secure-headers → error-pages-strict → authentik-forward-auth | Seit `public-auth` selbst `error-pages-strict` nutzt inhaltlich identisch -- als Alias erhalten |
 
 ### Ohne Login
 
 | Chain | Komponenten | Beschreibung |
 |-------|-------------|--------------|
-| `public-noauth` | crowdsec → secure-headers → error-pages | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
+| `public-noauth` | crowdsec → secure-headers → error-pages-strict | Öffentlich erreichbar, kein Login (z.B. Jellyfin) |
 | `intern-noauth` | ipAllowList | Nur IP-Allowlist, kein Login (für Apps mit eigener Auth) |
 | `intern-api` | ipAllowList | IP-Allowlist für API-Key-Routen, keine Error Pages (Backends liefern eigene JSON-Errors) |
+| `public-api-noauth` | crowdsec → secure-headers | Öffentlich erreichbare API-Routen, kein Login, keine Error Pages (Backends liefern eigene JSON-Errors) |
 
 ### Sonderfall: Authentik Login-Route
 
@@ -113,7 +114,7 @@ Die Authentik-Callback-Routen sind in `auth-routes.yml` mit Priority 1000 defini
 
 ### error-pages
 
-Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit statischen HTML-Seiten) weiter. In allen Web-Chains (`intern-auth`, `public-auth`, `public-noauth`) standardmässig enthalten. Nicht in `intern-api` -- API-Endpoints liefern eigene JSON-Fehler.
+Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit statischen HTML-Seiten) weiter. Die Browser-Chains binden nicht diese Basis-Variante ein, sondern deren Erweiterung `error-pages-strict` (siehe unten); `error-pages` selbst deckt nur die Server- und Client-Fehler ohne 401/403 ab. Nicht in den API-Chains (`intern-api`, `public-api-noauth`) -- API-Endpoints liefern eigene JSON-Fehler.
 
 **Abgedeckte Statuscodes:** 404-405, 408, 429, 500-599
 
@@ -124,7 +125,7 @@ Leitet HTTP-Fehlerantworten an den Maintenance-Page-Service (nginx-Container mit
 
 ### error-pages-strict
 
-Variante von `error-pages`, die zusätzlich 401 und 403 auf die Maintenance-Page umleitet. Nur für Apps einsetzen, deren Backend-401/403-Responses UI-kaputt oder JSON-only sind (z.B. yt-dlp-Container liefert rohes "403 Forbidden"-Plain-HTML). Verwendet in den Chains `intern-auth-strict` und `public-auth-strict`.
+Variante von `error-pages`, die zusätzlich 401 und 403 auf die Maintenance-Page umleitet. Seit dem 19.07.2026 die Standard-Error-Pages-Middleware in allen Browser-Chains (`intern-auth`, `public-auth`, `public-noauth`), nicht mehr nur in den Media-Tool-Chains. Auslöser war Traefiks eigene `ipAllowList`: sie beantwortet einen abgelehnten Zugriff mit einem rohen HTTP 403 ohne `Content-Type`, den Safari zusammen mit dem `nosniff`-Header als Datei interpretiert und zum Download anbietet statt als Seite anzuzeigen (Vorfall graf.ackermannprivat.ch, 19.07.2026). Das Abfangen von 401/403 auf die HTML-Wartungsseite verhindert diese Download-Aufforderung. Auch UI-kaputte Backend-401/403 (z.B. yt-dlp-Container liefert rohes "403 Forbidden"-Plain-HTML) werden so aufgefangen.
 
 ### error-pages-callback
 
@@ -136,15 +137,15 @@ Fängt ausschliesslich 400 am Router `authentik-callback` ab und liefert statt e
 
 Die Auto-Neustart-Seite startet per `location.replace('/')` sofort einen frischen Login-Flow auf dem betroffenen Host und ersetzt dabei die verbrauchte Callback-URL in der Tab-History. Eine sessionStorage-Bremse erlaubt maximal zwei automatische Neustarts pro 60 Sekunden, danach bleibt die Seite mit einem manuellen Anmelde-Button stehen (ebenso ohne JavaScript). Das entspricht dem Muster des upstream vorgeschlagenen, aber nicht gemergten PR 20831, umgesetzt am Edge. Der Callback-Router spricht nie ein App-Backend mit eigenen 400-JSON-Bodies an, darum ist 400 dort gefahrlos abfangbar (in den App-Chains bleibt 400 bewusst ausgenommen).
 
-::: warning Nicht global einsetzen
-API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-Renewal-Trigger). Strict-Chain würde diese Semantik brechen. Deshalb gezielt nur für die vier Media-Tool-Apps aktiviert.
+::: warning Error Pages nie an API-Routern
+API-Endpoints nutzen 401 als Contract-Response (WWW-Authenticate-Header, Token-Renewal-Trigger) und liefern bei 4xx eigene JSON-Bodies. Läge eine der `error-pages`-Varianten an einem API-Router, ersetzte sie diese Bodies durch HTML-Wartungsseiten und bräche die Client-Semantik. Deshalb tragen die API-Chains (`intern-api`, `public-api-noauth`) bewusst keine Error Pages, während die Browser-Chains `error-pages-strict` nutzen.
 :::
 
 **Fallback:** Für unbekannte Codes (z.B. 418, 422) existieren generische Fallback-Seiten (`4xx.html`, `5xx.html`) via nginx `try_files`. Die Catch-All-Seiten enthalten bewusst keine Links zu internen Services um Information Disclosure bei Subdomain-Scans zu vermeiden.
 
 **Cache-Verhalten:** 5xx-Seiten und die Auto-Neustart-Seite `callback-400.html` werden mit `Cache-Control: no-store` ausgeliefert (temporäre Fehler und Redirect-Logik nicht cachen). 4xx-Seiten werden mit `Cache-Control: public, max-age=300` kurz gecached -- knapp genug, damit der 404-Flicker während eines Nomad-Alloc-Cutover (neuer Container ersetzt alten, Consul-Service-Registration braucht wenige Sekunden) nicht im Browser hängenbleibt, aber hoch genug um Bot- und Scanner-Requests auf echte 404s zu dämpfen. Definiert in `standalone-stacks/traefik-ha/configs/nginx/config/default.conf`.
 
-**Error Pages generieren:** `standalone-stacks/traefik-ha/configs/nginx/generate-error-pages.sh` ist die einzige Source-of-Truth. Nach Textänderungen Script ausführen, Dateien einchecken, auf beide Stacks deployen.
+**Error Pages generieren:** `standalone-stacks/traefik-ha/configs/nginx/generate-error-pages.sh` ist die einzige Source-of-Truth für die statischen Fehlerseiten. Nach Textänderungen das Script ausführen und die erzeugten Dateien einchecken -- die HTML-Seiten nie von Hand editieren. Das frühere Verzeichnis `standalone-stacks/traefik-proxy/configs/nginx/` ist verwaist (per `DEPRECATED.md` markiert) und darf nicht mehr bearbeitet werden; die Traefik-dynamic-config (`configurations/`) liegt dagegen weiterhin unter `traefik-proxy/` und wird vom `traefik-ha`-Playbook auf den aktiven Stack gesynct.
 
 Siehe `standalone-stacks/traefik-proxy/configurations/middlewares.yml` für die Middleware-Definition und `standalone-stacks/traefik-ha/configs/nginx/` für die HTML-Templates.
 

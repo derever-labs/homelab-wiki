@@ -53,7 +53,7 @@ vm: Aktiver Traefik-Node {
     banliste: "Banlisten-Cache\n(in-memory)" { class: data }
     chain: Restliche Middleware-Chain {
       class: node
-      tooltip: "secure-headers, error-pages, authentik-forward-auth (Chain public-auth)"
+      tooltip: "secure-headers, error-pages-strict, authentik-forward-auth (Chain public-auth)"
     }
   }
 
@@ -74,11 +74,11 @@ vm.traefik.bouncer -> vm.engine: "A. pollt Decisions alle 15s (HTTP)" { class: d
 
 1. Ein externer Request trifft über die VIP auf den aktiven Traefik-Node. In allen `public-*`-Chains ist die [Bouncer-Middleware](#crowdsec-bouncer-traefik-plugin) das erste Glied ([Middleware Chains](../traefik/referenz.md#middleware-chains)).
 2. Der Bouncer prüft die Client-IP ausschliesslich gegen seine lokal gecachte Banliste -- im Request-Pfad gibt es keinen API-Call zur Engine.
-3. Gebannte IPs erhalten sofort HTTP 403, der Request erreicht weder Authentik noch ein Backend. CrowdSec steht bewusst vor `error-pages`, damit die Ban-Antwort nicht durch die Wartungsseite ersetzt wird.
+3. Gebannte IPs erhalten sofort HTTP 403 mit der eigenen Ban-Seite des Bouncers (`ban.html`), der Request erreicht weder Authentik noch ein Backend. CrowdSec steht bewusst vor `error-pages-strict`, damit die Ban-Antwort des Bouncers erhalten bleibt und nicht durch die Wartungsseite ersetzt wird.
 4. Nicht gebannte Requests durchlaufen die restliche Chain zum Backend, die Response läuft denselben Weg zurück.
 5. Den Cache aktualisiert der Bouncer asynchron alle 15 Sekunden per Stream-Poll bei der lokalen Engine ([Bouncer-Parameter](./referenz.md#bouncer-parameter)) -- deshalb blockt er sofort, obwohl die Detection asynchron ist.
 6. Interne Netze stehen in `clientTrustedIPs` und werden vom Bouncer nie geprüft -- Bans wirken nur auf externe Clients.
-7. Antwortet die Engine nicht, kippt der Bouncer nach dem ersten gescheiterten Poll in fail-closed: Nach spätestens 15 Sekunden erhält jeder externe Request HTTP 403, interne Netze bleiben ausgenommen ([Ausfallverhalten](#ausfallverhalten)).
+7. Antwortet die Engine nicht, kippt der Bouncer nach vier gescheiterten Polls in fail-closed: Nach rund 60 Sekunden erhält jeder externe Request HTTP 403, interne Netze bleiben ausgenommen ([Ausfallverhalten](#ausfallverhalten)).
 
 ### Detection (asynchroner Datenfluss)
 
@@ -193,19 +193,20 @@ node2.traefik -> node2.engine: "pollt nur die eigene Engine" { class: passiv; st
 1. keepalived hält die VIP auf dem MASTER, Clients erreichen zu jedem Zeitpunkt genau einen Node ([Traefik](../traefik/index.md)).
 2. Jeder Node betreibt sein eigenes, vollständiges Paar aus Traefik (mit Bouncer-Cache) und [Engine](#crowdsec-engine) -- der Bouncer spricht ausschliesslich die Engine seines eigenen Nodes an.
 3. Die beiden Engines synchronisieren ihre Decisions nicht untereinander: Jede baut ihre Banliste allein aus den Logs auf, die ihr Node selbst gesehen hat. Auch cloud-seitig sind beide unabhängig registriert.
-4. Engine-Ausfall: Der Bouncer dieses Nodes kippt nach dem ersten gescheiterten Poll in fail-closed und beantwortet nach spätestens 15 Sekunden jeden externen Request mit HTTP 403, interne Netze (`clientTrustedIPs`) bleiben ausgenommen. keepalived bemerkt den Engine-Ausfall nicht und schwenkt die VIP nicht um.
+4. Engine-Ausfall: Der Bouncer dieses Nodes kippt nach vier gescheiterten Polls in fail-closed und beantwortet nach rund 60 Sekunden jeden externen Request mit HTTP 403, interne Netze (`clientTrustedIPs`) bleiben ausgenommen. keepalived bemerkt den Engine-Ausfall nicht und schwenkt die VIP nicht um.
 5. Node-Failover: Der BACKUP übernimmt die VIP mit eigener, unabhängig aufgebauter Banliste -- aktive Bans des MASTER gelten dort nicht zwingend weiter.
 6. Ein kurz vor dem Failover gebannter Angreifer kommt nach dem Failover so lange durch, bis die Engine des BACKUP ihn selbst erkennt oder die Community-Blocklist ihn liefert.
 
-::: warning Engine-Ausfall blockt externen Traffic (fail-closed)
-Der Bouncer toleriert mit der aktuellen Config keinen einzigen gescheiterten
-Stream-Poll (`updateMaxFailure` ungesetzt, Default 0 in Plugin v1.4.7). Fällt
-die CrowdSec-Engine eines Nodes aus, beantwortet Traefik auf diesem Node nach
-spätestens 15 Sekunden jeden externen Request mit HTTP 403 -- interne Netze
-(`clientTrustedIPs`) bleiben ausgenommen. keepalived prüft nur Traefik selbst
-und das Gateway, ein Engine-Ausfall löst also keinen VIP-Failover aus. Die
-Engine ist damit pro Node ein Verfügbarkeits-SPOF für den externen Zugriff
-(fail-closed by design der aktuellen Config).
+::: warning Engine-Ausfall blockt externen Traffic nach rund 60s (fail-closed)
+Der Bouncer toleriert mit `updateMaxFailure: 4` bis zu vier gescheiterte
+Stream-Polls, bevor er in fail-closed kippt. Fällt die CrowdSec-Engine eines
+Nodes aus, beantwortet Traefik auf diesem Node damit erst nach rund 60 Sekunden
+(vier Poll-Intervalle à 15 Sekunden) jeden externen Request mit HTTP 403 --
+interne Netze (`clientTrustedIPs`) bleiben ausgenommen. Die kurze Toleranz
+überbrückt einen Engine-Neustart, ohne den externen Zugriff sofort komplett zu
+sperren. keepalived prüft nur Traefik selbst und das Gateway, ein Engine-Ausfall
+löst also keinen VIP-Failover aus. Die Engine bleibt damit pro Node ein
+Verfügbarkeits-SPOF für den externen Zugriff (fail-closed by design).
 :::
 
 ::: warning Unabhängige Banlisten pro Node

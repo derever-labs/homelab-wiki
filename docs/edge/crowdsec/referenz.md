@@ -29,6 +29,8 @@ Diese Seite listet die Konfigurationsparameter von Engine und Bouncer, die verwe
 | **Verbindung** | `crowdsec:8080` (LAPI) |
 | **Modus** | Stream (gecachte Entscheidungen, Update alle 15s) |
 | **API-Key** | `/run/secrets/crowdsec_bouncer_key` (Datei-Mount) |
+| **Ban-Seite** | `banHTMLFilePath: /configurations/ban.html` -- eigene HTML-Ban-Seite statt rohem 403 (vorher leerer 403 ohne `Content-Type`, den Safari als Datei-Download anbot) |
+| **Fehlertoleranz** | `updateMaxFailure: 4` -- erst nach vier gescheiterten Stream-Polls (rund 60s) fail-closed statt sofortigem Totalblock bei kurzem LAPI-Ausfall |
 
 ## Collections
 
@@ -39,12 +41,15 @@ Die Engine verwendet folgende Collections zur Angriffserkennung:
 | `crowdsecurity/traefik` | Traefik-spezifische Szenarien (Log-Parsing) |
 | `crowdsecurity/http-cve` | Bekannte HTTP-Schwachstellen (CVEs) |
 | `crowdsecurity/base-http-scenarios` | Allgemeine HTTP-Angriffe (Brute-Force, Crawling) |
-| `crowdsecurity/sshd` | SSH Brute-Force-Erkennung |
+| `crowdsecurity/sshd` | Zieht die geoip-/dateparse-Enricher von `crowdsecurity/linux` nach (siehe Warnung unten) |
 | `LePresidente/jellyfin` | Jellyfin-spezifische Szenarien |
-| `firix/authentik` | Authentik-spezifische Szenarien |
 
-::: warning sshd- und authentik-Collections ohne Datenquelle
-Die Acquisition liest ausschliesslich die Logs des Traefik-Containers (siehe Log-Quelle in den [Engine-Parametern](#engine-parameter)). `crowdsecurity/sshd` und `firix/authentik` sind installiert und aktiv, erhalten aber keine passenden Events und bleiben damit wirkungslos.
+::: warning sshd-Collection feuert nie -- bleibt bewusst installiert
+Die Acquisition liest ausschliesslich die Logs des Traefik-Containers (siehe Log-Quelle in den [Engine-Parametern](#engine-parameter)). `crowdsecurity/sshd` erhält damit nie SSH-Events und löst nie einen Ban aus. Die Collection bleibt trotzdem bewusst installiert, weil sie als Hard-Dependency von `crowdsecurity/linux` dessen geoip- und dateparse-Enricher nachzieht, auf die die Traefik-Parsing-Pipeline aktiv angewiesen ist -- ohne sie bräche das Log-Parsing. `firix/authentik` wurde am 19.07.2026 entfernt, weil es aus demselben Grund (keine Authentik-Logs in der Acquisition) nie feuerte und keinen solchen Nebennutzen hat.
+:::
+
+::: info COLLECTIONS-Env ist additiv
+Die `COLLECTIONS`-Env-Variable im Compose-Template ist additiv: der Entrypoint installiert die gelisteten Collections bei jedem Start, entfernt aber nie welche. Das Streichen einer Collection aus der Liste deinstalliert sie nicht automatisch von den Nodes -- dafür ist zusätzlich ein manuelles `cscli collections remove` nötig.
 :::
 
 ## Lokale Whitelists
