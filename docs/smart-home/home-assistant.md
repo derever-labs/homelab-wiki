@@ -34,10 +34,10 @@ Jeder Standort hat eine eigene, unabhängige HAOS-Instanz.
 | Standort | VM-Name | IP | Proxmox-Host |
 |----------|---------|----|-------------|
 | Lenzburg (Hauptstandort) | homeassistant | 10.0.0.100 | pve02 |
-| Dottikon (Nana) | homeassistant-dottikon | 192.168.2.x (DHCP) | pve-01-nana |
+| Dottikon (Nana) | homeassistant-dottikon | 192.168.3.247 | pve-01-nana |
 | Luzern | homeassistant-luzern | 172.16.0.x (DHCP) | pve-lu-01 |
 
-Die Instanzen sind unabhängig voneinander -- kein gemeinsamer State, keine Cross-Cluster-Synchronisation.
+Die Instanzen sind unabhängig voneinander -- kein gemeinsamer State, keine Cross-Cluster-Synchronisation. Die Dottikon-Instanz integriert die Reolink-Kameras des Standorts und trägt den Anker-Capture-Pfad der [Videoüberwachung Dottikon](../storage/ueberwachung-dottikon/).
 
 ## IoT-Integration (Lenzburg)
 

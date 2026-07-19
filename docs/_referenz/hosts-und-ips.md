@@ -128,6 +128,17 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 
 Alle vier Synology sind einheitlich konfiguriert (DSM-Port 40000/40001, SMART, Logout-Timer, SSH-Key) -- siehe [DSM-Verwaltung](../storage/nas/referenz.md#dsm-verwaltung-alle-synology).
 
+## Kameras Dottikon
+
+Die Überwachungskameras der Aussenstelle Dottikon; Modelle, Ebenen-Zuordnung und Retention-System: [Videoüberwachung Dottikon](../storage/ueberwachung-dottikon/).
+
+| Kamera | IP | Bemerkung |
+| :--- | :--- | :--- |
+| Silo Ost | 192.168.2.159 | Reolink RLC-823S2 (PTZ) |
+| Silo West | 192.168.2.158 | Reolink RLC-823S1 (PTZ) |
+| Silo Süd | 192.168.2.157 | Reolink Duo 3V |
+| Türe hinten | 192.168.2.254 | Fremdfabrikat (kein Reolink), nur Surveillance-Station-Aufnahme |
+
 ## Thunderbolt-Netzwerk
 
 Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration und DRBD-Replikation.

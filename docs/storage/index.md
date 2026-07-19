@@ -26,6 +26,9 @@ Die Persistenz-Schicht des Homelabs steht auf drei Beinen: Linstor/DRBD replizie
 | **[Linstor & DRBD](./linstor/)** | DRBD-repliziertes Block-Storage für Cluster-Volumes (CSI) | [Referenz](./linstor/referenz.md), [Betrieb](./linstor/betrieb.md), [Split-Brain-Runbook](./linstor/split-brain-runbook.md) |
 | **[NAS-Speicher](./nas/)** | Synology NFS-Exports und Garage S3 | [Referenz](./nas/referenz.md), [Betrieb](./nas/betrieb.md) |
 | **[Backup](./backup/)** | PBS-VM-Backups plus app-konsistente Dumps | [Referenz](./backup/referenz.md), [Betrieb](./backup/betrieb.md) |
+| **[Videoüberwachung Dottikon](./ueberwachung-dottikon/)** | Kamera-Retention-Ebenen auf der DS1525+ der Aussenstelle | [Referenz](./ueberwachung-dottikon/referenz.md), [Betrieb](./ueberwachung-dottikon/betrieb.md) |
+
+Die Videoüberwachung Dottikon ist ein standort-autonomes Retention-System auf der dortigen Synology -- sie hat keine Berührung mit Linstor, NFS oder der Backup-Kette dieses Big Pictures und taucht in den Diagrammen unten deshalb nicht auf.
 
 ## Das Gesamtbild in zwei Pfaden
 
