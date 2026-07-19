@@ -28,53 +28,186 @@ Immo Monitor ersetzt die frühere Kombination aus Metabase + Leaflet + NocoDB du
 
 ## Architektur
 
+Zwei Szenario-Sichten trennen die zwei Ebenen der App: den synchronen Request-Pfad vom Browser bis zu den Datenquellen und den asynchronen Weg vom Scan-Lauf zur angezeigten Status-Aussage. Das Gesamtbild der Datenpipeline dahinter -- CI/CD, Enrichment, Telegram -- zeigt die [Gesamtarchitektur des Immobilien-Monitorings](../immobilien-monitoring/index.md#gesamtarchitektur).
+
+Lese-Konvention für beide Diagramme: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Durchgezogene Kanten laufen synchron zur Request-Zeit, gestrichelte asynchron im Scan-Rhythmus. Farben kodieren die Wege: Blau der Seiten-Request samt Status-Ableitung, Violett der Bild-Weg ohne Authentik, Ocker der Scan-Schreibweg des Scrapers.
+
+### Request-Pfad durch die drei Router
+
+**Leitfrage:** Über welchen der drei Traefik-Router erreicht ein Request die App -- und warum nehmen Bilder einen eigenen Weg ohne Login?
+
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  seite: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  bild: { style: { stroke: "#7c3aed"; font-color: "#7c3aed" } }
 }
 
 direction: right
 
-Browser: Browser { class: node }
+browser: Browser { class: node }
 
-Traefik: Traefik {
+traefik: Traefik {
   class: container
-  RI: "intern-auth@file (LAN/VPN)" { class: node }
-  RE: "public-auth@file (extern)" { class: node }
-  RP: "Photo-Route (ohne Auth, hohe Priority)" { class: node }
+
+  ri: intern-Router {
+    class: node
+    tooltip: "Host-Regel + ClientIP-Allowlist, Chain intern-auth -- Authentik + IP-Allowlist"
+  }
+  re: public-Router {
+    class: node
+    tooltip: "nur Host-Regel, Chain public-auth -- Authentik + CrowdSec"
+  }
+  rp: Photo-Router {
+    class: node
+    tooltip: "PathPrefix /api/photos/ mit hoher expliziter Priority -- bewusst ohne Authentik-Middleware"
+  }
 }
 
-App: "Immo Monitor (SvelteKit)" {
-  class: node
-  tooltip: "Drizzle ORM, Leaflet, shadcn-svelte, sharp"
-}
-PG: "PostgreSQL immo" {
-  shape: cylinder
-  tooltip: "App liest alles, schreibt nur Nutzer-Tabellen"
-}
-NFS: "NFS Photo-Archiv" {
-  shape: cylinder
-  tooltip: "Read-only Mount, Original-Fotos"
-}
-Cache: "Thumbnail-Cache" {
-  shape: cylinder
-  tooltip: "Schreibbarer Pfad ausserhalb des Read-only-Mounts"
-}
-Scraper: "immoscraper Batch-Job" { class: node }
+app: Immo Monitor (SvelteKit) {
+  class: container
 
-Browser -> Traefik.RI: HTTPS intern
-Browser -> Traefik.RE: HTTPS extern
-Browser -> Traefik.RP: "Bilder /api/photos/*"
-Traefik.RI -> App
-Traefik.RE -> App
-Traefik.RP -> App: "Path-Traversal-Schutz im Endpoint"
-App -> PG: "Lesen (listing, project, project_candidate, ...)\nSchreiben (Favoriten, Notizen, Sichtung)"
-App -> NFS: "Original-Bilder lesen"
-App -> Cache: "Skalierte Varianten via sharp"
-Scraper -> PG: Schreibt Inseratedaten
-Scraper -> NFS: Schreibt Fotos
+  load: Seiten-Load + Aktionen {
+    class: node
+    tooltip: "Load-Funktionen und Form-Actions -- jeder angezeigte Zustand läuft durch die Lifecycle-Ableitung"
+  }
+  photo: Photo-Endpoint {
+    class: node
+    tooltip: "Path-Traversal-Schutz im Endpoint, keine Datenbank-Abhängigkeit"
+  }
+}
+
+pg: PostgreSQL immo {
+  shape: cylinder
+  tooltip: "App liest alle Tabellen, schreibt nur die Nutzer-Tabellen"
+}
+nfs: NFS Photo-Archiv {
+  shape: cylinder
+  tooltip: "Read-only Mount -- befüllt vom Scraper der Datenpipeline"
+}
+cache: Thumbnail-Cache {
+  shape: cylinder
+  tooltip: "beschreibbarer Pfad ausserhalb des Read-only-Mounts, flüchtig"
+}
+
+browser -> traefik.ri: "1a. HTTPS aus LAN/VPN --\nClientIP-Regel greift" { class: seite }
+browser -> traefik.re: "1b. HTTPS von extern --\nnur Host-Regel" { class: seite }
+traefik.ri -> app.load: "2. Request + Identitäts-Header" { class: seite }
+traefik.re -> app.load: "2. Request + Identitäts-Header" { class: seite }
+app.load -> pg: "3a. SQL-Lesen für die Ansichten --\nStatus via Lifecycle-Ableitung" { class: seite }
+app.load -> pg: "3b. Schreiben nur Nutzer-Daten --\nFavoriten, Notizen, Sichtung" { class: seite }
+browser -> traefik.rp: "4. Bilder aus dem HTML --\nGET /api/photos/* mit Breiten-Query" { class: bild }
+traefik.rp -> app.photo: "5. ohne Authentik-Chain --\nPriority sticht die Host-Router" { class: bild }
+app.photo -> nfs: "6a. Original lesen --\nread-only NFS-Mount" { class: bild }
+app.photo -> cache: "6b. skalierte Variante lesen oder\nvia sharp erzeugen und schreiben" { class: bild }
 ```
+
+**Lesehilfe:**
+
+1. Aus LAN/VPN greift die ClientIP-Regel des intern-Routers (Chain `intern-auth@file`), von extern bleibt der public-Router (`public-auth@file`) -- die Chains dokumentiert die [Traefik Referenz](../../edge/traefik/referenz.md#middleware-chains).
+2. Nach bestandener Chain erreicht der Request die Load-Funktion mit Identitäts-Headern; jeder angezeigte Inserats-Zustand läuft dort durch die Lifecycle-Ableitung ([Statusmodell](#statusmodell-die-eine-zustands-ableitung)).
+3. Gelesen wird aus allen Tabellen, geschrieben ausschliesslich Nutzer-Daten -- Favoriten, Notizen, Ablehnung, Sichtung ([Rolle im Stack](#rolle-im-stack)).
+4. Die Bilder im HTML lädt der Browser separat über `/api/photos/*` -- der Photo-Router sticht mit hoher Priority die Host-Router und trägt bewusst keine Authentik-Middleware ([Traefik-Route ohne Authentik](#traefik-route-ohne-authentik)).
+5. Der Photo-Endpoint liest das Original vom read-only NFS-Mount und liefert die per sharp skalierte Variante aus dem Cache ([Thumbnails via sharp](#thumbnails-via-sharp)); befüllt wird das Archiv asynchron vom Scraper ([Photo-Archivierung](../immobilien-monitoring/index.md#photo-archivierung-auf-nfs)).
+6. Ausfall PostgreSQL: Seiten-Loads und Nutzer-Schreibungen scheitern, und weil der Health-Check bewusst die Datenbank prüft, meldet Consul den Service als unhealthy und Traefik nimmt das Backend aus dem Routing -- damit fällt auch die selbst DB-freie Bild-Route mit aus.
+7. Ausfall NFS: Die Seiten bleiben nutzbar, nur die Bilder fehlen -- der Endpoint prüft vor jedem Cache-Zugriff zuerst das Original auf dem Mount.
+
+### Vom Scan zum angezeigten Status
+
+**Leitfrage:** Wie wird aus Scan-Läufen der angezeigte Inserats-Status -- und warum degradiert die Anzeige bei Scan-Ausfall, statt fälschlich Aktualität zu behaupten?
+
+```d2
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  scan: { style: { stroke: "#8f6418"; font-color: "#8f6418" } }
+  ableitung: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+}
+
+direction: right
+
+batch: Scan-Zeit {
+  class: container
+  top: 0
+  left: 60
+
+  scraper: immoscraper Batch-Job {
+    class: node
+    top: 110
+    left: 150
+    tooltip: "Nomad Periodic Batch -- alle 3 Tage Homegate, wöchentlich ImmoScout24"
+  }
+  scrapfly: Scrapfly API {
+    class: node
+    top: 110
+    left: 560
+    tooltip: "umgeht den Anti-Bot-Schutz der Portale serverseitig"
+  }
+}
+
+pg: PostgreSQL immo {
+  class: container
+  label.near: top-center
+  top: 520
+  left: 180
+
+  listing: listing {
+    shape: cylinder
+    tooltip: "is_active, first_seen_at, last_seen_at, deactivated_at"
+  }
+  runs: scraper_runs {
+    shape: cylinder
+    tooltip: "je Lauf: Portal, Startzeit, Anzahl neu und aktualisiert, Fehler"
+  }
+}
+
+request: Request-Zeit im Immo Monitor {
+  class: container
+  label.near: top-left
+  top: 1020
+  left: 60
+
+  load: Load-Funktion der Route {
+    class: node
+    tooltip: "liest die Zeilen, deutet is_active nie selbst"
+  }
+  health: loadScanHealth {
+    class: node
+    tooltip: "src/lib/server/scanHealth.ts -- Scan-Alter je Portal aus scraper_runs"
+  }
+  derive: deriveLifecycle {
+    class: node
+    tooltip: "src/lib/server/lifecycle.ts -- SSOT: sieben Präzedenz-Regeln"
+  }
+}
+
+anzeige: Alle Ansichten {
+  class: node
+  top: 1560
+  left: 480
+  tooltip: "KPIs, Filter, Karte, Timeline, Marktanalyse -- alle aus derselben Ableitung"
+}
+
+batch.scraper -> batch.scrapfly: "1. Inserate abrufen --\nHTTP GET mit Anti-Bot-Bypass" { class: scan; style.stroke-dash: 3 }
+batch.scraper -> pg.listing: "2. UPSERT je Inserat --\nlast_seen_at frisch, Stale-Abgänge markieren" { class: scan; style.stroke-dash: 3 }
+batch.scraper -> pg.runs: "3. Lauf protokollieren --\nneu, aktualisiert, Fehler" { class: scan; style.stroke-dash: 3 }
+request.load -> pg.listing: "4. Zeilen lesen --\nis_active nur als Rohwert" { class: ableitung }
+request.health -> pg.runs: "5. letzter produktiver Lauf je Portal --\nproduktiv heisst neu + aktualisiert über 0" { class: ableitung }
+request.load -> request.derive: "6a. Listing-Felder" { class: ableitung }
+request.health -> request.derive: "6b. Scan-Gesundheit je Portal" { class: ableitung }
+request.derive -> anzeige: "7. Zustand x Konfidenz --\nbei stalem Scan degradiert die Anzeige" { class: ableitung }
+```
+
+**Lesehilfe:**
+
+1. Der periodische Batch-Job holt die Inserate über Scrapfly, das den Anti-Bot-Schutz der Portale serverseitig umgeht ([Anti-Bot](../immobilien-monitoring/index.md#anti-bot-scrapfly-statt-browser)); die fünf Phasen eines Laufs beschreibt der [Scan-Ablauf](../immobilien-monitoring/index.md#scan-ablauf-5-phasen).
+2. Je Inserat setzt der UPSERT `last_seen_at`; länger nicht gesehene Inserate deaktiviert der Lauf -- ausser der Scan fand gar nichts, dann greift der Schutz gegen Massen-Deaktivierung ([Smart Skipping](../immobilien-monitoring/index.md#smart-skipping)).
+3. Jeder Lauf protokolliert sich in `scraper_runs` -- diese Tabelle ist die Grundlage der Scan-Gesundheit.
+4. Zur Request-Zeit liest die Load-Funktion die Zeilen, deutet `is_active` aber nie selbst ([Statusmodell](#statusmodell-die-eine-zustands-ableitung)).
+5. `loadScanHealth` bestimmt je Portal den letzten produktiven Lauf -- produktiv heisst neue oder aktualisierte Inserate; `errors = 0` allein beweist nichts, tote Läufe waren fehlerfrei.
+6. `deriveLifecycle` löst beide Inputs deterministisch zu Zustand und Konfidenz auf; ist der Portal-Scan älter als seine an den Scan-Rhythmus gekoppelte Schwelle, degradiert "aktiv" zur Anzeige "zuletzt bestätigt am" ([Statusmodell](#statusmodell-die-eine-zustands-ableitung)).
+7. Ausfall Scrapfly oder Portal-Block: Es entsteht kein produktiver Lauf -- kein Inserat wird fälschlich deaktiviert, das Portal wird stale, die Anzeige degradiert. Die App behauptet weniger Aktualität, verliert aber keine Daten.
 
 ## Tech Stack
 
