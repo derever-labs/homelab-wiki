@@ -1,6 +1,6 @@
 ---
 title: Homelab Wiki
-description: Zentrale Dokumentation der Homelab-Infrastruktur
+description: Zentrale Dokumentation der Homelab-Infrastruktur -- Einstieg über die neun Themen-Oberkapitel, den Querschnitt und die globale Referenz
 tags:
   - index
   - home
@@ -9,117 +9,42 @@ tags:
 
 # Homelab Wiki
 
-Willkommen in der zentralen Wissensdatenbank für das Homelab. Diese Dokumentation umfasst die Architektur, die Infrastruktur-Komponenten und alle laufenden Services.
+Willkommen in der zentralen Wissensdatenbank für das Homelab. Das Wiki erklärt das Warum und das Zusammenspiel der Systeme -- Architektur, Infrastruktur-Komponenten und alle laufenden Services. Das Was (Code, Configs, Nomad-Jobs) liegt in den Repos, auf die die Seiten verweisen.
+
+Die Inhalte sind in neun Themen-Oberkapitel gegliedert. Jede Kapitel-Startseite bündelt die Systeme ihres Themas und zeigt, wo ein Gesamtbild sinnvoll ist, das Big Picture des Zusammenspiels -- die Details stehen auf den System-Seiten dahinter.
 
 ## Schnelleinstieg
 
-| Ressource | Beschreibung |
-| :--- | :--- |
-| [Hosts und IPs](./_referenz/hosts-und-ips.md) | Alle IPs im Homelab |
-| [Web-Interfaces](./_referenz/web-interfaces.md) | URLs aller Web-UIs |
-| [Credentials](./_referenz/credentials.md) | Wo Passwörter und Tokens gespeichert sind |
-| [SSH-Zugang](./_referenz/ssh-zugang.md) | SSH-Zugänge zu allen Systemen |
-| [Nomad Jobs](./_referenz/nomad-jobs.md) | Job-Verzeichnis und Übersicht |
-| [Globale Referenz](./_referenz/) | Alle Referenzseiten im Überblick |
+Die meistgebrauchten Nachschlageseiten aus der [globalen Referenz](./_referenz/):
 
-## Kern-Infrastruktur
+- [Hosts und IPs](./_referenz/hosts-und-ips.md) -- Alle Hosts, VMs und IP-Adressen
+- [Web-Interfaces](./_referenz/web-interfaces.md) -- URLs aller Web-UIs
+- [SSH-Zugang](./_referenz/ssh-zugang.md) -- SSH-Benutzer und Zugangsregeln
+- [Credentials](./_referenz/credentials.md) -- Wo Passwörter und Tokens gespeichert sind
+- [Nomad Jobs](./_referenz/nomad-jobs.md) -- Job-Verzeichnis und Übersicht
 
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Proxmox](./infrastruktur/proxmox/) | Virtualisierungsplattform (3 Nodes, HA-Cluster) |
-| [Vault](./plattform/vault/) | Zentrale Secrets-Verwaltung |
-| [Nomad](./plattform/nomad/) | Container- und Job-Orchestrierung |
-| [Consul](./plattform/consul/) | Service Discovery und Health Checks |
-| [Traefik](./edge/traefik/) | Reverse Proxy, SSL-Terminierung |
-| [DNS](./netz/dns/) | Pi-hole, Unbound, Consul-Forwarding |
-| [Netzwerk](./netz/netzwerk/) | VLANs, Subnets, Routing |
-| [UniFi](./netz/unifi/) | Netzwerk-Hardware, Access Points, VLAN-Segmentierung |
-| [USV](./monitoring/ups/) | Unterbrechungsfreie Stromversorgung, NUT Server |
+## Kapitel
 
-## Storage und Backup
+### Fundament
 
-| Thema | Beschreibung |
-| :--- | :--- |
-| [NAS Storage](./storage/nas/) | Synology NFS-Exports und Garage S3 |
-| [Linstor Storage](./storage/linstor/) | DRBD-repliziertes Block-Storage (CSI) |
-| [Backup](./storage/backup/) | Backup-Strategie, PBS, pg_dumpall |
+- [Infrastruktur](./infrastruktur/) -- Die physische und virtuelle Grundlage: der Proxmox-Cluster als Virtualisierungsplattform
+- [Netz](./netz/) -- Topologie, Segmente und Standorte, die DNS-Kette aus Pi-hole, Unbound und Consul-Forwarding, dazu die UniFi-Hardware
+- [Storage und Backup](./storage/) -- Die Persistenz-Schicht: Linstor/DRBD-Block-Storage, das Synology NAS mit NFS und S3, die Backup-Kette über den Proxmox Backup Server
+- [Plattform](./plattform/) -- Die Cluster-Grundversorgung, auf der alle Workloads laufen: Nomad, Consul, Vault und die Zot Registry
 
-## Kerndienste
+### Zugriff und Betrieb
 
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Authentik](./edge/authentik/) | Identity Provider, SSO, ForwardAuth, OIDC |
-| [LDAP im Homelab](./edge/ldap.md) | Authentik als Identity Store, LDAP Outpost für Jellyfin |
-| [Docker Registry](./plattform/docker-registry/) | Zot OCI Registry |
-| [SMTP Relay](./dienste/smtp-relay/) | Mail-Relay für Services |
-| [Wiki](./dienste/vitepress-wiki/) | VitePress Dokumentations-Deployment |
-| [Security](./_querschnitt/security/) | CrowdSec, Authentik, Zugriffskontrolle |
-| [DbGate](./dienste/dbgate/) | Datenbank-Verwaltungs-UI |
+- [Ingress, Auth und Edge](./edge/) -- Der Zugriffspfad ins Homelab: Traefik routet, CrowdSec und Authentik entscheiden, wer durchkommt
+- [Monitoring Stack](./monitoring/) -- Metriken, Logs, Verfügbarkeits-Checks und Alarmierung: von Grafana und Loki bis CheckMK, Uptime Kuma und Keep
 
-## Media
+### Anwendungen
 
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Jellyfin](./medien/jellyfin/) | Media Server |
-| [Arr-Stack](./medien/arr-stack/) | Sonarr, Radarr, Prowlarr, SABnzbd |
-| [Jellyseerr](./medien/jellyseerr.md) | Media Requests |
-| [Content Pipeline](./medien/content-pipeline/) | Download-Automatisierung |
-| [Stash](./medien/stash/) | Media Organizer |
-| [AudioBookShelf](./medien/audiobookshelf.md) | Hörbücher und E-Books |
-| [Video Download](./medien/video-download/) | YouTube-DL, Video-Grabber |
-| [Media Tools](./medien/media-tools.md) | Jellystat, Handbrake, LazyLibrarian, Profilarr |
-| [SuggestArr](./medien/suggestarr/) | AI-Empfehlungen für Jellyfin via Jellyseerr |
+- [Medien](./medien/) -- Vom Wunsch zum abspielbaren Titel: Seerr, arr-Suite und Jellyfin, dazu Hörbücher und die Content-Pipeline
+- [Smart Home und IoT](./smart-home/) -- Die Hausautomation: Home Assistant an drei Standorten, Geräte-Anbindung über Zigbee2MQTT und Mosquitto
+- [Dienste](./dienste/) -- Der Sammelbereich für eigenständige Dienste: von Paperless, Gitea und Vaultwarden bis zu den kleinen Web-Tools
 
-## Monitoring
+## Querschnitt und Referenz
 
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Monitoring Stack](./monitoring/) | Grafana, InfluxDB, Loki, Alloy |
-| [CheckMK](./monitoring/checkmk/) | Infrastructure Monitoring |
-| [CrowdSec](./edge/crowdsec/) | Intrusion Prevention |
-| [Dashboards](./dienste/dashboards/) | Flame, Homepage |
-| [Uptime Kuma](./monitoring/uptime-kuma/) | Interne Verfügbarkeits-Checks und Push-Monitore |
-| [Synology NAS Monitoring](./monitoring/synology-monitoring/) | CheckMK-Hardware-Health, lokaler Telegraf, Grafana NAS-Dashboard |
-
-## Produktivität
-
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Paperless](./dienste/paperless/) | Dokumentenmanagement |
-| [Vaultwarden](./dienste/vaultwarden/) | Passwort Manager |
-| [Gitea](./dienste/gitea/) | Git Server |
-| [n8n](./dienste/n8n/) | Workflow Automation |
-| [Tandoor](./dienste/tandoor/) | Rezeptverwaltung |
-| [ChangeDetection](./dienste/changedetection/) | Website-Änderungsüberwachung |
-| [Obsidian LiveSync](./dienste/obsidian-livesync/) | Obsidian Synchronisation |
-| [Metabase](./dienste/metabase/) | Business Intelligence |
-| [Zeiterfassung](./_querschnitt/zeiterfassung/) | solidtime und Kimai |
-| [Immobilien-Monitoring](./dienste/immobilien-monitoring/) | Immobilien-Überwachung |
-| [Directus Gravel](./dienste/directus-gravel/) | Headless CMS für Gravel-Bike-Recherche |
-| [Utility Tools](./dienste/utility-tools/) | Czkawka, MeshCommander, Filebrowser |
-
-## IoT und AI
-
-| Thema | Beschreibung |
-| :--- | :--- |
-| [IoT Stack](./smart-home/iot-stack/) | Home Assistant, Zigbee2MQTT, Mosquitto |
-| [LLM Stack](./dienste/llm-stack/) | Ollama, Open-WebUI, HolLama |
-| [Claude Code](./_querschnitt/claude-code/) | Claude-Agent-Setup, MCP-Server, Skills |
-| [Secrets (Claude-Agent)](./_querschnitt/secrets/) | PRIVAT-Agent-Vault-Struktur für Claude |
-
-## Querschnittsthemen
-
-| Thema | Beschreibung |
-| :--- | :--- |
-| [Cluster-Restart](./_querschnitt/cluster-restart.md) | Runbook für Cluster-Neustart |
-| [Smart Shutdown](./_querschnitt/smart-shutdown.md) | Graceful Drain für Nomad und Linstor |
-| [Batch Jobs](./_querschnitt/batch-jobs.md) | Periodische Aufgaben (Renovate, Backups, Cleanup) |
-| [Datenbank-Architektur](./_querschnitt/datenbank-architektur.md) | PostgreSQL Shared Cluster, DRBD |
-| [Service-Abhängigkeiten](./_querschnitt/service-abhaengigkeiten.md) | Abhängigkeitsdiagramm aller Services |
-| [Datenstrategie](./_querschnitt/datenstrategie.md) | Speicher-Ebenen, Replikation, Backups |
-
-## Verwandte Seiten
-
+- [Querschnitt](./_querschnitt/) -- Runbooks, Architektur-Konzepte und Tooling, die mehrere Systeme gleichzeitig betreffen
+- [Globale Referenz](./_referenz/) -- Zentrale SSOT-Nachschlagetabellen: Hosts, Ports, URLs, Credentials, Hardware
 - [Wiki-Richtlinien](./wiki-richtlinien.md) -- Regeln und Konventionen für diese Dokumentation
-- [Globale Referenz](./_referenz/) -- IP-Adressen, Ports, Credentials, Hardware
-- [Querschnittsthemen](./_querschnitt/) -- Systemübergreifende Runbooks und Architektur
