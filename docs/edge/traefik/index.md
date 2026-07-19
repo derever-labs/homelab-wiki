@@ -236,7 +236,7 @@ Das Playbook:
 
 ### Cloudflare-DDNS
 
-Auf denselben beiden Traefik-VMs laufen im Docker-Compose-Stack zwei Cloudflare-DDNS-Container (`oznu/cloudflare-ddns`), je einer für die Zone `ackermannprivat.ch` und `ackermann.systems`. Sie halten die A-Records dieser Zonen auf der aktuellen WAN-IP -- die Voraussetzung dafür, dass die externen Namen ohne Cloudflare-Proxying direkt auf den Ingress zeigen ([Edge-Übersicht](../index.md#das-gesamtbild-in-zwei-pfaden)). Die Container gehören zum `traefik-ha`-Stack und werden über dasselbe Playbook ausgerollt, laufen aber bewusst ausserhalb von Nomad, damit der Ingress-Pfad nicht von der Cluster-Plattform abhängt. Definiert sind sie im Compose-Template `standalone-stacks/traefik-ha/templates/docker-compose.yml.j2`. Update-Fehler und IP-Drift werden überwacht ([Monitoring-Coverage](../../monitoring/coverage/index.md)).
+Auf denselben beiden Traefik-VMs laufen im Docker-Compose-Stack zwei Cloudflare-DDNS-Container (`oznu/cloudflare-ddns`), je einer für die Zone `ackermannprivat.ch` und `ackermann.systems`. Sie halten die A-Records dieser Zonen auf der aktuellen WAN-IP -- die Voraussetzung dafür, dass die externen Namen ohne Cloudflare-Proxying direkt auf den Ingress zeigen ([Edge-Übersicht](../index.md#das-gesamtbild-in-zwei-pfaden)). Die Container gehören zum `traefik-ha`-Stack und werden über dasselbe Playbook ausgerollt, laufen aber bewusst ausserhalb von Nomad, damit der Ingress-Pfad nicht von der Cluster-Plattform abhängt. Definiert sind sie im Compose-Template `standalone-stacks/traefik-ha/templates/docker-compose.yml.j2`. Den Monitoring-Stand dieses Bausteins führt die [Monitoring-Coverage](../../monitoring/coverage/index.md).
 
 ### Härtungen (aktiv auf vm-traefik-01 + vm-traefik-02)
 
