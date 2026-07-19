@@ -47,6 +47,7 @@ client: Externer Client {
 
 vm: Aktiver Traefik-Node {
   class: container
+  label.near: top-right
   tooltip: "vm-traefik-01 oder vm-traefik-02 -- keepalived hält die VIP 10.0.2.20 auf genau einem Node"
 
   entry: EntryPoint 443 + TLS {
@@ -146,34 +147,38 @@ n1: vm-traefik-01 (MASTER) {
   class: container
   tooltip: "10.0.2.21 -- Priorität 150, nopreempt"
   top: 320
-  left: 80
+  left: 160
+  grid-columns: 1
+  grid-gap: 70
 
-  ka: keepalived { class: node }
   t: Traefik { class: node }
+  ka: keepalived { class: node }
 }
 
 n2: vm-traefik-02 (BACKUP) {
   class: container
   tooltip: "10.0.2.22 -- Priorität 100, nopreempt"
   top: 320
-  left: 950
+  left: 1060
+  grid-columns: 1
+  grid-gap: 70
 
-  ka: keepalived { class: node }
   t: Traefik { class: node }
+  ka: keepalived { class: node }
 }
 
 gw: Pi-hole 10.0.2.1 {
   class: node
   tooltip: "Gateway-Track-Ziel -- antwortet der Ping nicht, gilt das Netz des MASTER als gestört"
-  top: 760
-  left: 200
+  top: 880
+  left: 160
 }
 
 vip -> n1.t: "1. Normalbetrieb --\nMASTER hält die VIP" { class: pfad }
 vip -> n2.t: "4. nach Failover (~4 s)" { class: failover; style.stroke-dash: 3 }
 n1.ka -> n1.t: "2a. prüft /ping" { class: kontrolle; style.stroke-dash: 3 }
 n2.ka -> n2.t: "prüft /ping" { class: kontrolle; style.stroke-dash: 3 }
-n1.ka -> gw: "2b. chk_gateway pingt --\nbei Ausfall Priorität 150 auf 90" { class: kontrolle; style.stroke-dash: 3 }
+n1.ka -> gw: "2b. chk_gateway pingt -- bei Ausfall Priorität 150 auf 90" { class: kontrolle; style.stroke-dash: 3 }
 n1.ka -> n2.ka: "3. VRRP-Advertisements --\nbleiben sie aus, übernimmt der BACKUP" { class: kontrolle; style.stroke-dash: 3 }
 ```
 
