@@ -195,7 +195,7 @@ Geräte ausserhalb dieser DNS-Kette -- etwa ein lokaler Arbeitsrechner -- könne
 
 ## KV Store
 
-Der Consul KV Store wird für dynamische Konfiguration genutzt, die von mehreren Services gelesen werden muss. Beispiel: Traefik Cloudflare Credentials (`traefik/cloudflare/email`, `traefik/cloudflare/api_key`).
+Der Consul KV Store wird für dynamische, nicht-sicherheitskritische Konfiguration genutzt, die von mehreren Services gelesen werden muss. Sensible Daten gehören nicht hierher (siehe Abgrenzung unten) -- die Cloudflare-API-Credentials etwa liegen als verschlüsselte Ansible-Vault-Variablen beim Traefik-Deployment, nicht im KV Store.
 
 ::: info Abgrenzung zu Vault
 Der Consul KV Store ist kein Secrets-Store. Sensible Daten gehören in [Vault](../vault/). Consul KV ist für nicht-sicherheitskritische Konfiguration gedacht.
@@ -205,7 +205,7 @@ Der Consul KV Store ist kein Secrets-Store. Sensible Daten gehören in [Vault](.
 
 Gossip Encryption verschlüsselt den gesamten Cluster-Traffic mit einem symmetrischen, auf allen Nodes identischen Key. Consul Connect (Service Mesh mit mTLS und Sidecar-Proxies) ist bewusst nicht konfiguriert -- das Homelab nutzt einfaches Service-Discovery.
 
-Status und Begründung der übrigen Sicherheitsmassnahmen -- kein TLS sowie das aktive ACL-System mit permissiver Default-Policy (`allow`) -- sind unter [Consul Betrieb](./betrieb.md) dokumentiert.
+Status und Begründung der übrigen Sicherheitsmassnahmen -- kein TLS sowie das aktive ACL-System mit `default_policy = deny` -- sind unter [Consul Betrieb](./betrieb.md) dokumentiert.
 
 ## Konfiguration
 
