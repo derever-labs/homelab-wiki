@@ -123,8 +123,8 @@ SSH nur per Passwort (`root@pam`, 1Password-Item `Proxmox`) -- im Gegensatz zu d
 | :--- | :--- | :--- |
 | HomeServer (DS1825+, Prod) | 10.0.0.200 | NFS-Exports, Garage S3, Backup-Ziel, DSM-Dienste |
 | MediaServer (DS2419+, vormals «Altes Blech») | 10.0.0.210 | Nach Cutover 2026-06 neu aufgesetzt; Jellyfin-Media von USB-Shares per NFS an die Media-Worker |
-| Backup-NAS (DS1525+, Hostname DS1525) | 192.168.2.200 | Aussenstelle Dottikon (Zugriff via Tailscale-Subnet-Router `pve-01-nana`); Active Backup for Business + `backup`-Share; kein NFS/Nomad-Storage |
-| Nana (DS1517+) | 192.168.3.181 | Aussenstelle Dottikon; Zugriff via Tailscale-Subnet-Router `pve-01-nana` |
+| Backup-NAS (DS1525+, Hostname DS1525) | 192.168.2.200 (LAN1), 192.168.3.243 (LAN2) | Aussenstelle Dottikon (Zugriff via Tailscale-Subnet-Router `pve-01-nana`); Active Backup for Business + `backup`-Share; Surveillance Station (Kameras Dottikon) mit `surveillance`- und `surveillance-archive`-Shares; kein NFS/Nomad-Storage |
+| Nana (DS1517+) | 192.168.3.181 | Aussenstelle Dottikon; Zugriff via Tailscale-Subnet-Router `pve-01-nana`; NICHT die Surveillance-Station-NAS (die läuft auf der DS1525+) |
 
 Alle vier Synology sind einheitlich konfiguriert (DSM-Port 40000/40001, SMART, Logout-Timer, SSH-Key) -- siehe [DSM-Verwaltung](../storage/nas/referenz.md#dsm-verwaltung-alle-synology).
 
