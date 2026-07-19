@@ -145,13 +145,13 @@ Direkter Internetzugang zu DSM ist mit Risiko verbunden (Beispiel: CVE-2024-1044
 Der offizielle Hook registriert das Zertifikat über die DSM-Cert-API -- auf diesem DSM erkannte die API das hochgeladene Cert nicht zuverlässig. Das `reloadcmd`-Script bildet stattdessen den bewährten Mechanismus des früheren `cert.sh` nach, wird aber von nativem `acme.sh` getrieben (abgelöst 2026-06).
 :::
 
-## HashiCorp Stack -- TLS deaktiviert
+## HashiCorp Stack -- TLS-Status
 
-Die interne Kommunikation zwischen Consul, Nomad und Vault ist bewusst ohne TLS konfiguriert. Diese Homelab-Entscheidung eliminiert das Risiko von Zertifikats-Expiry-Ausfällen. Der Cluster-Traffic ist trotzdem geschützt:
+Consul und Nomad kommunizieren intern bewusst ohne TLS. Diese Homelab-Entscheidung eliminiert für diese beiden Dienste das Risiko von Zertifikats-Expiry-Ausfällen. Vault bildet die Ausnahme und läuft seit 2026-07-15 auf HTTPS (`:8200`) mit einer privaten CA; die Nomad-Integration vertraut der CA über `ca_file` in der `vault {}`-Stanza. Der Cluster-Traffic ist zusätzlich abgesichert:
 
-- **Consul:** Gossip Encryption (symmetrischer Key)
-- **Nomad:** ACLs aktiv
-- **Vault:** Audit Logging und ACLs aktiv
+- **Consul:** ohne TLS, Gossip Encryption (symmetrischer Key) schützt den Cluster-Traffic
+- **Nomad:** ohne TLS, ACLs aktiv
+- **Vault:** TLS über private CA, zusätzlich Audit Logging und ACLs aktiv
 
 ## Proxmox-Nodes -- eigene ACME-Zertifikate
 

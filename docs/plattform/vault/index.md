@@ -19,7 +19,7 @@ Vault ist das zentrale Secrets Management. Alle Passwörter, Tokens und API-Keys
 | Deployment | Ansible + Systemd (3-Node Raft Cluster) |
 | Storage | Integrated Storage (Raft), repliziert über alle 3 Nodes |
 | Seal | Shamir (3 Key-Shares, Threshold 2) |
-| API-Zugang | HTTP über `vault.service.consul:8200` (kein TLS) |
+| API-Zugang | HTTPS über `vault.service.consul:8200` (private CA) |
 | Workload-Auth | Nomad Workload Identity (JWT), kein statischer Token |
 
 ## Rolle im Stack
@@ -78,7 +78,7 @@ Consul: Consul {
   tooltip: "Service Discovery: vault.service.consul und active.vault"
 }
 
-clients -> raft: HTTP :8200 {
+clients -> raft: HTTPS :8200 {
   style.stroke: "#7c3aed"
   tooltip: "Zugriff über vault.service.consul -- kein fest verdrahteter Node"
 }
@@ -100,7 +100,7 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 | Integrated Storage (Raft) statt Consul-Backend | Weniger Abhängigkeiten: Vault verwaltet seinen eigenen Zustand |
 | Shamir Seal statt Cloud-/Transit-Auto-Unseal | Self-Hosted ohne externen KMS -- die Seal-Keys bleiben lokal auf den Nodes, keine Abhängigkeit von einem Cloud-Anbieter. Das Entsiegeln nach einem Neustart übernimmt ein lokaler Boot-Service (siehe [Betrieb](./betrieb.md#unseal-nach-reboot)), kein herstellerseitiges Auto-Unseal. |
 | Permanenter Admin-Root-Token in 1Password | Das Ein-Personen-Homelab hält bewusst einen Root-Token als Admin- und Bootstrap-Zugang im zugriffsgeschützten Passwort-Manager (1Password), nicht als stehendes Secret auf einem Node. Pragmatischer Kompromiss statt Best-Practice-Ideal. Break-Glass bei Token-Verlust: `vault operator generate-root` aus den Shamir-Keys (siehe [Betrieb](./betrieb.md#root-zugang)). |
-| HTTP statt TLS | Bewusste Homelab-Entscheidung im isolierten Netz: kein Zertifikats-Expiry-Risiko. In einer produktiven Umgebung wäre TLS zwingend. |
+| TLS mit privater CA | Vault läuft seit 2026-07-15 auf HTTPS (`:8200`) mit einer selbst betriebenen privaten CA statt Klartext-HTTP. Die Nomad-Integration vertraut der CA über `ca_file` in der `vault {}`-Stanza. |
 | KV v2 Secret Engine | Versionierung von Secrets, Soft-Delete möglich |
 
 ## Workload Identity
@@ -139,7 +139,7 @@ vault: Vault {
 Nomad -> Task: 1. JWT ausstellen (Workload Identity) {
   style.stroke: "#6b7280"
 }
-Task -> vault.auth: 2. JWT vorzeigen (HTTP :8200) {
+Task -> vault.auth: 2. JWT vorzeigen (HTTPS :8200) {
   style.stroke: "#7c3aed"
   tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token nötig"
 }
