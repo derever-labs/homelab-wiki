@@ -53,6 +53,43 @@ Datenfluss: Zigbee-Geräte -> USB-Dongle (client-06) -> Zigbee2MQTT -> Mosquitto
 Home Assistant kommuniziert mit Mosquitto über das Management-Netz (`10.0.0.0/22`). Der IoT-Netz-VLAN 200 (`10.0.200.0/24`) ist für Zigbee-Geräte und den WLAN-SSID `AirPort-IoT` reserviert -- die HAOS-VM selbst liegt im Management-Netz.
 :::
 
+## Automationen Lenzburg -- native Packages statt Node-RED
+
+Die Automationslogik der Lenzburger Instanz läuft als native Home-Assistant-Automationen in YAML unter `/config/packages/` (eingebunden über `packages: !include_dir_named packages/`). Node-RED ist ausser Betrieb.
+
+Migriert ist die Waschküchen-Steuerung: `packages/waschkuche.yaml` bündelt sechs Automationen -- die 4x-tägliche Zeitfenster-Lüftung mit Start und Ende, die Feuchte-Schwellwert-Entfeuchtung, die 20-Minuten-Poll-Schleife, die 8-Stunden-Sicherheitsabschaltung und den Taster-Toggle -- samt drei Timer-Helfern und einem Merker-`input_boolean`. Der Quellcode liegt im Gitea-Repo `sam/ha-lenzburg`, nicht im Wiki.
+
+Die übrigen früheren Node-RED-Flows sind nicht nativ nachgebaut: die Werkstatt- und die Samuel-Steuerung wurden als nicht mehr genutzt stillgelegt, und die Pi-hole-Pause läuft über die bestehende native Webhook-Automation `pihole_disable_5min_webhook`, ausgelöst per Portal-Knopf auf intra.ackermannprivat.ch.
+
+### Warum Node-RED abgelöst wurde
+
+Der Node-RED-Baustein `node-red-contrib-home-assistant-websocket` hält sämtliche Entity-States der Instanz im Container-RAM (Full-Entity-Cache). Auf der 3-GB-VM trieb das den Node-RED-Prozess wiederholt über 2 GB RSS, worauf der Kernel-OOM-Killer ihn mehrfach beendete. Jeder OOM-Kill riss die laufenden `delay`- und `trigger`-Timer der Flows mit -- ein angefangener Entfeuchtungs- oder Nachlaufzyklus blieb danach hängen.
+
+Eine RAM-Härtung hätte nur das Symptom behandelt. Die native YAML-Lösung entfernt die Ursache: es läuft kein Full-Entity-Cache-Prozess mehr, und die zustandsbehaftete Logik übersteht einen Neustart.
+
+### Restart-Durabilität
+
+Node-RED verlor bei jedem OOM-Kill alle laufenden Zeitgeber. Damit die native Lösung das nicht erbt, nutzt jede Nachlauf-, Poll- und Maximaldauer-Logik einen Timer-Helfer mit `restore: true`: Der Timer speichert seine absolute Endzeit und stellt sie nach einem HA-Neustart wieder her. Bewusst nicht verwendet für neustart-kritische Pfade sind `script`-`delay` und Automation-`for:` -- beide überstehen einen Neustart nicht.
+
+Nicht jede Logik braucht dafür einen HA-Timer: die Pi-hole-Pause wird extern im Pi-hole selbst gefristet (`pi_hole.disable` mit Dauer), ein HA-Neustart ist dort ohne Belang, und reine Zustand-zu-Aktion-Logik ohne Nachlauf ist ohnehin zustandslos.
+
+## Config-Versionierung
+
+Die Lenzburger und die Luzerner Instanz versionieren ihre `/config` je in einem privaten Gitea-Repo (`sam/ha-lenzburg` bzw. `sam/ha-luzern`). Die Luzerner Instanz pusht nächtlich automatisch einen Config-Snapshot, die Lenzburger wird bei Config-Änderungen manuell committet und gepusht. `.storage`, Secrets und Laufzeit-Dateien sind per `.gitignore` ausgeschlossen (den Vollzustand decken HA- und Proxmox-Backups ab). Der Zugriff läuft über einen Deploy-Key (read-write) je Repo.
+
+Lenzburg erreicht den Gitea-Knoten direkt im Homelab-LAN, die Luzerner Instanz mangels privater Route über das Tailscale-Overlay. Beide Repos teilen denselben Gitea-SSH-Endpoint, der bei einem Nomad-Reschedule wandert -- Transport-Details der Luzerner Instanz und der Umgang mit der Endpoint-Wanderung: [Gitea -- Config-Anbindung HA-Luzern](../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale).
+
+## Überwachung
+
+Alle drei Instanzen sind in [Uptime Kuma](../monitoring/uptime-kuma/index.md) überwacht. Auslöser war ein rund einmonatiger Totalausfall der Luzerner Instanz, der mangels Monitoring unbemerkt blieb.
+
+Die Überwachungsrichtung unterscheidet sich je Standort, weil der Kuma-Container weder die standortfremden LANs noch Tailscale-IPs direkt erreicht:
+
+- **Lenzburg** liegt im selben Homelab-LAN wie der Kuma-Container und wird per HTTP-Probe auf Port 8123 aktiv abgefragt.
+- **Luzern und Dottikon** liegen hinter dem Tailscale-Overlay und sind vom Kuma-Container aus nicht erreichbar. Sie kehren die Richtung um und senden einen Push-Heartbeat an Kuma. Da beide Instanzen `uptime.ackermannprivat.ch` öffentlich auflösen (auf eine von aussen nicht nutzbare Adresse), pinnt der Push den Hostnamen per `curl --resolve` auf einen erreichbaren internen Endpunkt: Luzern auf die Keepalived-VIP 10.0.2.20 über eine Subnet-Route, Dottikon auf die Tailscale-IPs der Traefik-Knoten (siehe [Tailscale -- HA-Add-ons an Aussenstandorten](../netz/netzwerk/tailscale.md#ha-tailscale-add-ons-an-aussenstandorten)).
+
+Den vollständigen Coverage-Stand samt Monitor-Zuordnung führt die [Monitoring-Coverage](../monitoring/coverage/index.md).
+
 ## SSH-Zugang
 
 SSH-Details sind kanonisch in [SSH-Zugang](../_referenz/ssh-zugang.md) geführt. Zusammenfassung:
@@ -69,3 +106,7 @@ SSH-Details sind kanonisch in [SSH-Zugang](../_referenz/ssh-zugang.md) geführt.
 - [Netzwerk -- Standorte](../netz/netzwerk/standorte.md) -- Netzwerk-Kontext der drei Standorte
 - [SSH-Zugang](../_referenz/ssh-zugang.md) -- HAOS-SSH-Details
 - [CheckMK](../monitoring/checkmk/index.md#haos-memory-check-ssh-forced-command) -- HAOS-Memory-Custom-Check, da HAOS keinen CheckMK-Agent tragen kann
+- [Uptime Kuma](../monitoring/uptime-kuma/index.md) -- Verfügbarkeits-Monitoring der drei Instanzen
+- [Gitea](../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale) -- Config-Versionierung der HA-Instanzen
+- [Tailscale](../netz/netzwerk/tailscale.md#ha-tailscale-add-ons-an-aussenstandorten) -- accept-routes-Regel der HA-Add-ons an den Aussenstandorten
+- [Monitoring-Coverage](../monitoring/coverage/index.md) -- Überwachungs-Stand der HA-Instanzen
