@@ -168,7 +168,7 @@ plattform -> vm: 5. platziert Container-Workloads (RPC) { class: workload }
 Lesehilfe:
 
 1. Der Soll-Zustand der Cluster-VMs und -LXCs liegt als Terraform-Code im Repo `homelab-hashicorp-stack` unter `terraform/proxmox-vms/` -- Nomad-Server und -Clients, das Traefik-Paar und die DNS-LXCs; der Edge-Client am Aussenstandort entsteht analog aus `terraform/proxmox-edge/` ([Nomad Aussenstandort](../plattform/nomad/aussenstandort.md)).
-2. `terraform apply` läuft manuell vom Admin-Arbeitsplatz gegen die Proxmox-API -- auf dieser Ebene gibt es bewusst kein CI, im Gegensatz zum Workload-Deploy der [Plattform](../plattform/).
+2. `terraform apply` läuft manuell vom Admin-Arbeitsplatz gegen die Proxmox-API -- auf dieser Ebene gibt es bewusst kein CI, im Gegensatz zum Workload-Deploy der [Plattform](../plattform/). Der Terraform-State liegt lokal auf dem Admin-Arbeitsplatz (gitignored) -- ein Remote-Backend gibt es nicht.
 3. Proxmox erstellt neue VMs als Clone des Ubuntu-Cloud-Init-Templates und passt bestehende an. Die Verwaltungs-VMs (CheckMK, PBS, PDM, Home Assistant) sind nicht Terraform-verwaltet, sondern manuell angelegt.
 4. Das Innenleben der VMs konfigurieren die Ansible-Rollen im selben Repo -- unter anderem Nomad, Consul, Vault, Docker, Alloy und die NFS-Mounts. Terraform stellt das Blech der VM, Ansible macht daraus einen Cluster-Node.
 5. Ab hier übernimmt die Plattform: Nomad platziert die Container-Workloads auf den fertigen Clients -- der komplette Weg vom Job-File zum erreichbaren Service steht im [Deploy-Fluss](../plattform/index.md#deploy-fluss-vom-job-file-zum-erreichbaren-service).

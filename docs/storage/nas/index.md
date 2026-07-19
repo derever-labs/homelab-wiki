@@ -24,7 +24,7 @@ Das NAS ist der zentrale Shared-Storage-Knoten im Cluster für NFS-Exports, S3 (
 
 ## Rolle im Stack
 
-Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über Garage einen S3-kompatiblen Object Store für Backups und Terraform State.
+Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen müssen, werden hier gespeichert. Die Nomad-Clients mounten die NFS-Shares und stellen sie als Docker-Volumes bereit. Zusätzlich bietet das NAS über Garage einen S3-kompatiblen Object Store für Backups.
 
 ## Architektur
 
