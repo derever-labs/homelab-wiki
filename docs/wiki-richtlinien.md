@@ -84,12 +84,14 @@ Wenn du eine Information schreibst, prüfe: Steht sie schon anderswo? Falls ja, 
 docs/
   _referenz/        -- Zentrale Nachschlagetabellen (SSOT)
   _querschnitt/     -- Systemübergreifende Anleitungen
-  <system>/         -- Ein Ordner pro System (flach, nicht verschachtelt)
+  <kapitel>/        -- Themen-Oberkapitel (dienste, edge, infrastruktur, medien,
+                       monitoring, netz, plattform, smart-home, storage)
+    <system>/       -- Ein Ordner pro System innerhalb seines Kapitels
   index.md          -- Startseite
   wiki-richtlinien.md
 ```
 
-Jedes System hat einen eigenen Ordner direkt unter `docs/`. Keine Verschachtelung in Kategorien wie `services/` oder `platforms/` -- die Struktur ist flach.
+Jedes System hat einen eigenen Ordner innerhalb seines Themen-Oberkapitels (Struktur seit 2026-07). Die Kapitel-Ebene ist genau eine Stufe tief -- innerhalb eines Systems wird nicht weiter in Kategorien verschachtelt. Die Kapitel-Startseite (`index.md`) bündelt die Systeme des Kapitels und trägt, wo ein Gesamtbild sinnvoll ist, Big-Picture-Diagramme des Zusammenspiels.
 
 ### 3-Datei-Muster
 
