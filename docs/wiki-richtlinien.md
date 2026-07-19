@@ -31,6 +31,7 @@ Das Wiki erklärt das **Warum** und **Wie es zusammenhängt**. Das Git-Repositor
 - **Keine Konfigurationsdateien** -- "Verwaltet durch Ansible" oder "Siehe `pfad/zur/datei`"
 - **Keine Installationsanleitungen** -- gehören ins Repo (README, Ansible Roles)
 - **Keine offenen Punkte, TODOs, "nächste Schritte", ausstehenden Aufgaben oder Incidents** -- diese gehören als ClickUp-Task in die Privat IT Generell Liste (List 901504641206). Das Wiki beschreibt Ist-Zustand und Architektur. Bekannte Architektur-Limitationen ohne konkreten Handlungsauftrag dürfen als `::: warning` oder `::: danger` dokumentiert werden -- alles mit Action-Charakter gehört ins ClickUp.
+  - **Ausnahme Postmortems:** Abgeschlossene Incident-Nachschauen bei Vorfällen über 2 Stunden Dauer oder mit Multi-Node-Impact dürfen als Seite unter `_querschnitt/postmortems/` stehen (Struktur gemäss [Incident-Template](./_querschnitt/incident-template.md)). Sie halten die systemübergreifende Kausalkette und das Warum hinter Architektur-Änderungen fest, das keine einzelne Systemseite trägt. Zulässig nur mit abgeschlossenen Massnahmen und ClickUp-Verweisen -- offene Punkte bleiben im ClickUp.
 
 ## Redaktionsnorm
 
