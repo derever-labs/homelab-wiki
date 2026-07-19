@@ -103,7 +103,7 @@ traefik.fa -> backend: "7. Request mit\nX-authentik-Headern" { class: extpfad }
 
 Lesehilfe:
 
-1. Extern löst Cloudflare den Namen auf: Der A-Record zeigt direkt auf die WAN-IP -- Cloudflare macht reine Namensauflösung, kein Proxying und kein Tunnel, TLS endet erst bei Traefik ([SSL-Terminierung](./traefik/index.md#ssl-terminierung)). Die wechselnde WAN-IP hält ein Cloudflare-DDNS-Update aktuell.
+1. Extern löst Cloudflare den Namen auf: Der A-Record zeigt direkt auf die WAN-IP -- Cloudflare macht reine Namensauflösung, kein Proxying und kein Tunnel, TLS endet erst bei Traefik ([SSL-Terminierung](./traefik/index.md#ssl-terminierung)). Die wechselnde WAN-IP halten zwei Cloudflare-DDNS-Container auf den Traefik-VMs aktuell ([Cloudflare-DDNS](./traefik/index.md#cloudflare-ddns)).
 2. Der UDM Pro forwarded 80/443 auf die VIP; keepalived hält sie auf genau einem der beiden Traefik-Nodes ([Hochverfügbarkeit](./traefik/index.md#hochverfugbarkeit-keepalived)).
 3. Interne Clients nehmen die Abkürzung: Pi-hole antwortet für die Homelab-Domains direkt mit der VIP ([DNS-Kette](../netz/dns/index.md#dns-kette)) -- derselbe Traefik, nur ohne WAN-Schleife.
 4. Erster Stopper: Der CrowdSec-Bouncer ist die erste Middleware aller public-Chains und beantwortet gebannte IPs sofort mit 403 -- die Entscheidung fällt lokal gegen den Banlisten-Cache, ohne API-Call ([Enforcement](./crowdsec/index.md#enforcement-synchroner-request-pfad)). Interne Netze prüft er nie; die intern-Chains ersetzen ihn durch eine IP-Allowlist ([Middleware Chains](./traefik/referenz.md#middleware-chains)).
