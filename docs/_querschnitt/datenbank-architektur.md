@@ -29,7 +29,7 @@ Dieser Ansatz minimiert den Betriebsaufwand: zwei Cluster mit je einem Backup-Jo
 Lese-Konvention für alle Diagramme dieser Seite: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt-Nummer und was fliesst -- Request und Antwort teilen sich einen Pfeil. Durchgezogene Kanten sind synchrone Zugriffe (der Initiator wartet auf die Antwort), gestrichelte laufen zeitgesteuert oder im Hintergrund. Farben kodieren den Weg: **Grün** der App-Zugriff und die Service Discovery, **Violett** der Storage-Pfad (CSI und DRBD), **Bernstein** der Backup-Pfad, **Blau** der Nomad-Steuerpfad, **Grau** Quorum- und Hintergrundverkehr, **Rot** das Ausfall-Ereignis.
 
 ```d2
-direction: down
+direction: right
 
 classes: {
   node: { style: { border-radius: 8 } }
@@ -65,14 +65,14 @@ Dump: "Dump-Jobs (Nomad Batch, täglich)" {
 NFS: "NFS-Backup" { shape: cylinder; class: node }
 PBS: "PBS (VM-Block-Backup)" { shape: cylinder; class: node }
 
-Services -> PG: "1 SQL via Consul DNS (Standard)" { class: app }
-Services -> MDB: "1 SQL via Consul DNS (nur MySQL-pflichtige Services)" { class: app }
-PG -> Storage: "2 Block-Writes auf das CSI-Volume" { class: storagep }
-MDB -> Storage: "2 Block-Writes auf das CSI-Volume" { class: storagep }
-Dump -> PG: "3 SQL-Export (logischer Dump)" { class: backup }
-Dump -> MDB: "3 SQL-Export (logischer Dump)" { class: backup }
-Dump -> NFS: "4 Dump-Dateien (GFS-Retention)" { class: backup }
-Storage -> PBS: "5 VM-Block-Backup (Proxmox sichert die Storage-VMs)" { class: backup }
+Services -> PG: "1 SQL via Consul DNS\n(Standard)" { class: app }
+Services -> MDB: "1 SQL via Consul DNS\n(nur MySQL-pflichtige Services)" { class: app }
+PG -> Storage: "2 Block-Writes\nauf das CSI-Volume" { class: storagep }
+MDB -> Storage: "2 Block-Writes\nauf das CSI-Volume" { class: storagep }
+Dump -> PG: "3 SQL-Export\n(logischer Dump)" { class: backup }
+Dump -> MDB: "3 SQL-Export\n(logischer Dump)" { class: backup }
+Dump -> NFS: "4 Dump-Dateien\n(GFS-Retention)" { class: backup }
+Storage -> PBS: "5 VM-Block-Backup\n(Proxmox sichert die Storage-VMs)" { class: backup }
 ```
 
 Kurzablauf:
@@ -180,7 +180,7 @@ apps: "App-Tasks (Nomad)" {
 c05 -> servers: "1 Heartbeat bleibt aus (Karenz 5 min)" { class: fail }
 servers -> c06: "2 Reschedule der PostgreSQL-Allocation (RPC)" { class: steuer }
 c06.csi -> lc: "3 Volume-Claim (Linstor API)" { class: storagep }
-c06.csi -> c06.drbd: "4 Attach: DRBD-Promotion zu Primary und Mount" { class: storagep }
+c06.csi -> c06.drbd: "4 Attach: Volume wird Primary und gemountet" { class: storagep }
 c06.pg -> c06.drbd: "5 Start auf dem replizierten Datenbestand" { class: storagep }
 c06.pg -> consul: "6 Registrierung postgres.service.consul und Health Check" { class: disco }
 apps -> c06.pg: "7 Reconnect (SQL 5432 via Consul DNS)" { class: disco }
@@ -192,7 +192,7 @@ Kurzablauf:
 1. Der ausgefallene Node beantwortet keinen Heartbeat mehr. Nomad wartet die Karenz von `max_client_disconnect` (5 Minuten bei CSI-Jobs) ab, bevor die Allocation als verloren gilt ([Nomad -- Ausfallverhalten](../plattform/nomad/index.md#ausfallverhalten)).
 2. Die Nomad-Server platzieren die PostgreSQL-Allocation neu auf dem zweiten Storage-Node -- mit dem Postgres-Sonderprofil: höchstens 3 Reschedule-Versuche in 30 Minuten und `restart mode=fail`, bei wiederholtem Scheitern ist manuelles Eingreifen erwartet ([Nomad Referenz](../plattform/nomad/referenz.md#restart-reschedule-disconnect)).
 3. Das CSI-Plugin auf dem übernehmenden Node fordert das Volume beim Linstor Controller an. Die Consul-Adresse zeigt immer auf den aktiven Controller -- war der ausgefallene Node zugleich Controller-Node, promotet drbd-reactor den Standby in 10-15 Sekunden ([Linstor Betrieb -- Controller Failover](../storage/linstor/betrieb.md#controller-failover)).
-4. Das Plugin attacht das Volume: Der überlebende Node wird DRBD Primary und mountet den synchron replizierten Datenbestand. Zusammen mit dem Diskless Witness hält der Cluster das Schreib-Quorum 2 von 3 ([Linstor -- Quorum](../storage/linstor/index.md#quorum)).
+4. Beim Attach wird der überlebende Node DRBD Primary, und das CSI-Plugin mountet den synchron replizierten Datenbestand. Zusammen mit dem Diskless Witness hält der Cluster das Schreib-Quorum 2 von 3 ([Linstor -- Quorum](../storage/linstor/index.md#quorum)).
 5. PostgreSQL startet auf dem Volume -- die verlängerten Update-Fristen der CSI-Jobs rechnen die Attach-Zeit ein ([Nomad Referenz -- update-Stanza](../plattform/nomad/referenz.md#csi-volume-jobs)).
 6. Der lokale Consul-Agent registriert die neue Instanz als `postgres.service.consul`, der Health Check macht sie für Clients sichtbar ([Consul -- Service Discovery](../plattform/consul/index.md#service-discovery)).
 7. Bestehende App-Verbindungen brechen mit dem Ausfall. Neu startende Tasks warten via `wait-for-postgres`-Init-Task auf die Datenbank, laufende Apps verbinden sich über Consul DNS neu ([Service-Abhängigkeiten](./service-abhaengigkeiten.md#postgresql-abhangige-services)).
