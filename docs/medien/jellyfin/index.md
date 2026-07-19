@@ -31,7 +31,7 @@ Die Referenz -- Hardware-Transcoding-Codecs, Storage-Mounts, Traefik-Routing und
 
 Zwei mechanisch verschiedene Abläufe treffen sich bei Jellyfin: der **Stream-Pfad**, auf dem ein Client synchron ein Video abruft, und die **Medien-Ankunft**, bei der ein Wunsch Minuten bis Stunden später als Datei auf dem Share landet. Die zwei Szenario-Diagramme zeigen je einen Ablauf; das Big Picture des gesamten Medien-Stacks inklusive Indexer-Suche und Helfern steht auf der [Medien-Übersicht](../index.md#wunsch-pfad-vom-request-zum-abspielbaren-titel).
 
-Lese-Konvention für beide Diagramme: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt und Inhalt -- Request und Antwort teilen sich einen Pfeil. **Durchgezogene** Kanten sind synchron (der Initiator wartet auf die Antwort), **gestrichelte** laufen zyklisch oder im Hintergrund. Farben kodieren die Wege: Grün der Login, Violett Browse und API, Blau die Wiedergabe, Orange die Beschaffungskette, Grau Nebenwege.
+Lese-Konvention für beide Diagramme: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt und Inhalt -- Request und Antwort teilen sich einen Pfeil. **Durchgezogene** Kanten sind synchron (der Initiator wartet auf die Antwort), **gestrichelte** laufen zyklisch oder im Hintergrund. Farben kodieren die Wege: Grün der Login, Violett Browse und API, Blau die Wiedergabe (in der Medien-Ankunft der Library-Scan), Orange die Beschaffungskette, Grau Nebenwege.
 
 ### Stream-Pfad -- vom Login zum laufenden Video
 
