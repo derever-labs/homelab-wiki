@@ -113,9 +113,18 @@ Der Push hängt am Tailscale-Overlay. Bei dessen Ablösung (geplant: UniFi SD-WA
 Der Auto-Push zielt auf die aktuelle Node-IP des Gitea-Allocs; Gitea wandert zwischen `vm-nomad-client-05/06`. Nach einem Reschedule zeigt die Remote-URL auf den falschen Node und der Push schlägt fehl -- die Fehlermeldung aufs Handy macht das sichtbar, danach die Remote-URL auf die neue Node-IP setzen. Im Gegensatz zum interaktiven Zugang (ProxyJump über `gitea.service.consul`) hat die HA-VM keinen Consul-DNS.
 :::
 
+Die Lenzburger Instanz versioniert ihre `/config` nach demselben Muster im Repo `sam/ha-lenzburg`, erreicht den Gitea-Knoten aber direkt im Homelab-LAN statt über Tailscale. Beide HA-Repos teilen denselben wandernden Gitea-SSH-Endpoint.
+
+### Frühwarnung bei Endpoint-Wanderung
+
+Damit die nächste Wanderung nicht erst am nächtlichen Push-Fehler auffällt, überwacht ein Uptime-Kuma-Monitor den aktuellen Gitea-SSH-Endpoint (Port 2222) per TCP. Wandert das Alloc auf einen anderen Node, meldet der Monitor DOWN und macht den Reschedule sichtbar, bevor der Config-Push scheitert.
+
+Ein direkter HTTP-Healthcheck gegen den Container-Port 3003 taugt dafür nicht: Er ist nur aus dem `10.0.2.x`-Segment erreichbar und verlangt zudem einen Login (kein anonymer Endpunkt). Deshalb prüft die Frühwarnung den SSH-Port statt der HTTP-Schnittstelle.
+
 ## Verwandte Seiten
 
 - [Tailscale](../../netz/netzwerk/tailscale.md) -- Overlay-VPN, über das der HA-Luzern-Config-Push läuft
+- [Home Assistant](../../smart-home/home-assistant.md#config-versionierung) -- die HA-Instanzen, die ihre Config hier versionieren
 - [Datenbank-Architektur](../../_querschnitt/datenbank-architektur.md) -- PostgreSQL Shared Cluster
 - [Linstor](../../storage/linstor/index.md) -- CSI Storage für Gitea-Daten
 - [Traefik Middlewares](../../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration
