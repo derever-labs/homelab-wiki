@@ -19,7 +19,7 @@ Technische Details des [Kamera-Retention-Systems Dottikon](./index.md): Kameras,
 | Silo Ost | Reolink RLC-823S2 | 3840 x 2160 | ja | A, B, C, D |
 | Silo West | Reolink RLC-823S1 | 3840 x 2160 | ja | A, B, C, D |
 | Silo Süd | Reolink Duo 3V | 7680 x 2160 (Dual-Sensor, gestitcht) | nein | A, B, C, D |
-| Türe hinten | Fremdfabrikat (kein Reolink) | -- | nein | nur A |
+| Türe hinten | Reolink (älteres Modell, keine HA-Integration möglich) | -- | nein | nur A |
 
 IP-Adressen: [Hosts und IPs](../../_referenz/hosts-und-ips.md#kameras-dottikon). Die früheren Kameras auf Rechen und Haustüre sind bewusst physisch ausser Betrieb. Zugangsdaten (Kamera-Admin, FTP-Benutzer) liegen im 1Password-Vault `PRIVAT Agent` -- das Wiki führt nur Speicherorte ([Zugangsdaten](../../_referenz/credentials.md)).
 
@@ -67,7 +67,7 @@ Die lokale Home-Assistant-Instanz ([Standorte-Tabelle](../../smart-home/home-ass
 
 - **Reolink-Integration** aller drei Silo-Kameras -- die `camera.*_snapshots_clear`-Entitäten liefern Snapshots in voller Auflösung.
 - **CIFS-Mount** des Archiv-Shares unter `/media/surveillance_archive` -- die Anker-JPEGs werden direkt auf die NAS geschrieben.
-- **Anker-Automation (Ebene C, in Umsetzung):** Snapshots um 12:00 und 15:00 sowie 45 Minuten nach Sonnenaufgang und 45 Minuten vor Sonnenuntergang. Bei den PTZ-Kameras wird vor dem Snapshot die Wächterposition angefahren.
+- **Anker-Automation (Ebene C, produktiv):** Automation `retention_anker` mit Snapshots um 12:00 und 15:00 sowie 45 Minuten nach Sonnenaufgang und 45 Minuten vor Sonnenuntergang; Ablage als `anker/<kamera>/<jahr>/<kamera>_<datum>_<zeit>.jpg`, fehlende Ordner entstehen automatisch. Bei den PTZ-Kameras wird vor dem Snapshot die Wächterposition angefahren.
 
 Warum Home Assistant statt eines DSM-Aufgabenplaner-Tasks: Die Reolink-Integration liefert Voll-Snapshots ohne Kamera-Credentials in einem Task-Kommando, Sonnenstand-Trigger sind nativ vorhanden, und der Pfad bleibt vollständig vom Kamera-FTP und vom DSM-FTP-Dienst entkoppelt (Pfad-Redundanz des Ebenenmodells).
 

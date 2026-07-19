@@ -37,7 +37,7 @@ Das System ist bewusst standort-autonom: Es läuft vollständig auf Kameras, NAS
 - **Redundante Capture-Pfade für das Unersetzliche:** Die Anker-Bilder entstehen über einen anderen Mechanismus (Home Assistant zieht) als das dichte Archiv (Kamera pusht). Fällt einer aus, reisst die 5-Jahres-Linie nicht ab.
 
 ::: info Ausbaustand (Juli 2026)
-Produktiv sind der Kamera-FTP-Push des dichten Archivs (Ebene B, Rollout über die drei Silo-Kameras im Gang), der Smart Time Lapse (Ebene D), die PTZ-Wächterpositionen und die Home-Assistant-Grundintegration. Die SS-Daueraufnahme (Ebene A) läuft noch mit den historischen Parametern. Entworfen, aber noch nicht produktiv sind das Ebene-A-Zielprofil, die Anker-Automation (Ebene C), die Photos-Indexierung, das Hyper Backup und der Jahres-Render (Ebene E). Die Umsetzung ist im Task-Tracking erfasst.
+Produktiv sind der Kamera-FTP-Push des dichten Archivs (Ebene B, alle drei Silo-Kameras), die Anker-Automation (Ebene C), der Smart Time Lapse (Ebene D), die PTZ-Wächterpositionen und die Home-Assistant-Integration. Die SS-Daueraufnahme (Ebene A) läuft noch mit den historischen Parametern. Entworfen, aber noch nicht produktiv sind das Ebene-A-Zielprofil, die Photos-Indexierung, das Hyper Backup und der Jahres-Render (Ebene E). Die Umsetzung ist im Task-Tracking erfasst.
 :::
 
 ## Das Ebenenmodell

@@ -137,7 +137,7 @@ Die Überwachungskameras der Aussenstelle Dottikon; Modelle, Ebenen-Zuordnung un
 | Silo Ost | 192.168.2.159 | Reolink RLC-823S2 (PTZ) |
 | Silo West | 192.168.2.158 | Reolink RLC-823S1 (PTZ) |
 | Silo Süd | 192.168.2.157 | Reolink Duo 3V |
-| Türe hinten | 192.168.2.254 | Fremdfabrikat (kein Reolink), nur Surveillance-Station-Aufnahme |
+| Türe hinten | 192.168.2.254 | Reolink (älteres Modell, keine HA-Integration möglich), nur Surveillance-Station-Aufnahme |
 
 ## Thunderbolt-Netzwerk
 
