@@ -22,111 +22,94 @@ Traefik läuft als HA-Reverse-Proxy auf zwei VMs mit Keepalived VIP. Alle Homela
 
 ## Architektur
 
+Zwei Szenario-Sichten zeigen die Traefik-eigene Mechanik: der Request-Fluss durch den Proxy und die [Ausfall-Sicht](#ausfall-sicht-vip-failover) des HA-Paars. Das Big Picture des gesamten Zugriffspfads -- Cloudflare-DNS, UDM-Port-Forward, interner Split-DNS-Weg und die Kontrollkanäle aller Edge-Systeme -- steht auf der [Edge-Übersicht](../index.md#das-gesamtbild-in-zwei-pfaden).
+
+Lese-Konvention für beide Diagramme: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Durchgezogene Kanten sind synchron (der Initiator wartet auf die Antwort), gestrichelte asynchron. Farben kodieren die Wege: Blau der synchrone Request-Pfad, Violett der ForwardAuth-Subrequest, Ocker die asynchronen Kontroll- und Prüfkanäle, Grün der Failover-Weg.
+
+### Request-Fluss durch Traefik
+
+**Leitfrage:** Welche Stationen durchläuft ein Request zwischen VIP und Backend -- und woher hat der Router sein Wissen?
+
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  data: { style: { border-radius: 8 } }
+  pfad: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  auth: { style: { stroke: "#7c3aed"; font-color: "#7c3aed" } }
+  kontrolle: { style: { stroke: "#8f6418"; font-color: "#8f6418" } }
 }
 
-Internet: Internet {
+client: Externer Client {
   class: node
+  tooltip: "Weg bis zur VIP (Cloudflare-DNS, UDM-Port-Forward 80/443) -- siehe Edge-Übersicht"
 }
-CF: Cloudflare DNS {
+
+vm: Aktiver Traefik-Node {
+  class: container
+  label.near: top-right
+  tooltip: "vm-traefik-01 oder vm-traefik-02 -- keepalived hält die VIP 10.0.2.20 auf genau einem Node"
+
+  entry: EntryPoint 443 + TLS {
+    class: node
+    tooltip: "terminiert TLS mit dem Wildcard-Zertifikat aus der lokalen acme.json -- SNI strict, min. TLS 1.2"
+  }
+  router: Router mit Host-Regel {
+    class: node
+    tooltip: "wählt anhand des Hostnamens Backend-Service und Middleware-Chain"
+  }
+  chain: Middleware-Chain public-auth {
+    class: container
+
+    bouncer: CrowdSec-Bouncer {
+      class: node
+      tooltip: "erstes Glied aller public-Chains -- prüft die Client-IP lokal gegen den Banlisten-Cache"
+    }
+    mw: secure-headers + error-pages {
+      class: node
+      tooltip: "Security-Header und Maintenance-Page -- error-pages steht bewusst vor forward-auth"
+    }
+    fwdauth: authentik-forward-auth { class: node }
+  }
+}
+
+outpost: Authentik Proxy-Outpost {
   class: node
-  tooltip: "DNS-Zonen *.ackermannprivat.ch / *.ackermann.systems -- nur DNS, kein Proxying"
+  tooltip: "prüft die Session -- 200 mit Identitäts-Headern oder 302 zum Login"
 }
-Router: UDM Pro {
+backend: Backend-Service {
   class: node
-  tooltip: "10.0.0.1 | Port-Forward 80/443 auf die VIP"
+  tooltip: "Nomad-Service oder Standalone-Service -- Ziel aus der Router-Definition"
+}
+consul: Consul Catalog {
+  class: node
+  tooltip: "Service-Katalog Port 8500 -- Nomad-Jobs bringen Host-Regel und Chain als Service-Tags mit"
+}
+file: services-external.yml {
+  class: data
+  tooltip: "File-Provider für Standalone-Services -- live geladen bei Dateiänderung (watch)"
 }
 
-ha: Traefik HA Cluster {
-  class: container
-
-  VIP: Keepalived VIP {
-    class: node
-    tooltip: "10.0.2.20 | VRRP Virtual IP, Gateway-Track und nopreempt"
-  }
-  T1: vm-traefik-01 (MASTER) {
-    class: node
-    tooltip: "10.0.2.21 | Priorität 150, Docker Compose, CrowdSec"
-  }
-  T2: vm-traefik-02 (BACKUP) {
-    class: node
-    tooltip: "10.0.2.22 | Priorität 100, Docker Compose, CrowdSec"
-  }
-
-  VIP -> T1: aktiver Node {
-    style.stroke: "#6b7280"
-  }
-  VIP -> T2: Failover {
-    style.stroke: "#6b7280"
-    style.stroke-dash: 3
-  }
-}
-
-providers: Routing-Provider {
-  class: container
-
-  Consul: Consul Catalog {
-    class: node
-    tooltip: "Port 8500 | Automatische Service Discovery für Nomad-Jobs"
-  }
-  File: File Provider {
-    class: node
-    tooltip: "services-external.yml | Standalone-Services (Checkmk, DNS, Linstor etc.)"
-  }
-}
-
-backend: Backend-Services {
-  class: container
-
-  Nomad: Nomad Services {
-    class: node
-    tooltip: "Container-Services, Routing via Consul Service Tags"
-  }
-  Standalone: Standalone Services {
-    class: node
-    tooltip: "Proxmox, PBS, Checkmk, Pi-hole etc."
-  }
-}
-
-Internet -> CF: DNS-Auflösung {
-  style.stroke: "#6b7280"
-  style.stroke-dash: 3
-  tooltip: "Nur Namensauflösung -- Zertifikate bezieht Traefik via DNS-01-Challenge"
-}
-Internet -> Router: HTTPS 80/443 {
-  style.stroke: "#2563eb"
-  tooltip: "Direkt auf die öffentliche IP, kein Cloudflare-Proxy"
-}
-Router -> ha.VIP: Port-Forward 80/443 {
-  style.stroke: "#2563eb"
-}
-ha -> backend: HTTP(S) zu den Ziel-Services {
-  style.stroke: "#16a34a"
-  tooltip: "Der VIP-Inhaber proxied die Requests an die Backends"
-}
-
-ha -> providers.Consul: Catalog API {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-  tooltip: "Beide Nodes pollen den Service-Katalog (HTTP :8500)"
-}
-ha -> providers.File: File-Watch {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-  tooltip: "Beide Nodes laden services-external.yml live (watch: true)"
-}
-providers.Consul -> backend.Nomad: definiert Routen {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-}
-providers.File -> backend.Standalone: definiert Routen {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-}
+client -> vm.entry: "1. HTTPS\nauf die VIP" { class: pfad }
+vm.entry -> vm.router: "2. entschlüsselter Request" { class: pfad }
+vm.router -> vm.chain.bouncer: "3. Chain der Route --\nhier public-auth" { class: pfad }
+vm.chain.bouncer -> vm.chain.mw: "4. IP nicht gebannt" { class: pfad }
+vm.chain.mw -> vm.chain.fwdauth: "5. Header gesetzt" { class: pfad }
+vm.chain.fwdauth -> outpost: "6. Auth-Subrequest --\n200 oder 302 zum Login" { class: auth }
+vm.chain.fwdauth -> backend: "7. authentifizierter Request\n+ Response" { class: pfad }
+vm.router -> consul: "A. pollt die Catalog-API --\nRouter aus Service-Tags" { class: kontrolle; style.stroke-dash: 3 }
+vm.router -> file: "B. Router aus dem\nFile-Provider (watch)" { class: kontrolle; style.stroke-dash: 3 }
 ```
+
+**Lesehilfe:**
+
+1. Die Sicht beginnt beim Eintreffen auf dem aktiven Node -- den Weg dorthin (Cloudflare-DNS, UDM-Port-Forward 80/443, intern Split-DNS direkt auf die VIP) zeigt die [Edge-Übersicht](../index.md#das-gesamtbild-in-zwei-pfaden).
+2. TLS endet am EntryPoint: Jeder Node terminiert mit dem Wildcard-Zertifikat aus seiner lokalen `acme.json` ([SSL-Terminierung](#ssl-terminierung), Härtung: [TLS-Options](./referenz.md#tls-options)).
+3. Der Router matcht den Hostnamen und bestimmt Backend und Middleware-Chain. Sein Wissen entsteht asynchron aus zwei Quellen: Nomad-Services bringen Host-Regel und Chain als Consul-Tags mit, Standalone-Services stehen im File-Provider ([Consul Catalog Integration](#consul-catalog-integration)).
+4. In den public-Chains prüft der CrowdSec-Bouncer als erstes Glied die Client-IP lokal gegen seinen Banlisten-Cache -- gebannte IPs erhalten sofort 403 ([CrowdSec Enforcement](../crowdsec/index.md#enforcement-synchroner-request-pfad)). Interne Clients laufen durch intern-Chains mit IP-Allowlist statt Bouncer ([Middleware Chains](./referenz.md#middleware-chains)).
+5. `secure-headers` setzt die Security-Header; `error-pages` steht bewusst vor `authentik-forward-auth`, damit ein nicht erreichbarer Outpost die Wartungsseite zeigt statt eines rohen Fehlers ([Middleware Chains](./referenz.md#middleware-chains)).
+6. Der ForwardAuth-Subrequest fragt den Authentik-Outpost: 200 mit Identitäts-Headern oder 302 zum Login ([Authentifizierung](#authentifizierung-middlewares)).
+7. Erst danach erreicht der Request das Backend; die Response nimmt denselben Weg zurück.
 
 ## Hochverfügbarkeit (Keepalived)
 
@@ -139,6 +122,74 @@ providers.File -> backend.Standalone: definiert Routen {
 VIP und Node-Zuordnung: siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
 
 Keepalived prüft per VRRP-Script ob Traefik antwortet. Bei Ausfall wechselt die VIP automatisch zum BACKUP-Node.
+
+### Ausfall-Sicht (VIP-Failover)
+
+**Leitfrage:** Wer bemerkt den Ausfall des aktiven Nodes, wie schnell wandert die VIP -- und was wandert nicht mit?
+
+```d2
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  pfad: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  failover: { style: { stroke: "#42714a"; font-color: "#42714a" } }
+  kontrolle: { style: { stroke: "#8f6418"; font-color: "#8f6418" } }
+}
+
+vip: VIP 10.0.2.20 {
+  class: node
+  tooltip: "VRRP Virtual IP -- Clients und Port-Forward sprechen immer die VIP an"
+  top: 0
+  left: 620
+}
+
+n1: vm-traefik-01 (MASTER) {
+  class: container
+  tooltip: "10.0.2.21 -- Priorität 150, nopreempt"
+  top: 320
+  left: 160
+  grid-columns: 1
+  grid-gap: 70
+
+  t: Traefik { class: node }
+  ka: keepalived { class: node }
+}
+
+n2: vm-traefik-02 (BACKUP) {
+  class: container
+  tooltip: "10.0.2.22 -- Priorität 100, nopreempt"
+  top: 320
+  left: 1060
+  grid-columns: 1
+  grid-gap: 70
+
+  t: Traefik { class: node }
+  ka: keepalived { class: node }
+}
+
+gw: Pi-hole 10.0.2.1 {
+  class: node
+  tooltip: "Gateway-Track-Ziel -- antwortet der Ping nicht, gilt das Netz des MASTER als gestört"
+  top: 880
+  left: 160
+}
+
+vip -> n1.t: "1. Normalbetrieb --\nMASTER hält die VIP" { class: pfad }
+vip -> n2.t: "4. nach Failover (~4 s)" { class: failover; style.stroke-dash: 3 }
+n1.ka -> n1.t: "2a. prüft /ping" { class: kontrolle; style.stroke-dash: 3 }
+n2.ka -> n2.t: "prüft /ping" { class: kontrolle; style.stroke-dash: 3 }
+n1.ka -> gw: "2b. chk_gateway pingt -- bei Ausfall Priorität 150 auf 90" { class: kontrolle; style.stroke-dash: 3 }
+n1.ka -> n2.ka: "3. VRRP-Advertisements --\nbleiben sie aus, übernimmt der BACKUP" { class: kontrolle; style.stroke-dash: 3 }
+```
+
+**Lesehilfe:**
+
+1. Clients und Port-Forward sprechen immer die VIP an; im Normalbetrieb hält sie der MASTER (Priorität 150 gegen 100). Adressen: [Hosts und IPs](../../_referenz/hosts-und-ips.md).
+2. Zwei Checks steuern die VIP-Vergabe: Das VRRP-Script prüft Traefik über `/ping` -- stirbt nur der Traefik-Prozess, gibt der Node die VIP ebenfalls ab. `chk_gateway` pingt Pi-hole; fällt der Ping aus, sinkt die MASTER-Priorität von 150 auf 90 und der MASTER gibt die VIP ab ([Split-Brain-Prevention](#split-brain-prevention)).
+3. Der MASTER sendet VRRP-Advertisements. Bleiben sie aus oder gibt er die VIP ab, übernimmt der BACKUP -- im Test innert ~4 s ([Failover-Test](./betrieb.md#failover-test)).
+4. `nopreempt` verhindert automatisches Hin- und Herschwenken nach kurzen Ausfällen; das kontrollierte Failback ist eine Betriebsprozedur ([Failover-Test](./betrieb.md#failover-test)).
+5. Nicht mit wandern: der CrowdSec-Banlisten-Stand -- der BACKUP arbeitet mit eigener, unabhängig aufgebauter Banliste ([Unabhängige Banlisten](../crowdsec/index.md#ausfallverhalten)). Die Zertifikate sind kein Failover-Thema: Beide Nodes halten eigene gültige `acme.json` ([SSL-Terminierung](#ssl-terminierung)).
+6. Ein Ausfall der CrowdSec-Engine löst keinen VIP-Schwenk aus -- Keepalived prüft nur Traefik und das Gateway ([CrowdSec-Ausfallverhalten](../crowdsec/index.md#ausfallverhalten)).
 
 ### Split-Brain-Prevention
 
