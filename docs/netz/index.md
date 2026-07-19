@@ -72,9 +72,11 @@ isp: ISP-Router {
 internet: Internet {
   class: node
   tooltip: Externe Clients und Ziele im Internet
+  top: 40
+  left: 80
 }
 
-segmente.client -> udm: 1. Paket ans Segment-Gateway { class: lanweg }
+segmente.client -> udm: "1. Paket ans\nSegment-Gateway" { class: lanweg }
 udm -> mgmt.vip: 2. routet zwischen den Segmenten { class: lanweg }
 udm -> isp: "3. Default-Route\nins WAN" { class: wanweg }
 isp -> internet: "4. PPPoE -- statische\nöffentliche IP" { class: wanweg }
