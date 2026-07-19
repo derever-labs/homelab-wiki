@@ -157,7 +157,7 @@ tailscaled verwirft auf jedem Host Pakete mit Tailnet-Quelle (`100.64.0.0/10`), 
 - `opn-02` -- HSLU OPNsense Secondary, gleiche Subnet-Routes wie opn-01
 - `messe-pc-hslu` (DESKTOP-0PK5JUR) -- Subnet-Router für 192.168.50.0/24
 
-`tag:homelab` (10 Hosts). Subnet-Router (advertisieren ein lokales Netz ins Tailnet):
+`tag:homelab` (11 Hosts). Subnet-Router (advertisieren ein lokales Netz ins Tailnet):
 
 - `vm-traefik-01` -- Subnet-Router für 10.0.0.0/22, ausserdem Exit-Node für `tag:admin`
 - `vm-traefik-02` -- gleiche Routes wie vm-traefik-01
@@ -171,6 +171,7 @@ Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
 - `checkmk-homelab` -- Monitoring-Server, `tag:homelab`, `accept-routes` aktiv (Details: [Routing-Sonderregel](#checkmk-routing-sonderregel))
 - `pve01`, `pve02` -- Cluster-Nodes
 - `homeassistant` -- HA-Luzern-VM (LAN 172.16.0.163), Client-Node für den Config-Git-Push nach Gitea (`accept-routes`, `tag:homelab`). Details: [Gitea -- Config-Anbindung HA-Luzern](../../dienste/gitea/index.md#config-anbindung-ha-luzern-uber-tailscale)
+- `ha-dottikon` -- Tailscale-Add-on der HA-Instanz Dottikon (LAN 192.168.3.247), `tag:homelab`, `accept-routes` **aus**, Key-Expiry deaktiviert. Trägt den Monitoring-Push-Heartbeat der Instanz. Warum accept-routes hier aus muss: [HA-Tailscale-Add-ons an Aussenstandorten](#ha-tailscale-add-ons-an-aussenstandorten)
 
 `tag:admin` (4 Hosts):
 
@@ -215,6 +216,16 @@ Eine Node mit `accept-routes`, deren eigenes LAN von einem **anderen** Knoten ad
 Konkret bei `pve-lu-01`: Die Route `172.16.0.0/24` wird vom `apple-tv` advertisiert. Sobald die ACL `tag:homelab -> 172.16.0.0/24` erlaubte, übernahm `pve-lu-01` (selbst `tag:homelab`, mit `accept-routes`) diese Tailscale-Route für **sein eigenes** LAN -- lokaler SSH/Ping war tot (nur die Tailscale-IP blieb erreichbar). Lösung: `pve-lu-01` zuerst selbst als approved Subnet-Router für `172.16.0.0/24` setzen, **dann** die ACL erweitern. Die Reihenfolge ist kritisch.
 
 `pve-01-nana` ist davon nicht betroffen, weil es sein Netz `192.168.2.0/23` von Anfang an selbst advertisiert.
+:::
+
+### HA-Tailscale-Add-ons an Aussenstandorten
+
+Die Home-Assistant-Instanzen in Luzern und Dottikon sind über das Tailscale-Add-on eigene Tailnet-Clients (`tag:homelab`). Sie tragen den Config-Git-Push (Luzern) und den Monitoring-Push-Heartbeat (beide) über das Overlay -- vom Cluster aus sind die Aussenstandort-Instanzen sonst nicht erreichbar.
+
+::: warning accept-routes an Aussenstandorten
+Ein HA-Add-on, dessen eigenes Standort-LAN in einem `tag:homelab`-Grant liegt, riskiert mit `accept-routes` einen Self-Subnet-Lockout: Es übernähme die Tailscale-Route für sein eigenes Subnet und wäre lokal nicht mehr erreichbar (dieselbe Mechanik wie bei `pve-lu-01` oben).
+
+Deshalb läuft **Dottikon** (LAN 192.168.3.x, gedeckt vom Grant `192.168.2.0/23`) mit `accept-routes` **aus** und erreicht das Monitoring direkt über die Tailscale-IPs der Traefik-Knoten -- Tailscale-IPs brauchen keine akzeptierten Routen. `accept-routes` bleibt nur dort aktiv, wo ein Ziel ausschliesslich über eine Subnet-Route erreichbar ist: **Luzern** braucht es für den Monitoring-Push auf die Keepalived-VIP `10.0.2.20`, die keine eigene Tailscale-IP hat.
 :::
 
 ## Test-Validierung
