@@ -75,7 +75,6 @@ Vault startet immer im versiegelten Zustand. Der Boot-Unseal-Service `vault-unse
 Sind 2 von 3 Nodes offline, verliert Vault sein Raft-Quorum und ist vollständig nicht verfügbar -- weder lesend noch schreibend. Der Cluster erholt sich automatisch, sobald genug Nodes wieder erreichbar sind.
 :::
 
-- **Kein TLS:** Bewusste Homelab-Entscheidung. Im isolierten Netz kein Sicherheitsrisiko -- würde aber in einer produktiven Umgebung zwingend sein.
 - **KV v2 Überschreiben:** Ein schreibender Zugriff auf ein Secret ersetzt alle Keys des Secrets, nicht nur den angegebenen. Sollen nur einzelne Keys aktualisiert werden, müssen alle bestehenden Keys mitgeschrieben werden.
 
 ## Schlüssel und Zugang

@@ -31,7 +31,7 @@ Diese Seite ist die kanonische Quelle für alle Port-Zuordnungen. Andere Seiten 
 | 4646 | TCP | Nomad HTTP API / UI | Auf allen Server-Nodes |
 | 4647 | TCP | Nomad RPC | Interne Cluster-Kommunikation |
 | 4648 | TCP/UDP | Nomad Serf | Gossip-Protokoll |
-| 8200 | TCP | Vault HTTP API / UI | Auf allen Server-Nodes |
+| 8200 | TCP | Vault HTTPS API / UI | Auf allen Server-Nodes |
 | 8201 | TCP | Vault Cluster | Interne Replikation |
 | 8500 | TCP | Consul HTTP API / UI | Auf allen Nodes |
 | 8600 | TCP/UDP | Consul DNS | Service Discovery DNS Interface |
