@@ -18,7 +18,7 @@ Diese Seite beschreibt, wie persistente Daten im Cluster gespeichert, repliziert
 |-------|-------------|------|------------------|
 | **Hot Storage** | Lokales SSD/ZFS | `/local-docker/` | Performance-kritische DBs (SQLite) |
 | **Shared Storage** | NFS (Synology) | `/nfs/docker/` | Medien, Konfigurationsdateien, Backups |
-| **Object Storage** | Garage (S3) | NAS | Backup-Targets, Terraform State |
+| **Object Storage** | Garage (S3) | NAS | Backup-Targets |
 
 Details zu NFS-Exports: [NAS-Speicher](../storage/nas/index.md)
 
