@@ -80,10 +80,10 @@ User registrieren Passkeys selbstständig über das User-Portal unter "Settings 
 
 Die Login-Stage erzwingt eine fixe Session-Dauer von 7 Tagen ohne "Angemeldet bleiben"-Checkbox. Parallele Sessions auf mehreren Geräten sind erlaubt (`terminate_other_sessions=false`, seit 2026-06-08) -- ein Neulogin auf einem Gerät beendet die Sessions auf anderen Geräten **nicht** mehr.
 
-Als Diebstahl-Schutz ist die Session stattdessen an das Land gebunden (`geoip_binding=bind_continent_country`): ein gestohlenes Session-Cookie, das aus einem anderen Land genutzt wird, verliert die Gültigkeit. `network_binding` bleibt bewusst aus -- eine Bindung an ASN oder IP würde mit Tailscale-Zugriffen (private Quell-IP ohne ASN/GeoIP) und dem Split-Horizon-DNS kollidieren und unnötige Re-Logins auslösen. Die konkreten Werte stehen in der [Referenz](./referenz.md#stages).
+Session-Bindings an Netzwerk oder Standort sind bewusst beide aus (`network_binding=no_binding`, `geoip_binding=no_binding`). Eine Bindung an ASN/IP oder an das Land kollidiert im Homelab mit dem Tailscale-Zugriff: Tailscale-CGNAT-IPs (100.64.0.0/10) tragen weder ASN- noch GeoIP-Daten, und jeder Netzwechsel zwischen Mobilfunk, WLAN und Tailscale löste sonst einen Session-Abriss mit erzwungenem Re-Login aus. Die konkreten Werte stehen in der [Referenz](./referenz.md#stages).
 
-::: warning Trade-off
-Bis 2026-06-08 galt `terminate_other_sessions=true` (nur eine Session gleichzeitig, ein gestohlenes Cookie wurde beim nächsten echten Login abgeschossen). Das wurde bewusst zugunsten der Multi-Device-Nutzbarkeit aufgegeben. Das verbleibende Land-Binding schützt nur gegen Cookie-Nutzung aus einem anderen Land, nicht innerhalb der Schweiz -- und erfordert bei Auslandsreisen nach dem Grenzübertritt einen erneuten Login.
+::: warning Trade-off Session-Diebstahl-Schutz
+Bis 2026-06-08 galt `terminate_other_sessions=true` (nur eine Session gleichzeitig, ein gestohlenes Cookie wurde beim nächsten echten Login abgeschossen). Das wurde zugunsten der Multi-Device-Nutzbarkeit aufgegeben. Das zwischenzeitliche Land-Binding (`geoip_binding=bind_continent_country`) ist ebenfalls entfernt, weil die Tailscale-CGNAT-IPs keine GeoIP-Daten tragen und jeder Netzwechsel die Session abriss. Auf Session-Ebene gibt es damit keinen standort- oder netzwerkgebundenen Diebstahl-Schutz mehr -- ein gestohlenes gültiges Session-Cookie ist bis zum Ablauf der 7-Tage-Session nutzbar, solange die Quell-IP nicht von CrowdSec oder der Reputation Policy blockiert wird.
 :::
 
 ## Performance-Konzept
