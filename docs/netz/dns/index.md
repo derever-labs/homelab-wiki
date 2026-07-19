@@ -25,88 +25,88 @@ DNS ist die Basis-Dependency für alle Netzwerk-Clients und Nomad-Services. Die 
 
 ## DNS-Kette
 
-Beide LXCs sind identisch konfiguriert:
+**Leitfrage:** Welchen Weg nimmt die DNS-Anfrage eines Lenzburg-Clients -- und welcher Zweig antwortet für welchen Namensraum?
+
+Beide LXCs sind identisch konfiguriert, die Kette gilt darum für jeden der beiden Eingänge. Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt; gestrichelte Kanten stehen für Hintergrundverkehr -- oder dafür, dass keine Verbindung fliesst, sondern nur die Antwort auf das Ziel zeigt. Die Farben folgen dem Netz-Big-Picture ([Das Gesamtbild in drei Pfaden](../index.md#das-gesamtbild-in-drei-pfaden)): Grün bleibt im LAN, Ocker ist der Consul-Zweig, Blau geht ins Internet, Grau sind Neben- und Kontrollwege.
 
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  lanweg: { style: { stroke: "#16a34a"; font-color: "#16a34a" } }
+  wanweg: { style: { stroke: "#2563eb"; font-color: "#2563eb" } }
+  consulweg: { style: { stroke: "#8f6418"; font-color: "#8f6418" } }
+  neben: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
 }
 
 Client: Netzwerk-Client {
   class: node
-  tooltip: "Alle Geräte im Netzwerk, DNS via DHCP (10.0.2.1 / 10.0.2.2)"
+  tooltip: Alle Geräte im Netzwerk -- DHCP verteilt beide DNS-IPs, die Docker-Daemons der Nomad-Clients zeigen auf dieselben beiden LXCs
 }
 
 pihole: Pi-hole v6 (DNS-Eingang) {
   class: container
 
-  PH1: lxc-dns-01 (Primary) {
-    class: node
-    tooltip: "10.0.2.1, LXC auf pve01, Port 53, FTL/dnsmasq"
-  }
   PH2: lxc-dns-02 (Secondary) {
     class: node
-    tooltip: "10.0.2.2, LXC auf pve02, Port 53, FTL/dnsmasq"
+    tooltip: 10.0.2.2, LXC auf pve02, Port 53, FTL/dnsmasq
+  }
+  PH1: lxc-dns-01 (Primary) {
+    class: node
+    tooltip: 10.0.2.1, LXC auf pve01, Port 53, FTL/dnsmasq
   }
 
-  PH1 <-> PH2: Nebula-Sync {
-    style.stroke: "#6b7280"
+  PH1 <-> PH2: Nebula-Sync täglich 04.00 Uhr {
+    class: neben
     style.stroke-dash: 3
-    tooltip: "Full Teleporter Sync, Nomad Service-Job mit internem Cron"
   }
-}
-
-consul: Consul DNS {
-  class: node
-  tooltip: "vm-nomad-server-04/05/06, Port 8600 -- Service Discovery für Nomad-Container"
-}
-
-Router: UDM Pro {
-  class: node
-  tooltip: "10.0.0.1 -- löst *.local auf"
 }
 
 Traefik: Traefik VIP {
   class: node
-  tooltip: "10.0.2.20 -- Ziel der Wildcard-Records *.ackermannprivat.ch / *.ackermann.systems"
+  tooltip: 10.0.2.20 -- Ziel der Wildcard-Records *.ackermannprivat.ch / *.ackermann.systems
+}
+
+consul: Consul DNS {
+  class: node
+  tooltip: vm-nomad-server-04/05/06, Port 8600 -- Service Discovery für Nomad-Container
+}
+
+Router: UDM Pro {
+  class: node
+  tooltip: 10.0.0.1 -- löst *.local auf (UniFi-Geräte und DHCP-Hostnamen)
 }
 
 Unbound: Unbound {
   class: node
-  tooltip: "Port 5335 (localhost), rekursiver Resolver mit DNSSEC"
+  tooltip: läuft je LXC auf localhost 5335 -- rekursiver Resolver mit DNSSEC-Validierung
 }
 
 Root: Root DNS Server {
   class: node
-  tooltip: "13 Root-Server, DNSSEC-validiert durch Unbound"
+  tooltip: 13 Root-Server -- direkte Rekursion, kein Forwarder dazwischen
 }
 
-Client -> pihole: DNS Query (Port 53) {
-  style.stroke: "#2563eb"
-}
-pihole -> consul: "*.consul (Conditional Forwarding)" {
-  style.stroke: "#7c3aed"
-  tooltip: "Port 8600"
-}
-pihole -> Router: "*.local (Conditional Forwarding)" {
-  style.stroke: "#6b7280"
-  tooltip: "UniFi-Geräte und DHCP-Hostnamen"
-}
-pihole -> Traefik: Antwort aus lokalem Wildcard-Record {
-  style.stroke: "#16a34a"
+Client -> pihole: 1. DNS-Query (Port 53) { class: lanweg }
+pihole -> Traefik: "2. Homelab-Domains -- Antwort\naus lokalen Wildcard-Records" {
+  class: lanweg
   style.stroke-dash: 3
-  tooltip: "Kein Forwarding -- Pi-hole antwortet für *.ackermannprivat.ch / *.ackermann.systems direkt mit der Traefik-VIP"
 }
-pihole -> Unbound: Alle anderen Domains {
-  style.stroke: "#6b7280"
-  tooltip: "Upstream für nicht-lokale Anfragen"
-}
-Unbound -> Root: Rekursive Auflösung {
-  style.stroke: "#6b7280"
-  tooltip: "Direkt gegen Root-Server, kein Forwarding"
-}
+pihole -> consul: "3. *.consul -- Conditional\nForwarding (Port 8600)" { class: consulweg }
+pihole -> Router: "4. *.local -- Conditional\nForwarding (Port 53)" { class: neben }
+pihole -> Unbound: "5. alle übrigen Domains\n(localhost 5335)" { class: neben }
+Unbound -> Root: "6. rekursive Auflösung --\nDNSSEC-validiert" { class: wanweg }
 ```
+
+Lesehilfe:
+
+1. Jede Anfrage geht an einen der beiden Pi-hole-LXCs: DHCP verteilt beide IPs an die Lenzburg-Clients, die Docker-Daemons der Nomad-Clients sind auf dieselben beiden konfiguriert ([Docker Daemon DNS](#docker-daemon-dns)).
+2. Die Weiche stellt FTL/dnsmasq anhand des Namensraums, Ad-Blocking passiert am selben Punkt. Homelab-Domains beantwortet Pi-hole direkt aus den lokalen Wildcard-Records mit der Traefik-VIP -- kein Forwarding, kein Internet-Roundtrip; spezifische Overrides zeigen auf Proxmox-Hosts bzw. Tailscale-IPs ([Pi-hole v6](#pi-hole-v6)).
+3. `*.consul` geht per Conditional Forwarding an die drei Consul-Server auf Port 8600; die Antwort spiegelt den Live-Catalog, nur gesunde Services sind auflösbar ([Consul DNS](#consul-dns), Mechanik: [Consul Query-Pfad](../../plattform/consul/index.md#query-pfad-wie-ein-consul-name-aufgelost-wird)).
+4. `*.local` geht an den UDM Pro, der UniFi-Geräte und DHCP-Hostnamen kennt ([Pi-hole v6](#pi-hole-v6)).
+5. Alle übrigen Domains gehen an Unbound auf demselben LXC (localhost 5335) -- bewusst ohne Cloud-Resolver ([Unbound](#unbound)).
+6. Unbound löst vollrekursiv direkt gegen die Root-Server auf, DNSSEC-validiert -- kein externer Anbieter sieht alle Queries des Homelabs.
+7. Der graue Sync-Pfeil ist Hintergrundverkehr: Nebula-Sync repliziert die Konfiguration täglich vom Primary auf den Secondary ([Synchronisation](#synchronisation-nebula-sync)); fällt ein LXC aus, übernimmt der andere ([Standorte und Failover](#standorte-und-failover)).
 
 ## Komponenten
 
@@ -200,13 +200,20 @@ Alle Nomad Clients haben in `/etc/docker/daemon.json` beide DNS-Server (lxc-dns-
 
 ## Standorte und Failover
 
-Die zentrale DNS-Infrastruktur (Pi-hole + Unbound) steht am Hauptstandort **Lenzburg**: lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md). Alle Lenzburg-Clients haben beide IPs als DNS-Server (via DHCP). Bei Ausfall eines LXC übernimmt der andere automatisch.
+Die zentrale DNS-Infrastruktur (Pi-hole + Unbound) steht am Hauptstandort **Lenzburg**: lxc-dns-01 (Primary) und lxc-dns-02 (Secondary) laufen auf getrennten Proxmox-Hosts -- Host/IP/LXC-ID/Proxmox-Zuordnung siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md). Alle Lenzburg-Clients haben beide IPs als DNS-Server (via DHCP).
+
+Ausfallverhalten der Kette (Zweig-Nummern aus der [DNS-Kette](#dns-kette)):
+
+- **Ein DNS-LXC fällt aus:** Der andere übernimmt automatisch -- beide sind identisch konfiguriert (Ansible plus [Nebula-Sync](#synchronisation-nebula-sync)), alle Clients kennen beide IPs.
+- **Beide DNS-LXCs fallen aus:** Die Namensauflösung in Lenzburg steht komplett -- alle Zweige, auch `*.service.consul` für die Nomad-Container, denn die Docker-Daemons zeigen auf dieselben beiden LXCs ([Docker Daemon DNS](#docker-daemon-dns)).
+- **Consul-Cluster ohne Quorum:** Nur der `.consul`-Zweig (3) fällt aus, die übrigen Zweige antworten weiter ([Consul -- Ausfallverhalten](../../plattform/consul/index.md#ausfallverhalten)).
+- **WAN-Uplink weg:** Die Homelab-Domains bleiben auflösbar, denn Zweig 2 antwortet aus lokalen Records ohne Internet -- nur die Rekursion für externe Domains (5/6) fällt aus ([Ausfallverhalten im Netz-Big-Picture](../index.md#ausfallverhalten)).
+
+::: warning Kein Fallback bei Doppelausfall
+Die Lenzburg-Clients haben ausser den beiden DNS-LXCs keinen weiteren Resolver -- bei Ausfall beider LXCs gibt es keinen Fallback. Das ist ein bewusst akzeptiertes Restrisiko der Architektur. Daraus folgt die Wartungsregel: die DNS-LXCs nie gleichzeitig neu starten, immer einen am Laufen lassen.
+:::
 
 Die Aussenstellen **Dottikon** und **Luzern** ([Standorte](../netzwerk/standorte.md)) betreiben **keinen eigenen Pi-hole** -- lokale Clients nutzen den DNS ihres jeweiligen UniFi-Gateways. Die Homelab-FQDNs der externen Nodes werden über die oben genannten Split-DNS-Overrides auf ihre Tailscale-IPs aufgelöst.
-
-::: warning Nie beide gleichzeitig rebooten
-Die DNS-LXCs dürfen nie gleichzeitig neu gestartet werden. Bei Wartung: immer einen LXC am Laufen lassen.
-:::
 
 ## IaC-Verwaltung
 
