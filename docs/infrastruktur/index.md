@@ -32,7 +32,7 @@ Die physischen Specs der Hosts führt das [Hardware-Inventar](../_referenz/hardw
 
 Die beiden Sichten beantworten die Kernfragen des Kapitels: Die **Schichten-Sicht** zeigt, wie aus drei physischen Rechnern der virtualisierte Unterbau des Nomad-Clusters wird, der **Verwaltungsweg** zeigt, wie eine VM entsteht und wie eine Änderung an ihren Parametern läuft.
 
-Lese-Konvention für beide Diagramme: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt und Inhalt. **Durchgezogene** Kanten sind synchrone Aufrufe (der Initiator wartet auf die Antwort), **gestrichelte** Kanten laufen asynchron oder dauerhaft im Hintergrund. Die Farben kodieren den Weg: Blau für die Provisionierung (Terraform an die Proxmox-API), Violett für die Konfiguration (Ansible in die VM), Grau für Betriebs- und Workload-Wege.
+Lese-Konvention: Die Schichten-Sicht ist eine Struktur-Übersicht (Verschachtelung heisst "läuft auf", ihre einzige Kante ist die richtungslose Thunderbolt-Direktverbindung). Im Verwaltungsweg zeigt der Pfeil vom **Initiator** zum Ziel, das Label nennt Schritt und Inhalt. **Durchgezogene** Kanten sind synchrone Aufrufe (der Initiator wartet auf die Antwort), **gestrichelte** Kanten laufen asynchron oder dauerhaft im Hintergrund. Die Farben kodieren den Weg: Blau für die Provisionierung (Terraform an die Proxmox-API), Violett für die Konfiguration (Ansible in die VM), Grau für Betriebs- und Workload-Wege.
 
 ### Schichten-Sicht -- vom Blech zum Nomad-Cluster
 
