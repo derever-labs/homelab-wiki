@@ -166,6 +166,10 @@ Der Nomad Job `authentik` läuft als einzelne Gruppe mit vier Tasks auf `vm-noma
 
 Die Proxy- und LDAP-Outposts sind mit festen Ports registriert, damit Traefik bzw. Jellyfin einen stabilen Endpoint haben. Ressourcen, Constraints und Env-Vars stehen direkt im Nomad-Job.
 
+::: info Warum die Outposts den Server unterschiedlich erreichen
+Der Proxy-Outpost spricht den Server direkt über die Node-IP an, der LDAP-Outpost über den kanonischen Host `auth.ackermannprivat.ch` durch Traefik. Das ist Absicht: Der Flow-Executor setzt Session-Cookies auf die Domain, und der Outpost-HTTP-Client verwirft diese Cookies bei IP-Zugriff. LDAP-Binds durchlaufen solche mehrschrittigen Flows und scheitern beim Direktzugriff mit Invalid Credentials. ForwardAuth-Prüfungen des Proxy-Outposts nutzen keine cookie-basierten Flows, darum bleibt dort der direkte Weg ohne Traefik-Abhängigkeit.
+:::
+
 ## Integration mit Traefik
 
 - **ForwardAuth-Middleware** -- jeder Request an geschützte Services wird über den Proxy Outpost geprüft. Ohne Login leitet der Outpost zum Authentik-Flow weiter
