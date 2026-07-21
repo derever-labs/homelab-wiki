@@ -64,7 +64,6 @@ AI: "AI / LLM" {
   style.stroke-dash: 4
   OLLAMA: Ollama { style.border-radius: 8 }
   OWUI: Open-WebUI { style.border-radius: 8 }
-  HOLLA: HolLama { style.border-radius: 8 }
 }
 
 IoT: IoT {
@@ -110,7 +109,6 @@ Mon.ALLOY -> Mon.LOKI
 Mon.UK -> Core.MARIADB
 
 AI.OWUI -> AI.OLLAMA
-AI.HOLLA -> AI.OLLAMA
 Prod.N8N -> Prod.SOLID
 IoT.Z2M -> IoT.MOSQ
 ```

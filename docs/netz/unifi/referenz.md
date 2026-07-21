@@ -54,6 +54,8 @@ DHCP Guard ist auf allen Netzwerksegmenten aktiv.
 | HyperBackup | 6281 | 6281 | NAS (10.0.0.200) | TCP+UDP |
 | Jellyfin (direkt) | 8096 | 8096 | 10.0.2.51 | TCP+UDP |
 
+Die eingehenden Forwards 80/443 sind zusätzlich am vorgelagerten ISP-Router konfiguriert (Double NAT): Der ISP-Router leitet 80/443 auf den UDM Pro weiter, erst dieser auf die Traefik-VIP. Eine Änderung an diesen Ports muss auf beiden Stufen nachgezogen werden.
+
 ::: warning Jellyfin Direktweiterleitung
 Port 8096 leitet direkt auf 10.0.2.51 -- nicht über Traefik. Für den Normalbetrieb (HTTPS via Traefik) ist dieser Forward nicht notwendig. Vor einer Änderung prüfen, ob externe Clients (z.B. Infuse/ATV) diesen Port direkt nutzen.
 :::

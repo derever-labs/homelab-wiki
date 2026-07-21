@@ -17,7 +17,7 @@ Drei-Knoten-Proxmox-Cluster (lenzburg) als Virtualisierungsplattform für alle H
 | Attribut | Wert |
 |----------|------|
 | Deployment | Bare-metal (3 Knoten: pve00, pve01, pve02) |
-| HA-Modus | Migrate bei Shutdown |
+| HA-Modus | HA-Manager, shutdown_policy `conditional` |
 | Migration-Netzwerk | 10.99.1.0/24 (Thunderbolt) |
 | IPs | [Hosts und IPs](../../_referenz/hosts-und-ips.md) |
 
@@ -117,7 +117,17 @@ Zwei Thunderbolt 4 Kabel verbinden pve01 und pve02 für High-Speed VM-Migration 
 
 ## HA Konfiguration
 
-- **shutdown_policy:** `migrate` -- VMs werden bei geplanten Host-Shutdowns automatisch migriert
+Der Proxmox-HA-Manager verwaltet vier Ressourcen mit definiertem Soll-Zustand:
+
+- **vm:1000** (homeassistant) -- `started`
+- **vm:2000** (checkmk) -- `started`
+- **vm:99999** (pbs-backup-server) -- `started`
+- **ct:100** -- `stopped`
+
+Fencing, Shutdown-Policy und Migrationsnetz bestimmen das Verhalten:
+
+- **Fencing:** Fällt der Node einer `started`-Ressource ungeplant aus, isoliert der Cluster ihn per Watchdog-basiertem Fencing (CRM-Watchdog) und startet die Ressource auf einem verbleibenden Node neu. Das verhindert einen parallelen Doppelstart (Split-Brain).
+- **shutdown_policy:** `conditional` -- beim geplanten Herunterfahren migriert der HA-Manager die HA-VMs stattdessen vorab über das Thunderbolt-Netz auf verbleibende Nodes.
 - **Migration Network:** 10.99.1.0/24 (Thunderbolt Bridge)
 
 ## Storage

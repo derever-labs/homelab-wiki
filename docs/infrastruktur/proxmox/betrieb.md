@@ -24,7 +24,7 @@ Fällt ein zweiter Node aus, verliert der Cluster das Quorum und blockiert alle 
 
 ## Automatisierung
 
-- **HA-Manager mit `migrate-on-shutdown`** -- beim geplanten Herunterfahren eines Nodes migriert der HA-Manager alle HA-Ressourcen automatisch auf verbleibende Nodes, bevor der Node abschaltet.
+- **HA-Manager (`shutdown_policy=conditional`)** -- beim geplanten Herunterfahren eines Nodes migriert der HA-Manager alle HA-Ressourcen automatisch auf verbleibende Nodes, bevor der Node abschaltet. Bei einem ungeplanten Node-Ausfall isoliert der Cluster den Node per Fencing (CRM-Watchdog) und startet die HA-Ressourcen auf einem verbleibenden Node neu.
 - **Keepalived VRRP** -- überwacht den Traefik-Healthcheck kontinuierlich. Fällt der aktive Node aus, übernimmt der Standby-Node die VIP ohne manuellen Eingriff. Traefik v3 führt bei Consul-Catalog-Änderungen interne Hot-Reloads durch, während derer der Healthcheck-Endpoint kurzzeitig nicht antwortet; ein höherer `fall`-Wert und der aktivierte Consul-Catalog-Cache verhindern dadurch ausgelöste unnötige VRRP-Zustandswechsel.
 - **Let's Encrypt ACME** -- erneuert TLS-Zertifikate automatisch via Cloudflare DNS Challenge. Proxmox holt sich Zertifikate selbst; kein externer Prozess notwendig.
 - **PBS Backup-Zeitplan** -- inkrementelle VM-Snapshots laufen nach konfiguriertem Zeitplan und werden im PBS-Datastore versioniert aufbewahrt.
