@@ -49,7 +49,7 @@ classes: {
 cluster: Proxmox VE Cluster lenzburg {
   class: host
   label.near: top-center
-  tooltip: Corosync-Quorum 2 von 3 -- HA-Modus migrate-on-shutdown
+  tooltip: Corosync-Quorum 2 von 3 -- HA shutdown_policy conditional
 
   pve00: pve00 (Quorum-Host) {
     class: host
@@ -181,7 +181,7 @@ VM-Parameter der Cluster-VMs (CPU, RAM, Disks, Netz) sind Terraform-verwaltet. �
 
 **Leitfrage:** Was passiert bei Ausfall von X -- und was läuft dann noch?
 
-- **Was, wenn pve01 oder pve02 ausfällt?** Der Cluster behält das Corosync-Quorum (2 von 3). Die host-verteilten Paare überbrücken: Die Traefik-VIP wechselt per VRRP auf den überlebenden Node, der zweite Pi-hole beantwortet DNS weiter, Nomad behält 2 von 3 Servern, und DRBD läuft mit einer Replica plus Witness weiter -- degradiert, aber verfügbar ([Storage und Backup -- Ausfallverhalten](../storage/index.md#ausfallverhalten)). Beim geplanten Herunterfahren migriert der HA-Manager die VMs vorab über das Thunderbolt-Netz ([HA Konfiguration](./proxmox/index.md#ha-konfiguration)).
+- **Was, wenn pve01 oder pve02 ausfällt?** Der Cluster behält das Corosync-Quorum (2 von 3). Die host-verteilten Paare überbrücken: Die Traefik-VIP wechselt per VRRP auf den überlebenden Node, der zweite Pi-hole beantwortet DNS weiter, Nomad behält 2 von 3 Servern, und DRBD läuft mit einer Replica plus Witness weiter -- degradiert, aber verfügbar ([Storage und Backup -- Ausfallverhalten](../storage/index.md#ausfallverhalten)). Für die HA-verwalteten VMs (homeassistant, checkmk, pbs-backup-server) greift zusätzlich der Proxmox-HA-Manager: Bei einem ungeplanten Ausfall isoliert der Cluster den verlorenen Node per Fencing (CRM-Watchdog) und startet diese Ressourcen auf einem verbleibenden Node neu. Beim geplanten Herunterfahren verschiebt `shutdown_policy=conditional` sie stattdessen vorab über das Thunderbolt-Netz ([HA Konfiguration](./proxmox/index.md#ha-konfiguration)).
 
 - **Was, wenn pve00 ausfällt?** Der kleinste anzunehmende Verlust: Corosync- und Nomad-Quorum halten (je 2 von 3), das DRBD-Quorum ebenso -- der Witness fehlt, aber beide Daten-Replicas auf pve01/pve02 leben. Verloren sind nur die leichtesten Cluster-VMs, bis der Host zurück ist.
 
