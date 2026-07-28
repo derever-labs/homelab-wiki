@@ -24,7 +24,7 @@ Die Architektur trennt zwei Pfade, die in den Diagrammen farblich kodiert sind: 
 
 ### Enforcement (synchroner Request-Pfad)
 
-*Wer entscheidet am Request-Pfad, ob ein Request durchkommt -- und warum blockt der Bouncer sofort, obwohl die Detection asynchron läuft?*
+**Leitfrage:** Wer entscheidet am Request-Pfad, ob ein Request durchkommt -- und warum blockt der Bouncer sofort, obwohl die Detection asynchron läuft?
 
 ```d2
 direction: right
@@ -82,7 +82,7 @@ vm.traefik.bouncer -> vm.engine: "A. pollt Decisions alle 15s (HTTP)" { class: d
 
 ### Detection (asynchroner Datenfluss)
 
-*Wie wird aus einem verdächtigen Request eine Ban-Decision -- und welche Requests sieht die Engine überhaupt?*
+**Leitfrage:** Wie wird aus einem verdächtigen Request eine Ban-Decision -- und welche Requests sieht die Engine überhaupt?
 
 ```d2
 direction: right
@@ -139,7 +139,7 @@ Die Console der CrowdSec Cloud ist unter [app.crowdsec.net](https://app.crowdsec
 
 ## Ausfallverhalten
 
-*Was passiert, wenn die Engine ausfällt -- und was passiert mit den Bans beim Failover auf den zweiten Node?*
+**Leitfrage:** Was passiert, wenn die Engine ausfällt -- und was passiert mit den Bans beim Failover auf den zweiten Node?
 
 ```d2
 direction: down

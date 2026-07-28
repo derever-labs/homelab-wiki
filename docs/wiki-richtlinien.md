@@ -269,6 +269,8 @@ Die TALA-Layout-Engine läuft unlizenziert. Die generierten Diagramme tragen ein
 
 Verbindliche Regeln für Architektur-Diagramme aus der Diagramm-Vertiefung 2026-07. Sie ergänzen die D2-Konventionen oben und legen fest, wie ein Diagramm die Mechanik eines Systems lesbar macht.
 
+**Geltungsbereich:** Als Architektur-Diagramm gilt ein Diagramm ab sechs Kanten. Darunter liegen Kontext- und Einordnungsbilder, die bewusst reine Topologie bleiben dürfen: dort entfallen R1 und R5, die übrigen Regeln gelten weiter, insbesondere R3, R7 und R8. Ebenfalls ausgenommen sind reine Bestandsübersichten wie `_referenz/hardware-inventar.md`, unabhängig von der Kantenzahl. Eine Seite, die unter diese Ausnahme fällt, ist damit vollständig und zählt in Fortschrittsmessungen nicht als Rückstand.
+
 - **R1 Leitfragen:** Jedes Architektur-Diagramm benennt explizit die Leitfrage(n), die es beantwortet. Mehrere verwandte Leitfragen sind erlaubt. Wird das Diagramm dadurch überladen, lieber 1-3 Szenario-Diagramme pro System zeichnen (z.B. Übersicht, Request-Fluss, Ausfall-Sicht).
 - **R2 Zwei Ebenen:** Der synchrone Request-Pfad wird durchgezogen dargestellt, der asynchrone Kontroll- oder Datenpfad gestrichelt. Die Lesekonvention wird einmal zentral erklärt, nicht pro Diagramm wiederholt.
 - **R3 Pfeilsemantik:** Der Pfeil zeigt, wer initiiert. Das Label sagt, was fliesst (Protokoll und Inhalt). Request und Response sind ein Pfeil. Zwei Kanten mit je eigenem Label nur bei zwei semantisch verschiedenen Flüssen.
