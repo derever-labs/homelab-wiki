@@ -21,6 +21,7 @@ Karakeep Ingest ist eine schlanke Anreicherungs-Schicht über [Karakeep](../kara
 | Storage | Linstor CSI: `karakeep-ingest-data` (SQLite-Job-DB, nur Betriebszustand) |
 | Auth | `intern-api@file` (IP-Allowlist intern + Tailscale), bewusst ohne Authentik -- gleiche Vertrauenszone wie Karakeep |
 | Secrets | Vault `kv/karakeep-ingest` (Scrapfly, Karakeep-API, Apify) |
+| Browser-Backend | Geteilter Dienst [Browserless](../browserless/) für den Consent-Fallback |
 
 ## Rolle im Stack
 
@@ -47,6 +48,8 @@ Ingest: "karakeep-ingest\n(Hono-BFF + In-Prozess-Queue)" {
 
 Karakeep: "Karakeep\n(einziger Bestand)" { class: node }
 
+BL: "browserless\n(Consent-Klick)" { class: node }
+
 UI -> Ingest.LI: "linkedin.com"
 UI -> Ingest.IG: "Post / Reel"
 UI -> Ingest.YT: "YouTube-Video"
@@ -55,6 +58,7 @@ Ingest.LI -> Karakeep: "Volltext + Bilder"
 Ingest.IG -> Karakeep: "Caption + Bilder"
 Ingest.YT -> Karakeep: "oEmbed + Thumbnail"
 Ingest.WEB -> Karakeep: "og-Meta + Archiv"
+Ingest.WEB -> BL: "Fallback: Consent-Klick,\nArtikel-HTML"
 ```
 
 ## Nutzungsregel
@@ -67,6 +71,18 @@ Ingest.WEB -> Karakeep: "og-Meta + Archiv"
 
 Die Kosten sind gedeckelt: ein Tageslimit für Scrapfly-Requests und eine Bestätigungsschwelle bei grossen Batches (Details im Job und im Design). Karakeep bleibt der einzige Bestand -- der Ingest speichert nur seinen Betriebszustand.
 
+## Consent-Walls im Web-Pfad
+
+Eine Consent-Interstitial-Seite hat einen brauchbaren Titel und würde ungeprüft als vollwertige, inhaltsleere Karte in Karakeep landen. Der Web-Pfad erkennt sie deshalb und eskaliert in zwei Stufen, bevor er aufgibt.
+
+Zuerst läuft ein einmaliger Zweitversuch über Scrapfly mit einer GeoIP-Herkunft ausserhalb der EU. Das löst die Klasse von Walls, die nur wegen der DSGVO-Geolokalisierung erscheint. Bleibt die Wall auch danach stehen, handelt es sich um die cookie-gebundene Klasse (Sourcepoint-Muster, etwa golem.de): dort liefert der Server ohne Consent-Cookie aus jedem Land die Zustimmungsseite, der GeoIP-Versuch läuft also ins Leere. Für diesen Fall klickt seit dem 28.07.2026 ein echter Browser über [Browserless](../browserless/) den Zustimmungs-Knopf und lädt den Artikel danach unter der Original-URL. Der Klick funktioniert, weil der Consent-Knopf im Cross-Origin-iFrame des Consent-Managers über das Browser-Protokoll erreichbar bleibt -- die Same-Origin-Grenze gilt nur für Skripte im Seiten-Kontext.
+
+Scheitert auch der Browser-Versuch oder landet er erneut auf einer Zustimmungsseite, endet der Job terminal als `failed` mit der Stufe `consent-wall`. Das ist Absicht: eine leere Consent-Karte in Karakeep wäre teurer als ein sichtbarer Fehlschlag.
+
+::: info Der Browser-Versuch kostet keine Scrapfly-Credits
+Der Aufruf geht direkt an den internen Browser-Dienst und zählt nicht gegen das Scrapfly-Tageslimit. Der Ingest bringt dafür keine eigene Browser-Bibliothek mit, sondern schickt den Automatisierungs-Code als Text an dessen REST-Schnittstelle. Ist die Umgebungsvariable `BROWSERLESS_URL` leer, entfällt der Schritt ersatzlos und der Ablauf endet wie zuvor beim GeoIP-Zweitversuch. Details zur Umsetzung im App-Repo (`server/consent-browser.ts`, Einhängepunkt in `server/pipeline.ts`).
+:::
+
 ::: info LinkedIn-, Instagram-, YouTube- und Web-Pfad sind produktiv
 Alle vier Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real über den Apify-Actor `vulnv~linkedin-posts-scraper`: Volltext, Originalbilder (bei Dokument-Posts alle Seiten), dazu Autor und erwähnte Firmen als Herkunfts-Tags. Der Instagram-Pfad nutzt den offiziellen Apify-Actor `apify~instagram-scraper` (directUrls fuer einzelne Post-/Reel-URLs, gleicher Token, eigener Lauf pro Quelle): Caption als Beschreibung, Originalbilder bzw. bei Reels das Cover-Thumbnail, dazu Autor, markierte Konten und Hashtags als Herkunfts-Tags; Kommentare werden nie uebernommen. Beide Apify-Pfade werden gebündelt und nach einem kurzen Sammelfenster als ein Lauf verarbeitet -- ihre Karten erscheinen deshalb mit einigen Minuten Verzögerung in Karakeep, YouTube- und Web-Karten sofort. Der YouTube-Pfad zieht Titel, Kanal und Vorschaubild kostenlos aus dem offiziellen oEmbed-Endpoint und dem Thumbnail-CDN und setzt Quelle und Kanal als Herkunfts-Tags; ist ein Video privat, gelöscht oder altersbeschränkt, endet der Job mit einer sprechenden Fehlermeldung. Die Kosten- und Fenster-Parameter stehen im Job-Template und im Design (SSOT), nicht hier.
 :::
@@ -74,6 +90,7 @@ Alle vier Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real 
 ## Verwandte Seiten
 
 - [Karakeep](../karakeep/index.md) -- Bookmark-Manager und einziger Bestand, in den der Ingest schreibt
+- [Browserless](../browserless/) -- geteilter Headless-Browser für den Consent-Fallback
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Kette `intern-api@file`
 - [Linstor CSI](../../storage/linstor/index.md) -- replizierter Block-Storage (DRBD) für die Job-DB
 - [Monitoring: Coverage](../../monitoring/coverage/index.md) -- Kuma-Probe `Karakeep Ingest` und Coverage-Status

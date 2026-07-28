@@ -1,6 +1,6 @@
 ---
 title: ChangeDetection.io
-description: Website-Änderungsüberwachung mit Playwright-Sidecar für JavaScript-Rendering
+description: Website-Änderungsüberwachung mit geteiltem Browser-Dienst für JavaScript-Rendering
 tags:
   - service
   - productivity
@@ -10,7 +10,7 @@ tags:
 
 # ChangeDetection.io
 
-ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachrichtigt bei Veränderungen. Ein Playwright-Chrome-Sidecar übernimmt das JavaScript-Rendering, damit auch dynamisch geladene Inhalte korrekt erfasst werden.
+ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachrichtigt bei Veränderungen. Das JavaScript-Rendering übernimmt der geteilte Browser-Dienst [Browserless](../browserless/), damit auch dynamisch geladene Inhalte korrekt erfasst werden.
 
 ## Übersicht
 
@@ -20,6 +20,7 @@ ChangeDetection.io überwacht Webseiten auf inhaltliche Änderungen und benachri
 | Deployment | Nomad Job `services/changedetection.nomad` |
 | Storage | Linstor CSI `changedetection-data` (rg-replicated, `/datastore`) |
 | Auth | `intern-auth@file` |
+| Browser-Backend | Geteilter Dienst [Browserless](../browserless/) |
 
 ## Rolle im Stack
 
@@ -40,25 +41,27 @@ Traefik: Traefik {
 Nomad: "Nomad-Job changedetection" {
   style.stroke-dash: 4
   CD: ChangeDetection { style.border-radius: 8 }
-  PW: "Playwright Chrome\n(Sidecar)" { style.border-radius: 8 }
 }
+
+BL: "browserless\n(geteilter Job)" { style.border-radius: 8 }
 
 WEB: "Überwachte Webseiten" { style.border-radius: 8 }
 
 USER -> Traefik.R1: HTTPS
 Traefik.R1 -> Nomad.CD
-Nomad.CD -> Nomad.PW: WebSocket
-Nomad.PW -> WEB: "HTTP + JS-Rendering"
+Nomad.CD -> BL: "WebSocket via Consul-Name"
+BL -> WEB: "HTTP + JS-Rendering"
 ```
 
 ## Konfiguration
 
-### Playwright Sidecar
+### Browser-Backend
 
-Ein Browserless-Chrome-Container läuft als Nomad Sidecar-Task und stellt über WebSocket (Port 3000) einen headless Browser bereit. Die env-Var-Konfiguration (Stealth, Ad-Blocking, Session-Limit, Fenstergrösse) und Ressourcen liegen im Nomad-Job `services/changedetection.nomad`.
+Das JavaScript-Rendering läuft über den eigenständigen Job [Browserless](../browserless/), den ChangeDetection per WebSocket über seinen Consul-Namen anspricht (`PLAYWRIGHT_DRIVER_URL` und `WEBDRIVER_URL` im Nomad-Job `services/changedetection.nomad`). Bis zum 28.07.2026 lief derselbe Container als Sidecar im ChangeDetection-Job -- er wurde herausgelöst, damit auch andere Dienste denselben Browser nutzen können. Die Betriebs-Parameter des Browsers stehen seither im Browserless-Job, nicht mehr hier.
 
 ## Verwandte Seiten
 
+- [Browserless](../browserless/) -- geteilter Headless-Browser für das JavaScript-Rendering
 - [Immobilien-Monitoring](../immobilien-monitoring/index.md) -- Nutzt ChangeDetection für Webseiten-Überwachung
 - [n8n](../n8n/index.md) -- Workflow-Automation für Benachrichtigungen
 - [Traefik Middlewares](../../edge/traefik/referenz.md) -- Auth-Chain-Konfiguration

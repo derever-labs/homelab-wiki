@@ -13,7 +13,8 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 ## Systeme
 
 - [Wartungsbanner](./banner/) -- Wartungsbanner für Jellyfin über Jellyfins natives Custom-CSS
-- [ChangeDetection.io](./changedetection/) -- Website-Änderungsüberwachung mit Playwright-Sidecar für JavaScript-Rendering
+- [Browserless](./browserless/) -- Geteilter Headless-Browser-Dienst für Rendering und Seiten-Bedienung
+- [ChangeDetection.io](./changedetection/) -- Website-Änderungsüberwachung mit geteiltem Browser-Dienst für JavaScript-Rendering
 - [Dashboards](./dashboards/) -- Flame als öffentliche Startseite und Homepage als internes Dashboard
 - [DbGate](./dbgate/) -- Web-basiertes Datenbank-Management für den PostgreSQL Shared Cluster
 - [Directus Gravel](./directus-gravel/) -- Headless CMS für die persönliche Gravel-Bike-Recherche

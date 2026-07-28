@@ -96,6 +96,7 @@ Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln si
 | 2222 | TCP | Gitea SSH | `gitea` | Git über SSH |
 | 3002 | TCP | DbGate | `dbgate` | DB-Manager, hinter Traefik |
 | 3003 | TCP | Gitea HTTP | `gitea` | Web-UI, hinter Traefik |
+| 3300 | TCP | Browserless | `browserless` | Geteilter Headless-Browser, nur intern via `browserless.service.consul` |
 | 5984 | TCP | Obsidian LiveSync | `obsidian-livesync` | CouchDB Sync |
 | 8000 | TCP | Paperless Web | `paperless` | DMS, hinter Traefik |
 | 8081 | TCP | Paperless-GPT | `paperless` | AI-Tagging, hinter Traefik |
