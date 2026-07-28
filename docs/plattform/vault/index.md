@@ -32,66 +32,72 @@ Bei Vault-Ausfall können laufende Dienste keine Secrets mehr erneuern und neue 
 
 ## Architektur
 
+Vault läuft als 3-Node Raft Cluster auf den Server-VMs -- ein eigener Prozess pro Node, koresident mit Nomad-Server und Consul-Server (Adressen: [Hosts und IPs](../../_referenz/hosts-und-ips.md)). Zwei Szenario-Sichten zeigen die Mechanik: die **Cluster-Sicht** (wer beantwortet Anfragen, was passiert bei Ausfall und Reboot) und der **Workload-Identity-Fluss** (wie ein Nomad-Task ohne statischen Token an Secrets kommt).
+
+Lese-Konvention: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt-Nummer und Inhalt -- Request und Antwort teilen sich einen Pfeil. **Durchgezogene** Kanten sind synchrone Aufrufe, **gestrichelte** laufen zyklisch oder dauerhaft im Hintergrund. Farben: Violett der Secrets-Zugriff, Grün Service Discovery über Consul, Grau Cluster-interner Kontroll- und Hintergrundverkehr.
+
+### Cluster-Sicht -- Leader, Standby, Ausfall
+
+**Leitfrage:** Wer beantwortet eine Vault-Anfrage im 3-Node-Cluster -- und was passiert bei einem Node-Ausfall oder nach einem Reboot?
+
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  secrets: { style: { stroke: "#7c3aed"; font-color: "#7c3aed" } }
+  disco: { style: { stroke: "#16a34a"; font-color: "#16a34a" } }
+  disco-async: { style: { stroke: "#16a34a"; stroke-dash: 3; font-color: "#16a34a" } }
+  intern: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
+  intern-async: { style: { stroke: "#6b7280"; stroke-dash: 3; font-color: "#6b7280" } }
 }
 
-raft: Vault Raft Cluster {
-  class: container
-
-  V1: vm-nomad-server-04 {
-    class: node
-    tooltip: "10.0.2.104 | Port 8200 (API) / 8201 (Cluster)"
-  }
-  V2: vm-nomad-server-05 {
-    class: node
-    tooltip: "10.0.2.105 | Port 8200 (API) / 8201 (Cluster)"
-  }
-  V3: vm-nomad-server-06 {
-    class: node
-    tooltip: "10.0.2.106 | Port 8200 (API) / 8201 (Cluster)"
-  }
-
-  V1 <-> V2: Raft {
-    style.stroke: "#6b7280"
-    tooltip: "Port 8201 | Datenreplikation und Leader Election"
-  }
-  V2 <-> V3: Raft {
-    style.stroke: "#6b7280"
-    tooltip: "Port 8201 | Datenreplikation und Leader Election"
-  }
-  V3 <-> V1: Raft {
-    style.stroke: "#6b7280"
-    tooltip: "Port 8201 | Datenreplikation und Leader Election"
-  }
-}
+direction: right
 
 clients: Vault-Clients {
   class: node
-  tooltip: "Nomad Tasks (Workload Identity, Ablauf siehe unten), Admin-CLI"
+  tooltip: "Nomad-Tasks via Workload Identity, Admin-CLI, nächtlicher Snapshot-Job"
 }
 
 Consul: Consul {
   class: node
-  tooltip: "Service Discovery: vault.service.consul und active.vault"
+  tooltip: "Health-Check pro Node -- ein sealed Node fällt aus der DNS-Antwort"
 }
 
-clients -> raft: HTTPS :8200 {
-  style.stroke: "#7c3aed"
-  tooltip: "Zugriff über vault.service.consul -- kein fest verdrahteter Node"
+raft: Vault Raft Cluster {
+  class: container
+  tooltip: "vm-nomad-server-04/05/06 -- je ein Vault-Prozess"
+
+  leader: Aktiver Node (Leader) {
+    class: node
+    tooltip: "einziger schreibender Node -- Schreib-Quorum 2 von 3"
+  }
+  standby: 2 Standby-Nodes {
+    class: node
+    tooltip: "nehmen Anfragen an, beantworten sie aber nicht selbst"
+  }
+
+  standby -> leader: "3. leitet Anfragen an den\nLeader weiter (Cluster-Port 8201)" { class: intern }
+  leader <-> standby: "Raft -- Replikation und\nLeader-Election (8201)" { class: intern-async }
 }
-raft -> Consul: registriert active/standby {
-  style.stroke: "#6b7280"
-  style.stroke-dash: 3
-  tooltip: "Jeder Node meldet seinen Zustand, Consul löst auf den aktiven Leader auf"
+
+unseal: vault-unseal.service {
+  class: node
+  tooltip: "Boot-Service auf jedem Node -- liest die Shamir-Keys lokal aus /etc/vault.d/unseal-keys"
 }
+
+clients -> Consul: "1. vault.service.consul\nauflösen (DNS)" { class: disco }
+clients -> raft: "2. HTTPS 8200 (private CA) --\nbeliebiger unsealed Node" { class: secrets }
+raft -> Consul: "registriert Service vault --\nHealth-Status pro Node" { class: disco-async }
+unseal -> raft: "entsiegelt nach jedem Reboot\n(Shamir: 3 Shares, Threshold 2)" { class: intern-async }
 ```
 
-Vault läuft als 3-Node Raft Cluster. Jeder Server führt einen eigenen Vault-Prozess aus. Die Leader-Election erfolgt über das Raft-Konsensprotokoll: es gibt immer genau einen Leader, die anderen beiden sind Standby-Nodes.
+Lesehilfe:
 
-Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreibvorgang muss der Leader die Bestätigung von mindestens einem weiteren Node erhalten (Quorum), bevor der Vorgang als erfolgreich gilt.
+1. Clients erreichen Vault über `vault.service.consul` -- die DNS-Antwort enthält alle Nodes mit bestandenem Health-Check, ein sealed oder toter Node fällt automatisch heraus ([Vault Service Discovery](./referenz.md#vault-service-discovery)).
+2. Die Anfrage darf bei jedem Node landen: Standby-Nodes leiten sie über den Cluster-Port an den Leader weiter, für den Client transparent -- es gibt keinen fest verdrahteten Leader.
+3. Schreibvorgänge gelten erst als erfolgreich, wenn Raft sie auf das Quorum (2 von 3) repliziert hat. Fällt ein Node aus, wählen die verbleibenden zwei bei Bedarf einen neuen Leader und der Dienst läuft weiter -- erst ohne Quorum steht Vault ([Plattform-Ausfallverhalten](../index.md#ausfallverhalten)).
+4. Nach einem Reboot startet ein Node immer sealed. Der lokale Boot-Service entsiegelt ihn mit den Node-lokal abgelegten Shamir-Keys -- ohne Cloud-KMS und ohne manuellen Eingriff ([Betrieb -- Unseal nach Reboot](./betrieb.md#unseal-nach-reboot), [Designentscheide](#designentscheide)).
+5. Gegen Datenverlust zieht ein nächtlicher Batch-Job einen verschlüsselten Raft-Snapshot über die API ([Betrieb -- Raft Snapshots](./betrieb.md#raft-snapshots)).
 
 ## Designentscheide
 
@@ -105,60 +111,55 @@ Daten werden automatisch zwischen allen drei Nodes repliziert. Bei einem Schreib
 
 ## Workload Identity
 
-Nomad-Jobs authentifizieren sich bei Vault über JWT-basierte Workload Identity. Dadurch brauchen Jobs keine statischen Tokens -- die Identität ergibt sich aus dem Job selbst.
+**Leitfrage:** Wie kommt ein Nomad-Task ohne statischen Token an seine Secrets -- und wie prüft Vault, dass das JWT echt ist?
 
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  secrets: { style: { stroke: "#7c3aed"; font-color: "#7c3aed" } }
+  intern: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
+  intern-async: { style: { stroke: "#6b7280"; stroke-dash: 3; font-color: "#6b7280" } }
 }
 
-Nomad: Nomad Server {
+direction: down
+
+Nomad: Nomad {
   class: node
-  tooltip: "Stellt beim Task-Start automatisch ein signiertes JWT aus (Workload Identity)"
+  tooltip: "Die Server signieren das Workload-JWT -- der Client-Agent erledigt Login und Template-Rendering stellvertretend für den Task"
 }
 
 Task: Nomad Task {
   class: node
-  tooltip: "Container mit vault-Stanza (role nomad-workloads) -- Workload Identity kommt aus der default_identity der Nomad-Config"
+  tooltip: "vault-Stanza mit role nomad-workloads -- Identity aus der clusterweiten default_identity"
 }
 
 vault: Vault {
   class: container
 
-  auth: JWT Auth Method {
-    class: node
-    tooltip: "Validiert die JWT-Signatur gegen Nomads JWKS-Endpoint"
-  }
   kv: KV v2 Secret Engine {
     class: node
-    tooltip: "Pfad-Konvention: kv/data/JOB_ID -- Policy nomad-workload beschränkt Zugriff auf eigenen Pfad"
+    tooltip: "Pfad-Konvention kv/data/JOB_ID -- Policy nomad-workload beschränkt auf eigenen Pfad plus shared"
+  }
+  auth: JWT Auth Method jwt-nomad {
+    class: node
+    tooltip: "bound_audiences vault.io -- Identität des Tasks kommt aus dem Claim nomad_job_id"
   }
 }
 
-Nomad -> Task: 1. JWT ausstellen (Workload Identity) {
-  style.stroke: "#6b7280"
-}
-Task -> vault.auth: 2. JWT vorzeigen (HTTPS :8200) {
-  style.stroke: "#7c3aed"
-  tooltip: "Task authentifiziert sich mit dem JWT -- kein statischer Token nötig"
-}
-vault.auth -> Task: 3. Vault Token (Policy nomad-workload) {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-  tooltip: "Vault prüft JWT-Signatur via Nomad JWKS, dann Token mit eingeschränkter Policy"
-}
-Task -> vault.kv: 4. kv/data/JOB_ID lesen {
-  style.stroke: "#2563eb"
-  tooltip: "Task liest nur Secrets unter seinem eigenen Job-Pfad"
-}
-vault.kv -> Task: 5. Secret-Werte {
-  style.stroke: "#16a34a"
-  style.stroke-dash: 3
-}
+Nomad -> Task: "1. stellt signiertes Workload-JWT\naus (aud vault.io, TTL 1 h)" { class: intern }
+Task -> vault.auth: "2. JWT vorzeigen --\nerhält kurzlebigen Vault-Token" { class: secrets }
+vault.auth -> Nomad: "3. holt Signatur-Schlüssel vom JWKS-\nEndpunkt der Nomad-Server (4646)" { class: intern-async }
+Task -> vault.kv: "4. liest kv/data/JOB_ID --\nAntwort: Secret-Werte" { class: secrets }
 ```
 
-Ein Task, der Vault-Secrets benötigt, deklariert eine `vault {}` Stanza (in der Regel mit `role = "nomad-workloads"`). Die Workload Identity liefert die clusterweite `default_identity` aus der Nomad-Agent-Konfiguration, darum kommen die meisten Jobs ohne eigenen `identity`-Block aus. Nur Jobs, die das JWT zusätzlich als Umgebungsvariable oder Datei im Container brauchen, ergänzen einen `identity`-Block mit `env = true` und `file = true`. Technische Details zu Auth Methods, JWKS URL und Policies: [Vault Referenz](./referenz.md)
+Lesehilfe:
+
+1. Beim Task-Start stellt Nomad das signierte JWT automatisch aus der clusterweiten `default_identity` aus (Audience `vault.io`, TTL 1 Stunde) -- im Jobfile steht kein Token, nur die `vault`-Stanza mit der Rolle `nomad-workloads`.
+2. Login und Rendern der `template`-Stanzas erledigt der Nomad-Client-Agent stellvertretend für den Task: Der Container sieht nur die fertigen Werte. Einen eigenen `identity`-Block mit `env = true` und `file = true` ergänzen nur Jobs, die das JWT selbst als Variable oder Datei brauchen.
+3. Vault prüft die JWT-Signatur gegen die Schlüssel vom JWKS-Endpunkt der Nomad-Server und stellt einen periodischen Token mit der Policy `nomad-workload` aus (Laufzeit 1 Stunde, vom Client-Agent erneuert) -- Auth Method, JWKS-URL und Rolle: [Vault Referenz](./referenz.md#auth-methods).
+4. Der Token erlaubt im Kern nur den eigenen Pfad `kv/data/JOB_ID` plus die geteilten Pfade unter `kv/shared/` -- wenige Cross-Job-Ausnahmen regelt die Policy explizit ([Referenz -- Policies](./referenz.md#policies)).
+5. Zum Henne-Ei mit Nomad (Vault prüft JWTs gegen Nomad, Nomad-Jobs lesen Secrets aus Vault): Die Schleife existiert nur auf Workload-Ebene, beide Dienste starten unabhängig -- [Abhängigkeits-Sicht der Plattform-Seite](../index.md#abhangigkeits-sicht-wer-braucht-wen).
 
 ::: warning Pfad-Konvention
 Der Normalfall ist ein Secret-Pfad pro Job unter `kv/<job_id>`. Secrets, die sich mehrere Jobs teilen, liegen dagegen unter einem gemeinsamen `kv/shared/<name>`-Pfad -- der Job `postgres` etwa liest aus `kv/shared/postgres` (Template-Pfad `kv/data/shared/postgres`). Welche Pfade ein Job lesen darf, ist in der Policy festgelegt.
