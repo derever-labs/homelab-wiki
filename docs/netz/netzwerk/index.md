@@ -13,7 +13,7 @@ tags:
 
 Das Homelab erstreckt sich über drei Standorte -- **Lenzburg** (Hauptstandort), **Dottikon** und **Luzern** --, verbunden über ein Tailscale-Overlay. Die [Gesamtübersicht](#gesamtubersicht) zeigt sie im Zusammenhang; Details je Standort führt die [Standorte](./standorte.md)-Seite. Der übrige Teil dieser Seite dokumentiert den **Hauptstandort Lenzburg** im Detail (VLAN-Segmente, physische Topologie, Hardware), geroutet über einen UniFi Dream Machine Pro mit SFP+-WAN-Uplink via ISP-Router. Controller-Spezifika (Firewall, WLAN, Zugang) führt [UniFi](../unifi/).
 
-Lesekonvention für die Diagramme dieser Seite: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt, was fliesst. Durchgezogene Kanten tragen den synchronen Datenpfad, gestrichelte asynchronen Kontroll- oder Hintergrundverkehr. Nur die physische Topologie verwendet ungerichtete Kanten -- dort stehen sie für Kabel. Farben kodieren die Wege: Blau der externe Request-Pfad, Grün der interne Pfad, Ocker Neben- und Pflegewege.
+Lesekonvention für die Diagramme dieser Seite: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt, was fliesst. Durchgezogene Kanten tragen den synchronen Datenpfad, gestrichelte asynchronen Kontroll- oder Hintergrundverkehr. Farben kodieren die Wege: Blau der externe Request-Pfad, Grün der interne Pfad, Ocker Neben- und Pflegewege. Die physische Topologie ist die eine Ausnahme: sie zeigt Kabel statt Datenwege, verwendet deshalb ungerichtete Kanten, und dieselben drei Farben stehen dort für die drei Kabelstränge ab UDM Pro.
 
 ## Gesamtübersicht
 
