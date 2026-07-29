@@ -18,8 +18,7 @@ Zot ist eine OCI-native Container Registry mit Linstor-CSI DRBD-Volume, BoltDB (
 
 | Attribut | Wert |
 |----------|------|
-| URL (intern) | `zot.service.consul:5000` (via Consul DNS) |
-| URL (extern) | `registry.ackermannprivat.ch` |
+| URL (intern) | `zot.service.consul:5000` (via Consul DNS, kein Traefik-Routing) |
 | Deployment | Nomad Job `infrastructure/zot-registry.nomad` (Service Job, 1 Alloc) |
 | Storage | Linstor-CSI Volume `zot-data` (150 GB, ext4 noatime) |
 | Auth | htpasswd -- nomad-client (read), ci-push (read+write), anonym lesen erlaubt |
@@ -30,7 +29,7 @@ Zot ist eine OCI-native Container Registry mit Linstor-CSI DRBD-Volume, BoltDB (
 Zot ist der zentrale Pull-Through-Cache für sämtliche Nomad-Jobs: Alle App- und
 Basis-Images werden über `zot.service.consul:5000` bezogen, on-demand aus Docker
 Hub, ghcr.io und quay.io gespiegelt und auf dem Linstor-CSI-Volume vorgehalten.
-Eigene Pushes (`homelab/...`, `immo-monitor/...`) liegen ebenfalls hier. Die
+Eigene Pushes (`library/...`) liegen ebenfalls hier. Die
 Verfügbarkeit hängt am Linstor-CSI DRBD-Volume; eine Bootstrap-Klasse von Jobs
 umgeht den Cache bewusst, um bei Zot-Ausfall startfähig zu bleiben.
 
@@ -41,12 +40,20 @@ akzeptiert.
 
 ## Architektur
 
+**Leitfrage:** Woher kommt ein Image beim Pull -- und wer entscheidet, ob der Upstream gefragt wird?
+
+Lese-Konvention: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt-Nummer und Inhalt -- Request und Antwort teilen sich einen Pfeil. **Durchgezogene** Kanten sind synchrone Aufrufe (der Initiator wartet auf die Antwort), **gestrichelte** sind Neben- oder Ausweichwege. Farben: Blau der Pull-Pfad, Violett der Upstream-Sync, Grün der CI-Push, Grau die Wege an Zot vorbei.
+
 ```d2
 direction: down
 
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  pull: { style: { stroke: "#2563eb"; font-color: "#2563eb" } }
+  sync: { style: { stroke: "#7c3aed"; font-color: "#7c3aed" } }
+  push: { style: { stroke: "#16a34a"; font-color: "#16a34a" } }
+  neben: { style: { stroke: "#6b7280"; stroke-dash: 3; font-color: "#6b7280" } }
 }
 
 Consumers: Konsumenten {
@@ -54,22 +61,22 @@ Consumers: Konsumenten {
 
   Nodes: "Nomad-Nodes\n(docker pull)" {
     class: node
-    tooltip: "Job-Files referenzieren zot.service.consul:5000 explizit | daemon.json registry-mirrors nur als Fallback für Kurz-Referenzen"
+    tooltip: "Job-Files referenzieren zot.service.consul:5000 explizit -- daemon.json registry-mirrors nur als Fallback für Kurz-Referenzen"
   }
-  CI: "CI-Pipelines\n(User ci-push)" {
+  CI: "CI-Pipeline\n(skopeo, User ci-push)" {
     class: node
-    tooltip: "GitHub Actions -- einziger autorisierter Push-Pfad"
+    tooltip: "GitHub-Workflow app-build-deploy.yml -- holt das ci-push-Passwort zur Laufzeit aus Vault"
   }
 }
 
 Zot: "Zot Registry\nzot.service.consul:5000" {
   class: node
-  tooltip: "Nomad Service Job, 1 Alloc | htpasswd-Auth, anonymes Lesen erlaubt | BoltDB embedded"
+  tooltip: "Nomad Service Job, 1 Alloc auf client-04/05/06 -- BoltDB embedded, entscheidet pro Request über Cache-Hit oder Upstream-Sync"
 }
 
 Volume: "Linstor-CSI Volume\nzot-data" {
   shape: cylinder
-  tooltip: "DRBD 3-Replica -- Blobs und BoltDB MetaDB, folgt dem Alloc via CSI"
+  tooltip: "DRBD-repliziert auf beiden Storage-Nodes, client-04 diskless -- Blobs und BoltDB MetaDB folgen dem Alloc via CSI"
 }
 
 Upstream: Upstream-Registries {
@@ -80,25 +87,21 @@ Upstream: Upstream-Registries {
   Quay: quay.io { class: node }
 }
 
-Consumers.Nodes -> Zot: "pull" { style.stroke: "#2563eb" }
-Consumers.CI -> Zot: "push (eigene Images)" { style.stroke: "#16a34a" }
-Zot -> Volume: "Blobs + Metadaten" { style.stroke: "#854d0e" }
-Zot -> Upstream: "Pull-Through: on-demand Sync" {
-  style.stroke: "#7c3aed"
-  style.stroke-dash: 3
-}
-Consumers.Nodes -> Upstream: "Bootstrap-Klasse: Direkt-Pull" {
-  style.stroke: "#6b7280"
-  style.stroke-dash: 3
-  tooltip: "ZOT, Keep und Uptime-Kuma pullen bewusst am Cache vorbei, um bei Zot-Ausfall startfähig zu bleiben"
-}
+Consumers.Nodes -> Zot: "1. Pull -- anonym\n(anonymousPolicy read)" { class: pull }
+Zot -> Volume: "2. Cache-Hit: Blobs und\nMetadaten vom Volume" { class: pull }
+Zot -> Upstream: "3. Cache-Miss: on-demand spiegeln --\nder erste Pull wartet auf den Upstream" { class: sync }
+Consumers.CI -> Zot: "4. Push eigener Images\n(skopeo mit ci-push)" { class: push }
+Consumers.Nodes -> Upstream: "A. Bootstrap-Klasse: direkt oder\nals Fallback am Cache vorbei" { class: neben }
 ```
 
-**Eigenschaften:**
-- Linstor-CSI DRBD-Volume mit 3 Replicas: Daten bleiben bei Node-Ausfall erhalten
-- Nomad rescheduled die Allokation auf einen anderen Node -- Volume folgt über CSI
-- BoltDB embedded: keine externe Metadaten-Datenbank, kein Redis mehr
-- Pull-Through Cache für 3 Upstream-Registries mit Docker-Hub-Pro-Limit (unlimited pulls)
+Lesehilfe:
+
+1. Nomad-Jobs pullen über die explizite Referenz `zot.service.consul:5000/...` -- der [daemon.json-Mirror](#daemon-json-mirror-pattern) bleibt Fallback für Kurz-Referenzen. Pulls laufen anonym, ein Login ist nur zum Pushen nötig ([Authentifizierung](#authentifizierung)).
+2. Bei einem Cache-Hit liefert Zot Blobs und Manifeste direkt vom [Linstor-CSI-Volume](#storage-linstor-csi-volume) -- kein Upstream-Kontakt, Docker-Hub-Limits spielen keine Rolle.
+3. Bei einem Cache-Miss spiegelt Zot das Image on-demand vom passenden Upstream (Catch-All für Docker Hub, Prefix-Regeln für ghcr.io und quay.io) -- der erste Pull wartet auf den Upstream, danach kommt jedes weitere Exemplar aus dem Cache; bei Upstream-Fehlern versucht der Sync nach 5 Minuten erneut ([Proxy Cache Registries](#proxy-cache-registries)).
+4. Gepusht wird ausschliesslich aus der CI -- via `skopeo` mit dem User `ci-push`, dessen Passwort der Workflow zur Laufzeit aus Vault holt ([Authentifizierung](#authentifizierung)).
+5. Die [Bootstrap-Klasse](#bootstrap-klasse-bewusste-direkt-pulls-ohne-cache) läuft an Zot vorbei -- teils permanent (explizite Upstream-Hostnames), teils als automatischer Fallback des Mirror-Mechanismus.
+6. Fällt der Node der Registry aus, rescheduled Nomad die Allocation nach der 5-Minuten-Karenz, das Volume folgt via CSI ohne Daten-Sync ([Betrieb -- Failover](./betrieb.md#failover-wiederanlauf)). Solange Zot fehlt, scheitern Re-Pulls expliziter Referenzen -- die Folgen fürs Cluster: [Plattform-Ausfallverhalten](../index.md#ausfallverhalten).
 
 ### daemon.json Mirror-Pattern
 
@@ -116,18 +119,18 @@ Die vollständige Konfiguration (Zot Config, Linstor-Volume, Proxy Cache, Auth) 
 
 ZOT nutzt htpasswd mit zwei Usern:
 
-- nomad-client -- Read-only (pull). Alle Nomad-Allokationen und der Docker Daemon nutzen diesen Account.
-- ci-push -- Read-write (pull + push). Einzig autorisierter Push-Pfad für CI/CD-Pipelines. Credentials als GitHub-Secrets hinterlegt.
+- nomad-client -- Read-only (pull), im Pull-Pfad nicht hinterlegt: Pulls laufen anonym, weder die Job-Files noch der Docker Daemon führen Registry-Credentials.
+- ci-push -- Read-write (pull + push). Einziger autorisierter Push-Weg: Der CI-Workflow holt das Passwort zur Laufzeit aus Vault (`kv/data/zot-registry`) und pusht via `skopeo` -- `docker push` würde wegen des erlaubten anonymen Lesens keinen Auth-Header mitsenden.
 
 `anonymousPolicy = ["read"]` -- anonymes Lesen (pull) ist erlaubt, Push erfordert htpasswd-Auth.
 
 ### Storage: Linstor-CSI Volume
 
 - Volume-Name: `zot-data`, 150 GB, ext4 mit `noatime`
-- Block-Daten auf 3 Nodes repliziert (DRBD) -- Datenstand bleibt bei Node-Ausfall erhalten
+- Block-Daten DRBD-repliziert auf den beiden Storage-Nodes (Resource-Group `rg-replicated`, `place_count 2`); client-04 greift diskless über das Netz zu -- der Datenstand bleibt bei Node-Ausfall erhalten
 - Kein S3-Backend mehr, keine Abhängigkeit vom NAS
 
-Replikationsgrad und Volume-Parameter sind im Nomad-Job definiert (`infrastructure/zot-registry.nomad`).
+Volume-Parameter: `volumes/zot-data-volume.hcl` im Repo `homelab-nomad-jobs`; der Replikationsgrad kommt aus der Linstor Resource-Group (Ansible-Rolle `linstor-config`).
 
 ### Proxy Cache Registries
 
@@ -154,20 +157,22 @@ Beide werden über Vault Workload Identity in die Job-Templates gerendert. Token
 
 ### Retention
 
-Zwei Policies:
+Drei Policies, angewendet nach dem First-Match-Prinzip:
 
-- Whitelist-Policy: alle explizit whitelisted Namespaces + lokale Images (homelab/*, immo-monitor/*, timber-viewer-*) -- `keepTags = 10`, `deleteUntagged = true`
-- Spam-Killer-Policy: alle übrigen Repos -- `keepTags = 0`, `deleteUntagged = true`. Räumt nicht-whitelisted Einträge automatisch auf.
+- Ausnahme-Policy: eigene, aktiv gepushte Repos -- behält die 30 zuletzt gepushten Tags, löscht keine untagged Manifeste
+- Whitelist-Policy: alle explizit gelisteten Upstream-Namespaces -- behält die 10 zuletzt gepushten Tags
+- Spam-Killer-Policy: alle übrigen Repos -- `keepTags = 0`, `deleteUntagged = true`; räumt nicht-whitelisted Einträge automatisch auf
+
+Die konkreten Repo- und Namespace-Listen stehen im Nomad-Job.
 
 SSOT ist immer der Nomad-Job (`infrastructure/zot-registry.nomad`), nicht diese Seite.
 
 ### Bootstrap-Klasse: bewusste Direkt-Pulls ohne Cache
 
-Einige Jobs sollen bei einem ZOT-Ausfall trotzdem starten können. Sie nutzen explizite Upstream-Hostnames und umgehen damit `registry-mirrors` vollständig. Erkennbar an einem Header-Kommentar im jeweiligen Nomad-Job:
+Einige Jobs sollen bei einem ZOT-Ausfall trotzdem starten können -- erkennbar am Header-Kommentar im jeweiligen Nomad-Job. Zwei Mechanismen:
 
-- ZOT selbst (`ghcr.io/project-zot/...`) -- Chicken-Egg
-- Keep (`alpine`, `redis:8-alpine`, `quay.io/soketi/...`, `us-central1-docker.pkg.dev/keephq/...`) -- Alert-Bastion
-- Uptime-Kuma (`louislam/uptime-kuma`) -- Monitoring-Bastion
+- **Permanenter Direkt-Pull** über explizite Upstream-Hostnames, die den Mirror vollständig umgehen: ZOT selbst (`ghcr.io/project-zot/...`, Chicken-Egg) und die Keep-Kernservices (`us-central1-docker.pkg.dev/keephq/...` -- eine Registry, die Zot nicht spiegelt -- sowie `quay.io/soketi/...`).
+- **Mirror mit Direkt-Fallback** über Kurz-Referenzen (`louislam/uptime-kuma`, `grafana/alloy`, `alpine`): Sie laufen im Normalbetrieb über den Zot-Mirror und fallen bei Zot-Ausfall automatisch auf Docker Hub zurück -- Uptime-Kuma und Alloy als Monitoring-Bastionen, dazu die Keep-Sidecars.
 
 ::: info LinuxServer.io: Upstream ghcr.io statt lscr.io
 Image-Pfade in den Nomad-Jobs nutzen weiterhin `linuxserver/jellyfin` o.ä., obwohl ZOT intern von `ghcr.io` pullt. Grund: `lscr.io` ist ein Scarf-Redirect-Service -- der `/v2/`-Endpunkt antwortet mit 405, Auth-Tokens kommen ohnehin von `ghcr.io`. Die Tags auf `ghcr.io/linuxserver/...` sind identisch mit jenen auf `lscr.io/linuxserver/...`.

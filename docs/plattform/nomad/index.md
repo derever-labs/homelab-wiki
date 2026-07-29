@@ -21,110 +21,125 @@ Nomad ist der Workload-Scheduler des Homelabs. Er entscheidet auf welchem Worker
 
 ## Architektur
 
-**Leitfrage:** Was passiert von `nomad job run` bis zum laufenden, erreichbaren Container?
+Zwei Szenario-Sichten zeigen die Mechanik des Schedulers: der **Scheduling-Fluss** vom Job Submit bis zur laufenden Allocation und die **Ausfall-Sicht**, wenn ein Client-Node wegbricht. Das systemübergreifende Zusammenspiel beim Deploy -- Image aus Zot, Secrets aus Vault, Registrierung in Consul, Routing über Traefik -- zeigt der [Deploy-Fluss der Plattform-Seite](../index.md#deploy-fluss-vom-job-file-zum-erreichbaren-service); hier geht es um das, was Nomad selbst entscheidet.
 
-Lese-Konvention: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt-Nummer und was fliesst. Durchgezogene Kanten sind synchrone Abrufe (der Initiator wartet auf die Antwort), gestrichelte Kanten laufen asynchron im Hintergrund. Die Farben trennen die Wege: **Blau** ist der Deploy-Pfad (Submit, Placement, Image-Pull), **Violett** der Secrets-Pfad zu Vault, **Grün** der Discovery- und Routing-Pfad über Consul und Traefik, **Grau** der Cluster-interne Kontrollverkehr.
+Lese-Konvention: Der Pfeil zeigt vom **Initiator** zum Ziel, das Label nennt Schritt-Nummer und Inhalt -- Request und Antwort teilen sich einen Pfeil. **Durchgezogene** Kanten sind synchrone Aufrufe (der Initiator wartet auf die Antwort), **gestrichelte** laufen zyklisch oder dauerhaft im Hintergrund. Farben kodieren den Weg: Blau der Scheduling-Pfad, Grün der Wiederanlauf nach einem Ausfall, Grau Cluster-interner Kontrollverkehr.
+
+### Scheduling-Fluss -- vom Job Submit zur laufenden Allocation
+
+**Leitfrage:** Wo entscheidet Nomad, auf welchem Client ein Job läuft -- und wer holt sich die Arbeit ab?
 
 ```d2
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
-  steuer: { style: { stroke: "#2563eb" } }
-  steuerasync: { style: { stroke: "#2563eb"; stroke-dash: 3 } }
-  secrets: { style: { stroke: "#7c3aed" } }
-  disco: { style: { stroke: "#16a34a" } }
-  intern: { style: { stroke: "#6b7280"; stroke-dash: 3 } }
+  steuer: { style: { stroke: "#2563eb"; font-color: "#2563eb" } }
+  intern: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
+  intern-async: { style: { stroke: "#6b7280"; stroke-dash: 3; font-color: "#6b7280" } }
 }
 
-cli: nomad job run {
+direction: right
+
+deploy: Job Submit (CI oder CLI) {
   class: node
-  tooltip: "CLI gegen einen beliebigen Server -- Job-Definitionen liegen im Repo nomad-jobs"
+  tooltip: "GitHub-Workflow deploy-nomad-jobs.yml oder manuelles nomad job run -- beide mit ACL-Token"
 }
 
 servers: Nomad Server Cluster {
-  grid-columns: 3
   class: container
+  tooltip: "vm-nomad-server-04/05/06 -- Raft-Quorum 2 von 3"
 
-  S04: vm-nomad-server-04 {
+  api: Empfangender Server {
     class: node
-    tooltip: "10.0.2.104 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
+    tooltip: "HTTPS-API 4646 (TLS) und RPC 4647 -- alle drei Server sind gleichwertige Endpunkte"
   }
-  S05: vm-nomad-server-05 {
+  leader: Leader -- Evaluation und Placement {
     class: node
-    tooltip: "10.0.2.105 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
-  }
-  S06: vm-nomad-server-06 {
-    class: node
-    tooltip: "10.0.2.106 | Port 4646 (API) / 4647 (RPC) / 4648 (Serf)"
+    tooltip: "entscheidet nach Constraints (node_class), spread-Algorithmus und Priorität mit Preemption"
   }
 
-  S04 <-> S05: Raft { class: intern }
-  S05 <-> S06: Raft { class: intern }
+  api -> leader: "2. Forward an den Leader --\nRaft repliziert Job und Entscheid" { class: intern }
 }
 
-workers: Nomad Clients {
-  grid-columns: 3
+clients: Nomad Clients {
   class: container
+  tooltip: "vm-nomad-client-04 (worker), -05/-06 (storage) -- plus Edge-Node in Dottikon"
 
-  C04: vm-nomad-client-04 {
+  agent: Client-Agent des Ziel-Nodes {
     class: node
-    tooltip: "10.0.2.124 | Klasse: worker"
+    tooltip: "hält die RPC-Verbindung zu den Servern selbst -- die Server stossen keine Verbindung an"
   }
-  C05: vm-nomad-client-05 {
+  task: Task {
     class: node
-    tooltip: "10.0.2.125 | Klasse: storage, iGPU"
+    tooltip: "Start-Hooks: Image-Pull, Vault-Secrets, Consul-Registrierung"
   }
-  C06: vm-nomad-client-06 {
-    class: node
-    tooltip: "10.0.2.126 | Klasse: storage, iGPU"
-  }
+
+  agent -> task: "4. startet den Task (Docker Driver)" { class: steuer }
 }
 
-registry: Docker Hub + Zot Registry {
-  class: node
-  tooltip: "Image-Quellen: Docker Hub extern, Zot intern"
-}
-
-Traefik: Traefik {
-  class: node
-  tooltip: "VIP 10.0.2.20 | Consul Catalog Provider"
-}
-
-Consul: Consul {
-  class: node
-  tooltip: "Port 8500 (API) / 8600 (DNS) | Service-Katalog, Health Checks"
-}
-
-Vault: Vault {
-  class: node
-  tooltip: "Port 8200 | Secrets via Workload Identity, KV v2"
-}
-
-cli -> servers: "1 Job Submit (HTTPS 4646)" { class: steuer }
-servers -> workers: "2 Placement der Allocation (RPC 4647)" { class: steuerasync }
-workers -> registry: "3 Image Pull" { class: steuer }
-workers -> Vault: "4 JWT vorzeigen und Secrets lesen (8200)" { class: secrets }
-workers -> Consul: "5 Service-Registration und Health-Status" { class: disco }
-Traefik -> Consul: "6 Catalog-Abfrage (HTTP 8500)" { class: disco }
-Traefik -> workers: "7 Request an dynamischen Host-Port" { class: disco }
-servers -> Consul: "Health-Status der Tasks" { class: intern }
-Vault -> servers: "JWKS-Abruf (JWT-Validierung)" { class: intern }
+deploy -> servers.api: "1. Job einreichen\n(HTTPS 4646, ACL-Token)" { class: steuer }
+clients.agent -> servers.api: "3. pullt seine Allocations\n(RPC 4647, Blocking Query)" { class: steuer }
+clients.agent -> servers.api: "Heartbeat -- Lebenszeichen\nfür die Ausfall-Erkennung" { class: intern-async }
 ```
 
-Kurzablauf:
+Lesehilfe:
 
-1. `nomad job run` schickt die Job-Definition aus dem Repo `nomad-jobs` an die HTTPS-API (Port 4646) -- alle drei Server sind gleichwertige Endpunkte, ACLs verlangen für jede Interaktion ein Token ([Nomad Betrieb](./betrieb.md)).
-2. Die Server replizieren den Job per Raft und evaluieren das Placement: Constraints wie die Node-Klasse, der `spread`-Algorithmus und notfalls Preemption entscheiden, welcher Client die Allocation erhält ([Scheduler-Konfiguration](#scheduler-konfiguration)).
-3. Der Client startet den Task: Der Docker Driver zieht das Image von Docker Hub oder der internen [Zot Registry](../docker-registry/) -- die Pull-Timeouts dafür begründet die [Timeout-Matrix](./timeouts.md).
-4. Braucht der Task Secrets, tauscht er sein Workload-Identity-JWT bei Vault gegen einen kurzlebigen Token und liest seinen Pfad `kv/data/JOB_ID` -- kein statischer Token in der Job-Definition ([Vault -- Workload Identity](../vault/index.md#workload-identity)).
-5. Der lokale Consul-Agent registriert den gestarteten Container als Service und führt dessen Health Checks aus ([Consul -- Service Discovery](../consul/index.md#service-discovery)).
-6. Traefik entdeckt den neuen Service über den Consul Catalog Provider und baut Router und Backend automatisch -- inklusive des dynamischen Host-Ports ([Traefik](../../edge/traefik/)).
-7. Ab jetzt ist der Container erreichbar: Requests laufen über Traefik an den Host-Port. Fällt ein Health Check, nimmt Traefik das Backend aus dem Routing ([Job Configuration](#job-configuration), [Nomad Referenz](./referenz.md)).
+1. Ein Deploy erreicht die HTTPS-API (Port 4646, TLS) auf einem beliebigen der drei Server -- ACLs verlangen für jede Interaktion einen Token ([Betrieb -- Credentials](./betrieb.md#credentials)).
+2. Schreiboperationen leitet der empfangende Server an den Raft-Leader weiter, der das Placement evaluiert: Constraints wie die Node-Klasse, der `spread`-Algorithmus und das Prioritäts-Schema mit Preemption entscheiden, welcher Client die Allocation erhält ([Scheduler-Konfiguration](#scheduler-konfiguration), [Prioritäts-Schema](#prioritats-schema-und-resource-sizing)).
+3. Die Server stossen nichts an: Jeder Client hält die RPC-Verbindung (Port 4647) selbst und pullt seine Allocations per Blocking Query -- darum braucht auch der [Edge-Node in Dottikon](./aussenstandort.md) hinter Tailscale keinen eingehenden Port.
+4. Der Client-Agent startet den Task über den Docker Driver; die Start-Hooks -- Image aus der [Zot Registry](../docker-registry/), Secrets via [Workload Identity](../vault/index.md#workload-identity), Registrierung beim lokalen [Consul-Agent](../consul/index.md#service-discovery) -- zeigt der [Deploy-Fluss der Plattform-Seite](../index.md#deploy-fluss-vom-job-file-zum-erreichbaren-service). Die Pull-Timeouts begründet die [Timeout-Matrix](./timeouts.md).
+5. Parallel dazu meldet jeder Client dauerhaft seinen Heartbeat -- bleibt er aus, greift die [Ausfall-Sicht](#ausfallverhalten).
 
-### Ausfallverhalten
+### Ausfall-Sicht -- ein Client-Node fällt aus {#ausfallverhalten}
 
-- **Ein Server fällt aus:** Die verbleibenden zwei Server halten das Raft-Quorum und wählen bei Bedarf einen neuen Leader -- Scheduling und API bleiben verfügbar, `nomad job run` funktioniert gegen jeden erreichbaren Server. Bereits laufende Allocations auf den Clients sind davon nicht betroffen. Erst ohne Quorum (zwei Server weg) stehen neue Placements still ([Cluster-Topologie](#cluster-topologie)).
-- **Ein Client-Node fällt aus:** Der Client verpasst seinen Heartbeat. Jobs mit `max_client_disconnect` bekommen zuerst eine Karenz (bei den CSI-Jobs 5 Minuten), danach rescheduled Nomad die Allocations auf die verbleibenden Nodes ([Nomad Referenz](./referenz.md)). Eine automatische Kapazitätsprüfung vorab gibt es nicht -- das [Prioritäts-Schema](#prioritats-schema-und-resource-sizing) sorgt dafür, dass im N-1-Fall das Wichtige zuerst platziert wird ([Nomad Betrieb](./betrieb.md#bekannte-einschrankungen)).
+**Leitfrage:** Was passiert mit den Allocations eines ausgefallenen Client-Nodes -- und warum wartet Nomad fünf Minuten, bevor er neu platziert?
+
+```d2
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  recovery: { style: { stroke: "#16a34a"; font-color: "#16a34a" } }
+  intern-async: { style: { stroke: "#6b7280"; stroke-dash: 3; font-color: "#6b7280" } }
+}
+
+direction: right
+
+down: Ausgefallener Client {
+  class: node
+  style.stroke-dash: 4
+  tooltip: "VM oder Netz weg -- seine Allocations gelten zunächst als unknown, nicht als verloren"
+}
+
+servers: Nomad Server (Leader) {
+  class: node
+  tooltip: "markiert den Node nach der heartbeat_grace von 60 s als down"
+}
+
+rest: Verbleibende Clients {
+  class: container
+  tooltip: "Placement wieder nach Constraints und Priorität -- storage-Jobs können nur auf den verbleibenden Storage-Node"
+
+  agent2: Client-Agent { class: node }
+}
+
+linstor: Linstor-CSI Volumes {
+  shape: cylinder
+  tooltip: "DRBD-repliziert -- der Datenstand liegt schon auf dem Ziel-Node"
+}
+
+down -> servers: "1. Heartbeat bleibt aus --\nnach 60 s gilt der Node als down" { class: intern-async }
+down -> servers: "2a. Rückkehr innert 5 min: reconnect --\nTasks laufen unverändert weiter" { class: intern-async }
+rest.agent2 -> servers: "2b. keine Rückkehr: pullt nach Ablauf\nder Karenz die Ersatz-Allocations" { class: recovery }
+rest.agent2 -> linstor: "3. CSI: DRBD-Volume folgt\nder neuen Allocation" { class: recovery }
+```
+
+Lesehilfe:
+
+1. Die Ausfall-Erkennung läuft über den ausbleibenden Heartbeat: Nach der `heartbeat_grace` von 60 Sekunden markieren die Server den Node als down -- der Wert ist bewusst grosszügig gewählt, damit WAN-Latenzspitzen des [Edge-Nodes](./aussenstandort.md) keine Fehl-Erkennung auslösen.
+2. Die Allocations des Nodes gelten zuerst als `unknown`, nicht als verloren: `max_client_disconnect` (durchgängig 5 Minuten) gibt dem Node eine Karenz. Kehrt er rechtzeitig zurück, laufen die Tasks unverändert weiter -- nichts wird doppelt gestartet ([Nomad Referenz](./referenz.md#restart-reschedule-disconnect)).
+3. Erst nach Ablauf der Karenz platziert der Scheduler neu -- wieder nach Constraints und Priorität: `storage`-Jobs können nur auf den verbleibenden Storage-Node. Eine Kapazitätsprüfung vorab gibt es nicht; im N-1-Fall sorgt das [Prioritäts-Schema](#prioritats-schema-und-resource-sizing) mit Preemption dafür, dass das Wichtige zuerst platziert wird ([Betrieb -- Bekannte Einschränkungen](./betrieb.md#bekannte-einschrankungen)).
+4. CSI-Volumes wandern mit: [Linstor](../../storage/linstor/) hält die Daten DRBD-repliziert vor, das Volume wird am Ziel-Node nur neu angehängt -- kein Daten-Sync im Failover-Moment.
+5. **Server-Ausfall** ist der einfachere Fall: Zwei verbleibende Server halten das Raft-Quorum, API und Scheduling laufen weiter, laufende Allocations sind nie betroffen. Erst ohne Quorum stehen neue Placements still ([Plattform-Ausfallverhalten](../index.md#ausfallverhalten)).
 
 ## Cluster-Topologie
 
