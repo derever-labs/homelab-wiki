@@ -157,7 +157,7 @@ Lesehilfe:
 
 1. Beim Task-Start stellt Nomad das signierte JWT automatisch aus der clusterweiten `default_identity` aus (Audience `vault.io`, TTL 1 Stunde) -- im Jobfile steht kein Token, nur die `vault`-Stanza mit der Rolle `nomad-workloads`.
 2. Login und Rendern der `template`-Stanzas erledigt der Nomad-Client-Agent stellvertretend für den Task: Der Container sieht nur die fertigen Werte. Einen eigenen `identity`-Block mit `env = true` und `file = true` ergänzen nur Jobs, die das JWT selbst als Variable oder Datei brauchen.
-3. Vault prüft die JWT-Signatur gegen die Schlüssel vom JWKS-Endpunkt der Nomad-Server und stellt einen periodischen Token mit der Policy `nomad-workload` aus (Laufzeit 1 Stunde, vom Client-Agent erneuert) -- Auth Method, JWKS-URL und Rolle: [Vault Referenz](./referenz.md#auth-methods).
+3. Die JWT-Auth-Method `jwt-nomad` prüft die Signatur gegen die Schlüssel vom JWKS-Endpunkt der Nomad-Server und stellt einen periodischen Token mit der Policy `nomad-workload` aus (Laufzeit 1 Stunde, vom Client-Agent erneuert) -- Auth Method, JWKS-URL und Rolle: [Vault Referenz](./referenz.md#auth-methods).
 4. Der Token erlaubt im Kern nur den eigenen Pfad `kv/data/JOB_ID` plus die geteilten Pfade unter `kv/shared/` -- wenige Cross-Job-Ausnahmen regelt die Policy explizit ([Referenz -- Policies](./referenz.md#policies)).
 5. Zum Henne-Ei mit Nomad (Vault prüft JWTs gegen Nomad, Nomad-Jobs lesen Secrets aus Vault): Die Schleife existiert nur auf Workload-Ebene, beide Dienste starten unabhängig -- [Abhängigkeits-Sicht der Plattform-Seite](../index.md#abhangigkeits-sicht-wer-braucht-wen).
 
