@@ -12,7 +12,7 @@ tags:
 
 Todo Ingest nimmt diktierte To-dos vom iPhone entgegen und legt daraus die passenden ClickUp-Tasks an. Die Aktionstaste startet einen iOS-Kurzbefehl mit nativem Diktat, der den Text als fire-and-forget-POST an den Dienst schickt; die Verarbeitung (Zerlegung in einzelne Tasks, Klassifikation des Ziel-Workspace, Anlage in ClickUp) läuft asynchron. Der Dienst ist ein Node/TypeScript-Service (Hono) nach dem [Homelab-App-Standard](../../_querschnitt/app-standard/index.md).
 
-Bedienung, Daily Digest, Dialog-Mechanik und Persistenz stehen im [Todo Ingest Betrieb](./betrieb.md); die iPhone-Einrichtung wird dort auf Zweck und Verweis auf die Service-Repo-Doku gekürzt.
+Bedienung, Daily Digest, Dialog-Mechanik, Persistenz und Selbstüberwachung stehen im [Todo Ingest Betrieb](./betrieb.md); die iPhone-Einrichtung wird dort auf Zweck und Verweis auf die Service-Repo-Doku gekürzt.
 
 ## Übersicht
 
@@ -32,6 +32,8 @@ Todo Ingest ist die Erfassungs-Schicht zwischen iPhone-Diktat und ClickUp. Der z
 
 Der zweite tragende Entscheid heisst **kein stiller Verlust** (28.07.2026): Weil die asynchrone Verarbeitung nach dem `202` unbeobachtet läuft, ist ihr einziger sichtbarer Ausgang die Push-Quittung -- also muss jeder Lauf genau eine erzeugen, mit Zahlen statt mit Prosa. Läuft etwas ins Leere, meldet sich die Quittung als Warnung statt als stilles Erledigt. Anlass war die Sichtung von 91 Diktaten, in der zwei Foto-Diktate spurlos als erledigt endeten und ein Diktat mit drei Anliegen kommentarlos nur einen Teil anlegte. Mechanik und Zahlen der Quittung: [Todo Ingest Betrieb](./betrieb.md#bedienung).
 
+Der dritte tragende Entscheid heisst **ehrliche Ausgänge** (29.07.2026) und ist die Fortsetzung desselben Gedankens am Digest-Pfad. Anlass war eine Forensik dort: Der Kalenderstand verfiel nach 24 Stunden und wurde danach als leere Terminliste gerendert, der Deadman prüfte nur, ob ein Lauf *existiert*, nicht ob er gelungen ist, und wiederholte im Fehlerfall exakt denselben Lauf. Vier Grundsätze folgen daraus und gelten seither überall im Dienst: Ein alter Stand wird datiert genannt statt verworfen, geprüft wird der Erfolg und nicht die Existenz, ein Wiederholungslauf ist nie mit dem gescheiterten identisch, und jede Quittung liegt vor dem Sendeversuch in der Datenbank, damit ein Zustellfehler sie nicht verschluckt. Weil ein asynchroner Dienst seine eigenen Ausfälle sonst niemandem melden kann, wacht er zusätzlich über die eigene Pipeline. Mechanik: [Kalenderstand](./betrieb.md#kalenderstand), [Prompt-Deckel und Zeitlimit](./betrieb.md#prompt-deckel-und-zeitlimit) und [Selbstüberwachung](./betrieb.md#selbstuberwachung).
+
 Das Werkzeug ist bewusst generisch: Es erfasst jede Art von Aufgabe (privat, HSLU, Alltag), nicht nur IT-Themen. Die Klassifikation entscheidet ausschliesslich über den Ziel-Workspace, nicht über die Art der Aufgabe.
 
 ```d2
@@ -48,7 +50,11 @@ Shortcut: "iOS-Kurzbefehl\n(Aktionstaste: Diktat\n+ Kalender-Fenster)" {
 
 Ingest: "todo-ingest (Hono)" {
   style.stroke-dash: 4
-  DB: "SQLite\n(Persistenz vor\nVerarbeitung)" { shape: cylinder; class: node }
+  DB: "SQLite\n(Persistenz vor\nVerarbeitung)" {
+    shape: cylinder
+    class: node
+    tooltip: "Rohtext vor der Verarbeitung, offene Rückfragen, Kalender-Ereignisse, Verlauf je Aufgabe und die Quittungs-Outbox -- jede Quittung liegt vor dem Sendeversuch in der Datenbank"
+  }
   CTX: "Kontext-Sammler" {
     class: node
     tooltip: "Offene Tasks beider Ziel-Listen, soeben angelegte Tasks (24h), offene Rückfragen (60 min) und mitgeschickte Termine -- als Daten deklariert (Injection-Härtung)"
@@ -56,7 +62,11 @@ Ingest: "todo-ingest (Hono)" {
   AI: "Klassifikation\n(Claude, seriell)" { class: node }
   SWEEP: "Sweeper\n(15-min-Takt)" {
     class: node
-    tooltip: "Blockierende Rückfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen und melden das per Push"
+    tooltip: "Blockierende Rückfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen und melden das per Push. Derselbe Takt liefert unzugestellte Quittungen nach"
+  }
+  WD: "Selbstüberwachung\n(im Sweeper-Takt)" {
+    class: node
+    tooltip: "Vier deterministische Pipeline-Signale: hängendes Diktat, überfällige Rückfrage trotz Sweeper, unzustellbare Quittung, Fehlerquote. Nie ein Alarm auf den Diktat-Rhythmus. Dazu montags ein Wochenbericht ohne Alarm-Charakter"
   }
 }
 
@@ -76,6 +86,7 @@ Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#
 Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
 Inbox -> Ingest: "via Authentik: antworten,\nreprocessen, erfassen" { style.stroke: "#0891b2" }
 Ingest.SWEEP -> ClickUp: "Timeout blockierender Fragen"
+Ingest.WD -> Ntfy: "Pipeline-Alarm\nund Wochenbericht" { style.stroke-dash: 4 }
 ```
 
 ## Verarbeitung (Dual-Mode)
@@ -124,7 +135,7 @@ Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Cod
 
 ## Verwandte Seiten
 
-- [Todo Ingest Betrieb](./betrieb.md) -- Bedienung, Daily Digest, Dialog-Mechanik, Persistenz
+- [Todo Ingest Betrieb](./betrieb.md) -- Bedienung, Daily Digest, Dialog-Mechanik, Persistenz, Selbstüberwachung
 - [ntfy](../ntfy/index.md) -- Push-Rückkanal für Quittungen und Rückfragen
 - [Authentik](../../edge/authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`

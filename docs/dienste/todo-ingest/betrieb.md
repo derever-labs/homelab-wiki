@@ -10,7 +10,7 @@ tags:
 
 # Todo Ingest Betrieb
 
-Diese Seite beschreibt den Betrieb von [Todo Ingest](./index.md): wie diktiert und geantwortet wird, wie der Dienst jedes Diktat verarbeitet und wie der Betriebszustand persistiert wird. Rolle im Stack, Architektur, Dual-Mode und Exposition stehen in der [Übersicht](./index.md).
+Diese Seite beschreibt den Betrieb von [Todo Ingest](./index.md): wie diktiert und geantwortet wird, wie der Dienst jedes Diktat verarbeitet, wie der Betriebszustand persistiert wird und wie der Dienst seine eigene Pipeline überwacht. Rolle im Stack, Architektur, Dual-Mode und Exposition stehen in der [Übersicht](./index.md).
 
 ## Bedienung
 
@@ -25,7 +25,7 @@ Der Dienst ist auf freihändiges Erfassen ausgelegt -- diktieren, loslassen, der
 - **Task anpassen:** Jede Zeile unter "Zuletzt erstellt & angepasst" trägt ein Anpassungs-Formular -- ein Freitext-Feld (Text oder Diktat über das Tastatur-Mikrofon des iPhones) und die Aktion "Foto anhängen". Eine Anweisung wie "auf Freitag verschieben", "Priorität hoch", "erledigt" oder eine inhaltliche Ergänzung läuft als eigener kleiner AI-Lauf, der ausschliesslich die verlangten Felder ändert (Fälligkeit, Startdatum, Priorität, Aufwand, Zuweisung, Titel, Kommentar, Checklisten-Punkte oder Erledigt-Status). Ein mitgegebenes Foto wertet das Modell inhaltlich aus (aufgelistete Punkte werden Checklisten-Punkte, Fakten wie Preise oder Referenznummern ein Kommentar) und hängt es danach an den Task an. Ein Foto ohne Text genügt, dann ist das Bild der Auftrag. Anpassen geht nur an Tasks, die der Dienst selbst angelegt hat (die in "Zuletzt erstellt & angepasst" aufgeführten). Ein Listen-Wechsel läuft weiter über die Rückfragen, nicht über die Anpassung. Jede Anpassung wird per Push quittiert.
 - **Felder und Zuweisung:** Diktierte Teilschritte werden zur Checkliste, explizite Personen-Zuweisungen ("Michael soll ...") gehen an die dynamisch geladenen HSLU-Workspace-Member, Bezüge auf bestehende Tasks werden als Verknüpfung oder Abhängigkeit gesetzt (nur explizit Diktiertes direkt). Ohne andere Zuweisung gehört jeder Task Samuel. Jeder neue Task bekommt ein Fälligkeitsdatum und eine Priorität. Das Fälligkeitsdatum setzt der Dienst direkt, wenn es diktiert oder klar ableitbar ist, sonst fragt ein Push "Bis wann soll das erledigt sein?" mit den Optionen Morgen, Nächste Woche und Kein Datum nach -- diese Frage stellt der Server notfalls von sich aus, damit keine Aufgabe unbemerkt ohne Termin liegen bleibt (siehe [Datum-Netz](#kontext-ruckfragen-und-dialog)). Die Priorität schätzt das Modell immer selbst -- dringend oder hoch nur bei echter Dringlichkeit, tief nur bei einem klaren nice-to-have, sonst normal -- und stellt dazu keine Rückfrage. Fehlt sie doch, setzt der Server normal. Plausible Vermutungen (verwandter Task, naheliegender Termin) kommen immer als Vorschlags-Frage zum Absegnen, nie ungefragt.
 - **Nachvollziehen und korrigieren:** Das wörtliche Diktat steht als Ground-Truth in jeder Task-Beschreibung (Abschnitt "Diktat"). Fehlklassifikationen lassen sich so erkennen und der Task direkt in ClickUp anpassen. Bereits abgelaufene (getimeoutete) Rückfragen sind in der Inbox nicht mehr beantwortbar -- der Task existiert dann schon und wird direkt in ClickUp korrigiert.
-- **Aktivitäts-Historie:** Die Inbox-Sektion "Zuletzt erstellt & angepasst" zeigt jede System-Veränderung der letzten sieben Tage als Zeile: neu erstellte Tasks, Anpassungen (Inbox-Formular wie Diktat-Steuerung), Digest-Button-Aktionen, beantwortete Rückfragen mit gesetzten Werten und Listen-Moves. Die Badges trennen die Herkunft: "neu" heisst über den Dienst erstellt, "neu" plus "angepasst" erstellt und danach nachjustiert, nur "angepasst" eine bestehende Aufgabe verändert. Reine Anpassungs-Zeilen sind eine Info-Zeile mit ClickUp-Link und bewusst ohne Anpassungs-Formular, denn das Anpassen bleibt auf selbst erstellte Tasks begrenzt. Quittungen zu Feld-Änderungen nennen den vorherigen Wert (etwa "Fälligkeit 24.07. → 20.07.").
+- **Aktivitäts-Historie:** Die Inbox-Sektion "Zuletzt erstellt & angepasst" zeigt jede System-Veränderung der letzten sieben Tage als Zeile: neu erstellte Tasks, Anpassungen (Inbox-Formular wie Diktat-Steuerung), Digest-Button-Aktionen, beantwortete Rückfragen mit gesetzten Werten und Listen-Moves. Die Badges trennen die Herkunft: "neu" heisst über den Dienst erstellt, "neu" plus "angepasst" erstellt und danach nachjustiert, nur "angepasst" eine bestehende Aufgabe verändert. Reine Anpassungs-Zeilen sind eine Info-Zeile mit ClickUp-Link und bewusst ohne Anpassungs-Formular, denn das Anpassen bleibt auf selbst erstellte Tasks begrenzt. Quittungen zu Feld-Änderungen nennen den vorherigen Wert (etwa "Fälligkeit 24.07. → 20.07."). Festgehalten wird jede Veränderung an einer Aufgabe: auch die Ergänzung als Kommentar, das übersprungene Duplikat, ein angehängtes Foto sowie das Stellen und das Verfallen einer Rückfrage. Die Inbox zeigt pro Aufgabe den ganzen Verlauf statt nur der jüngsten Zeile. Rückfrage-Zeilen tragen dabei ihre eigene Herkunft und machen aus einer neu erstellten Aufgabe keine angepasste. Ein Listen-Wechsel hängt den Verlauf auf den neuen Task um, damit er nicht am aufgelösten alten hängen bleibt.
 
 ```d2
 shape: sequence_diagram
@@ -47,7 +47,9 @@ Die Erfassung hängt an einem signierten iOS-Kurzbefehl (Diktat Deutsch Schweiz,
 
 ## Daily Digest
 
-Der Dienst erstellt auf Abruf einen geführten Tagesüberblick -- einen nummerierten Morgen-Flow statt einer flachen Aufgabenliste. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die vom Kurzbefehl mitgelieferten iPhone-Kalender; im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
+Der Dienst erstellt auf Abruf einen geführten Tagesüberblick -- einen nummerierten Morgen-Flow statt einer flachen Aufgabenliste. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die iPhone-Termine aus der Kalender-Ereignis-Tabelle (siehe [Kalenderstand](#kalenderstand)); im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
+
+Steht bei vollständig erhobenen Quellen keine einzige Aufgabe und kein einziger Termin an, verschickt der Dienst kein leeres Produkt: Der Digest wird dann ehrlich kurz benannt, protokolliert und ohne Push abgelegt. Der Guard greift bewusst nur bei vollständigen Quellen, denn ein Ausfall auf der ClickUp-Seite darf nie als "nichts zu tun" durchgehen.
 
 ```d2
 classes: {
@@ -76,20 +78,29 @@ KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
 ```
 
 - **Morgens:** das iPhone vom Ladegerät nehmen genügt. Als Wecker dient Sleep Cycle, dessen Alarm-Stopp iOS-Automationen nicht auslösen kann (der Trigger "Wecker wird gestoppt" feuert nur bei der nativen Uhr-App) -- darum ist das nächtliche Laden der Anker. Der Kurzbefehl "Daily Digest Morgen" schickt die Kalenderdaten mit, läuft nur zwischen 04:00 und 10:59 und öffnet kein Safari; der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Mehrfaches Ab- und Anstecken fängt das Server-Debounce (5 min) ab.
-- **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt die Termine des Morgens, Tages-Cache).
-- **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** kein automatischer Digest, on-demand jederzeit möglich. Läuft werktags bis zur eingestellten Deadman-Stunde am Vormittag kein Digest, startet der Server selbst einen Fallback-Lauf (Kalender aus dem Tages-Cache, einmal pro Tag) und schickt weiter die ntfy-Info, dass die iPhone-Automation stumm blieb.
+- **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt den vorhandenen Kalenderstand).
+- **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** Bleibt die iPhone-Automation stumm, startet der Server um 06:30 selbst einen Lauf und meldet das per ntfy -- täglich, auch am Wochenende. Geprüft wird ein *erfolgreicher* Morgen-Lauf des Tages, nicht bloss die Existenz eines Versuchs: Vorher galt schon ein am Zeitlimit gestorbener Lauf als vorhanden. Statt eines Tages-Riegels gilt ein Deckel von wenigen Läufen pro Tag (`DIGEST_DEADMAN_MAX_RUNS`), damit der 15-Minuten-Sweeper bei Dauerfehlern nicht die gemeinsame Verarbeitungs-Queue flutet. Jeder Lauf nach einem gescheiterten läuft bewusst reduziert und damit nie identisch zum Fehlschlag (siehe [Prompt-Deckel und Zeitlimit](#prompt-deckel-und-zeitlimit)).
+
+### Kalenderstand
+
+Der Dienst hat bewusst keinen eigenen Kalender-Zugriff, die Termine kommen ausschliesslich vom iPhone. Beide Kanäle speisen dieselbe Ereignis-Tabelle: der Digest- und der Abend-Kurzbefehl mit den kommenden Terminen, der Diktat-Kurzbefehl bei jedem Aufruf mit seinem Fenster von 14 Tagen Vergangenheit bis 60 Tagen Zukunft. Jeder Eingang wird **zusammengeführt** statt überschrieben, dedupliziert über Startzeit, Titel und Kalendername, und hält fest, wann ein Termin erstmals und wann er letztmals gesehen wurde. Für die Anzeige und die Lage-Einschätzung liest der Digest daraus einen Horizont von sieben Tagen.
+
+Das Zusammenführen ist der tragende Punkt: Ein Kurzbefehl liefert nur Termine ab seinem Aufrufzeitpunkt, ein Überschreiben um 10:00 hätte dem Tag also rückwirkend seine Morgen-Termine amputiert. Damit ein verschobener oder gelöschter Termin trotzdem nicht als Leiche stehen bleibt, gleicht ein Eingang genau den Bereich ab, den er nachweislich abdeckt: nur die mitgelieferten Kalender, nur Startzeiten zwischen der Eingangszeit und dem spätesten gelieferten Termin, nie rückwärts. Ein Eingang, den die Übertragungsgrenze abgeschnitten hat, führt darum nur zusammen und löscht nie. Vergangenes fällt nach `CALENDAR_KEEP_DAYS` weg. Beim Umstieg wurde der alte Schnappschuss einmalig in die Tabelle übernommen.
+
+Einen Verfall des Kalenderstands gibt es nicht mehr. Die Digest-Seite nennt stattdessen immer, von wann der jüngste Stand ist ("Kalenderstand von Samstag 11.07. 12:30."), und warnt zusätzlich, wenn dieser Stand erst nach Mitternacht des dargestellten Tages entstand -- dann können frühe Termine dieses Tages fehlen. Vorher verfiel der Stand nach 24 Stunden, und die Seite zeigte danach eine leere Terminliste, als gäbe es keine Termine. Ein alter Stand mit Datum ist ehrlich, eine leere Liste war es nie.
+
 ### Aufbau der Digest-Seite
 
 Die Seite führt in nummerierten Schritten durch den Morgen, statt alles Offene aufzulisten:
 
 1. **Kopf:** Headline zur Gesamtlage und eine Momentum-Zeile aus echten Erledigt-Abfragen -- gestern erledigt, erledigt in den rollenden sieben Tagen, aktuell offen (heute fällig plus überfällig).
-2. **Dein Tag:** Termine von heute und morgen sowie Geburtstage mit sieben Tagen Vorlauf. Der Kurzbefehl liefert die Termine der nächsten sieben Tage mit -- angezeigt werden heute und morgen, der ganze Horizont fliesst in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant").
+2. **Dein Tag:** Termine von heute und morgen sowie Geburtstage mit sieben Tagen Vorlauf, dazu der datierte Kalenderstand (siehe [Kalenderstand](#kalenderstand)). Angezeigt werden heute und morgen, der ganze Sieben-Tage-Horizont fliesst als Termindichte in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant").
 3. **Heute zuerst:** die höchstens drei Aufgaben, die zuerst drankommen, als Karten mit Aktions-Buttons.
 4. **Eine Entscheidung:** höchstens eine erzwungene Entscheidung (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
 5. **Ein Termin:** höchstens ein terminloser Task, den der Digest zur Wann-Entscheidung vorlegt (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
 6. **Fokus:** ein Overlay, das die offenen Top-3 einzeln und gross zeigt -- eine Aufgabe aufs Mal.
 
-Darunter steht ein aufklappbarer Ausblick (Rest von heute plus die Woche, mit denselben Aktionen) und eine ehrliche Zähler-Zeile für alles bewusst Ausgeblendete: überfällige, terminlose und tiefpriorisierte Aufgaben. Aufgaben mit tiefer Priorität erscheinen ausschliesslich als Zähler, nie als Karte oder Zeile. Ganz unten stehen Dauer, Token-Verbrauch und das API-Kostenäquivalent des Laufs sowie ein Verweis auf offene Rückfragen und fehlgeschlagene Diktate in der Inbox.
+Darunter steht ein aufklappbarer Ausblick (Rest von heute plus die Woche, mit denselben Aktionen) und eine ehrliche Zähler-Zeile für alles bewusst Ausgeblendete: überfällige, terminlose und tiefpriorisierte Aufgaben. Aufgaben mit tiefer Priorität erscheinen ausschliesslich als Zähler, nie als Karte oder Zeile. Ganz unten stehen Dauer, der addierte Token-Verbrauch aller Läufe des Digests (Wiederholungen eingerechnet) und das API-Kostenäquivalent sowie ein Verweis auf offene Rückfragen und fehlgeschlagene Diktate in der Inbox.
 
 ### Anti-Tapete und Aktionen
 
@@ -98,6 +109,12 @@ Damit der Digest nicht zur immer gleichen Tapete wird, zählt der Dienst pro Tas
 Nach der Entscheidungs-Karte legt der Digest zusätzlich genau einen terminlosen Task zur Wann-Entscheidung vor (Karte **Ein Termin**): **Diese Woche erledigen**, **Nächste Woche** oder **Kein Termin nötig**. "Kein Termin nötig" stuft den Task mit Kommentar auf tiefe Priorität und nimmt ihn damit aus dem Digest. Welcher terminlose Task erscheint, rotiert über denselben Anti-Tapeten-Zähler -- der am seltensten gezeigte ist an der Reihe, Top-3- und Entscheidungs-Tasks sind ausgenommen. So baut der Digest den Rückstand terminloser Tasks ab, statt Fälligkeiten zu raten.
 
 Alle Karten in "Heute zuerst" und im Ausblick tragen zusätzlich die Aktionen **Erledigt**, **Auf morgen** und **Nächste Woche**. Jede Aktion läuft über `POST /digest/action`, abgesichert über ein HMAC-Token pro Task und Aktion (dieselbe Mechanik wie die ntfy-Buttons, siehe [Exposition und Authentifizierung](./index.md#exposition-und-authentifizierung)) plus einen Abgleich gegen den aktuell gerenderten Digest; das Workspace-Token bleibt serverseitig. Ausgeführte Aktionen erscheinen im Digest abgehakt statt als offene Aufgabe.
+
+### Prompt-Deckel und Zeitlimit
+
+Ein Digest-Lauf hat 180 Sekunden Zeit. Dass Läufe daran reihenweise starben, lag nicht am Limit, sondern am Prompt: Er verlangte für jede Aufgabe in jeder Sektion einen formulierten Satz, und die Sektionen waren ungekappt. Mit wachsendem Rückstand wuchs damit die Ausgabe -- bei 150 offenen Aufgaben 150 Sätze --, und der Effekt verstärkte sich selbst: Je mehr Digests am Limit starben, desto mehr Rückstand lag beim nächsten Lauf an.
+
+Seither formuliert das Modell nur noch für die heute fälligen Aufgaben und für die Woche Sätze. Für Überfällig und Ohne-Termin liefert es allein die Reihenfolge als ID-Liste, die Titel setzt der Server ein -- an der Darstellung ändert das nichts. Zusätzlich hat jede Sektion einen Prompt-Deckel (`DIGEST_SECTION_CAP`, im reduzierten Wiederholungslauf `DIGEST_REDUCED_CAP`). Gekappt wird ausschliesslich der Prompt: Die Seite bleibt vollständig, weil der Server die nicht kuratierten Aufgaben mit ihrem Titel ergänzt. Ein Lauf, der zuvor am Zeitlimit starb, lief danach in gut 90 Sekunden durch. Das Zeitlimit selbst wurde bewusst nicht erhöht, das wäre Symptomkur gewesen.
 
 ### Einrichtung der Morgen-Automation
 
@@ -108,6 +125,8 @@ Der Morgen-Digest hängt an zwei signierten Kurzbefehl-Dateien ("Daily Digest" m
 Neben dem Morgen-Digest gibt es einen Abend-Modus, der den morgigen Tag vorausplant. Ein eigener Abend-Kurzbefehl stösst ihn an (dieselbe Digest-Route `POST /api/digest`, aber mit dem Modus `evening`). Der Dienst rechnet die Buckets aus der Morgen-Perspektive und fixiert daraus die Top-3 für morgen. Der nächste Morgen-Lauf übernimmt diese fixierten Top-3 unverändert, bereits erledigte werden ersetzt. So steht die Marschrichtung schon am Vorabend fest, statt erst beim Aufwachen.
 
 Zusätzlich schlägt der Abend-Modus bis zu drei Fokus-Zeitfenster für morgen vor (Blocker mit Start- und Endzeit). Weil der Dienst bewusst keinen Kalender-Zugriff hat, holt der Abend-Kurzbefehl diese Blocker über den Plan-Endpoint (`GET /api/digest/plan`) ab und trägt sie selbst als Termine in den iPhone-Kalender "Fokus" ein.
+
+Jeder Digest trägt seinen Lauf-Modus, und der Vergleichs-Schnappschuss hinter dem Marker "neu seit dem letzten Digest" wird pro Modus getrennt geführt -- Morgen vergleicht gegen Morgen, Abend gegen Abend. Sonst hätte ein täglich laufender Abend-Digest dem Morgen-Marker nur noch die letzten neun Stunden gemessen.
 
 Die Digest-Seite rendert im Abend-Modus dieselben Schritte, aber aus der Morgen-Perspektive beschriftet: Kopf "Abend-Plan", "Morgen zuerst" statt "Heute zuerst" und eine Karte "Fokus-Blocker morgen". Die Entscheidungs- und die Termin-Karte bleiben Morgen-Rituale und erscheinen abends nicht. Der Anti-Tapeten-Zähler wird am Abend nicht hochgezählt.
 
@@ -192,7 +211,7 @@ Der team-weite Kontext ist auf `CONTEXT_MAX_TASKS_PER_WORKSPACE` offene Tasks ge
 :::
 
 ::: tip Kosten pro Diktat
-Das Modell läuft im Claude-Abo -- pro Diktat fallen keine direkten Stückkosten an, nur Verbrauch im 5-Stunden-Abo-Fenster. Zur Grössenordnung (gemessener Richtwert, keine Abrechnung): Mit List-Routing über alle Listen (Katalog plus rund 700 offene Tasks beider Workspaces bei Sam) liegt der gemessene Prompt bei etwa 20'000 Eingabe-Tokens, im hypothetischen API-Betrieb rund 14 Rappen pro Diktat mit einem Opus-Modell und etwa die Hälfte mit einem Sonnet-Modell. Die Web-Inbox zeigt pro Task die tatsächliche Verarbeitungsdauer und einen Rappen-Richtpreis (aus dem Cache-Split).
+Das Modell läuft im Claude-Abo -- pro Diktat fallen keine direkten Stückkosten an, nur Verbrauch im 5-Stunden-Abo-Fenster. Zur Grössenordnung (gemessener Richtwert, keine Abrechnung): Mit List-Routing über alle Listen (Katalog plus rund 700 offene Tasks beider Workspaces bei Sam) liegt der gemessene Prompt bei etwa 20'000 Eingabe-Tokens, im hypothetischen API-Betrieb rund 14 Rappen pro Diktat mit einem Opus-Modell und etwa die Hälfte mit einem Sonnet-Modell. Die Web-Inbox zeigt pro Task die tatsächliche Verarbeitungsdauer und einen Rappen-Richtpreis (aus dem Cache-Split). Ausgewiesen wird jeder Lauf eines Vorgangs, also auch die kleinen Anpassungs- und Antwort-Läufe sowie Wiederholungen: Die Token-Werte werden addiert statt überschrieben, weil ein Retry echte Tokens kostet, und die Zahl der Läufe steht daneben. Im Subscription-Modus tragen die Summen den Zusatz "inkl. CLI-Sockel", weil die Verbrauchsmeldung der CLI deren eigenen System-Prompt mitzählt.
 :::
 
 ## Zuordnung und Rückkanal
@@ -224,9 +243,22 @@ Seit dem Ausbau vom Juli 2026 klassifiziert der Dienst kontextbewusst (Design-En
 
 ## Persistenz und Idempotenz
 
-Der Betriebszustand liegt in einer SQLite-Datenbank auf dem replizierten Linstor-CSI-Volume `todo-ingest-data` (Rohtext, offene Rückfragen mit HMAC-Token und Deadline, angelegte Task-IDs, der Verzicht auf einen Termin). Ein Hash aus Diktattext und Zeitstempel dedupliziert die Anlage, sodass Kurzbefehl-Retries keine Duplikate erzeugen. Beim Start nimmt der Dienst unterbrochene Verarbeitungen aus der Datenbank wieder auf. Bricht eine Anlage dabei endgültig ab, meldet er das per Push, statt sie stumm liegen zu lassen.
+Der Betriebszustand liegt in einer SQLite-Datenbank auf dem replizierten Linstor-CSI-Volume `todo-ingest-data` (Rohtext, offene Rückfragen mit HMAC-Token und Deadline, angelegte Task-IDs, der Verzicht auf einen Termin, die Kalender-Ereignisse, der Verlauf je Aufgabe und die ausgehenden Quittungen). Ein Hash aus Diktattext und Zeitstempel dedupliziert die Anlage, sodass Kurzbefehl-Retries keine Duplikate erzeugen. Beim Start nimmt der Dienst unterbrochene Verarbeitungen aus der Datenbank wieder auf. Bricht eine Anlage dabei endgültig ab, meldet er das per Push, statt sie stumm liegen zu lassen.
 
 Mitgeschickte Fotos liegen als Upload daneben. Ein erfolgreich an einen Task angehängtes Foto löscht der Dienst sofort -- was die Bereinigung später findet, ist also immer ein nicht ausgewertetes Bild und damit die einzige verbliebene Quelle seines Diktats. Solche Uploads bleiben deshalb 90 Tage liegen (`UPLOAD_RETENTION_DAYS`, nach unten auf diesen Wert geklemmt). Die frühere Frist von 7 Tagen löschte zwei Foto-Diktate unwiederbringlich, bevor es überhaupt eine Bild-Auswertung gab. Die Frist ist damit reiner Grössen-Schutz, keine Aufräum-Politik.
+
+Auch die Quittungen sind persistiert, bevor sie unterwegs sind: Jede Meldung liegt vor dem ersten Sendeversuch in der Datenbank und wird erst bei bestätigter Zustellung als erledigt markiert. Scheitert ntfy, liefert der Sweeper sie im nächsten Takt nach -- dasselbe Muster wie bei den Rückfrage-Pushes. Bleibt eine Meldung nach mehreren Versuchen liegen (`OUTBOX_MAX_ATTEMPTS`), wird sie nicht verworfen, sondern gemeldet (siehe [Selbstüberwachung](#selbstuberwachung)). Der Beleg eines Laufs hängt damit nicht an einem gelungenen Push.
+
+## Selbstüberwachung
+
+Weil die Verarbeitung nach dem `202` unbeobachtet läuft, wacht der Dienst über seinen eigenen Weg vom Eingang bis zur Zustellung. Vier deterministische Signale laufen im Takt des Sweepers und feuern nur, wenn tatsächlich etwas eingegangen ist:
+
+- Ein Diktat hängt zu lange in "empfangen", "in Arbeit" oder "Wiederholung".
+- Eine Rückfrage steht über ihrer Frist, obwohl der Sweeper läuft, der sie hätte auflösen müssen.
+- Eine Quittung bleibt über mehrere Durchläufe unzustellbar (siehe [Persistenz und Idempotenz](#persistenz-und-idempotenz)).
+- Die Fehlerquote der letzten Diktate liegt über der Schwelle. Gemessen wird erst bei voller Stichprobe, sonst schlägt ein einzelner Fehler nach einem Neustart sofort aus.
+
+Jeder Zustand meldet sich höchstens einmal pro Sperrfrist, damit ein Dauerzustand nicht in jedem Takt pusht. Über den Diktat-*Rhythmus* wacht der Dienst dagegen bewusst nie: Bei zwei bis sechs Diktaten pro Tag und Nullen dazwischen erzeugt jeder Schwellwert Fehlalarme, sobald einmal eine Woche Ferien dazwischenliegt. Ergänzend kommt montags ein Wochenbericht ohne Alarm-Charakter mit Diktaten, Fehlern, offenen Rückfragen und angelegten Aufgaben der letzten sieben Tage. Alle Meldungen gehen auf dasselbe ntfy-Topic wie die Quittungen, die Alarme mit erhöhter, der Wochenbericht mit gesenkter Priorität.
 
 ## Verwandte Seiten
 
