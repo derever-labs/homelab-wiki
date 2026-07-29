@@ -30,6 +30,8 @@ Bedienung, Daily Digest, Dialog-Mechanik und Persistenz stehen im [Todo Ingest B
 
 Todo Ingest ist die Erfassungs-Schicht zwischen iPhone-Diktat und ClickUp. Der zentrale Entwurfsentscheid ist die Entkopplung von Erfassung und Verarbeitung: Der Kurzbefehl setzt den POST ab und erhält sofort ein `202` zurück, während die eigentliche Verarbeitung im Dienst weiterläuft. Damit entfällt das iOS-Kurzbefehl-Timeout, an dem die frühere Lösung (Kurzbefehl wartet auf die fertige Antwort) scheiterte. Kein Diktat geht verloren, weil der Rohtext vor der Verarbeitung persistiert wird.
 
+Der zweite tragende Entscheid heisst **kein stiller Verlust** (28.07.2026): Weil die asynchrone Verarbeitung nach dem `202` unbeobachtet läuft, ist ihr einziger sichtbarer Ausgang die Push-Quittung -- also muss jeder Lauf genau eine erzeugen, mit Zahlen statt mit Prosa. Läuft etwas ins Leere, meldet sich die Quittung als Warnung statt als stilles Erledigt. Anlass war die Sichtung von 91 Diktaten, in der zwei Foto-Diktate spurlos als erledigt endeten und ein Diktat mit drei Anliegen kommentarlos nur einen Teil anlegte. Mechanik und Zahlen der Quittung: [Todo Ingest Betrieb](./betrieb.md#bedienung).
+
 Das Werkzeug ist bewusst generisch: Es erfasst jede Art von Aufgabe (privat, HSLU, Alltag), nicht nur IT-Themen. Die Klassifikation entscheidet ausschliesslich über den Ziel-Workspace, nicht über die Art der Aufgabe.
 
 ```d2
@@ -39,7 +41,10 @@ classes: {
 
 direction: right
 
-Shortcut: "iOS-Kurzbefehl\n(Aktionstaste: Diktat\n+ kommende Termine)" { class: node }
+Shortcut: "iOS-Kurzbefehl\n(Aktionstaste: Diktat\n+ Kalender-Fenster)" {
+  class: node
+  tooltip: "Das Diktat-Fenster reicht 14 Tage zurück und 60 Tage voraus, weil oft nach einem Termin diktiert wird"
+}
 
 Ingest: "todo-ingest (Hono)" {
   style.stroke-dash: 4
@@ -51,7 +56,7 @@ Ingest: "todo-ingest (Hono)" {
   AI: "Klassifikation\n(Claude, seriell)" { class: node }
   SWEEP: "Sweeper\n(15-min-Takt)" {
     class: node
-    tooltip: "Blockierende Rückfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen still"
+    tooltip: "Blockierende Rückfragen laufen nach 4 h in die Privat-Liste (Tag zuordnung-unklar), anreichernde verfallen nach 7 Tagen und melden das per Push"
   }
 }
 
@@ -66,7 +71,7 @@ Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
 Ingest.CTX -> Ingest.AI: "Duplikat- und\nAntwort-Kontext"
 Ingest.AI -> ClickUp: "neu anlegen / anpassen /\nKommentar / Duplikat überspringen" { style.stroke: "#16a34a" }
-Ingest.AI -> Ntfy: "Bestätigung oder Rückfrage\n(bis 3 Buttons)" { style.stroke: "#16a34a" }
+Ingest.AI -> Ntfy: "Quittung mit Zahlen\noder Rückfrage (bis 3 Buttons)" { style.stroke: "#16a34a" }
 Ntfy -> Ingest: "Button-Tap: /api/resolve\n(HMAC pro Option)" { style.stroke: "#2563eb" }
 Shortcut -> Ingest.DB: "Antwort per Diktat\n(60-min-Fenster)" { style.stroke: "#0891b2" }
 Inbox -> Ingest: "via Authentik: antworten,\nreprocessen, erfassen" { style.stroke: "#0891b2" }
@@ -120,7 +125,7 @@ Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Cod
 ## Verwandte Seiten
 
 - [Todo Ingest Betrieb](./betrieb.md) -- Bedienung, Daily Digest, Dialog-Mechanik, Persistenz
-- [ntfy](../ntfy/index.md) -- Push-Rückkanal für Bestätigungen und Zuordnungs-Rückfragen
+- [ntfy](../ntfy/index.md) -- Push-Rückkanal für Quittungen und Rückfragen
 - [Authentik](../../edge/authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../../storage/linstor/index.md) -- replizierter Block-Storage (DRBD) für die SQLite-Datenbank
