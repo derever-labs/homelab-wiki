@@ -52,8 +52,12 @@ Die Nodes `pve-01-nana` (Dottikon) und `pve-lu-01` (Luzern) sind **kein** Cluste
 
 - **Lokale ZFS-Disk** -- jede Node speichert ihre VMs auf der eigenen NVMe. Keine Live-Migration zwischen den Standorten (kein Shared Storage).
 - **Reboot unkritisch** -- da kein Quorum gehalten werden muss, ist ein Reboot jederzeit möglich; die VMs kommen über `onboot` automatisch zurück (z.B. homeassistant-luzern / homeassistant-dottikon).
-- **Backup via PBS** -- die externen Nodes sichern ihre VMs über den gemeinsamen [Proxmox Backup Server](../../storage/backup/referenz.md) (push über Tailscale).
+- **PBS als Backup-Ziel definiert** -- beide Nodes haben den gemeinsamen [Proxmox Backup Server](../../storage/backup/referenz.md) als Storage eingebunden (Push über Tailscale).
 - **Wartung via Ansible** -- angesprochen über die Inventory-Gruppe `proxmox_external` (gemeinsame Plays via `all_proxmox_hosts`).
+
+::: warning PBS-Anbindung liefert keine aktuellen Sicherungen
+Auf pve-01-nana ist seit Bestehen der Node kein vzdump-Lauf erfolgreich durchgelaufen: die lokale `jobs.cfg` referenziert Storages, die es auf der Node nicht gibt. Die jüngsten Snapshots der externen Gäste im PBS-Datastore stammen aus deren früherem Betrieb auf dem Lenzburg-Cluster (homeassistant-dottikon Stand 2026-05, homeassistant-luzern Stand 2026-06). Ein Restore der externen Gäste aus dem PBS ist nur auf diesen alten Stand möglich.
+:::
 
 ::: tip Cross-Cluster-Migration: keine Snapshots
 Eine Remote-Migration (PDM, von lenzburg auf eine externe Node oder umgekehrt) schlägt mit `remote migration with snapshots not supported` fehl, wenn die VM-Disk Snapshots hat. Vor der Migration alle Snapshots entfernen. Bleibt nach einem fehlgeschlagenen `qm delsnapshot` ein Phantom-Snapshot mit Lock zurück: `qm unlock <vmid>` und anschliessend `qm delsnapshot <vmid> <name> --force`.

@@ -93,7 +93,7 @@ jobs -> lokal: 5. Transcodes + Caches { class: lokalweg }
 Lesehilfe:
 
 1. Nomad-Jobs mounten ihren Zustand als Linstor-CSI-Volume -- die Datenbanken (PostgreSQL, MariaDB, InfluxDB) und der App-State (Gitea, Loki, Paperless u.a.); die Volume-Liste führt der [Linstor Betrieb](./linstor/betrieb.md#volume-management). Viele Apps schreiben zusätzlich indirekt über den [PostgreSQL Shared Cluster](../_querschnitt/datenbank-architektur.md), der selbst auf einem Linstor-Volume liegt.
-2. DRBD bestätigt jeden Schreibvorgang erst nach synchroner Spiegelung auf die zweite Replica -- über das Thunderbolt-Netz zwischen client-05 und client-06, das Quorum stellt der diskless Witness client-04 ([Homelab Architektur](./linstor/index.md#homelab-architektur)).
+2. DRBD bestätigt jeden Schreibvorgang erst nach synchroner Spiegelung auf die zweite Replica -- über das Thunderbolt-Netz zwischen client-05 und client-06, das Quorum stellt der diskless Witness client-04 ([Schreibpfad](./linstor/index.md#schreibpfad-synchrone-replikation)).
 3. Medien, Bulk-Daten und die Backup-Ablage hängen als NFS-Mounts an allen Client-VMs -- verwaltet über die Ansible-Rolle `nfs`; die Export-Tabelle steht in der [NAS Referenz](./nas/referenz.md#nfs-exports), die Verteilung auf die beiden Geräte in der [NAS-Architektur](./nas/index.md#architektur).
 4. Einzelne Apps sprechen [Garage S3](./nas/referenz.md#garage-s3) auf dem NAS direkt über die S3-API an (Per-Bucket-Keys, nur intern erreichbar).
 5. Flüchtige Daten wie Jellyfin-Transcodes und Caches bleiben auf node-lokalen Pfaden -- bewusst ohne Replikation und ohne Backup, beim Job-Neustart werden sie geleert.

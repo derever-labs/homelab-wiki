@@ -106,7 +106,7 @@ cluster: Proxmox VE Cluster lenzburg {
 Lesehilfe:
 
 1. Die drei Hosts bilden den [Proxmox-Cluster](./proxmox/) lenzburg -- Corosync braucht 2 von 3 Nodes für das Quorum, beim geplanten Herunterfahren migriert der HA-Manager die VMs vorab weg ([HA Konfiguration](./proxmox/index.md#ha-konfiguration)).
-2. pve00 ist bewusst der kleinste Host: Er gibt dem Cluster das Quorum und trägt nur die leichtesten Nomad-VMs; nomad-client-04 ist zugleich der disklose Witness des DRBD-Quorums ([Linstor & DRBD](../storage/linstor/index.md#homelab-architektur)).
+2. pve00 ist bewusst der kleinste Host: Er gibt dem Cluster das Quorum und trägt nur die leichtesten Nomad-VMs; nomad-client-04 ist zugleich der disklose Witness des DRBD-Quorums ([Linstor & DRBD](../storage/linstor/index.md#architektur)).
 3. Jede redundante Ebene läuft genau einmal pro Host: drei Nomad-Server als Raft-Verbund ([Nomad](../plattform/nomad/)), das Traefik-Paar mit VRRP-VIP ([Traefik](../edge/traefik/)) und das Pi-hole-Paar ([DNS-Architektur](../netz/dns/)) sind auf pve01 und pve02 verteilt -- der Ausfall eines Hosts trifft nie beide Hälften.
 4. Der Thunderbolt-Bond zwischen pve01 und pve02 trägt die VM-Livemigration und die synchrone DRBD-Spiegelung zwischen nomad-client-05 und -06 ([Thunderbolt Netzwerk](./proxmox/index.md#thunderbolt-netzwerk), [Storage und Backup](../storage/)).
 5. Die iGPU jedes Compute-Hosts ist per Full Passthrough exklusiv an seinen Nomad-Client durchgereicht -- Hardware-Transcoding für Jellyfin ([iGPU Passthrough](./proxmox/referenz.md#igpu-passthrough)).

@@ -28,93 +28,184 @@ Linstor ist eine Management-Schicht für DRBD (Distributed Replicated Block Devi
 | DRBD Reactor | Failover-Manager für Controller HA |
 | CSI Driver | Integration mit Nomad/Kubernetes |
 
-## Homelab Architektur
+## Architektur
 
-### Controller High Availability (HA)
+Drei Szenario-Sichten zeigen die Mechanik des Storage-Stacks: der synchrone Schreibpfad, der Controller-Failover mit CSI-Anbindung und das Verhalten bei Node-Ausfall und Heilung. Lese-Konvention für alle Diagramme: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Durchgezogene Kanten laufen synchron im Schreib- oder API-Pfad, gestrichelte asynchron als Kontroll- oder Hintergrundverkehr. Farben kodieren die Wege: Blau der synchrone Nutzpfad, Ocker der drbd-reactor-Kontrollweg, Grün die Heilung nach einem Ausfall, Grau der Quorum-Hintergrund.
 
-Der Linstor Controller läuft im Active/Passive HA-Modus mit DRBD Reactor als Failover-Manager. Die Controller-Datenbank (H2) liegt auf einem DRBD-replizierten Volume (`linstor_db`). DRBD Reactor überwacht das Volume und startet den Controller automatisch auf dem Node mit DRBD Primary. Die gesamte Konfiguration (Promoter, Systemd Mount Unit, Consul Registration, JVM Memory) wird durch die Ansible Role `drbd-reactor` verwaltet (Repository `homelab-hashicorp-stack/ansible/roles/drbd-reactor/`).
+### Schreibpfad (synchrone Replikation)
 
-**Wichtig:** Linstor Controller ist für Active/Passive designed -- nur EIN Controller kann gleichzeitig laufen!
+**Leitfrage:** Wann gilt ein Write als quittiert -- und warum verliert ein Node-Crash oder Stromausfall keine bestätigten Daten?
 
 ```d2
+direction: right
+
 classes: {
   node: { style: { border-radius: 8 } }
   container: { style: { border-radius: 8; stroke-dash: 4 } }
+  data: { style: { border-radius: 8 } }
+  schreib: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  quorum: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
 }
 
-linstor: Linstor-Cluster (Quorum 2/3) {
+c05: vm-nomad-client-05 (Primary) {
   class: container
+  label.near: top-center
+  tooltip: "Beispiel-Rollenverteilung -- Primary ist immer der Node, auf dem die Alloc ihr Volume gemountet hat"
 
-  c05: vm-nomad-client-05 {
-    class: node
-    tooltip: "10.0.2.125, TB 10.99.1.105 -- Satellite + Controller-Kandidat, drbd-reactor managed"
-  }
-  c06: vm-nomad-client-06 {
-    class: node
-    tooltip: "10.0.2.126, TB 10.99.1.106 -- Satellite + Controller-Kandidat, drbd-reactor managed"
-  }
-  c04: vm-nomad-client-04 (diskless) {
-    class: node
-    tooltip: "10.0.2.124 -- Satellite ohne Storage, nur Quorum-Witness"
-  }
-
-  c05 <-> c06: DRBD-Replikation (Thunderbolt) {
-    style.stroke: "#2563eb"
-    tooltip: "10.99.1.0/24, ~20 Gbit/s -- alle Volumes inkl. linstor_db (H2-Controller-DB)"
-  }
-  c05 -- c04: Quorum (Management) {
-    style.stroke: "#6b7280"
-    tooltip: "10.0.2.0/24, 1 Gbit -- node-connection path management-path"
-  }
-  c06 -- c04: Quorum (Management) {
-    style.stroke: "#6b7280"
-    tooltip: "10.0.2.0/24, 1 Gbit -- node-connection path management-path"
-  }
+  alloc: Nomad-Alloc { class: node }
+  drbd: DRBD-Resource (Primary) { class: node }
+  disk: "NVMe -- LVM-Thin linstor_pool" { class: data }
 }
 
-svc: linstor-controller.service.consul {
+c06: vm-nomad-client-06 (Secondary) {
+  class: container
+  label.near: top-center
+
+  drbd: DRBD-Resource (Secondary) { class: node }
+  disk: "NVMe -- LVM-Thin linstor_pool" { class: data }
+}
+
+c04: vm-nomad-client-04 (TieBreaker) {
   class: node
-  tooltip: "Consul-Service mit DNS-TTL 0 -- zeigt immer auf den aktiven Controller"
+  tooltip: "diskless -- nur Quorum-Stimme über das Management-Netz, sieht nie Nutzdaten"
 }
 
-csi: Nomad CSI Plugin {
-  class: node
-  tooltip: "linstor.csi.linbit.com, privileged -- system/linstor-csi.nomad"
-}
-
-linstor.c05 -> svc: registriert wenn aktiv {
-  style.stroke: "#854d0e"
-  style.stroke-dash: 3
-  tooltip: "drbd-reactor promotet den DRBD-Primary, startet Controller + Consul-Registrierung"
-}
-linstor.c06 -> svc: registriert wenn aktiv {
-  style.stroke: "#854d0e"
-  style.stroke-dash: 3
-  tooltip: "drbd-reactor promotet den DRBD-Primary, startet Controller + Consul-Registrierung"
-}
-csi -> svc: Linstor API (HTTP :3370) {
-  style.stroke: "#7c3aed"
-  tooltip: "Endpoint via Consul Service Discovery -- Failover ohne CSI-Anpassung"
-}
+c05.alloc -> c05.drbd: "1. write() -- kehrt erst nach lokalem Write und Peer-Ack zurück" { class: schreib }
+c05.drbd -> c05.disk: "2a. Write mit Flush auf das Thin-LV" { class: schreib }
+c05.drbd -> c06.drbd: "2b. parallel Replika-Write mit Ack -- Protokoll C via Thunderbolt" { class: schreib }
+c06.drbd -> c06.disk: "3. Write mit Flush" { class: schreib }
+c05.drbd -> c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
+c06.drbd -> c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
 ```
 
-Die H2-Controller-Datenbank ist schneller als etcd und liegt auf dem DRBD-Volume repliziert. Netzwerk-Pfade und Quorum-Rollen zeigt das Diagramm; die konkreten Bandbreiten siehe [Hosts und IPs](../../_referenz/hosts-und-ips.md).
+**Lesehilfe:**
 
-### Netzwerk
+1. Jedes CSI-Volume existiert zweifach (PlaceCount 2) auf client-05 und -06; client-04 hält dieselbe Resource diskless und liefert nur die dritte Quorum-Stimme ([Volume-Management](./betrieb.md#volume-management)).
+2. Die Alloc läuft immer auf einem der beiden Storage-Nodes -- das CSI-Plugin ist per Constraint auf client-05/-06 beschränkt ([Nomad CSI Integration](#nomad-csi-integration)). Beim Mount promotet DRBD den Node automatisch zum Primary (auto-promote).
+3. Ein write() geht parallel auf die lokale NVMe und per Protokoll C an den Peer -- quittiert wird erst, wenn beide geschrieben haben. Beide Nodes tragen dadurch in jedem Moment denselben bestätigten Datenstand.
+4. Geschrieben heisst durchgeschrieben: `disk-flushes` und `md-flushes` erzwingen den Flush durch den flüchtigen Cache der Consumer-NVMe ([Performance Tuning](#performance-tuning)).
+5. Nutzdaten fliessen ausschliesslich über den Thunderbolt-Pfad, die Quorum-Verbindungen zu client-04 über das Management-Netz ([Netzwerk und Connection Paths](#netzwerk-und-connection-paths)).
+6. Schreiben darf nur, wer die Quorum-Mehrheit (2 von 3 Stimmen) sieht -- was ohne Mehrheit passiert, zeigt [Node-Ausfall und Heilung](#node-ausfall-und-heilung).
+
+### Controller-Failover und CSI
+
+Der Linstor Controller ist zustandsbehaftet (H2-Datenbank -- schneller als etcd und ohne zusätzlichen Cluster-Dienst) und strikt Active/Passive: Es darf nur ein Controller gleichzeitig laufen. Seine Datenbank liegt auf dem DRBD-Volume `linstor_db`, das Failover-Management übernimmt drbd-reactor auf client-05 und -06. Die gesamte Konfiguration (Promoter, Mount-Unit, Consul-Registrierung, JVM Memory) verwaltet die Ansible-Rolle `drbd-reactor` (Repository `homelab-hashicorp-stack/ansible/roles/drbd-reactor/`).
+
+**Leitfrage:** Wer entscheidet, welcher Node den Controller startet -- und wie findet das CSI-Plugin den Controller nach einem Failover, ohne dass eine Config angepasst wird?
+
+```d2
+direction: right
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  data: { style: { border-radius: 8 } }
+  schreib: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  kontroll: { style: { stroke: "#8f6418"; font-color: "#8f6418" } }
+  quorum: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
+}
+
+db: "linstor_db (DRBD)" {
+  class: data
+  tooltip: "500 MiB H2-Controller-DB -- repliziert wie jedes Volume, TieBreaker auf client-04"
+}
+
+aktiv: Aktiver Node (client-05 oder -06) {
+  class: container
+  label.near: top-center
+
+  reactor: drbd-reactor { class: node }
+  ctrl: Linstor Controller { class: node }
+}
+
+standby: Standby-Node (der jeweils andere) {
+  class: container
+  label.near: top-center
+
+  reactor: drbd-reactor { class: node }
+}
+
+consul: Consul {
+  class: node
+  tooltip: "Service linstor-controller -- Health-Check /health alle 10s, Deregistrierung nach 30s critical"
+}
+
+csi: CSI-Plugin {
+  class: node
+  tooltip: "system-Job auf client-05/-06 -- kennt den Controller nur als Consul-DNS-Namen"
+}
+
+aktiv.reactor -> db: "1. promotet zum Primary -- sobald das DRBD-Quorum es erlaubt" { class: kontroll; style.stroke-dash: 3 }
+aktiv.reactor -> aktiv.ctrl: "2. startet die Kette -- Mount, Controller, Auto-Unlock, Consul-Registrierung" { class: kontroll; style.stroke-dash: 3 }
+aktiv.ctrl -> consul: "3. Registrierung als linstor-controller" { class: kontroll; style.stroke-dash: 3 }
+standby.reactor -> db: "beobachtet dieselbe Resource -- ohne Quorum-Mehrheit keine Promotion" { class: quorum; style.stroke-dash: 3 }
+csi -> consul: "4. löst linstor-controller.service.consul auf -- DNS-TTL 0" { class: schreib }
+csi -> aktiv.ctrl: "5. Linstor-API HTTP :3370 -- Volume anlegen, attachen, vergrössern" { class: schreib }
+```
+
+**Lesehilfe:**
+
+1. drbd-reactor läuft auf beiden Storage-Nodes -- wer den Controller starten darf, entscheidet aber das DRBD-Quorum der Resource `linstor_db`: Nur der Node, der zum Primary promoten kann, gewinnt. `linstor_db` steht dafür auf `auto-promote no`, die Promotion gehört vollständig drbd-reactor.
+2. Nach der Promotion startet drbd-reactor die systemd-Kette: `/var/lib/linstor` mounten, `linstor-controller` starten, Encryption entsperren ([Encryption und Auto-Unlock](#encryption-und-auto-unlock)), Consul-Registrierung ([CSI HA via Consul](#csi-ha-via-consul-service-discovery)).
+3. Consul prüft den Controller alle 10 s über `/health` und wirft einen toten Eintrag nach 30 s aus dem Katalog; DNS-Antworten kommen mit TTL 0, kein Client cached den alten Standort.
+4. Das CSI-Plugin kennt nur den Consul-Namen -- nach dem Failover zeigt schon die nächste DNS-Auflösung auf den neuen Node, Job und Config bleiben unangetastet ([Nomad CSI Plugin](./referenz.md#nomad-csi-plugin)).
+5. Die Satellites aller drei Nodes verbinden sich selbständig neu zum aktiven Controller; Szenarien und Failover-Dauer: [Controller Failover](./betrieb.md#controller-failover).
+6. Scheitert das Demote auf dem alten Node, erzwingt drbd-reactor einen Node-Reboot (`on-drbd-demote-failure reboot-force`) -- lieber ein harter Neustart als zwei Controller auf derselben Datenbank.
+
+### Node-Ausfall und Heilung
+
+**Leitfrage:** Was passiert mit laufenden Writes, wenn ein Storage-Node ausfällt -- und wie holt der zurückkehrende Node den Rückstand auf, ohne alles neu zu spiegeln?
+
+```d2
+direction: right
+
+classes: {
+  node: { style: { border-radius: 8 } }
+  container: { style: { border-radius: 8; stroke-dash: 4 } }
+  data: { style: { border-radius: 8 } }
+  schreib: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  heilung: { style: { stroke: "#42714a"; font-color: "#42714a" } }
+  quorum: { style: { stroke: "#6b7280"; font-color: "#6b7280" } }
+}
+
+c05: vm-nomad-client-05 (überlebt) {
+  class: container
+  label.near: top-center
+
+  drbd: DRBD Primary { class: node }
+  bitmap: Quick-Sync-Bitmap { class: data; tooltip: "markiert pro Datenblock, was der abwesende Peer verpasst" }
+}
+
+c06: vm-nomad-client-06 (fällt aus) {
+  class: container
+  label.near: top-center
+
+  drbd: DRBD-Resource { class: node; tooltip: "nach der Rückkehr SyncTarget -- bleibt Inconsistent bis zum Ende des Resync" }
+}
+
+c04: vm-nomad-client-04 (TieBreaker) { class: node }
+
+c05.drbd -> c06.drbd: "1. Replikations-Link reisst -- erkannt über die DRBD-Timeouts" { class: quorum; style.stroke-dash: 3 }
+c05.drbd -> c04: "2. Quorum hält -- 2 von 3 Stimmen, I/O läuft weiter" { class: schreib }
+c05.drbd -> c05.bitmap: "3. markiert jeden weiteren Write als out-of-sync" { class: schreib }
+c06.drbd -> c05.drbd: "4. Rückkehr -- Reconnect und Abgleich der Daten-Generationen" { class: heilung; style.stroke-dash: 3 }
+c05.drbd -> c06.drbd: "5. Resync nur der markierten Blöcke -- via Thunderbolt" { class: heilung; style.stroke-dash: 3 }
+```
+
+**Lesehilfe:**
+
+1. Fällt ein Storage-Node aus, behält der Überlebende mit dem TieBreaker die Quorum-Mehrheit und schreibt weiter -- laufende Allocs merken davon nichts. Die Timing-Toleranzen gegen Fehlalarme beschreibt [Performance Tuning](#performance-tuning).
+2. Ab dem Abriss führt der Primary in der Quick-Sync-Bitmap Buch, welche Blöcke der Abwesende verpasst -- die Grundlage dafür, dass die Heilung ein partieller Resync ist und keine Voll-Spiegelung.
+3. Kehrt der Node zurück, vergleichen beide ihre Daten-Generationen: Der Rückkehrer wird SyncTarget und erhält nur die markierten Blöcke. Bis der Resync durch ist, bleibt er Inconsistent -- die I/O läuft derweil ununterbrochen auf dem Primary.
+4. Verliert ein Node selbst die Mehrheit (isoliert, 1 von 3 Stimmen), suspendiert DRBD dort die I/O (`on-no-quorum suspend-io`) statt weiterzuschreiben -- bei einer Netzwerk-Partition gewinnt die Seite, die client-04 noch sieht. Genau das verhindert den Split-Brain; versagt der Mechanismus doch: [Split-Brain Recovery Runbook](./split-brain-runbook.md).
+5. Gegen schleichende Abweichungen (Bit-Rot) läuft wöchentlich ein sequenzielles `drbdadm verify` über alle replizierten Ressourcen ([Automatisierung](./betrieb.md#automatisierung)).
+
+### Netzwerk und Connection Paths
 
 | Netzwerk | Verwendung | Bandbreite |
 |----------|------------|------------|
-| 10.0.2.0/24 | Management, Nomad CSI | 1 Gbit |
+| 10.0.2.0/24 | Management, Nomad CSI, Quorum-Pfad zu client-04 | 1 Gbit |
 | 10.99.1.0/24 | DRBD Replikation | ~20 Gbit (Thunderbolt) |
-
-### Quorum
-
-- 3 Nodes im Cluster (2 Storage + 1 Diskless Witness)
-- 2 von 3 müssen erreichbar sein für Schreiboperationen
-- Node 04 ist diskless Witness (nur Quorum, keine Daten)
-- Verhindert Split-Brain bei Netzwerkpartitionierung
-
-### Connection Paths (Homelab)
 
 Strukturell identisch zum DClab: client-04 hängt physisch nur am Management-Netzwerk (10.0.2.0/24), nicht an der Thunderbolt-Bridge (10.99.1.0/24). PrefNic auf client-05 und -06 ist `thunderbolt`. Ohne expliziten Path-Override versucht DRBD c04 über die Thunderbolt-IP zu erreichen, was scheitert.
 
@@ -201,18 +292,12 @@ Der Container läuft im privileged Mode, da CSI-Plugins Mount-Operationen auf de
 
 ### CSI HA via Consul Service Discovery
 
-Um den automatischen Failover des Linstor Controllers ohne manuelle Anpassung des CSI-Plugins zu ermöglichen, wird Consul Service Discovery genutzt.
-
-**Funktionsweise:**
-1. Der aktive Linstor Controller (bestimmt durch drbd-reactor) registriert sich als Service `linstor-controller` in Consul.
-2. Das CSI Plugin verwendet `http://linstor-controller.service.consul:3370` als Endpoint.
-3. Bei einem Failover registriert der neue aktive Node den Service.
-4. Die DNS TTL für diesen Service ist auf 0s gesetzt, um Caching-Probleme zu vermeiden.
+Damit der Controller-Failover ohne Anpassung des CSI-Plugins funktioniert, wird Consul Service Discovery genutzt -- den Ablauf zeigt [Controller-Failover und CSI](#controller-failover-und-csi). Die DNS-TTL für den Service `linstor-controller` ist auf allen drei Consul-Servern explizit auf `0s` gesetzt (`dns_config.service_ttl` in `/etc/consul.d/linstor-ttl.hcl`, verteilt über `scripts/update_consul_ttl.sh` im infra-Repository). Kein Client cached damit einen alten Controller-Standort.
 
 **Komponenten:**
-- **Registration Script:** `/usr/local/bin/linstor-consul-register.sh`
-- **Systemd Service:** `linstor-consul-register.service` (hängt von linstor-controller ab)
-- **DRBD Reactor:** Startet den Registration-Service zusammen mit dem Controller
+- **Registration Script:** `/usr/local/bin/linstor-consul-register.sh` -- registriert `linstor-controller` (Port 3370) mit HTTP-Health-Check auf `/health` (Intervall 10 s, Deregistrierung nach 30 s critical)
+- **Systemd Service:** `linstor-consul-register.service` (`Requires`/`After` auf `linstor-controller.service`, ohne `WantedBy` -- wird ausschliesslich von drbd-reactor gestartet)
+- **DRBD Reactor:** Startet den Registration-Service als letztes Glied der Promoter-Kette
 
 ## Performance
 
