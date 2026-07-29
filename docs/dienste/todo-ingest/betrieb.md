@@ -1,6 +1,6 @@
 ---
 title: Todo Ingest Betrieb
-description: Bedienung, Dialog-Mechanik und Persistenz von Todo Ingest -- diktieren, Rückfragen beantworten, Daily Digest abrufen
+description: Bedienung, Dialog-Mechanik und Persistenz von Todo Ingest -- diktieren, Rückfragen beantworten, Daily Digest lesen
 tags:
   - service
   - productivity
@@ -47,7 +47,7 @@ Die Erfassung hängt an einem signierten iOS-Kurzbefehl (Diktat Deutsch Schweiz,
 
 ## Daily Digest
 
-Der Dienst erstellt auf Abruf einen geführten Tagesüberblick -- einen nummerierten Morgen-Flow statt einer flachen Aufgabenliste. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die iPhone-Termine aus der Kalender-Ereignis-Tabelle (siehe [Kalenderstand](#kalenderstand)); im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
+Der Dienst erstellt zweimal täglich einen geführten Tagesüberblick -- einen nummerierten Flow statt einer flachen Aufgabenliste. Beide Läufe stösst der Server selbst an, und sie haben verschiedene Rollen: Der **Abend-Lauf um 21:30** ist die Arbeits-Ausgabe (was seit gestern erfasst wurde, was morgen fällig ist, der Rückstand, die Termine von morgen) und fixiert daraus die Top-3 für den nächsten Tag. Der **Morgen-Lauf um 06:30** ist die bewusst kurze Lese-Ausgabe: heutige Termine, heute fällig, die am Vorabend fixierten Top-3, unter einer Minute konsumierbar. Der Server erhebt und bucketet die Aufgaben deterministisch, ein Claude-Modell formuliert nur Headline, Top-3 und die einzelnen Item-Texte; Vollständigkeit, Zähler, Termine und Links garantiert der Server. Quellen sind die persönlichen ClickUp-Listen (Kern), team-weit zugewiesene Tasks der Workspaces (tiefer priorisiert, ausser dringend) und die iPhone-Termine aus der Kalender-Ereignis-Tabelle (siehe [Kalenderstand](#kalenderstand)); im [Single-Workspace-Modus](./index.md#single-workspace-modus) entfallen die HSLU-Quellen. Ein Delta-Gedächtnis markiert "neu" und die Überfälligkeits-Dauer. Am Wochenende gewichtet der Digest private Aufgaben vor HSLU.
 
 Steht bei vollständig erhobenen Quellen keine einzige Aufgabe und kein einziger Termin an, verschickt der Dienst kein leeres Produkt: Der Digest wird dann ehrlich kurz benannt, protokolliert und ohne Push abgelegt. Der Guard greift bewusst nur bei vollständigen Quellen, denn ein Ausfall auf der ClickUp-Seite darf nie als "nichts zu tun" durchgehen.
 
@@ -58,32 +58,43 @@ classes: {
 
 direction: right
 
-Wecker: "Ladegerät getrennt\n(iOS-Automation)" { class: node }
-KB: "Kurzbefehl\nDaily Digest (Morgen)" {
+Zeit: "Zeit-Auslöser im Server\n06:30 und 21:30" {
   class: node
-  tooltip: "Liest die kommenden Termine aller iPhone-Kalender und schickt sie als Zeilen-Text mit. Die Morgen-Variante läuft nur 04:00-10:59, die manuelle Variante jederzeit (Home-Screen/Widget)"
+  tooltip: "Im Sweeper-Takt geprüft. Pro Modus ein eigener Erfolgs-Check und ein eigener Tages-Zähler, damit ein Morgen-Lauf den Abend-Lauf nicht als erledigt abweist"
 }
 Svc: "todo-ingest" {
   class: node
-  tooltip: "Debounce 5 min, dann ClickUp-Erhebung (Listen + zugewiesene Tasks, Teilausfall toleriert). Opus formuliert Headline, Top-3 und Item-Texte, der Server garantiert Vollständigkeit und baut alle Links deterministisch"
+  tooltip: "ClickUp-Erhebung (Listen + zugewiesene Tasks, Teilausfall toleriert) und Status-Abgleich der angezeigten Aufgaben. Das Modell formuliert Headline, Top-3 und Item-Texte, der Server garantiert Vollständigkeit und baut alle Links deterministisch"
 }
-Seite: "Digest-Seite\n(Inbox-Host, Authentik)" { class: node }
-Push: "ntfy-Ping\nDigest bereit" { class: node }
+Seite: "Digest-Seite\n(Inbox-Host, Authentik)" {
+  class: node
+  tooltip: "Dazu die Rückstands-Seite mit dem vollen Bestand und die Rückblick-Seite mit den Zahlen der letzten Tage -- beide ohne Modell-Lauf"
+}
+Push: "ntfy-Ping\nDigest bereit" {
+  class: node
+  tooltip: "Trägt die Top-3-Titel im Text und bis zu drei Knöpfe: erledigt und auf morgen für die erste Aufgabe plus Öffnen"
+}
 
-Wecker -> KB: "sofort ausführen\n(nur 04:00-10:59)"
-KB -> Svc: "POST /api/digest\n(Kalender, 202)" { style.stroke: "#2563eb" }
-Svc -> Push: "fertig" { style.stroke: "#16a34a" }
+Zeit -> Svc: "Lauf je Modus" { style.stroke: "#2563eb" }
+Svc -> Push: "fertig, mit Top-3-Titeln\nund Aktions-Knöpfen" { style.stroke: "#16a34a" }
+Push -> Svc: "Knopf-Tap am\nöffentlichen Host (HMAC)" { style.stroke: "#2563eb" }
 Push -> Seite: "Tap öffnet" { style.stroke: "#2563eb" }
-KB -> Seite: "Safari-Open\n(nur manuelle Variante)" { style.stroke-dash: 4 }
+Seite -> Svc: "Aktion, Freitext-Anpassung,\nDigest neu erstellen" { style.stroke: "#0891b2" }
 ```
 
-- **Morgens:** das iPhone vom Ladegerät nehmen genügt. Als Wecker dient Sleep Cycle, dessen Alarm-Stopp iOS-Automationen nicht auslösen kann (der Trigger "Wecker wird gestoppt" feuert nur bei der nativen Uhr-App) -- darum ist das nächtliche Laden der Anker. Der Kurzbefehl "Daily Digest Morgen" schickt die Kalenderdaten mit, läuft nur zwischen 04:00 und 10:59 und öffnet kein Safari; der ntfy-Ping "Dein Daily Digest ist bereit" öffnet per Tap die fertige Seite. Mehrfaches Ab- und Anstecken fängt das Server-Debounce (5 min) ab.
-- **Tagsüber:** den Kurzbefehl "Daily Digest" manuell starten (mit frischen Terminen, öffnet Safari) oder auf der Digest-Seite "Digest neu erstellen" antippen (nutzt den vorhandenen Kalenderstand).
-- **Kein Abstecken am Morgen (z.B. Wochenende unterwegs):** Bleibt die iPhone-Automation stumm, startet der Server um 06:30 selbst einen Lauf und meldet das per ntfy -- täglich, auch am Wochenende. Geprüft wird ein *erfolgreicher* Morgen-Lauf des Tages, nicht bloss die Existenz eines Versuchs: Vorher galt schon ein am Zeitlimit gestorbener Lauf als vorhanden. Statt eines Tages-Riegels gilt ein Deckel von wenigen Läufen pro Tag (`DIGEST_DEADMAN_MAX_RUNS`), damit der 15-Minuten-Sweeper bei Dauerfehlern nicht die gemeinsame Verarbeitungs-Queue flutet. Jeder Lauf nach einem gescheiterten läuft bewusst reduziert und damit nie identisch zum Fehlschlag (siehe [Prompt-Deckel und Zeitlimit](#prompt-deckel-und-zeitlimit)).
+**Belegt gegen** `src/digest.ts`, `src/digest-page.ts` und `src/ntfy.ts` im Service-Repo, Stand 30.07.2026.
+
+- **Beide Läufe serverseitig:** Geprüft wird ein *erfolgreicher* Lauf des jeweiligen Modus, nicht bloss die Existenz eines Versuchs -- vorher galt schon ein am Zeitlimit gestorbener Lauf als vorhanden. Erfolgs-Prüfung, Tages-Zähler und reduzierter Wiederholungslauf laufen pro Modus getrennt (eigener Zähler-Schlüssel), sonst hätte ein eben fertiger Morgen-Lauf den Abend-Lauf als "schon erledigt" abgewiesen. Statt eines Tages-Riegels gilt ein Deckel von wenigen Läufen pro Tag (`DIGEST_DEADMAN_MAX_RUNS`), damit der 15-Minuten-Sweeper bei Dauerfehlern nicht die gemeinsame Verarbeitungs-Queue flutet. Jeder Lauf nach einem gescheiterten läuft bewusst reduziert und damit nie identisch zum Fehlschlag (siehe [Prompt-Deckel und Zeitlimit](#prompt-deckel-und-zeitlimit)). Jede Auslösung meldet sich per ntfy. Der Morgen-Lauf tritt dabei weiterhin als Nachholung auf ("Kein Digest bisher, starte selbst"), weil er ursprünglich als Fallback für den Kurzbefehl gebaut wurde, während der Abend-Lauf sich als regulärer Weg meldet.
+- **Nicht mehr am iPhone ausgelöst:** Früher startete den Morgen-Digest eine iOS-Automation ("Ladegerät wird getrennt") über einen Kurzbefehl, den Abend-Digest ein eigener Abend-Kurzbefehl. Beide erreichten den Server seit dem 21.07.2026 nicht mehr, jeder Digest lief seither über den Server-Fallback -- darum ist der Server jetzt der reguläre Auslöser beider Läufe. Die Kurzbefehle bleiben bestehen (siehe [Kurzbefehle rund um den Digest](#kurzbefehle-rund-um-den-digest)), und der Kalenderstand kommt seither über den Diktat-Kurzbefehl (siehe [Kalenderstand](#kalenderstand)).
+- **Auf Abruf:** "Digest neu erstellen" auf der Seite wiederholt den angezeigten Modus mit dem vorhandenen Kalenderstand.
+
+### Erfassungs-Rückblick
+
+Erster Inhalts-Schritt jedes Digests ist die Quittung über die eigene Erfassung: Der Morgen-Digest nennt unter "Über Nacht erfasst" jeden Eingang seit dem letzten *erfolgreichen* Abend-Lauf mit seinem Ausgang -- angelegt (mit Titeln), übersprungen, Frage offen, Fehler, noch in Arbeit, dazu die Anpassungs- und Antwort-Läufe. Der Abend-Digest zeigt dasselbe für den Tag ("Heute erfasst"). Für jemanden, der nachts diktiert, ist das der persönliche Nutzen des Morgen-Digests: Er ersetzt den Gang in die Inbox, um zu sehen, was aus den Diktaten wurde. Fenster-Beginn ist der letzte Abend-Lauf, ohne einen solchen 24 Stunden, nach unten begrenzt auf sieben Tage. Auch der leere Fall wird ausdrücklich gesagt ("Seit ... ist kein Diktat eingegangen") statt weggelassen.
 
 ### Kalenderstand
 
-Der Dienst hat bewusst keinen eigenen Kalender-Zugriff, die Termine kommen ausschliesslich vom iPhone. Beide Kanäle speisen dieselbe Ereignis-Tabelle: der Digest- und der Abend-Kurzbefehl mit den kommenden Terminen, der Diktat-Kurzbefehl bei jedem Aufruf mit seinem Fenster von 14 Tagen Vergangenheit bis 60 Tagen Zukunft. Jeder Eingang wird **zusammengeführt** statt überschrieben, dedupliziert über Startzeit, Titel und Kalendername, und hält fest, wann ein Termin erstmals und wann er letztmals gesehen wurde. Für die Anzeige und die Lage-Einschätzung liest der Digest daraus einen Horizont von sieben Tagen.
+Der Dienst hat bewusst keinen eigenen Kalender-Zugriff, die Termine kommen ausschliesslich vom iPhone. Alle Kanäle speisen dieselbe Ereignis-Tabelle: der Diktat-Kurzbefehl bei jedem Aufruf mit seinem Fenster von 14 Tagen Vergangenheit bis 60 Tagen Zukunft, der Digest- und der Abend-Kurzbefehl mit den kommenden Terminen. Weil die beiden Digest-Kurzbefehle den Server seit dem 21.07.2026 nicht mehr erreichen, hält in der Praxis der Diktat-Kurzbefehl den Stand aktuell -- er läuft bei jedem Diktat. Jeder Eingang wird **zusammengeführt** statt überschrieben, dedupliziert über Startzeit, Titel und Kalendername, und hält fest, wann ein Termin erstmals und wann er letztmals gesehen wurde. Für die Anzeige und die Lage-Einschätzung liest der Digest daraus einen Horizont von sieben Tagen.
 
 Das Zusammenführen ist der tragende Punkt: Ein Kurzbefehl liefert nur Termine ab seinem Aufrufzeitpunkt, ein Überschreiben um 10:00 hätte dem Tag also rückwirkend seine Morgen-Termine amputiert. Damit ein verschobener oder gelöschter Termin trotzdem nicht als Leiche stehen bleibt, gleicht ein Eingang genau den Bereich ab, den er nachweislich abdeckt: nur die mitgelieferten Kalender, nur Startzeiten zwischen der Eingangszeit und dem spätesten gelieferten Termin, nie rückwärts. Ein Eingang, den die Übertragungsgrenze abgeschnitten hat, führt darum nur zusammen und löscht nie. Vergangenes fällt nach `CALENDAR_KEEP_DAYS` weg. Beim Umstieg wurde der alte Schnappschuss einmalig in die Tabelle übernommen.
 
@@ -91,24 +102,43 @@ Einen Verfall des Kalenderstands gibt es nicht mehr. Die Digest-Seite nennt stat
 
 ### Aufbau der Digest-Seite
 
-Die Seite führt in nummerierten Schritten durch den Morgen, statt alles Offene aufzulisten:
+Die Seite führt in nummerierten Schritten durch den Tag, statt alles Offene aufzulisten:
 
 1. **Kopf:** Headline zur Gesamtlage und eine Momentum-Zeile aus echten Erledigt-Abfragen -- gestern erledigt, erledigt in den rollenden sieben Tagen, aktuell offen (heute fällig plus überfällig).
-2. **Dein Tag:** Termine von heute und morgen sowie Geburtstage mit sieben Tagen Vorlauf, dazu der datierte Kalenderstand (siehe [Kalenderstand](#kalenderstand)). Angezeigt werden heute und morgen, der ganze Sieben-Tage-Horizont fliesst als Termindichte in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant").
-3. **Heute zuerst:** die höchstens drei Aufgaben, die zuerst drankommen, als Karten mit Aktions-Buttons.
-4. **Eine Entscheidung:** höchstens eine erzwungene Entscheidung (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
-5. **Ein Termin:** höchstens ein terminloser Task, den der Digest zur Wann-Entscheidung vorlegt (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
-6. **Fokus:** ein Overlay, das die offenen Top-3 einzeln und gross zeigt -- eine Aufgabe aufs Mal.
+2. **Über Nacht erfasst:** die Quittung über die eigenen Eingänge (siehe [Erfassungs-Rückblick](#erfassungs-ruckblick)), im Abend-Lauf als "Heute erfasst".
+3. **Dein Tag:** Termine von heute und morgen sowie Geburtstage mit sieben Tagen Vorlauf, dazu der datierte Kalenderstand (siehe [Kalenderstand](#kalenderstand)). Angezeigt werden heute und morgen, der ganze Sieben-Tage-Horizont fliesst als Termindichte in die Lage-Einschätzung ein (etwa "die nächsten Tage sind dicht verplant").
+4. **Heute zuerst:** die höchstens drei Aufgaben, die zuerst drankommen, als Karten mit Aktions-Buttons und Freitext-Feld.
+5. **Eine Entscheidung:** höchstens eine erzwungene Entscheidung (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
+6. **Ein Termin:** höchstens ein terminloser Task, den der Digest zur Wann-Entscheidung vorlegt (siehe [Anti-Tapete und Aktionen](#anti-tapete-und-aktionen)).
+7. **Fokus:** ein Overlay, das die offenen Top-3 einzeln und gross zeigt -- eine Aufgabe aufs Mal.
 
-Darunter steht ein aufklappbarer Ausblick (Rest von heute plus die Woche, mit denselben Aktionen) und eine ehrliche Zähler-Zeile für alles bewusst Ausgeblendete: überfällige, terminlose und tiefpriorisierte Aufgaben. Aufgaben mit tiefer Priorität erscheinen ausschliesslich als Zähler, nie als Karte oder Zeile. Ganz unten stehen Dauer, der addierte Token-Verbrauch aller Läufe des Digests (Wiederholungen eingerechnet) und das API-Kostenäquivalent sowie ein Verweis auf offene Rückfragen und fehlgeschlagene Diktate in der Inbox.
+Darunter stehen drei aufklappbare Sektionen mit denselben Aktionen -- Ausblick (Rest von heute plus die Woche), Rückstand und Ohne Termin (siehe [Rückstand und Status-Abgleich](#ruckstand-und-status-abgleich)) -- sowie eine ehrliche Zähler-Zeile für das bewusst Ausgeblendete: Aufgaben mit tiefer Priorität erscheinen ausschliesslich als Zähler, nie als Karte oder Zeile. Ganz unten stehen die Betriebs-Statuszeile, Dauer, der addierte Token-Verbrauch aller Läufe des Digests (Wiederholungen eingerechnet) und das API-Kostenäquivalent sowie ein Verweis auf offene Rückfragen und fehlgeschlagene Diktate in der Inbox.
+
+Die **Betriebs-Statuszeile** am Seitenfuss fasst drei Angaben zusammen, die einzeln vorlagen, aber nirgends gemeinsam sichtbar waren: Erfolg der letzten sieben Läufe ("Letzte 7 Läufe: 5 ok, 2 Fehler"), Alter des Kalenderstands und ob der Aufgaben-Status frisch abgeglichen wurde. Ohne sie merkt man einen schleichenden Ausfall erst, wenn der Digest ganz ausbleibt.
+
+### Rückstand und Status-Abgleich
+
+Der Rückstand war früher nur eine Zahl: Ein einziger Deckel kappte Prompt *und* Render, gekappte Aufgaben fehlten damit im gespeicherten Digest und waren weder sichtbar noch per Knopf erreichbar. Prompt-Deckel und Render-Deckel sind jetzt getrennt (siehe [Prompt-Deckel und Zeitlimit](#prompt-deckel-und-zeitlimit)). Die Seite zeigt Rückstand und terminlose Aufgaben eingeklappt mit denselben Aktions-Buttons, gedeckelt auf `DIGEST_PAGE_SECTION_CAP` (25) pro Sektion. Die Sektions-Zähler tragen die Vollzahl, und alles darüber liegt einen Tap entfernt auf der Rückstands-Seite `/digest/rueckstand`. Diese zeigt den vollen Bestand aus dem Render des jüngsten fertigen Laufs mit denselben Aktionen -- ohne Modell-Lauf und ohne neue Quelle, weil ClickUp-Ad-hoc-Filter nicht stabil adressierbar sind. Daneben steht die Rückblick-Seite `/digest/rueckblick`: Diktate, angelegte Aufgaben, Fehler und offene Rückfragen der letzten Tage, die Erfolgs-Bilanz der Läufe, die in ClickUp erledigten Aufgaben und der vollständige Anpassungs-Verlauf -- reine Zahlen und Listen, bewusst ohne KI-Rückblick (teuerster Baustein ohne belegten Bedarf, und er hätte das Zeitlimit-Risiko des Digest-Laufs geerbt).
+
+Damit die Seite kein Standbild des Lauf-Zeitpunkts bleibt, gleicht der Server beim Aufruf den Status der angezeigten Aufgaben mit ClickUp ab: eine gebatchte Abfrage der seit `DIGEST_RECONCILE_DAYS` erledigten Aufgaben (dieselben Quellen wie die Momentum-Zeile), kurz gecacht gegen Hammer-Reloads und gegen Doppelabfragen gebündelt. Erledigte erscheinen durchgestrichen statt mit Buttons. Kein Modell-Lauf. Der Abgleich darf die Seite nie blockieren: Er hat ein hartes Zeitfenster, bei Ausfall oder Langsamkeit rendert die Seite ohne ihn weiter, die überholte Abfrage füllt im Hintergrund den Cache, und die Statuszeile sagt dann "Aufgaben-Status nicht abgeglichen". Ohne ClickUp-Token gibt es keine Quelle und damit auch keinen Netz-Zugriff.
 
 ### Anti-Tapete und Aktionen
 
-Damit der Digest nicht zur immer gleichen Tapete wird, zählt der Dienst pro Task, wie oft er prominent vorgeschlagen wurde -- höchstens einmal pro Kalendertag. Erreicht ein Task mit Priorität dringend oder hoch die Schwelle (`DIGEST_DECISION_MIN_SEEN`, Standard drei), ohne je angefasst worden zu sein, erzwingt der Digest genau eine Entscheidung: **Diese Woche erledigen** (Fälligkeit auf Freitag), **Umterminieren** (Fälligkeit plus zwei Wochen) oder **Streichen** (der Task wird mit Kommentar in ClickUp geschlossen).
+Damit der Digest nicht zur immer gleichen Tapete wird, zählt der Dienst pro Task, wie oft er prominent vorgeschlagen wurde -- höchstens einmal pro Kalendertag -- und zusätzlich, wie oft er weggeschoben wurde. Ein Aufschub (auf morgen, nächste Woche, umterminieren) lässt den Anzeige-Zähler stehen und zählt separat hoch, und nur eine Entscheidung (erledigt, gestrichen, tiefe Priorität, diese Woche) löscht den Eintrag. Vorher löschte *jede* Aktion den Zähler, eine Aufgabe liess sich also endlos wegschieben, ohne je zur Entscheidungs-Karte zu werden. Beide Zähler gehen gleichwertig in die Auswahl ein -- fünfmal weggeschoben wiegt schwerer als dreimal angezeigt -- und im Rückstand trägt eine oft aufgeschobene Aufgabe das als Badge. Erreicht ein Task mit Priorität dringend oder hoch die Schwelle (`DIGEST_DECISION_MIN_SEEN`, Standard drei), ohne je angefasst worden zu sein, erzwingt der Digest genau eine Entscheidung: **Diese Woche erledigen** (Fälligkeit auf Freitag), **Umterminieren** (Fälligkeit plus zwei Wochen) oder **Streichen** (der Task wird mit Kommentar in ClickUp geschlossen).
 
 Nach der Entscheidungs-Karte legt der Digest zusätzlich genau einen terminlosen Task zur Wann-Entscheidung vor (Karte **Ein Termin**): **Diese Woche erledigen**, **Nächste Woche** oder **Kein Termin nötig**. "Kein Termin nötig" stuft den Task mit Kommentar auf tiefe Priorität und nimmt ihn damit aus dem Digest. Welcher terminlose Task erscheint, rotiert über denselben Anti-Tapeten-Zähler -- der am seltensten gezeigte ist an der Reihe, Top-3- und Entscheidungs-Tasks sind ausgenommen. So baut der Digest den Rückstand terminloser Tasks ab, statt Fälligkeiten zu raten.
 
-Alle Karten in "Heute zuerst" und im Ausblick tragen zusätzlich die Aktionen **Erledigt**, **Auf morgen** und **Nächste Woche**. Jede Aktion läuft über `POST /digest/action`, abgesichert über ein HMAC-Token pro Task und Aktion (dieselbe Mechanik wie die ntfy-Buttons, siehe [Exposition und Authentifizierung](./index.md#exposition-und-authentifizierung)) plus einen Abgleich gegen den aktuell gerenderten Digest; das Workspace-Token bleibt serverseitig. Ausgeführte Aktionen erscheinen im Digest abgehakt statt als offene Aufgabe.
+Alle Karten und Zeilen der Seite tragen zusätzlich die Aktionen **Erledigt**, **Auf morgen** und **Nächste Woche**. Jede Aktion läuft über `POST /digest/action`, abgesichert über ein HMAC-Token (dieselbe Mechanik wie die ntfy-Buttons, siehe [Exposition und Authentifizierung](./index.md#exposition-und-authentifizierung)). Das Workspace-Token bleibt serverseitig.
+
+Das Token bindet **Lauf, Task und Aktion**, und die Whitelist ist der Render genau dieses Laufs -- nicht der jüngste. Vorher scheiterte nach einer Aktualisierung jeder Klick auf einer noch offenen Seite, weil die Aktion gegen den neuen Lauf geprüft wurde. Die Abhak-Anzeige liest dafür auf Tagesbasis statt lauf-weise: Ein zweiter Lauf am selben Tag verlor sonst alle Haken. Ausgeführte Aktionen erscheinen im Digest abgehakt statt als offene Aufgabe, Mehrfach-Antippen ist idempotent.
+
+### Rückweg in die Erfassung
+
+Die prominenten Karten tragen neben den Buttons ein Freitext-Feld: Eine Anweisung wie "auf Freitag verschieben" oder eine inhaltliche Ergänzung geht von der Digest-Seite in denselben Anpassungs-Lauf, den die Inbox nutzt (siehe [Bedienung](#bedienung)), mit gesetztem Task-Bezug und per Tastatur-Mikrofon auch diktierbar. Whitelist und HMAC gelten wie bei den Aktions-Knöpfen, und die Rechte-Staffelung nach Umkehrbarkeit begrenzt, was eine Anweisung anfassen darf (siehe [Kontext, Rückfragen und Dialog](#kontext-ruckfragen-und-dialog)). Bewusst nur an den prominenten Karten und nicht an jeder Rückstands-Zeile, sonst stünden 50 Textfelder auf einer Seite.
+
+### Push mit Top-3 und Aktions-Knöpfen
+
+Der Fertig-Push nennt nicht mehr nur, dass ein Digest bereitliegt, sondern trägt die **Top-3-Titel** im Text -- am Sperrbildschirm entscheidet sich, ob die Seite überhaupt geöffnet wird. Dazu kommen bis zu drei ntfy-Actions: erledigt und auf morgen für die erste Aufgabe plus Öffnen. Diese Knopf-URLs zeigen auf `POST /api/digest/action` am **öffentlichen** Host, weil der Inbox-Host hinter Authentik liegt und für eine ntfy-Action nicht erreichbar ist. Auth ist wie bei `/api/resolve` das HMAC-Token, gebunden an Lauf, Task und Aktion. Der Knopf wirkt damit ausschliesslich auf Aufgaben im Render seines eigenen Laufs.
 
 ### Prompt-Deckel und Zeitlimit
 
@@ -116,23 +146,35 @@ Ein Digest-Lauf hat 180 Sekunden Zeit. Dass Läufe daran reihenweise starben, la
 
 Seither formuliert das Modell nur noch für die heute fälligen Aufgaben und für die Woche Sätze. Für Überfällig und Ohne-Termin liefert es allein die Reihenfolge als ID-Liste, die Titel setzt der Server ein -- an der Darstellung ändert das nichts. Zusätzlich hat jede Sektion einen Prompt-Deckel (`DIGEST_SECTION_CAP`, im reduzierten Wiederholungslauf `DIGEST_REDUCED_CAP`). Gekappt wird ausschliesslich der Prompt: Die Seite bleibt vollständig, weil der Server die nicht kuratierten Aufgaben mit ihrem Titel ergänzt. Ein Lauf, der zuvor am Zeitlimit starb, lief danach in gut 90 Sekunden durch. Das Zeitlimit selbst wurde bewusst nicht erhöht, das wäre Symptomkur gewesen.
 
-### Einrichtung der Morgen-Automation
+Der Prompt-Deckel ist dabei nicht derselbe wie der Render-Deckel. Anfangs kappte ein einziger Wert beides, weshalb gekappte Aufgaben im gespeicherten Digest fehlten und damit unerreichbar waren. Erhoben wird jetzt vollständig, für das Modell wird ausgewählt, und ein eigener Render-Deckel (`DIGEST_RENDER_SECTION_CAP`) schützt allein die Grösse des gespeicherten Digests. Wie viel davon die Seite zeigt, entscheidet noch einmal getrennt der Seiten-Deckel (siehe [Rückstand und Status-Abgleich](#ruckstand-und-status-abgleich)).
 
-Der Morgen-Digest hängt an zwei signierten Kurzbefehl-Dateien ("Daily Digest" manuell mit Safari-Open, "Daily Digest Morgen" als Automation im Zeitfenster 04:00-10:59, ohne Safari-Open; beide enthalten den Bearer-Token und werden nach dem Import gelöscht) und einer von Hand angelegten iOS-Automation (Auslöser "Ladegerät wird getrennt", "Sofort ausführen" ohne Bestätigung). Das Zeitfenster steckt im Kurzbefehl, weil iOS-Automationen selbst keine Zeitbedingung kennen. Wichtig bei der Ersteinrichtung: den Automations-Kurzbefehl einmal manuell **innerhalb des Zeitfensters** ausführen, sonst blockiert der erste Automations-Lauf am gesperrten Gerät an den Freigabe-Dialogen (iOS-Freigaben gelten pro Kurzbefehl). Das vollständige Einrichtungsverfahren steht in `docs/konzept.md` im [Service-Repo](https://github.com/derever-labs/todo-ingest).
+### Kurzbefehle rund um den Digest
 
-### Abend-Modus (Vorabend-Planung)
+Die Digest-Läufe hängen nicht mehr an einem Kurzbefehl. Bestehen bleiben drei signierte Kurzbefehl-Dateien ("Daily Digest" manuell mit Safari-Open, "Daily Digest Morgen" für die iOS-Automation im Zeitfenster 04:00-10:59, dazu der Abend-Kurzbefehl, alle mit dem Bearer-Token darin und nach dem Import gelöscht) sowie die von Hand angelegte iOS-Automation "Ladegerät wird getrennt". Sie waren früher die Auslöser, erreichen den Server aber seit dem 21.07.2026 nicht mehr. Ihr Code-Pfad bleibt bewusst unangetastet statt entfernt. Das Zeitfenster steckt im Kurzbefehl, weil iOS-Automationen selbst keine Zeitbedingung kennen. Die iOS-Freigaben gelten pro Kurzbefehl, weshalb ein Automations-Kurzbefehl einmal manuell innerhalb seines Zeitfensters laufen muss, bevor er am gesperrten Gerät durchkommt. Das vollständige Verfahren steht in `docs/konzept.md` im [Service-Repo](https://github.com/derever-labs/todo-ingest).
 
-Neben dem Morgen-Digest gibt es einen Abend-Modus, der den morgigen Tag vorausplant. Ein eigener Abend-Kurzbefehl stösst ihn an (dieselbe Digest-Route `POST /api/digest`, aber mit dem Modus `evening`). Der Dienst rechnet die Buckets aus der Morgen-Perspektive und fixiert daraus die Top-3 für morgen. Der nächste Morgen-Lauf übernimmt diese fixierten Top-3 unverändert, bereits erledigte werden ersetzt. So steht die Marschrichtung schon am Vorabend fest, statt erst beim Aufwachen.
+::: info Kollisionsschutz mit den Kurzbefehlen
+Käme ein Kurzbefehl je wieder durch, entsteht kein doppelter Digest: Sein `POST /api/digest` erzeugt einen regulären Lauf des betreffenden Modus, und der Zeit-Auslöser prüft genau darauf -- auf einen erfolgreichen Lauf dieses Modus am selben Tag -- und schweigt dann.
+:::
 
-Zusätzlich schlägt der Abend-Modus bis zu drei Fokus-Zeitfenster für morgen vor (Blocker mit Start- und Endzeit). Weil der Dienst bewusst keinen Kalender-Zugriff hat, holt der Abend-Kurzbefehl diese Blocker über den Plan-Endpoint (`GET /api/digest/plan`) ab und trägt sie selbst als Termine in den iPhone-Kalender "Fokus" ein.
+### Abend-Lauf und Vorabend-Planung
 
-Jeder Digest trägt seinen Lauf-Modus, und der Vergleichs-Schnappschuss hinter dem Marker "neu seit dem letzten Digest" wird pro Modus getrennt geführt -- Morgen vergleicht gegen Morgen, Abend gegen Abend. Sonst hätte ein täglich laufender Abend-Digest dem Morgen-Marker nur noch die letzten neun Stunden gemessen.
+Der Abend-Lauf rechnet die Buckets aus der Morgen-Perspektive und fixiert daraus die Top-3 für morgen. Der nächste Morgen-Lauf übernimmt diese fixierten Top-3 unverändert, bereits erledigte werden ersetzt. So steht die Marschrichtung schon am Vorabend fest, statt erst beim Aufwachen. Der Morgen-Digest benennt zudem, ob die Top-3 am Vorabend fixiert wurden oder er sie heute Morgen selbst gewählt hat (Abend-Lauf ausgefallen) -- eine Neuwahl sah vorher wie eine Fixierung aus.
+
+Zusätzlich schlägt der Abend-Lauf bis zu drei Fokus-Zeitfenster für morgen vor (Blocker mit Start- und Endzeit). Weil der Dienst bewusst keinen Kalender-Zugriff hat, kann er sie nicht selbst eintragen: Der Plan-Endpoint `GET /api/digest/plan` liefert sie für einen manuellen Import in den iPhone-Kalender "Fokus" weiter, seit der Abend-Kurzbefehl den Server nicht mehr erreicht aber ohne automatischen Abholer.
+
+Jeder Digest trägt seinen Lauf-Modus, und der Vergleichs-Schnappschuss hinter dem Marker "neu seit dem letzten Digest" wird pro Modus getrennt geführt -- Morgen vergleicht gegen Morgen, Abend gegen Abend. Ohne diese Trennung würde der tägliche Abend-Lauf dem Morgen-Marker nur noch die letzten neun Stunden messen. Beim allerersten Lauf eines Modus fehlt der Vorgänger-Schnappschuss, dann trägt keine Aufgabe den Marker "neu" -- einmalig und benannt statt geraten.
 
 Die Digest-Seite rendert im Abend-Modus dieselben Schritte, aber aus der Morgen-Perspektive beschriftet: Kopf "Abend-Plan", "Morgen zuerst" statt "Heute zuerst" und eine Karte "Fokus-Blocker morgen". Die Entscheidungs- und die Termin-Karte bleiben Morgen-Rituale und erscheinen abends nicht. Der Anti-Tapeten-Zähler wird am Abend nicht hochgezählt.
 
 ### Digest-Widget (Scriptable)
 
-Ein Scriptable-Widget zeigt die Kurzfassung des jüngsten erfolgreichen Digests direkt auf dem Home- und Lock-Screen: Headline, Top-3, die Zähler für heute und überfällig, die Momentum-Zeile und den nächsten Termin. Es liest den read-only-Endpoint `GET /api/digest/summary` mit dem Bearer-Token und überspringt dabei fehlgeschlagene Läufe. Das Widget-Script liegt im Service-Repo (`scripts/widget.js`), die Einrichtung läuft über das Kurzbefehl-Portal. Den Zugangs-Token legt Scriptable beim ersten Lauf im eigenen Keychain ab.
+Ein Scriptable-Widget zeigt die Kurzfassung des jüngsten erfolgreichen Digests direkt auf dem Home- und Lock-Screen: Headline, Top-3, die Zähler für heute und überfällig, die Momentum-Zeile und den nächsten Termin. Es liest den read-only-Endpoint `GET /api/digest/summary` mit dem Bearer-Token und überspringt dabei fehlgeschlagene Läufe. Das Widget-Script und seine Einrichtungs-Anleitung liegen im Service-Repo (`scripts/widget.js`, README). Den Zugangs-Token legt Scriptable beim ersten Lauf im eigenen Keychain ab.
+
+Das Widget sagt, wie alt es ist: Neben dem Frischestempel liefert der Endpoint den neu gerechneten **Bezugstag**, denn die heute/morgen-Marken der Termine entstehen beim Rendern und nicht beim Lesen. Ein Abend-Plan von 21:30 ist am nächsten Morgen der heutige Tag, am Abend selbst der Plan für morgen, und ein zu alter Lauf wird als veraltet ausgewiesen statt Zahlen für heute zu behaupten. Die Formulierung des Stempels ist im Code SSOT, damit Seite und Widget nicht Verschiedenes sagen.
+
+::: warning Lauf-Historie reicht bei zwei Läufen nur noch eine Woche
+Die Aufbewahrung der Digest-Läufe ist eine Anzahl, keine Frist (`DIGEST_KEEP`, Standard 14). Mit einem Lauf pro Tag deckte das rund zwei Wochen ab, mit zwei Läufen pro Tag nur noch etwa eine Woche. Betroffen sind die rückschauenden Ansichten: die Erfolgs-Bilanz auf der Rückblick-Seite und die Statuszeile stützen sich auf diese Läufe.
+:::
 
 ## Verarbeitungs-Mechanismen im Detail
 
