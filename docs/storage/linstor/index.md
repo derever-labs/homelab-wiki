@@ -292,7 +292,7 @@ Der Container läuft im privileged Mode, da CSI-Plugins Mount-Operationen auf de
 
 ### CSI HA via Consul Service Discovery
 
-Damit der Controller-Failover ohne Anpassung des CSI-Plugins funktioniert, wird Consul Service Discovery genutzt -- den Ablauf zeigt [Controller-Failover und CSI](#controller-failover-und-csi). Consul beantwortet Service-Lookups per Default mit DNS-TTL 0; ein abweichender TTL-Wert ist nirgends konfiguriert, kein Client cached also einen alten Controller-Standort.
+Damit der Controller-Failover ohne Anpassung des CSI-Plugins funktioniert, wird Consul Service Discovery genutzt -- den Ablauf zeigt [Controller-Failover und CSI](#controller-failover-und-csi). Die DNS-TTL für den Service `linstor-controller` ist auf allen drei Consul-Servern explizit auf `0s` gesetzt (`dns_config.service_ttl` in `/etc/consul.d/linstor-ttl.hcl`, verteilt über `scripts/update_consul_ttl.sh` im infra-Repository). Kein Client cached damit einen alten Controller-Standort.
 
 **Komponenten:**
 - **Registration Script:** `/usr/local/bin/linstor-consul-register.sh` -- registriert `linstor-controller` (Port 3370) mit HTTP-Health-Check auf `/health` (Intervall 10 s, Deregistrierung nach 30 s critical)
