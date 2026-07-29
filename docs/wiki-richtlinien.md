@@ -265,7 +265,7 @@ Verbindliche D2-Konventionen:
 Die TALA-Layout-Engine läuft unlizenziert. Die generierten Diagramme tragen einen `UNLICENSED-COPY`-Schriftzug -- das ist bewusst akzeptiert.
 :::
 
-#### Mechanik-Katalog (R1-R8)
+#### Mechanik-Katalog (R1-R9)
 
 Verbindliche Regeln für Architektur-Diagramme aus der Diagramm-Vertiefung 2026-07. Sie ergänzen die D2-Konventionen oben und legen fest, wie ein Diagramm die Mechanik eines Systems lesbar macht.
 
@@ -279,6 +279,7 @@ Verbindliche Regeln für Architektur-Diagramme aus der Diagramm-Vertiefung 2026-
 - **R6 Mechanik-Test:** Nach Diagramm plus Lesehilfe muss ein Leser beantworten können: Wer initiiert? Wo wird entschieden oder gecacht? Was passiert bei Ausfall von x?
 - **R7 Beleg-Pflicht:** Jede Kante ist gegen Configs, Repos oder Live-Systeme belegt. Fehlende Kanten sind Befunde, erfundene Kanten sind verboten, Wissenslücken kommen in die Fragen-Queue statt ins Diagramm.
 - **R8 Farbkodierung:** Zeigt ein Diagramm mehrere unterscheidbare Wege, bekommen die Wege konsistente, dezente Farben über D2-Klassen (Theme-nahe Töne, Shapes neutral). Farbe kodiert den Weg, nicht Dekoration, und bleibt pro Seite konsistent.
+- **R9 Beleg-Zeile:** Unter der Lesehilfe steht eine Zeile, gegen welche Quellen die Kanten belegt wurden und wann zuletzt, im Format `**Belegt gegen** <Quellen>, Stand <TT.MM.JJJJ>.` Beispiel: `**Belegt gegen** UniFi-Controller Lenzburg und `tailscale-policy/policy.hujson`, Stand 29.07.2026.` Die Zeile sagt, *wogegen* geprüft wurde, nicht nur wann -- damit weiss ein Leser, wo er selbst nachprüfen müsste. Das reine Änderungsdatum der Seite liefert VitePress automatisch aus der Git-History im Seitenfuss und wird nie von Hand gepflegt: ein handgeschriebenes Änderungsdatum driftet und lügt dann. Die Beleg-Zeile ergänzt genau die Information, die Git nicht kennt -- wann der Inhalt zuletzt gegen die Realität gehalten wurde. Ein Diagramm kann seit Monaten unverändert und trotzdem falsch sein.
 
 ## Verlinkung
 
