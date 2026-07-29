@@ -40,7 +40,7 @@ IPs, DNS und Details: [Hosts und IPs -- Externe Plattformen](../../_referenz/hos
 
 ### Standort-Topologie
 
-Lese-Konvention für beide Diagramme dieser Seite: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Durchgezogene Kanten gehören zur Schrittkette des jeweiligen Szenarios, gestrichelte sind Dauer- oder Hintergrundverkehr. Farben kodieren die Wege: Violett die Verwaltung (PDM), Blau die geplante Datenbewegung (Backup-Push, Live-Migration), Ocker die Reaktion auf einen Ausfall, Grau der Cluster-Hintergrund.
+Lese-Konvention für beide Diagramme dieser Seite: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Durchgezogene Kanten zeigen das aktive Geschehen des Szenarios -- als nummerierte Schrittkette, wo eine Reihenfolge existiert, unnummeriert, wo unabhängige Vorgänge parallel laufen (die beiden vzdump-Pushes). Gestrichelte Kanten sind Dauer- oder Hintergrundverkehr. Farben kodieren die Wege: Violett die Verwaltung (PDM), Blau die geplante Datenbewegung (Backup-Push, Live-Migration), Ocker die Reaktion auf einen Ausfall, Grau der Cluster-Hintergrund.
 
 **Leitfrage:** Wer initiiert Verwaltung und Backups zwischen den Standorten -- und warum sichert sich der Backup-Server nicht über sich selbst?
 
