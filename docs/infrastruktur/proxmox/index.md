@@ -29,7 +29,7 @@ Vollständige Knoten-, VM- und LXC-Liste mit IPs, VM-IDs und Host-Zuordnung: [Ho
 
 ## Externe / Standalone-Nodes
 
-Neben dem Lenzburg-Cluster gibt es zwei eigenständige Proxmox-Nodes an anderen Standorten. Sie sind **kein Cluster-Mitglied** (kein Quorum, kein HA, kein DRBD), nutzen lokale ZFS-Disks und sind via Tailscale ins Homelab eingebunden. Verwaltet werden sie zentral über den [Datacenter Manager](./referenz.md#datacenter-manager-pdm), gesichert über den gemeinsamen PBS.
+Neben dem Lenzburg-Cluster gibt es zwei eigenständige Proxmox-Nodes an anderen Standorten. Sie sind **kein Cluster-Mitglied** (kein Quorum, kein HA, kein DRBD), nutzen lokale ZFS-Disks und sind via Tailscale ins Homelab eingebunden. Verwaltet werden sie zentral über den [Datacenter Manager](./referenz.md#datacenter-manager-pdm), der gemeinsame PBS ist als Backup-Ziel eingebunden.
 
 | Node | Standort | Netz | Rolle |
 | :--- | :--- | :--- | :--- |
@@ -95,7 +95,7 @@ lenzburg.cluster -> lenzburg.nas: "vzdump-Push 20:00 -- nur die PBS-VM als Voll-
 2. Die externen Nodes erreicht PDM bewusst nur über die Tailscale-Peer-IPs, ohne `accept-routes` ([PDM erreicht externe Remotes nur via Tailscale](./betrieb.md#externe-standalone-nodes)).
 3. Backups initiiert der jeweilige PVE-Host per vzdump-Push zum PBS -- nachts gestaffelt um 02:00 und 03:00, damit nicht alle Gäste gleichzeitig snapshotten ([Backup](../../storage/backup/)).
 4. Die PBS-VM läuft selbst als HA-VM auf dem Cluster und sichert sich nicht über den eigenen Datastore: Sie geht um 20:00 als klassisches vzdump-Archiv auf die Synology-NFS. Die PBS-VM lässt sich damit auch dann wiederherstellen, wenn der PBS selbst weg ist.
-5. Die externen Standalone-Nodes sind für ihre eigenen Backups an denselben PBS-Datastore angebunden (PBS-Storage lokal auf der Node definiert); Betrieb und Grenzen: [Externe Standalone-Nodes](./betrieb.md#externe-standalone-nodes).
+5. Auf den externen Standalone-Nodes ist derselbe PBS-Datastore als Backup-Ziel definiert (PBS-Storage lokal auf der Node), aktuelle Sicherungen der externen Gäste enthält der Datastore aber keine -- Ist-Zustand und Betrieb: [Externe Standalone-Nodes](./betrieb.md#externe-standalone-nodes).
 6. Fällt der Standort Lenzburg aus, laufen die Standalone-Nodes autonom weiter (kein Quorum-Bezug) -- sie verlieren aber Verwaltung (PDM) und Backup-Ziel (PBS).
 
 ::: info Zwei Sichten auf die Standorte
