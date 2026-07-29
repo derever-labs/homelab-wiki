@@ -74,8 +74,8 @@ c05.alloc -> c05.drbd: "1. write() -- kehrt erst nach lokalem Write und Peer-Ack
 c05.drbd -> c05.disk: "2a. Write mit Flush auf das Thin-LV" { class: schreib }
 c05.drbd -> c06.drbd: "2b. parallel Replika-Write mit Ack -- Protokoll C via Thunderbolt" { class: schreib }
 c06.drbd -> c06.disk: "3. Write mit Flush" { class: schreib }
-c05.drbd -- c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
-c06.drbd -- c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
+c05.drbd -> c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
+c06.drbd -> c04: "Quorum-Stimme (Management-Netz)" { class: quorum; style.stroke-dash: 3 }
 ```
 
 **Lesehilfe:**
@@ -185,8 +185,8 @@ c06: vm-nomad-client-06 (fällt aus) {
 
 c04: vm-nomad-client-04 (TieBreaker) { class: node }
 
-c05.drbd -- c06.drbd: "1. Replikations-Link reisst -- erkannt über die DRBD-Timeouts" { class: quorum; style.stroke-dash: 3 }
-c05.drbd -- c04: "2. Quorum hält -- 2 von 3 Stimmen, I/O läuft weiter" { class: schreib }
+c05.drbd -> c06.drbd: "1. Replikations-Link reisst -- erkannt über die DRBD-Timeouts" { class: quorum; style.stroke-dash: 3 }
+c05.drbd -> c04: "2. Quorum hält -- 2 von 3 Stimmen, I/O läuft weiter" { class: schreib }
 c05.drbd -> c05.bitmap: "3. markiert jeden weiteren Write als out-of-sync" { class: schreib }
 c06.drbd -> c05.drbd: "4. Rückkehr -- Reconnect und Abgleich der Daten-Generationen" { class: heilung; style.stroke-dash: 3 }
 c05.drbd -> c06.drbd: "5. Resync nur der markierten Blöcke -- via Thunderbolt" { class: heilung; style.stroke-dash: 3 }
