@@ -24,7 +24,7 @@ Keep Mobile (`keep-mobile`) ist eine schlanke, mobile-first Progressive Web App 
 | Erreichbarkeit | Oeffentlich -- ohne VPN/Tailscale, hinter Authentik + CrowdSec |
 | Auth | Extern: `public-auth@file` (Authentik + CrowdSec). Intern (ClientIP): `intern-auth@file`. `/api/health`: `keep-mobile-health` (`intern-noauth`, nur intern). Authentik-Zugang auf Gruppe `admin` gebunden |
 | Secrets | `kv/data/keep-mobile` (Keep-API-Key, Kuma-API-Key) |
-| Monitoring | Uptime-Kuma HTTP-Monitor 86 auf `/api/health` -- siehe [Coverage](../coverage/index.md) |
+| Monitoring | Uptime-Kuma Keyword-Monitor 86 (Schlüsselwort `status`) auf `/api/health` -- siehe [Coverage](../coverage/index.md) |
 
 ## Rolle im Stack
 
@@ -73,7 +73,7 @@ Die Verbindung zu [Uptime-Kuma](../uptime-kuma/) besteht in zwei Richtungen:
 
 - **Inline-Status (App liest Kuma):** Traegt ein Incident einen Uptime-Kuma-Alert, blendet die Detail-Ansicht eine Heartbeat-Leiste (gruen/gelb/rot pro Check, wie in Kuma), den aktuellen Status, die 24h-Uptime und die Antwortzeit sowie einen Deep-Link ins Kuma-Dashboard ein. Primaerquelle ist der **unauthentifizierte Status-Page-Heartbeat-Endpoint** (`/api/status-page/heartbeat/keep-mobile`, intern via Consul). Die dedizierte Status-Page `keep-mobile` enthaelt per API **alle** Monitore -- so hat jeder Kuma-Incident den Verlauf, nicht nur die der kuratierten `homelab`-Page (dort fehlten einzelne, z.B. Linstor GUI). Ein Request liefert Verlauf + Uptime ohne Kuma-Login im Browser. Fallback fuer Monitore ausserhalb der Page ist `/metrics` (HTTP-Basic, leerer User + API-Key).
 - **Deep-Link:** Da Kuma hinter dem Authentik-Outpost laeuft und sein Eigen-Login deaktiviert ist ([Uptime-Kuma](../uptime-kuma/)), oeffnet der Link `…/dashboard/<monitor-id>` das Monitor-Dashboard nahtlos (nur Authentik admin-only davor).
-- **Self-Monitoring (Kuma prueft die App):** Der HTTP-Monitor 86 prueft `m.keep.ackermannprivat.ch/api/health` im 60-Sekunden-Takt. Bei Ausfall alarmiert er ueber die Keep-Notification nach Telegram.
+- **Self-Monitoring (Kuma prueft die App):** Der Keyword-Monitor 86 prueft `m.keep.ackermannprivat.ch/api/health` im 60-Sekunden-Takt und verlangt im Antwortkörper das Schlüsselwort `status`. Damit faellt auch ein Endpoint auf, der zwar 200 liefert, aber keine gültige Antwort mehr. Bei Ausfall alarmiert er über zwei Kanäle: die Keep-Notification nach Telegram und einen davon unabhängigen Watchdog, damit ein Keep-Ausfall die Meldung über sich selbst nicht mitreisst.
 
 ## Keep-Deep-Link
 
