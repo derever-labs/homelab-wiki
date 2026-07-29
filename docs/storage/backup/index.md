@@ -20,6 +20,7 @@ Die Backup-Strategie ist mehrschichtig aufgebaut. Jede Schicht schützt gegen un
 | PostgreSQL Dump | pg_dumpall → NFS `/nfs/backup/postgres/` -- RPO 24h, GFS: 7d/4w/3m |
 | VM Backups (PBS) | Proxmox PBS → PBS Server, Block-Level inkl. LINSTOR-Volumes; auch externe Nodes (Luzern/Dottikon) via Tailscale -- RPO 24h, 6 Monate |
 | DRBD-Replikation | 2× Live-Replica (client-05/client-06) -- Hochverfügbarkeit, kein Backup |
+| Off-Site-Kopie | Synology Hyper Backup vom NAS an den Standort Dottikon -- versioniert, zeitgesteuert |
 | SQLite Replication | Litestream → MinIO (nie produktiv umgesetzt, siehe [Datenstrategie](../../_querschnitt/datenstrategie.md#_3-litestream-replikation-sqlite-nicht-umgesetzt)) |
 
 ## PostgreSQL Backup
@@ -59,6 +60,12 @@ Alle Nomad-Backup-Job-Outputs werden mit [age](https://age-encryption.org/) vers
 Vor jedem Restore muss das Backup-Archiv zuerst mit age entschlüsselt werden. Details zum Ablauf: Runbook `docs/runbooks/backup-restore.md` im Repo `homelab-hashicorp-stack`.
 :::
 
+## Off-Site-Kopie
+
+Das NAS `10.0.0.200` sichert per Synology Hyper Backup an das NAS am Standort Dottikon (Ziel `nana.ackermannprivat.ch`). Der Task läuft zeitgesteuert direkt auf dem NAS, nicht über PBS oder einen Nomad-Job -- die Off-Site-Schicht hängt damit weder am Cluster noch am PBS und läuft auch dann weiter, wenn die Cluster-Seite komplett steht.
+
+Hyper Backup legt am Ziel ein versioniertes Repository (`.hbk`) ab, keinen reinen Spiegel: Eine Änderung oder Löschung auf dem Quell-NAS überschreibt die älteren Stände am Ziel nicht sofort. Welche Freigaben der Task umfasst und wie viele Versionen die Rotation hält, steht in der Task-Konfiguration in DSM Hyper Backup -- sie ist dafür die kanonische Quelle.
+
 ## Monitoring
 
 ### Uptime Kuma Push-Monitore
@@ -73,8 +80,8 @@ Das Interval von 26 Stunden gibt 2 Stunden Puffer, falls Backups länger dauern 
 
 ## Bewusste Architektur-Grenzen
 
-::: warning Kein Off-Site / 3-2-1 unvollständig
-Alle Backup-Ziele (PBS-Datastore, App-Dumps) liegen per NFS auf dem NAS `10.0.0.200`. Das NAS ist damit ein Single Point of Failure, und es gibt keine geografische Off-Site-Kopie. Das ist eine **bewusste Entscheidung** (kein volles 3-2-1) -- das NAS hat eine eigene Backup-Strategie.
+::: warning Beide lokalen Backup-Ziele auf demselben NAS
+Der PBS-Datastore und die App-Dumps unter `/nfs/backup/` liegen beide per NFS auf dem NAS `10.0.0.200`. Fällt dieses NAS aus, sind beide schnellen Restore-Wege gleichzeitig weg und ein Restore läuft nur noch über die [Off-Site-Kopie](#off-site-kopie) nach Dottikon -- also deutlich langsamer und mit Datenverlust bis zum letzten Hyper-Backup-Lauf. Das ist eine **bewusste Entscheidung**: Die geografische Redundanz trägt das NAS selbst, der Cluster hält dafür keine zweite lokale Kopie vor.
 :::
 
 ## Verwandte Seiten
