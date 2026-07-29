@@ -76,8 +76,8 @@ raft: Vault Raft Cluster {
     tooltip: "nehmen Anfragen an, beantworten sie aber nicht selbst"
   }
 
-  standby -> leader: "3. leitet Anfragen an den\nLeader weiter (Cluster-Port 8201)" { class: intern }
-  leader <-> standby: "Raft -- Replikation und\nLeader-Election (8201)" { class: intern-async }
+  standby -> leader: "3. Forward an den\nLeader (8201)" { class: intern }
+  leader <-> standby: "Raft (8201) --\nReplikation und\nLeader-Election" { class: intern-async }
 }
 
 unseal: vault-unseal.service {
@@ -149,7 +149,7 @@ vault: Vault {
 
 Nomad -> Task: "1. stellt signiertes Workload-JWT\naus (aud vault.io, TTL 1 h)" { class: intern }
 Task -> vault.auth: "2. JWT vorzeigen --\nerhält kurzlebigen Vault-Token" { class: secrets }
-vault.auth -> Nomad: "3. holt Signatur-Schlüssel vom JWKS-\nEndpunkt der Nomad-Server (4646)" { class: intern-async }
+vault -> Nomad: "3. holt Signatur-Schlüssel vom JWKS-\nEndpunkt der Nomad-Server (4646)" { class: intern-async }
 Task -> vault.kv: "4. liest kv/data/JOB_ID --\nAntwort: Secret-Werte" { class: secrets }
 ```
 

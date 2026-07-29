@@ -51,7 +51,7 @@ servers: Nomad Server Cluster {
 
   api: Empfangender Server {
     class: node
-    tooltip: "HTTPS-API Port 4646 (TLS) -- alle drei Server sind gleichwertige Endpunkte"
+    tooltip: "HTTPS-API 4646 (TLS) und RPC 4647 -- alle drei Server sind gleichwertige Endpunkte"
   }
   leader: Leader -- Evaluation und Placement {
     class: node
@@ -78,8 +78,8 @@ clients: Nomad Clients {
 }
 
 deploy -> servers.api: "1. Job einreichen\n(HTTPS 4646, ACL-Token)" { class: steuer }
-clients.agent -> servers: "3. pullt seine Allocations\n(RPC 4647, Blocking Query)" { class: steuer }
-clients.agent -> servers: "Heartbeat -- Lebenszeichen\nfür die Ausfall-Erkennung" { class: intern-async }
+clients.agent -> servers.api: "3. pullt seine Allocations\n(RPC 4647, Blocking Query)" { class: steuer }
+clients.agent -> servers.api: "Heartbeat -- Lebenszeichen\nfür die Ausfall-Erkennung" { class: intern-async }
 ```
 
 Lesehilfe:
