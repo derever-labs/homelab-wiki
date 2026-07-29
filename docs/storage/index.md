@@ -156,7 +156,7 @@ Lesehilfe:
 ::: warning Was die Kette nicht deckt
 - **DRBD-Replikation ist kein Backup:** Sie hält Volumes verfügbar, repliziert aber jeden logischen Fehler (Löschung, fehlgeschlagene Migration) synchron mit.
 - **Die DRBD-Datendisk von client-06 ist vom VM-Backup ausgenommen** (`backup=0`): Fällt client-05 aus, existiert der jüngste Block-Stand der Volumes nur noch live auf client-06 -- die App-Dumps sind in diesem Fenster die Absicherung ([Details](./backup/referenz.md#drbd-datendisk-des-storage-nodes-c06-ausgenommen)).
-- **Kein Off-Site, NAS als Single Point of Failure:** Beide Backup-Ziele liegen auf demselben NAS -- eine bewusste Entscheidung ([Architektur-Grenzen](./backup/index.md#bewusste-architektur-grenzen)).
+- **Beide lokalen Backup-Ziele liegen auf demselben NAS:** PBS-Datastore und App-Dumps teilen sich das NAS als Single Point of Failure. Fällt es aus, bleibt nur die [Off-Site-Kopie](./backup/index.md#off-site-kopie) nach Dottikon als Restore-Weg -- langsamer und mit Datenverlust bis zum letzten Lauf ([Architektur-Grenzen](./backup/index.md#bewusste-architektur-grenzen)).
 - **Node-lokale flüchtige Daten** (Transcodes, Caches) werden nirgends gesichert -- bewusst.
 :::
 

@@ -44,7 +44,7 @@ PBS wendet die Retention-Regeln automatisch an und entfernt veraltete Backups vi
 
 ## Datastore
 
-Der PBS-Datastore liegt per NFS auf dem NAS, nicht auf einem lokalen Pool der PBS-VM. Damit ist das NAS ein Single Point of Failure -- eine bewusste Entscheidung ohne Off-Site-Kopie (Details und SPOF-Betrachtung: [Backup](./index.md)).
+Der PBS-Datastore liegt per NFS auf dem NAS, nicht auf einem lokalen Pool der PBS-VM. Damit ist das NAS ein Single Point of Failure für den schnellen Restore-Weg -- eine bewusste Entscheidung, die geografische Redundanz trägt die [Off-Site-Kopie](./index.md#off-site-kopie) des NAS selbst (Details und SPOF-Betrachtung: [Backup](./index.md)).
 
 ## Monitoring
 
