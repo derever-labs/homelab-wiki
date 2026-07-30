@@ -36,6 +36,8 @@ Der dritte tragende Entscheid heisst **ehrliche Ausgänge** (29.07.2026) und ist
 
 Der vierte tragende Entscheid heisst **Push schlägt Seite** (29.07.2026) und macht den Digest lesenswert und handlungsfähig. Ausgangspunkt war die Beobachtung, dass der einzige bewiesene Kanal der Push mit Knöpfen ist -- neue Fähigkeiten docken darum dort an, statt eine Seite zu erweitern, die niemand öffnet. Daraus folgen zwei Läufe mit verschiedenen Rollen statt eines Digests pro Tag (abends die Arbeits-Ausgabe, die die Top-3 für morgen fixiert, morgens die kurze Lese-Ausgabe), ein Push, der die Top-3-Titel und Aktions-Knöpfe selbst trägt, ein Rückstand, der ansprechbar wird statt bloss gezählt, und ein Status-Abgleich beim Seitenaufruf, damit die Seite kein Standbild ihres Lauf-Zeitpunkts bleibt. Mechanik: [Daily Digest](./betrieb.md#daily-digest), [Rückstand und Status-Abgleich](./betrieb.md#ruckstand-und-status-abgleich) und [Push mit Top-3 und Aktions-Knöpfen](./betrieb.md#push-mit-top-3-und-aktions-knopfen).
 
+Der fünfte tragende Entscheid heisst **Beilagen aus Links** (30.07.2026). Eine Beilage ist externer Inhalt plus Absicht -- das Foto deckte diesen Fall seit dem 28.07.2026 ab, der diktierte Link nicht: Er landete als Rohtext in der Beschreibung, das Modell wusste nicht, worum es geht, und der Task hiess "das anschauen". Die Beschaffung liegt darum beim Nachbardienst [Karakeep Ingest](../karakeep-ingest/index.md) und nur die Verarbeitung hier. Drei Grundsätze tragen den Entscheid: **Feld-Hoheit** -- der Link darf anreichern und vorschlagen, anordnen darf nur das Diktat, und das erzwingt der Server statt bloss der Prompt. **Zwei Wege, eine Zusage** -- ein normaler Link wird im selben Lauf geholt, eine Apify-Quelle geparkt und sofort quittiert, in beiden Fällen weiss der Nutzer, woran er ist. **Das Diktat hängt nie an einem Fremddienst** -- reisst das Zeitbudget oder fällt der Nachbardienst aus, läuft das Diktat normal weiter und der Task trägt den sichtbaren Vermerk, dass der Link nicht gelesen wurde. Mechanik: [Beilagen aus Links](./betrieb.md#beilagen-aus-links).
+
 Das Werkzeug ist bewusst generisch: Es erfasst jede Art von Aufgabe (privat, HSLU, Alltag), nicht nur IT-Themen. Die Klassifikation entscheidet ausschliesslich über den Ziel-Workspace, nicht über die Art der Aufgabe.
 
 ```d2
@@ -61,6 +63,10 @@ Ingest: "todo-ingest (Hono)" {
     class: node
     tooltip: "Offene Tasks beider Ziel-Listen, soeben angelegte Tasks (24h), offene Rückfragen (60 min) und mitgeschickte Termine -- als Daten deklariert (Injection-Härtung)"
   }
+  LINK: "Link-Abruf\n+ Warte-Tabelle" {
+    class: node
+    tooltip: "Normale Links werden im selben Lauf geholt (hartes Zeitbudget), LinkedIn und Instagram warten in einer eigenen Tabelle und werden in einem Minuten-Takt freigegeben. Ohne Token bleibt der Zweig ganz aus"
+  }
   AI: "Klassifikation\n(Claude, seriell)" { class: node }
   SWEEP: "Sweeper\n(15-min-Takt)" {
     class: node
@@ -68,12 +74,16 @@ Ingest: "todo-ingest (Hono)" {
   }
   WD: "Selbstüberwachung\n(im Sweeper-Takt)" {
     class: node
-    tooltip: "Vier deterministische Pipeline-Signale: hängendes Diktat, überfällige Rückfrage trotz Sweeper, unzustellbare Quittung, Fehlerquote. Nie ein Alarm auf den Diktat-Rhythmus. Dazu montags ein Wochenbericht ohne Alarm-Charakter"
+    tooltip: "Fünf deterministische Pipeline-Signale: hängendes Diktat, überfällige Rückfrage trotz Sweeper, geparkter Link-Abruf über der Frist, unzustellbare Quittung, Fehlerquote. Nie ein Alarm auf den Diktat-Rhythmus. Dazu montags ein Wochenbericht ohne Alarm-Charakter"
   }
 }
 
 ClickUp: "ClickUp\n(HSLU oder Privat)" { class: node }
 Ntfy: "ntfy\n(Push aufs iPhone)" { class: node }
+KaraIn: "karakeep-ingest\n(Überholspur)" {
+  class: node
+  tooltip: "Fremddienst, adressiert über Consul-DNS. Liefert gekappten Volltext und Metadaten und legt den Link zugleich als Karakeep-Lesezeichen ab"
+}
 Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
   class: node
   tooltip: "Eigener Host, nur hinter Authentik (Gruppe admin). Zeigt offene Rückfragen, zuletzt erstellte Tasks und die Diktat-Historie. Antworten, Anpassen und Reprocess laufen über HMAC-signierte Aktionen, Text-Erfassung über dieselbe Pipeline wie das Diktat"
@@ -81,6 +91,9 @@ Inbox: "Web-Inbox (Browser)\ninbox.ackermannprivat.ch" {
 
 Shortcut -> Ingest.DB: "POST, 202 sofort" { style.stroke: "#2563eb" }
 Ingest.DB -> Ingest.AI: "asynchron"
+Ingest.DB -> Ingest.LINK: "URL im Diktat erkannt"
+Ingest.LINK -> KaraIn: "POST /api/read (Bearer)" { style.stroke: "#7c3aed" }
+Ingest.LINK -> Ingest.AI: "Seiteninhalt als\nKONTEXT-Block (Daten)" { style.stroke: "#7c3aed" }
 Ingest.CTX -> Ingest.AI: "Duplikat- und\nAntwort-Kontext"
 Ingest.AI -> ClickUp: "neu anlegen / anpassen /\nKommentar / Duplikat überspringen" { style.stroke: "#16a34a" }
 Ingest.AI -> Ntfy: "Quittung mit Zahlen\noder Rückfrage (bis 3 Buttons)" { style.stroke: "#16a34a" }
@@ -139,6 +152,7 @@ Im Default-Modus ist die Klassifikation ein schwerer Node-Subprozess (Claude Cod
 
 - [Todo Ingest Betrieb](./betrieb.md) -- Bedienung, Daily Digest, Dialog-Mechanik, Persistenz, Selbstüberwachung
 - [ntfy](../ntfy/index.md) -- Push-Rückkanal für Quittungen und Rückfragen
+- [Karakeep Ingest](../karakeep-ingest/index.md) -- Überholspur für den Link-Abruf und Ablage der Diktat-Links
 - [Authentik](../../edge/authentik/index.md) -- SSO vor der Web-Inbox (Applikation `todo-inbox`)
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../../storage/linstor/index.md) -- replizierter Block-Storage (DRBD) für die SQLite-Datenbank
