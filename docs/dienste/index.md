@@ -24,7 +24,7 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 - [Immo Monitor](./immo-monitor/) -- SvelteKit-Web-App zur Bedienung und Auswertung des Dottikon-Mietmarkt-Monitorings
 - [Immobilien-Monitoring](./immobilien-monitoring/) -- Automatisiertes Mietmarkt-Monitoring via Scrapfly mit KI-Enrichment und Telegram-Alerts
 - [Karakeep](./karakeep/) -- Selbstgehosteter Bookmark-Manager als zentrale Sammelstelle für Lehrmaterial
-- [Karakeep Ingest](./karakeep-ingest/) -- Anreicherungs-Ingest für Karakeep (LinkedIn, Instagram, YouTube und Web-Links)
+- [Karakeep Ingest](./karakeep-ingest/) -- Anreicherungs-Ingest für Karakeep (LinkedIn, Instagram, YouTube und Web-Links), dazu die Überholspur für Einzel-Abrufe
 - [LLM-Stack](./llm-stack/) -- Ollama als LLM-Backend mit Open WebUI als Chat-Interface
 - [Metabase](./metabase/) -- Business-Intelligence-Plattform für Datenvisualisierung und Dashboards
 - [n8n](./n8n/) -- Workflow-Automation-Plattform für Datenverarbeitung und Integrationen
