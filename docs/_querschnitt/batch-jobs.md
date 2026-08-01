@@ -69,6 +69,14 @@ Watchtower wurde am 2026-04-14 vollständig zurückgebaut. Renovate erstellt Pul
 Der Job hat `prohibit_overlap = true` -- falls ein Lauf länger als 30 Minuten dauert (z.B. Netzwerkproblem), wird der nächste Lauf übersprungen. So vermeidet der Job parallele Messungen über denselben WAN-Link.
 :::
 
+### Dokumentenverarbeitung
+
+| Job | Typ | Schedule | Zweck | Node Constraint | Besonderheiten |
+|:----|:----|:---------|:------|:----------------|:---------------|
+| `f1-pipeline` | batch (parametrisiert) | kein Zeitplan, Dispatch von Hand | Dokumentenbestand des NAS lesen, Text und Metadaten extrahieren, Ablage entscheiden | `vm-nomad-client-05` (fest) | Docker, Vault Secrets, Bestand read-only, Ergebnisdatenbank node-lokal, keine automatischen Wiederholungen |
+
+Als einziger Job dieser Übersicht läuft die `f1-pipeline` nicht nach Zeitplan, sondern wird mit einem Modus als Parameter angestossen. Architektur, Modi und der Grund für den Node-Pin: [Dokumenten-Pipeline](../dienste/dokumenten-pipeline/index.md).
+
 ## Reihenfolge und Abhängigkeiten
 
 Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewusst gewählt: zuerst Bereinigung, dann Snapshots, danach Datenbanken, anschliessend Neustarts und zuletzt Updates. Die konkreten Zeiten stehen in den Tabellen oben.
@@ -80,3 +88,4 @@ Die Jobs laufen unabhängig voneinander, doch die zeitliche Staffelung ist bewus
 - [Monitoring Stack](../monitoring/index.md) -- Uptime Kuma Push-Monitore für Backup-Status
 - [Renovate](./renovate.md) -- Kontrollierte Docker-Image-Updates via GitHub PRs
 - [Zot Container Registry](../plattform/docker-registry/index.md) -- Registry für gespiegelte Docker Images
+- [Dokumenten-Pipeline](../dienste/dokumenten-pipeline/index.md) -- parametrisierter Batch-Job zur Dokumentenverarbeitung

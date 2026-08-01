@@ -18,6 +18,7 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 - [Dashboards](./dashboards/) -- Flame als öffentliche Startseite und Homepage als internes Dashboard
 - [DbGate](./dbgate/) -- Web-basiertes Datenbank-Management für den PostgreSQL Shared Cluster
 - [Directus Gravel](./directus-gravel/) -- Headless CMS für die persönliche Gravel-Bike-Recherche
+- [Dokumenten-Pipeline](./dokumenten-pipeline/) -- Batch-Verarbeitung des NAS-Dokumentenbestands mit Metadaten-Extraktion und Ablage-Routing
 - [Filebrowser](./filebrowser/) -- Web-basierter Dateimanager als System-Job auf allen Nomad-Nodes
 - [Gitea](./gitea/) -- Self-hosted Git-Server mit PostgreSQL und SSH-Zugang
 - [GitHub Actions Runner](./github-runner/) -- Self-hosted Runner für CI/CD aller Repos in derever-labs
