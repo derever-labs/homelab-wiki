@@ -23,6 +23,8 @@ Alle Jobs nutzen den Docker Task Driver. Images werden von Docker Hub oder der i
 
 Persistente Daten liegen auf dem NAS unter `/nfs/docker/<service>/`. Die Volumes werden als `host` Volumes im Job konfiguriert. Details zum NFS-Setup: [NAS-Speicher](../../storage/nas/)
 
+Für den Zugriff auf den persönlichen Datenbestand im NAS-Home gilt ein engerer Zuschnitt: Dort sind die `host_volumes` benannt und teilweise schreibgeschützt deklariert (`nfs-home-samuel` nur lesend, `nfs-paperless` schreibend), sodass nur Jobs zugreifen, die das Volume explizit anfordern. Ein roher Docker-Bind auf denselben Pfad wäre der Nomad-ACL-Kontrolle entzogen -- deshalb binden die beteiligten Jobs ausschliesslich über das deklarierte Volume. Export-Regel und Mounts: [NAS-Storage: Referenz](../../storage/nas/referenz.md#home-zugang-der-dokumenten-verarbeitung).
+
 ### Bridge Networking
 
 Jobs nutzen Bridge Networking mit expliziten Port Mappings. Nomad weist dynamische Host-Ports zu, die über Consul SRV-Records aufgelöst werden. Für Services hinter Traefik ist der Host-Port irrelevant -- Traefik ermittelt ihn automatisch über den Consul Catalog.

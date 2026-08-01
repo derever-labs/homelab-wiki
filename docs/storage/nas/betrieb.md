@@ -29,6 +29,14 @@ tags:
 - Snapshot-Frequenz reduzieren oder deaktivieren für Shares mit aktiver NFS-Nutzung
 - `@eaDir`-Verzeichnisse nach Deaktivierung der Indexierung entfernen
 
+### Schreibtest als `root` schlägt trotz rw-Export fehl
+
+**Symptom:** Auf dem `homes`-Mount der Storage-Nodes scheitert ein Schreibversuch mit `Permission denied`, obwohl der Export als Lesen und Schreiben konfiguriert ist. Besonders irreführend: `docker exec` in einen laufenden Container ohne `-u` verhält sich anders als der Dienst selbst, der im Container mit seiner eigenen Benutzerkennung läuft.
+
+**Ursache:** Der Export bildet `root` auf `guest` ab. Ein Prozess, der als `root` schreibt, kommt am NAS also ohne Rechte an, während ein Prozess mit der passenden Benutzerkennung des Home-Besitzers regulär schreiben darf. `docker exec` ohne `-u` läuft als `root` und misst damit nie das, was der Dienst tatsächlich darf.
+
+**Konzept:** Schreibbarkeits-Prüfungen auf diesem Mount immer mit der Benutzerkennung fahren, unter der der Dienst läuft. Der Squash ist Absicht -- er sorgt dafür, dass ein kompromittierter Client am NAS nie Root-Rechte bekommt. Normale Benutzerkennungen werden dagegen durchgereicht, weshalb Schreibrechte an Eigentümer und Modus des Zielordners hängen und nicht am Export allein.
+
 ### Staler NFS-Directory-Cache
 
 Zu hohe `acdirmin/acdirmax`-Werte (z.B. 1800s) führen dazu, dass der NFS-Client veraltete Verzeichnisinhalte sieht. Anwendungen, die während Downloads neue Dateien erstellen (SABnzbd), erhalten `FileNotFoundError` wenn der gecachte Verzeichniseintrag nicht mit dem aktuellen Zustand übereinstimmt.

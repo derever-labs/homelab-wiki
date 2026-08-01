@@ -27,6 +27,47 @@ Die Mount-Punkte werden über Ansible (`roles/nfs`) in `/etc/fstab` der jeweilig
 
 Der frühere Export `/nfs/cert/` (TLS-Zertifikate der alten acme-Pipeline) wurde mit dem NAS-Cutover 2026-06 stillgelegt: Der native `acme.sh` deployt direkt in den DSM-Store, kein Cluster-Konsument liest den Pfad mehr. Mount, Export und Shared Folder sind entfernt -- siehe [TLS-Zertifikate](../../_referenz/tls-zertifikate.md).
 
+## Home-Zugang der Dokumenten-Verarbeitung
+
+Seit dem 01.08.2026 greifen zwei Cluster-Konsumenten auf den persönlichen Datenbestand im `homes`-Share zu: die [Dokumenten-Pipeline](../../dienste/dokumenten-pipeline/index.md) liest den Bestand, [Paperless-ngx](../../dienste/paperless/index.md) legt seine Dokumente dort ab. Dieser Zugang ist von den Cluster-Exports oben getrennt zu betrachten -- er ist enger geschnitten und existiert nur auf den beiden Storage-Nodes.
+
+### Export-Regel auf dem NAS
+
+| Attribut | Wert |
+| :--- | :--- |
+| Freigabe | `homes` (Shared Folder, DSM) |
+| Berechtigte Hosts | genau zwei Einzel-IP-Regeln: `10.0.2.125` und `10.0.2.126` |
+| Privileg | Lesen und Schreiben |
+| Squash | `root` auf `guest` |
+| Sicherheit | `sys`, keine nicht-privilegierten Quellports, kein Zugriff auf eingehängte Unterordner |
+
+DSM kennt NFS-Berechtigungen ausschliesslich pro Freigabeordner, nie pro Unterordner. Ein rein lesender Export des Bestands und ein schreibender Export für Paperless sind deshalb serverseitig nicht gleichzeitig aus demselben Share zu bekommen -- der Export ist rw, und die Lese-Beschränkung passiert client-seitig. Beide Node-IPs stehen bewusst in der Regel, weil Nomad den Paperless-Job zwischen den Storage-Nodes verschieben darf.
+
+Wildcard- und Subnetz-Muster im Host-Feld sind bewusst nicht verwendet (in der Community als unzuverlässig umgesetzt beschrieben, bei zwei Clients sind Einzel-IPs eindeutiger). Kerberos, ein dediziertes NFS-VLAN und ein erzwungenes NFSv4.1 wurden geprüft und verworfen: Sie stehen bei zwei festen, vertrauten Client-IPs im eigenen Netz in keinem Verhältnis zum Zusatznutzen gegenüber IP-Regel und Squash.
+
+::: warning DSM-Firewall bleibt aus
+Die DSM-Firewall ist geräteweit deaktiviert und wurde für diesen Zugang bewusst nicht aktiviert -- sie einzuschalten wäre ein Grundsatz-Eingriff, der alle Dienste und alle Familien-Clients betrifft und ein Aussperr-Risiko trägt. Die Zugriffsbegrenzung leisten die beiden Einzel-IP-Regeln und der Squash. Akzeptierte Restrisiken: Die NFS-Hilfsdienste bleiben im LAN ansprechbar, und ein bereits kompromittiertes LAN-Gerät könnte eine der beiden Node-IPs übernehmen.
+:::
+
+### Mounts auf den Storage-Nodes
+
+Auf `vm-nomad-client-05` und `vm-nomad-client-06` liegen zwei getrennte Unterpfad-Mounts desselben Exports, identisch über Ansible verwaltet:
+
+| Mount | Modus | Zweck |
+| :--- | :--- | :--- |
+| `/nfs/home-samuel` | Kernel-`ro`, lange Attribut-Cache-Zeiten | Lesezugriff der Pipeline auf den Gesamtbestand |
+| `/nfs/paperless` | `rw`, kurze Attribut-Cache-Zeiten | Ablage von Paperless (Unterordner `90_Paperless`) |
+
+Dass client-seitig zwei Unterpfade desselben Exports mit unterschiedlichen Rechten gemountet werden können, ist der Kern des Zuschnitts -- die Beschränkung auf Freigabeordner-Ebene betrifft nur die Export-Regel auf dem NAS, nicht das Mounten. Weil der Export selbst rw ist, trägt der Kernel-`ro`-Mount die Nur-Lese-Garantie für den Bestand: Er gilt für jeden Prozess auf dem Node, unabhängig von Job-Konfiguration und Benutzer, während ein `read_only` am Nomad-Volume nur bei Nomad-verwalteten Binds greift.
+
+Beide Mounts sind `hard` gesetzt statt `soft` -- ein `soft`-Mount riskiert bei einem Dauerdienst Datenkorruption statt nur einer Verzögerung -- und tragen `nosuid`, `nodev` und `noexec`: Auf diesen Pfaden liegen Dokumente, ausgeführt wird dort nie etwas. Die Attribut-Cache-Zeiten sind bewusst verschieden: Der Bestand ändert sich während eines Laufs praktisch nicht und wird in zehntausenden Dateien am Stück gelesen, die Paperless-Ablage wird laufend beschrieben und von beiden Nodes gesehen. Die konkreten Optionen stehen in der Ansible-Rolle `roles/nfs`.
+
+Nomad reicht die Pfade als deklarierte `host_volumes` weiter (`nfs-home-samuel` schreibgeschützt, `nfs-paperless` schreibend), sodass nur Jobs zugreifen, die das Volume explizit anfordern, und die Nomad-ACL greifen kann.
+
+::: info Übergangszustand bis zum eigenen Share
+Dass der `homes`-Share überhaupt rw exportiert wird, ist ein bewusst befristeter Kompromiss. Der Zielzustand des NAS-Projekts sind zwei eigene Freigaben für den aufgeräumten Bestand (Export nur lesend) und für Paperless (Export schreibend). Sobald die Einsortierung abgeschlossen ist, entfällt der `homes`-Export ersatzlos und die harte serverseitige Nur-Lese-Garantie ist wieder da. Die Sortierung schreibt ohnehin um -- der neue Share wird direkt ihr Ablageziel, ein separater Massen-Umzug entfällt.
+:::
+
 ## Garage S3
 
 Garage läuft als Container auf dem NAS als S3-kompatibler Object Store für Backups. Der Endpoint ist nur intern erreichbar -- kein Public-Routing über Traefik. Single-Node-Setup, `replication_factor = 1`, Zone `homeserver`, Capacity 3.6 TiB. Storage liegt auf `/volume1/garage/{meta,data}` (seit NAS-Cutover 2026-06 auf DS1825+).

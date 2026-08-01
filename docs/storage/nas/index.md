@@ -30,6 +30,8 @@ Alle persistenten Daten, die nicht auf lokalen SSDs oder DRBD-Volumes liegen mü
 
 Die Exports kommen vom HomeServer (DS1825+, 10.0.0.200, `/volume1`); das alte Blech (DS2419+, 10.0.0.210, `/volume2`) serviert separat die Jellyfin-Mediathek von USB-Shares an die Media-Worker. Garage läuft als Single-Node-Container auf dem HomeServer und ist nur intern erreichbar -- kein Public-Routing über Traefik.
 
+Seit dem 01.08.2026 kommt eine zweite, enger geschnittene Zugriffsklasse dazu: der persönliche Datenbestand im `homes`-Share. Er ist kein Cluster-Storage, sondern Arbeitsgegenstand -- die [Dokumenten-Pipeline](../../dienste/dokumenten-pipeline/index.md) liest ihn, [Paperless-ngx](../../dienste/paperless/index.md) legt seine Dokumente darin ab. Anders als die Cluster-Exports ist dieser Zugang auf die beiden Storage-Nodes und auf zwei Unterpfade begrenzt; die Regel und der Grund für den Zuschnitt stehen in der Referenz.
+
 Die konkreten Export-Pfade und Mounts, die Garage-Endpunkte und -Buckets sowie die DSM-Konfiguration stehen in der [NAS-Storage: Referenz](./referenz.md). Troubleshooting, SSH-Hardening und Wartungsprozeduren in [NAS-Storage: Betrieb](./betrieb.md).
 
 ## Monitoring
@@ -38,8 +40,10 @@ Hardware-Health (CheckMK), Grafana-Dashboard und Alerting: [Synology NAS Monitor
 
 ## Verwandte Seiten
 
-- [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Garage-Endpunkte/Buckets, DSM-Konfiguration
+- [NAS-Storage: Referenz](./referenz.md) -- NFS-Exports, Home-Zugang, Garage-Endpunkte/Buckets, DSM-Konfiguration
 - [NAS-Storage: Betrieb](./betrieb.md) -- Troubleshooting, SSH-Hardening, Wartung
+- [Dokumenten-Pipeline](../../dienste/dokumenten-pipeline/index.md) -- lesender Konsument des Home-Bestands
+- [Paperless-ngx](../../dienste/paperless/index.md) -- schreibender Konsument im Home-Unterordner `90_Paperless`
 - [Server-Hardware](../../_referenz/hardware-inventar.md) -- NAS-Hardware-Details
 - [Datenstrategie](../../_querschnitt/datenstrategie.md) -- Speicher-Ebenen und Replikation
 - [Backup-Strategie](../backup/index.md) -- pg_dumpall auf NFS und PBS-VM-Backups
