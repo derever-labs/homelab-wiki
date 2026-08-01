@@ -100,7 +100,6 @@ Prod.N8N -> Core.PG
 Prod.META -> Core.PG
 Prod.SOLID -> Core.PG
 Prod.VW -> Core.SMTP
-Prod.PL -> AI.OLLAMA
 
 Mon.GRAFANA -> Mon.INFLUX
 Mon.GRAFANA -> Mon.LOKI
@@ -124,6 +123,8 @@ Jeder Service im Nomad Cluster ist implizit abhängig von:
 - **Vault** -- Secret Management (Datenbank-Passwörter, API-Keys)
 - **NFS** -- Persistenter Storage (`/nfs/docker/`)
 - **DNS** -- Pi-hole für Namensauflösung
+
+[Paperless-ngx](../dienste/paperless/index.md) und die [Dokumenten-Pipeline](../dienste/dokumenten-pipeline/index.md) greifen zusätzlich auf den persönlichen Datenbestand im NAS-Home zu -- ein enger geschnittener Zugang, der nur auf den beiden Storage-Nodes existiert. Paperless bricht den Start bewusst ab, wenn dieser Mount fehlt, statt still in ein leeres Verzeichnis zu schreiben.
 
 ### PostgreSQL-abhängige Services
 

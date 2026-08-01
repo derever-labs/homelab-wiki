@@ -99,7 +99,6 @@ Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln si
 | 3300 | TCP | Browserless | `browserless` | Geteilter Headless-Browser, nur intern via `browserless.service.consul` |
 | 5984 | TCP | Obsidian LiveSync | `obsidian-livesync` | CouchDB Sync |
 | 8000 | TCP | Paperless Web | `paperless` | DMS, hinter Traefik |
-| 8081 | TCP | Paperless-GPT | `paperless` | AI-Tagging, hinter Traefik |
 | 9001 | TCP | MQTT WebSocket | `mosquitto` | WebSocket Interface |
 | 9095 | TCP | Telegram Relay | `telegram-relay` | Benachrichtigungs-Relay |
 | 11434 | TCP | Ollama API | `ollama` | LLM Inference |
@@ -108,7 +107,6 @@ Zum Betriebskonzept statischer vs. dynamischer Ports und den Kollisionsregeln si
 
 | Port | Protokoll | Dienst | Nomad Job | Bemerkung |
 | :--- | :--- | :--- | :--- | :--- |
-| 3000 | TCP | Paperless-AI | `paperless` | AI-Assistent, hinter Traefik |
 | 3033 | TCP | yt-dlp | `special-yt-dlp` | Download UI, hinter Traefik |
 | 5055 | TCP | Jellyseerr | `jellyseerr` | Request Management, hinter Traefik |
 | 5100 | TCP | Suggestarr | `suggestarr` | Empfehlungen, hinter Traefik |
