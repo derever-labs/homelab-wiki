@@ -1,6 +1,6 @@
 ---
 title: Karakeep Ingest
-description: Anreicherungs-Ingest für Karakeep -- LinkedIn- und Instagram-Posts über Apify, YouTube-Videos gratis über oEmbed, Web-Links über Scrapfly, dazu die Überholspur für Einzel-Abrufe
+description: Anreicherungs-Ingest für Karakeep -- LinkedIn- und Instagram-Posts über Apify, YouTube-Videos gratis über oEmbed, Web-Links über Scrapfly, dazu Überholspur für Einzel-Abrufe, Rezept-Zweig nach Tandoor und stündlicher LinkedIn-Saves-Pull
 tags:
   - service
   - productivity
@@ -12,7 +12,7 @@ tags:
 
 Karakeep Ingest ist eine schlanke Anreicherungs-Schicht über [Karakeep](../karakeep/index.md): eine Paste-Seite, die eingefügte URLs nach Herkunft aufteilt und die fertig aufbereiteten Inhalte in Karakeep ablegt. Der Dienst hält keinen eigenen Bestand -- Karakeep bleibt der einzige Speicherort. Er ist bewusst nur intern und über Tailscale erreichbar und ein React-SPA mit Hono-BFF in einem Container nach dem [Homelab-App-Standard](../github-runner/index.md).
 
-Seit dem 30.07.2026 hat der Dienst neben der Paste-Seite eine zweite, authentisierte Schnittstelle: die [Überholspur für Einzel-Abrufe](#uberholspur-fur-einzel-abrufe), über die [Todo Ingest](../todo-ingest/index.md) diktierte Links im laufenden Verarbeitungslauf liest.
+Seit dem 30.07.2026 hat der Dienst neben der Paste-Seite eine zweite, authentisierte Schnittstelle: die [Überholspur für Einzel-Abrufe](#uberholspur-fur-einzel-abrufe), über die [Todo Ingest](../todo-ingest/index.md) diktierte Links im laufenden Verarbeitungslauf liest. Dazu kommen zwei Fähigkeiten aus dem Juli 2026: der [Rezept-Zweig](#rezept-zweig-tandoor), der aus einem Ingest zusätzlich ein strukturiertes Rezept in [Tandoor](../tandoor/index.md) anlegt, und der [stündliche LinkedIn-Saves-Pull](#linkedin-saves-pull), der gespeicherte LinkedIn-Posts ohne Handgriff einsammelt.
 
 ## Übersicht
 
@@ -22,7 +22,7 @@ Seit dem 30.07.2026 hat der Dienst neben der Paste-Seite eine zweite, authentisi
 | Deployment | Nomad Job `services/karakeep-ingest.nomad`, Image aus [github.com/derever-labs/karakeep-ingest](https://github.com/derever-labs/karakeep-ingest) |
 | Storage | Linstor CSI: `karakeep-ingest-data` (SQLite-Job-DB, nur Betriebszustand) |
 | Auth | `intern-api@file` (IP-Allowlist intern + Tailscale), bewusst ohne Authentik -- gleiche Vertrauenszone wie Karakeep, die Überholspur zusätzlich mit eigenem Bearer-Token |
-| Secrets | Vault `kv/karakeep-ingest` (Scrapfly, Karakeep-API, Apify, Token der Überholspur) |
+| Secrets | Vault `kv/karakeep-ingest` (Scrapfly, Karakeep-API, Apify, OpenAI, Tandoor, LinkedIn-DMA, ntfy, Kuma-Push, Token der Überholspur) |
 | Browser-Backend | Geteilter Dienst [Browserless](../browserless/) für den Consent-Fallback |
 
 ## Rolle im Stack
@@ -45,6 +45,11 @@ Read: "todo-ingest\n(Überholspur)" {
   tooltip: "Einzel-Abruf eines diktierten Links, Bearer-authentisiert. Leiht einen Slot des Pipeline-Pools mit Vorrang und nimmt das Karakeep-Lesezeichen als Beifang mit"
 }
 
+DMA: "LinkedIn-DMA-Snapshot\n(gespeicherte Posts)" {
+  class: node
+  tooltip: "Stündlicher Abruf der Member-Data-Portability-API. Neue Saves laufen über den normalen LinkedIn-Pfad ein, eine Hochwassermarke macht den Nachzug verlustfrei"
+}
+
 Ingest: "karakeep-ingest\n(Hono-BFF + In-Prozess-Queue)" {
   style.stroke-dash: 4
   LI: "LinkedIn-Pfad\n(Apify)" { class: node }
@@ -55,21 +60,25 @@ Ingest: "karakeep-ingest\n(Hono-BFF + In-Prozess-Queue)" {
 
 Karakeep: "Karakeep\n(einziger Bestand)" { class: node }
 
+Tandoor: "Tandoor\n(Rezepte)" { class: node }
+
 BL: "browserless\n(Consent-Klick)" { class: node }
 
 UI -> Ingest.LI: "linkedin.com"
 UI -> Ingest.IG: "Post / Reel"
 UI -> Ingest.YT: "YouTube-Video"
 UI -> Ingest.WEB: "andere Quellen"
+DMA -> Ingest.LI: "stündlicher Saves-Pull"
 Ingest.LI -> Karakeep: "Volltext + Bilder"
 Ingest.IG -> Karakeep: "Caption + Bilder"
 Ingest.YT -> Karakeep: "oEmbed + Thumbnail"
 Ingest.WEB -> Karakeep: "og-Meta + Archiv"
 Ingest.WEB -> BL: "Fallback: Consent-Klick,\nArtikel-HTML"
+Ingest -> Tandoor: "Rezept-Toggle:\nLLM-Extraktion" { style.stroke: "#16a34a" }
 Read -> Ingest: "POST /api/read (Bearer):\neine URL, Volltext zurück" { style.stroke: "#2563eb" }
 ```
 
-**Belegt gegen** `server/api.ts`, `server/read.ts`, `server/engine.ts` und `server/pipeline.ts` im App-Repo, Stand 30.07.2026.
+**Belegt gegen** `server/api.ts`, `server/engine.ts`, `server/pipeline.ts`, `server/linkedin-pull.ts` und `server/recipe-extract.ts` im App-Repo, Stand 08.08.2026.
 
 ## Nutzungsregel
 
@@ -97,6 +106,26 @@ Die Paste-Seite ist ein Batch-Weg: URLs gehen in die Queue, die Karten erscheine
 Auch der Einzel-Abruf speichert nichts Dauerhaftes: Der Volltext geht an den Aufrufer, das Lesezeichen nach Karakeep. In der Job-DB bleibt nur der Betriebszustand des Abrufs, damit ein Ticket nachfragbar ist. Wie die Anreicherung im Zieldienst weiterverarbeitet wird, steht bei [Todo Ingest](../todo-ingest/betrieb.md#beilagen-aus-links).
 :::
 
+## Rezept-Zweig (Tandoor)
+
+Seit dem 19.07.2026 kann jeder Ingest zusätzlich ein Rezept anlegen: Ist beim Einreichen der Toggle «Rezept» gesetzt, extrahiert nach dem erfolgreichen Karakeep-Import ein Sprachmodell (OpenAI, Redaktions-Prompt) aus dem geholten Inhalt ein strukturiertes Rezept und legt es in [Tandoor](../tandoor/index.md) an -- mit Portionen, Zutaten je Zubereitungsschritt und übernommenem Vorschaubild. Der Zweig ist bewusst entkoppelt: Ein Fehler dort macht den Import nie kaputt, das Lesezeichen entsteht immer; die Fehlermeldung erscheint als Hinweis am Job. Erkennt das Modell kein nachkochbares Rezept (keine Zutatenmengen, keine Schritte), lehnt es mit Begründung ab, statt eines zu erfinden.
+
+Als Quelle dient der Text, den der jeweilige Pfad ohnehin holt: bei Instagram die vollständige Caption, im Web-Pfad das archivierte HTML, bei YouTube seit dem 08.08.2026 die vollständige Videobeschreibung statt der auf rund 160 Zeichen gekappten og-Kurzfassung -- bei Kochkanälen steht das Rezept klassisch genau dort.
+
+::: warning Rezept nur im gesprochenen Wort
+Steckt das Rezept ausschliesslich im Video oder Reel selbst (Caption und Beschreibung ohne Zutaten und Schritte), lehnt der Zweig sauber ab -- eine Transkription der Tonspur findet nicht statt.
+:::
+
+## LinkedIn-Saves-Pull
+
+Gespeicherte LinkedIn-Posts laufen seit dem 19.07.2026 ohne Handgriff ein: Ein stündlicher Abruf holt den Snapshot der Member-Data-Portability-API (DMA, Domain der gespeicherten Posts) und reicht neue Saves über den normalen LinkedIn-Pfad ein -- gleiche Budget-Deckel, gleiche Dedup-Logik wie beim Einfügen von Hand. Eine Hochwassermarke merkt sich den zuletzt übernommenen Zeitstempel; ein Neustart oder eine tagelange Lücke der API holt deshalb verlustfrei nach.
+
+Überwacht wird zweistufig: Ein Kuma-Push-Monitor (Dead-Man) schlägt aus, wenn der Abruf selbst nicht mehr läuft. Meldet die API dagegen über eine Woche hinweg «kein Snapshot», warnt eine gedrosselte ntfy-Meldung -- der Dead-Man prüft bewusst nur, ob der Code läuft, nicht, ob Daten fliessen.
+
+::: warning DMA-Snapshot: 404 ist doppeldeutig
+Die Snapshot-API beendet die Pagination seit Juli 2026 mit einem 404 auf der Folgeseite («No data found for this domain and memberId»); nur auf der ersten Seite bedeutet derselbe Status «Snapshot noch nicht generiert». Wer jeden Nicht-200 als Abbruch wertet, verwirft stillschweigend gültige Daten -- so entstand zwischen dem 21.07. und dem 08.08.2026 ein 18-tägiger unbemerkter Stillstand. Die Changelog-API ist kein Ersatz: sie führt keine Save-Ereignisse.
+:::
+
 ## Consent-Walls im Web-Pfad
 
 Eine Consent-Interstitial-Seite hat einen brauchbaren Titel und würde ungeprüft als vollwertige, inhaltsleere Karte in Karakeep landen. Der Web-Pfad erkennt sie deshalb und eskaliert in zwei Stufen, bevor er aufgibt.
@@ -116,6 +145,7 @@ Alle vier Pfade sind scharf geschaltet. Der LinkedIn-Pfad importiert Posts real 
 ## Verwandte Seiten
 
 - [Karakeep](../karakeep/index.md) -- Bookmark-Manager und einziger Bestand, in den der Ingest schreibt
+- [Tandoor](../tandoor/index.md) -- Rezept-Verwaltung, Ziel des Rezept-Zweigs
 - [Todo Ingest](../todo-ingest/index.md) -- Aufrufer der Überholspur für diktierte Links
 - [Browserless](../browserless/) -- geteilter Headless-Browser für den Consent-Fallback
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Kette `intern-api@file`
