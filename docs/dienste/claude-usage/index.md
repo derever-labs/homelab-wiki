@@ -16,7 +16,7 @@ Claude Usage zeigt auf einer Seite, wie weit die Limiten der drei Claude-Konten 
 
 | Attribut | Wert |
 |----------|------|
-| URL | [claude-usage.ackermannprivat.ch](https://claude-usage.ackermannprivat.ch) (nur intern und VPN) |
+| URL | [claude.ackermannprivat.ch](https://claude.ackermannprivat.ch) (nur intern und VPN) |
 | Deployment | Nomad Job `services/claude-usage.nomad`, Image aus [github.com/derever-labs/claude-usage](https://github.com/derever-labs/claude-usage) |
 | Storage | Keins -- `usage.json` liegt ephemer im Container unter `/data` |
 | Auth | Seite: `intern-auth@file` (Authentik, Gruppe `admin`) plus ClientIP-Allowlist; `/usage.json`: `intern-api@file` plus nginx-BasicAuth für den Push |

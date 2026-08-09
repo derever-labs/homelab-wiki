@@ -107,7 +107,7 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | :--- | :--- | :--- |
 | Flame | `https://welcome.ackermannprivat.ch` | Startseite extern |
 | Homepage | `https://intra.ackermannprivat.ch` | Dashboard intern |
-| Claude Usage | `https://claude-usage.ackermannprivat.ch` | Usage-Limiten der Claude-Konten (nur intern) |
+| Claude Usage | `https://claude.ackermannprivat.ch` | Usage-Limiten der Claude-Konten (nur intern) |
 
 ## Verwandte Seiten
 
