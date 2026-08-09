@@ -1,6 +1,6 @@
 ---
 title: Claude Usage
-description: Dashboard für die Usage-Limiten der drei Claude-Konten mit Reset-Countdown
+description: Dashboard für die Usage-Limiten der drei Claude-Konten mit Reset-Countdown und Abo-Übersicht
 tags:
   - service
   - dashboard
@@ -10,7 +10,7 @@ tags:
 
 # Claude Usage
 
-Claude Usage zeigt auf einer Seite, wie weit die Limiten der drei Claude-Konten ausgeschöpft sind -- je Konto das 5-Stunden-Fenster der laufenden Session, das Wochenfenster und das separate Wochenfenster für Fable -- und wann das jeweilige Fenster wieder zurücksetzt. Damit beantwortet die Seite die Planungsfrage, welches Konto gerade arbeitsfähig ist und wie lange ein blockiertes Konto noch blockiert bleibt. Technisch ist es eine statische nginx-Seite (nginx-unprivileged) nach dem [Homelab-App-Standard](../../_querschnitt/app-standard/index.md); die Zahlen liefert ein Poller auf Samuels Mac.
+Claude Usage zeigt auf einer Seite, wie weit die Limiten der drei Claude-Konten ausgeschöpft sind -- je Konto das 5-Stunden-Fenster der laufenden Session, das Wochenfenster und das separate Wochenfenster für Fable -- und wann das jeweilige Fenster wieder zurücksetzt. Damit beantwortet die Seite die Planungsfrage, welches Konto gerade arbeitsfähig ist und wie lange ein blockiertes Konto noch blockiert bleibt. Dazu kommt je Konto die Abo-Übersicht mit Plan und nächster Verlängerung (siehe [Abo-Übersicht](#abo-uebersicht)). Technisch ist es eine statische nginx-Seite (nginx-unprivileged) nach dem [Homelab-App-Standard](../../_querschnitt/app-standard/index.md); die Zahlen liefert ein Poller auf Samuels Mac.
 
 ## Übersicht
 
@@ -104,6 +104,16 @@ Die Zahlen stammen aus einem internen, nicht dokumentierten Endpunkt von Anthrop
 :::
 
 Der zweite Grenzfall ist der Mac selbst. Ist er aus oder ohne Netz, kommt kein Push an und die Prozentwerte frieren auf dem Stand des letzten Laufs ein. Die Seite verschweigt das nicht, sondern blendet ein Staleness-Banner mit dem Alter der Daten ein. Die Reset-Countdowns bleiben in diesem Zustand korrekt, weil sie aus den mitgelieferten Reset-Zeitpunkten laufen und nicht aus dem Push-Zeitpunkt; ein Fenster, dessen Reset bereits in der Vergangenheit liegt, leitet die Seite clientseitig als wieder frei ab.
+
+## Abo-Übersicht {#abo-uebersicht}
+
+Neben den Limiten zeigt jede Karte den gebuchten Plan und den nächsten Abrechnungstermin. Der Zweck ist die Kündigungsfrist: Zwei der drei Konten laufen auf Max, und ein verpasster Termin verlängert das Abo automatisch um eine weitere Periode. Die Seite hebt den Termin deshalb ab einer Woche vorher hervor.
+
+Plan, Abo-Status und Abo-Beginn liefert derselbe OAuth-Zugang wie die Limiten über einen zweiten Endpunkt. Das eigentliche Verlängerungsdatum gibt Anthropic dort nicht heraus -- die Billing-Schnittstellen verlangen eine Web-Session und lehnen den OAuth-Token ab.
+
+::: warning Der Verlängerungstermin ist gerechnet, nicht abgefragt
+Die Seite leitet den nächsten Termin aus dem Abo-Beginn ab: derselbe Kalendertag, geklammert auf die Monatslänge. Das Abrechnungsintervall kennt die Schnittstelle nicht, es ist im Poller je Konto konfiguriert und steht auf monatlich. Ein Konto mit Jahresabo zeigt ohne Umstellung dieser Konfiguration falsche Termine an, und ein ausserhalb des Zyklus vorgenommener Plan-Wechsel verschiebt den Abrechnungstag, bis der Poller das Profil erneut liest.
+:::
 
 ## Zwei Router auf einem Service
 
