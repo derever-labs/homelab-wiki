@@ -109,10 +109,10 @@ Der zweite Grenzfall ist der Mac selbst. Ist er aus oder ohne Netz, kommt kein P
 
 Neben den Limiten zeigt jede Karte den gebuchten Plan und den nächsten Abrechnungstermin. Der Zweck ist die Kündigungsfrist: Zwei der drei Konten laufen auf Max, und ein verpasster Termin verlängert das Abo automatisch um eine weitere Periode. Die Seite hebt den Termin deshalb ab einer Woche vorher hervor.
 
-Plan, Abo-Status und Abo-Beginn liefert derselbe OAuth-Zugang wie die Limiten über einen zweiten Endpunkt. Das eigentliche Verlängerungsdatum gibt Anthropic dort nicht heraus -- die Billing-Schnittstellen verlangen eine Web-Session und lehnen den OAuth-Token ab.
+Plan, Abo-Status und Abo-Beginn liefert derselbe OAuth-Zugang wie die Limiten über einen zweiten Endpunkt. Das eigentliche Verlängerungsdatum gibt Anthropic dort nicht heraus -- die Billing-Schnittstellen verlangen eine Web-Session und lehnen den OAuth-Token ab. Ebenso wenig sichtbar ist ein bereits veranlasster Plan-Wechsel: Der gemeldete Status bleibt auch dann aktiv, wenn die Herabstufung längst gebucht ist.
 
-::: warning Der Verlängerungstermin ist gerechnet, nicht abgefragt
-Die Seite leitet den nächsten Termin aus dem Abo-Beginn ab: derselbe Kalendertag, geklammert auf die Monatslänge. Das Abrechnungsintervall kennt die Schnittstelle nicht, es ist im Poller je Konto konfiguriert und steht auf monatlich. Ein Konto mit Jahresabo zeigt ohne Umstellung dieser Konfiguration falsche Termine an, und ein ausserhalb des Zyklus vorgenommener Plan-Wechsel verschiebt den Abrechnungstag, bis der Poller das Profil erneut liest.
+::: warning Der Verlängerungstermin wird gepflegt, nicht abgefragt
+Das Datum steht je Konto im Poller und wird aus den Abo-Einstellungen von Claude abgelesen. Fehlt es, schätzt der Poller aus dem Abo-Beginn und die Seite kennzeichnet den Wert als Schätzung, ohne vor der Kündigungsfrist zu warnen. Die Schätzung taugt nämlich nur als Anhaltspunkt: Der Abrechnungstag verschiebt sich beim Plan-Wechsel, beim Konto HSLU DC etwa vom 2. auf den 9. des Monats. Ein gepflegtes Datum überlebt einen Plan-Wechsel nicht automatisch, es muss danach neu abgelesen werden.
 :::
 
 ## Zwei Router auf einem Service
