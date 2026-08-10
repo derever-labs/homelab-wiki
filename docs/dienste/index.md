@@ -21,6 +21,7 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 - [Directus Gravel](./directus-gravel/) -- Headless CMS für die persönliche Gravel-Bike-Recherche
 - [Dokumenten-Pipeline](./dokumenten-pipeline/) -- Batch-Verarbeitung des NAS-Dokumentenbestands mit Metadaten-Extraktion und Ablage-Routing
 - [Filebrowser](./filebrowser/) -- Web-basierter Dateimanager als System-Job auf allen Nomad-Nodes
+- [Finanzen-Website](./finanzen/) -- Familien-Dokumentenportal zum MFH-Projekt mit PDF-Reader, Kommentaren und Frage-Assistent
 - [Gitea](./gitea/) -- Self-hosted Git-Server mit PostgreSQL und SSH-Zugang
 - [GitHub Actions Runner](./github-runner/) -- Self-hosted Runner für CI/CD aller Repos in derever-labs
 - [Immo Monitor](./immo-monitor/) -- SvelteKit-Web-App zur Bedienung und Auswertung des Dottikon-Mietmarkt-Monitorings
