@@ -127,9 +127,15 @@ Ohne gesetzte Priorität sortiert Traefik nach Regel-Länge. Die lange Host- und
 
 Der Job bindet bewusst kein Volume ein: `usage.json` lebt im Container-Dateisystem. Nach einem Alloc-Neustart ist die Datei weg, und die Seite zeigt bis zum nächsten Push ihr Staleness-Banner -- längstens fünf Minuten. Ein repliziertes Volume für einen Zustand mit fünf Minuten Halbwertszeit wäre Betriebsaufwand ohne Nutzen, und der Push ist die vollständige Wiederherstellung.
 
-## Re-Login der Konten
+## Token-Erneuerung und Re-Login
 
-Läuft der OAuth-Token eines Kontos ab, kann der Poller dieses Konto nicht mehr abfragen; die Seite zeigt dafür eine Karte "Re-Login nötig" statt veralteter Zahlen. Behoben wird das auf dem Mac und nicht im Cluster: Claude Code mit dem Konfigurationsverzeichnis des betroffenen Kontos starten (Umgebungsvariable `CLAUDE_CONFIG_DIR`) und den Login-Flow durchlaufen. Beim nächsten Lauf liefert der Poller für dieses Konto wieder Daten.
+Die Zugangstoken der Konten laufen nach acht Stunden ab. Erneuert werden sie nicht vom Poller selbst, sondern von Claude Code: Läuft ein Token bald ab, startet der Poller die App kurz mit dem Konfigurationsverzeichnis des betroffenen Kontos, die App erneuert den Token und legt ihn in den Schlüsselbund. Der Poller schreibt dort nie hinein, er liest nur.
+
+::: warning Den Refresh nicht nachbauen
+Der Poller sprach den Token-Endpunkt anfangs selbst an. Das funktioniert nicht: Der Endpunkt weist jeden fremden Client ab, unabhängig vom verwendeten Werkzeug und sogar bei einem ungültigen Token, also noch bevor er ihn prüft. Weil die Absage wie eine vorübergehende Drosselung aussieht, wiederholte der Poller sie im Fünf-Minuten-Takt und hielt die Sperre damit dauerhaft offen. Am 10. August 2026 lieferten deshalb zwei Konten fünf Stunden lang keine Zahlen. Seither gilt: Erneuern lassen statt nachbauen, und jeder erfolglose Versuch sperrt den nächsten mit wachsendem Abstand.
+:::
+
+Scheitert auch das, zeigt die Karte "Re-Login nötig". Behoben wird das auf dem Mac und nicht im Cluster: Claude Code mit dem Konfigurationsverzeichnis des Kontos starten und den Login-Flow durchlaufen. Beim nächsten Lauf liefert der Poller wieder Daten.
 
 ::: info SSOT im App-Repo
 Poller-Einrichtung, Token-Mechanik, die Zuordnung von Konfigurationsverzeichnis zu Konto und der Aufbau von `usage.json` werden im README von [derever-labs/claude-usage](https://github.com/derever-labs/claude-usage) gepflegt und hier nicht dupliziert.
