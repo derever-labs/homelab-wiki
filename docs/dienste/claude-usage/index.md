@@ -107,12 +107,10 @@ Der zweite Grenzfall ist der Mac selbst. Ist er aus oder ohne Netz, kommt kein P
 
 ## Abo-Übersicht {#abo-uebersicht}
 
-Neben den Limiten zeigt jede Karte den gebuchten Plan und den nächsten Abrechnungstermin. Der Zweck ist die Kündigungsfrist: Zwei der drei Konten laufen auf Max, und ein verpasster Termin verlängert das Abo automatisch um eine weitere Periode. Die Seite hebt den Termin deshalb ab einer Woche vorher hervor.
+Jede Karte nennt den gebuchten Tarif, also Max 20x oder Pro. Weicht der Abo-Status davon ab, etwa weil eine Kündigung vorgemerkt ist, erscheint er als Tag daneben. Beides liefert derselbe OAuth-Zugang wie die Limiten über einen zweiten Endpunkt.
 
-Plan, Abo-Status und Abo-Beginn liefert derselbe OAuth-Zugang wie die Limiten über einen zweiten Endpunkt. Das eigentliche Verlängerungsdatum gibt Anthropic dort nicht heraus -- die Billing-Schnittstellen verlangen eine Web-Session und lehnen den OAuth-Token ab. Ebenso wenig sichtbar ist ein bereits veranlasster Plan-Wechsel: Der gemeldete Status bleibt auch dann aktiv, wenn die Herabstufung längst gebucht ist.
-
-::: warning Der Verlängerungstermin wird gepflegt, nicht abgefragt
-Das Datum steht je Konto im Poller und wird aus den Abo-Einstellungen von Claude abgelesen. Fehlt es, schätzt der Poller aus dem Abo-Beginn und die Seite kennzeichnet den Wert als Schätzung, ohne vor der Kündigungsfrist zu warnen. Die Schätzung taugt nämlich nur als Anhaltspunkt: Der Abrechnungstag verschiebt sich beim Plan-Wechsel, beim Konto HSLU DC etwa vom 2. auf den 9. des Monats. Ein gepflegtes Datum überlebt einen Plan-Wechsel nicht automatisch, es muss danach neu abgelesen werden.
+::: warning Kein Verlängerungstermin auf der Seite
+Der Termin fehlt bewusst. Anthropic gibt ihn über die Schnittstelle nicht heraus, die Abrechnungsdaten verlangen eine Web-Session. Ihn aus dem Abo-Beginn zu rechnen, führt in die Irre: Der Abrechnungstag verschiebt sich beim Tarifwechsel, beim Konto HSLU DC etwa vom 2. auf den 9. des Monats. Eine erfundene Kündigungsfrist ist gefährlicher als gar keine, weil sie in falscher Sicherheit wiegt. Wer den Termin braucht, liest ihn in den Abo-Einstellungen von Claude nach. Ebenfalls unsichtbar bleibt ein bereits gebuchter Tarifwechsel, der gemeldete Status lautet auch dann aktiv.
 :::
 
 ## Zwei Router auf einem Service
@@ -133,6 +131,10 @@ Die Zugangstoken der Konten laufen nach acht Stunden ab. Erneuert werden sie nic
 
 ::: warning Den Refresh nicht nachbauen
 Der Poller sprach den Token-Endpunkt anfangs selbst an. Das funktioniert nicht: Der Endpunkt weist jeden fremden Client ab, unabhängig vom verwendeten Werkzeug und sogar bei einem ungültigen Token, also noch bevor er ihn prüft. Weil die Absage wie eine vorübergehende Drosselung aussieht, wiederholte der Poller sie im Fünf-Minuten-Takt und hielt die Sperre damit dauerhaft offen. Am 10. August 2026 lieferten deshalb zwei Konten fünf Stunden lang keine Zahlen. Seither gilt: Erneuern lassen statt nachbauen, und jeder erfolglose Versuch sperrt den nächsten mit wachsendem Abstand.
+:::
+
+::: danger Der Anmelde-Eintrag der normalen Nutzung ist gefährdet
+Am 10. August 2026 stand nach einer solchen Erneuerung das erneuerte Konto im Anmelde-Eintrag der normalen Claude-Code-Nutzung, der bisherige Login war verloren und musste neu eingerichtet werden. Nachstellen liess sich das später nicht mehr, der Zusammenhang ist also belegt, aber nicht verstanden. Der Poller sichert den Eintrag seither vor jeder Erneuerung und legt ihn zurück, sofern danach nachweislich das erneuerte Konto darin steht. Hat die Arbeitssitzung in der Zwischenzeit selbst erneuert, bleibt ihr Stand unangetastet, denn ein zurückgelegter, bereits entwerteter Zugang würde sie aussperren.
 :::
 
 Scheitert auch das, zeigt die Karte "Re-Login nötig". Behoben wird das auf dem Mac und nicht im Cluster: Claude Code mit dem Konfigurationsverzeichnis des Kontos starten und den Login-Flow durchlaufen. Beim nächsten Lauf liefert der Poller wieder Daten.
