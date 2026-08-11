@@ -98,7 +98,7 @@ Lesehilfe:
 
 1. Nomad-Jobs pullen über die explizite Referenz `zot.service.consul:5000/...` -- der [daemon.json-Mirror](#daemon-json-mirror-pattern) bleibt Fallback für Kurz-Referenzen. Pulls laufen anonym, ein Login ist nur zum Pushen nötig ([Authentifizierung](#authentifizierung)).
 2. Bei einem Cache-Hit liefert Zot Blobs und Manifeste direkt vom [Linstor-CSI-Volume](#storage-linstor-csi-volume) -- kein Upstream-Kontakt, Docker-Hub-Limits spielen keine Rolle.
-3. Bei einem Cache-Miss spiegelt Zot das Image on-demand vom passenden Upstream (Catch-All für Docker Hub, Prefix-Regeln für ghcr.io und quay.io) -- der erste Pull wartet auf den Upstream, danach kommt jedes weitere Exemplar aus dem Cache; bei Upstream-Fehlern versucht der Sync nach 5 Minuten erneut ([Proxy Cache Registries](#proxy-cache-registries)).
+3. Bei einem Cache-Miss spiegelt Zot das Image on-demand vom passenden Upstream (explizite Prefix-Allowlist für Docker Hub, Prefix-Regeln für ghcr.io und quay.io) -- der erste Pull wartet auf den Upstream, danach kommt jedes weitere Exemplar aus dem Cache ([Proxy Cache Registries](#proxy-cache-registries)).
 4. Gepusht wird ausschliesslich aus der CI -- via `skopeo` mit dem User `ci-push`, dessen Passwort der Workflow zur Laufzeit aus Vault holt ([Authentifizierung](#authentifizierung)).
 5. Die [Bootstrap-Klasse](#bootstrap-klasse-bewusste-direkt-pulls-ohne-cache) läuft an Zot vorbei -- teils permanent (explizite Upstream-Hostnames), teils als automatischer Fallback des Mirror-Mechanismus.
 6. Fällt der Node der Registry aus, rescheduled Nomad die Allocation nach der 5-Minuten-Karenz, das Volume folgt via CSI ohne Daten-Sync ([Betrieb -- Failover](./betrieb.md#failover-wiederanlauf)). Solange Zot fehlt, scheitern Re-Pulls expliziter Referenzen -- die Folgen fürs Cluster: [Plattform-Ausfallverhalten](../index.md#ausfallverhalten).
@@ -134,16 +134,14 @@ Volume-Parameter: `volumes/zot-data-volume.hcl` im Repo `homelab-nomad-jobs`; de
 
 ### Proxy Cache Registries
 
-Drei Upstream-Registries mit Catch-All Sync-Konfiguration und `onDemand: true` -- Images werden bei jedem Request on-demand gespiegelt und danach aus dem Volume-Cache geliefert. Der Destination-Prefix entspricht dem Upstream-Hostname, sodass die Zot-Image-Pfade 1:1 dem Upstream-Format folgen.
+Drei Upstream-Registries mit `onDemand: true` -- Images werden beim ersten Request on-demand gespiegelt und danach aus dem Volume-Cache geliefert. Der Destination-Prefix entspricht dem Upstream-Hostname, sodass die Zot-Image-Pfade 1:1 dem Upstream-Format folgen.
 
-- Docker Hub (`registry-1.docker.io`) -- Catch-All Default, alle Namespaces. Docker-Hub-Pro-Plan aktiv (unlimited pulls), 429 im Normalbetrieb nicht zu erwarten.
-- GitHub Container Registry (`ghcr.io`) -- Destination-Prefix `/ghcr.io`. Wird anonym (public) ohne Sync-Credentials gespiegelt.
-- Quay.io (`quay.io`) -- Destination-Prefix `/quay.io`, ebenfalls ohne Credentials.
+- Docker Hub (`registry-1.docker.io`) -- explizite Prefix-Allowlist (offizielle `library/`-Images einzeln, Hub-Namespaces als Wildcard). Docker-Hub-Pro-Plan aktiv (unlimited pulls), 429 im Normalbetrieb nicht zu erwarten. `retryDelay` 30 Sekunden.
+- GitHub Container Registry (`ghcr.io`) -- Destination-Prefix `/ghcr.io`. Wird anonym (public) ohne Sync-Credentials gespiegelt. `retryDelay` 5 Minuten.
+- Quay.io (`quay.io`) -- Destination-Prefix `/quay.io`, ebenfalls ohne Credentials. `retryDelay` 5 Minuten.
 
-`retryDelay` ist auf 5 Minuten gesetzt (war früher 1 Stunde -- ein Killer bei Upstream-Störungen): bei temporärem Upstream-Fehler wird nach 5 Minuten erneut versucht statt sofort zu scheitern. Details siehe Nomad-Job.
-
-::: warning Catch-All statt Whitelist
-Seit der Migration gibt es keine gepflegte Prefix-Whitelist mehr. Der Catch-All (`**`) synchronisiert jeden angefragten Pfad on-demand. Nicht mehr gecachte Images bleiben erhalten -- die Retention-Policies (Whitelist + Spam-Killer) übernehmen das Aufräumen.
+::: danger Kein Catch-All für Docker Hub (Vorfall 10.08.2026)
+Der frühere Catch-All (`**`) machte jedes selbst gebaute `library/`-Image zum Docker-Hub-Kandidaten: Zot verglich bei jedem by-Tag-Manifest-Abruf den Upstream-Digest, jeder Pull eines eigenen Images erzeugte Hub-API-Anfragen. Während einer Deploy-Welle drosselte Docker Hub, Manifest-Anfragen hingen clusterweit und kein Dienst konnte mehr ein neues Image ausrollen. Seither gilt die explizite Allowlist im Nomad-Job: **ein neues Docker-Hub-Image braucht zuerst einen Prefix-Eintrag in der Sync-Konfiguration**, sonst scheitert der erste Pull mit 404. ghcr.io- und quay.io-Prefixe sind davon nicht betroffen. Begründung und Vorfall-Details im Nomad-Job (`infrastructure/zot-registry.nomad`).
 :::
 
 ### Sync Credentials
