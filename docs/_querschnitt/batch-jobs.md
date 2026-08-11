@@ -44,8 +44,11 @@ Konsolidierte Übersicht aller periodischen Nomad Jobs. Die Job-Dateien liegen i
 | `consul-snapshot` | batch | Täglich 01:45 | Consul Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Uptime Kuma Push |
 | `nomad-snapshot` | batch | Täglich 01:30 | Nomad Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Uptime Kuma Push |
 | `vault-backup` | batch | Täglich 02:00 | Vault Raft Snapshot mit GFS-Rotation nach NFS | `vm-nomad-client-0[456]` (regexp) | Docker, Vault Secrets, Uptime Kuma Push |
+| `f1-jobsdb-backup` | batch | Täglich 03:50 | Integritätsprüfung und verschlüsselter Auszug der Ergebnisdatenbank der Dokumenten-Pipeline nach NFS | `vm-nomad-client-05` (fest) | Docker, Vault Secrets, Uptime Kuma Push, `prohibit_overlap`, age-verschlüsselt ohne Klartext-Zwischenstufe |
 
 Details zur Backup-Architektur und zum Restore-Konzept: [Backup-Strategie](../storage/backup/index.md)
+
+Beim Auszug der Pipeline-Datenbank ist die Verschlüsselung nicht optional: Die Datenbank trägt Volltexte des persönlichen Bestands, und der Backup-Speicher liegt auf dem NAS. Der Auszug wird deshalb durchgehend gestreamt, damit nirgends eine unverschlüsselte Zwischendatei entsteht. Begründung und Prüfumfang: [Dokumenten-Pipeline Betrieb](../dienste/dokumenten-pipeline/betrieb.md#sicherung-der-ergebnisdatenbank).
 
 ### Updates
 
