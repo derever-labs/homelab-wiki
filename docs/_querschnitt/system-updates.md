@@ -118,17 +118,15 @@ Die Schutzliste wird je Host-Klasse belegt. Beide Klassen haben zusätzlich den 
 | Host-Klasse | Hosts | Geschützte Dienste |
 | --- | --- | --- |
 | Nomad-Server | vm-nomad-server-04, -05, -06 | vault, consul, nomad |
-| Nomad-Clients | vm-nomad-client-04, -05, -06 | nomad, docker, containerd, linstor-*, drbd-* |
+| Nomad-Clients | vm-nomad-client-04, -05, -06 | nomad, consul, docker, containerd, linstor-*, drbd-* |
 
 Auf den Servern wiegt `vault.service` am schwersten: Ein Vault-Restart lässt den Node versiegelt zurück, weil `vault-unseal.service` `Type=oneshot` mit `RemainAfterExit` ist und nach einem Paket-Restart nicht nachläuft. Beim regulären VM-Boot dagegen läuft die Kette vollständig durch. Bei consul und nomad geht es um das Raft-Quorum: Die drei Server patchen unkoordiniert im selben Stundenfenster, und gleichzeitige Restarts auf zwei von drei kosten die Mehrheit.
 
-Auf den Clients wirft ein Restart von nomad, docker oder containerd die Allocations des Nodes weg. Dazu kommt die vollständige LINSTOR-/DRBD-Promoter-Kette: drbd-reactor, `drbd-promote@*` sowie linstor-controller, -satellite, -unlock und -consul-register. Die Kette hängt zusammen; ein Fremd-Restart einzelner Glieder bricht sie, und wenn eine Unit der Sammel-Transaktion nicht starten kann, blockiert der gesamte systemctl-Aufruf samt apt-Lock.
+Auf den Clients wirft ein Restart von nomad, docker oder containerd die Allocations des Nodes weg. Bei consul geht es um die Auflösung: Die Workloads auf demselben Node lösen ihre Abhängigkeiten über Consul-DNS auf und reagieren empfindlich auf jeden Aussetzer. Dazu kommt die vollständige LINSTOR-/DRBD-Promoter-Kette: drbd-reactor, `drbd-promote@*` sowie linstor-controller, -satellite, -unlock und -consul-register. Die Kette hängt zusammen; ein Fremd-Restart einzelner Glieder bricht sie, und wenn eine Unit der Sammel-Transaktion nicht starten kann, blockiert der gesamte systemctl-Aufruf samt apt-Lock.
 
 Die LINSTOR-/DRBD-Muster gelten bewusst für alle drei Clients, nicht nur für die beiden Storage-Nodes: vm-nomad-client-04 führt zwar keinen eigenen Storage, fährt aber drbd-reactor und linstor-satellite als diskless Client und war bis zum 15.08.2026 der einzige Client ohne Schutz für diese Kette.
 
-::: tip consul auf den Clients ist bewusst nicht geschützt
-Im DCLab steht der Consul-Agent auch auf den Clients auf der Blacklist, im Homelab nicht. Ein Consul-Client-Agent kommt nach einem Restart selbständig zurück und registriert seine Services neu -- anders als bei der DRBD-Kette bleibt nichts dauerhaft kaputt. Die Abweichung ist eine Entscheidung, kein Versehen.
-:::
+Damit stehen Homelab und DCLab auf demselben Stand -- die Client-Blacklist des DCLab enthält consul seit `infra-dclab#303`, das Homelab hat sie am 15.08.2026 nachgezogen.
 
 ::: warning Geblacklistete Dienste bleiben auf alten Bibliotheken
 Ein geschützter Dienst läuft nach einem Bibliotheks-Update so lange mit der alten Bibliothek weiter, bis die VM neu startet. Die Blacklist verhindert den Neustart also nicht, sie verschiebt ihn ins geplante Wartungsfenster. Für alle übrigen Dienste wirkt der Patch sofort.
