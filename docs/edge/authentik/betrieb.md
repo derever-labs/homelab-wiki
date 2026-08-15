@@ -30,6 +30,18 @@ Authentik läuft als Nomad Job (`identity/authentik.nomad`) mit vier Tasks (serv
 - **Alerting:** Authentik-Event-Matchers leiten sicherheitsrelevante Events via Telegram-Relay weiter
 - **Group-Binding-Drift-Audit:** periodischer Nomad-Batch-Job prüft täglich, ob alle 45 Apps mindestens eine Group-Binding haben. Alarm via Telegram wenn eine App ohne Binding auftaucht (Schutz gegen "46. App wurde ohne Binding hinzugefügt"-Fall)
 
+## Zot-Warmup vor dem Deploy
+
+Authentik läuft mit einer einzigen Allokation (`count = 1`, keine Canary-Stufe). Ein Deploy stoppt damit die laufende Instanz, bevor die neue gesund ist -- für die Dauer des Task-Starts ist SSO weg, und mit ihm jede Anwendung hinter ForwardAuth sowie der LDAP-Outpost. Solange dieses Fenster Sekunden dauert, ist es bewusst akzeptiert.
+
+Gefährlich wird es durch den Image-Pull. Alle vier Tasks ziehen ihre Images über die [Zot-Registry](../../plattform/docker-registry/index.md), die als Pull-Through-Cache mit `onDemand`-Spiegelung arbeitet: Ein Tag, den noch nie jemand angefragt hat, liegt nicht im Cache, sondern wird erst beim ersten Pull vom Upstream geholt. Bei einem Versions-Bump fällt genau dieser erste Pull in das Fenster, in dem die alte Instanz schon gestoppt ist. Aus Sekunden Ausfall werden dann Minuten, und wenn der Upstream drosselt oder hängt, läuft das Deployment in seine `progress_deadline` und rollt zurück. Wie eng das werden kann, zeigt der Vorfall vom 10.08.2026: Während einer Deploy-Welle drosselte Docker Hub, Manifest-Anfragen hingen clusterweit und kein Dienst brachte mehr ein neues Image aus (Hintergrund im [Registry-Steckbrief](../../plattform/docker-registry/index.md#proxy-cache-registries)).
+
+Deshalb gilt für `identity/`-Jobs ein fester Schritt vor jedem Deploy: Die neuen Image-Tags einzeln per Manifest-Abruf gegen Zot anfragen und warten, bis Zot sie gespiegelt hat. Erst mit warmem Cache den Job ausrollen. Der Warmup ist ein reiner Lesevorgang gegen `zot.service.consul:5000` und beliebig wiederholbar -- er kostet nur die Wartezeit, die sonst als Ausfall anfiele.
+
+::: warning Warmup ist bei identity/ nicht optional
+Dienste mit mehreren Allokationen fangen einen langsamen Pull über den rollenden Austausch ab. Authentik hat diesen Puffer nicht: Der Pull passiert im Ausfallfenster, nicht davor. Ohne Warmup ist die Ausfalldauer eines Authentik-Deploys nicht die Startzeit des Containers, sondern die Antwortzeit des Upstreams.
+:::
+
 ## Blueprint-Workflow
 
 Authentik-Gruppen und Group-Bindings liegen deklarativ im Repo unter `authentik-blueprints/`. Der Blueprint-Ansatz ist bewusst gewählt: Änderungen sind reviewbar (PR + CODEOWNERS), nachvollziehbar und atomar -- kein Git-Sync-Sidecar, kein Deploy-Key, kein PAT. Drift wird vom Audit-Job erkannt, aber nicht automatisch korrigiert, damit eine fehlerhafte Binding nicht selbsttätig zurückkehrt.
@@ -134,5 +146,6 @@ Die Schritt-für-Schritt-Reihenfolge des Erstdeploys (Vault-Secrets, PostgreSQL-
 - [Authentik Recovery und Breakglass](./recovery.md) -- Recovery-Layer, Breakglass, Benutzer-Recovery-Flow
 - [Authentik Gruppen und Bindings](./gruppen-bindings.md) -- Gruppen, Bindings, Tier-Mapping
 - [Authentik Referenz](./referenz.md) -- Flows, Policies, OIDC-Provider
+- [Zot Container Registry](../../plattform/docker-registry/index.md) -- Pull-Through-Cache, aus dem die Authentik-Images kommen
 - [Backup](../../storage/backup/index.md) -- PostgreSQL-Backup-Infrastruktur (Layer 4)
 - [Telegram Bots](../../monitoring/keep/telegram-bots.md) -- Alert-Transport via Relay
