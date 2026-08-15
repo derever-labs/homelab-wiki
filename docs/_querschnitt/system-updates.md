@@ -101,7 +101,7 @@ Proxmox verweigert Snapshots für Gäste mit Bind-Mount vollständig, unabhängi
 
 ## Dienst-Neustarts nach Paket-Updates (needrestart)
 
-Nach jedem apt-Lauf prüft needrestart, welche laufenden Dienste noch alte Bibliotheken im Speicher halten, und startet sie neu. Auf den beiden Storage-Nodes vm-nomad-client-05 und -06 ist dieses Verhalten vollständig festgelegt: Restart-Modus `a` (automatisch, ohne Rückfrage) plus die Blacklist der DRBD-/LINSTOR-Dienstkette.
+Nach jedem apt-Lauf prüft needrestart, welche laufenden Dienste noch alte Bibliotheken im Speicher halten, und startet sie neu. Auf allen sechs Nomad-Hosts ist dieses Verhalten seit dem 15.08.2026 vollständig festgelegt: Restart-Modus `a` (automatisch, ohne Rückfrage) plus eine Blacklist der Dienste, die nicht ungeplant durchstarten dürfen. Die Blacklist unterscheidet sich je nach Rolle des Hosts.
 
 ### Warum überhaupt konfiguriert
 
@@ -113,11 +113,22 @@ Der explizite Modus `a` ersetzt also kein harmloses Verhalten, sondern macht ein
 
 ### Welche Dienste geschützt sind
 
-Auf den Nomad-Workern steht `nomad.service` auf der Blacklist -- ein Restart würde die Allocations des Nodes wegwerfen. Auf den beiden Storage-Nodes kommt die vollständige Promoter-Kette dazu: drbd-reactor, `drbd-promote@*` sowie linstor-controller, -satellite, -unlock und -consul-register. Die Kette hängt zusammen; ein Fremd-Restart einzelner Glieder bricht sie, und wenn eine Unit der Sammel-Transaktion nicht starten kann, blockiert der gesamte systemctl-Aufruf samt apt-Lock.
+Die Schutzliste wird je Host-Klasse belegt. Beide Klassen haben zusätzlich den Restart-Modus `a` gesetzt.
 
-Auf den Nomad-Servern schützt eine eigene Blacklist `vault.service`. Ein Vault-Restart lässt den Node versiegelt zurück: `vault-unseal.service` ist `Type=oneshot` mit `RemainAfterExit` und läuft nach einem Paket-Restart nicht nach. Beim regulären VM-Boot dagegen läuft die Kette vollständig durch. Ausgerollt wird diese Blacklist mit dem eigenen Playbook `deploy-needrestart-vault.yml` -- bewusst chirurgisch: es legt nur die Datei ab, ändert keine Vault-Konfiguration und löst keinen Restart aus.
+| Host-Klasse | Hosts | Geschützte Dienste |
+| --- | --- | --- |
+| Nomad-Server | vm-nomad-server-04, -05, -06 | vault, consul, nomad |
+| Nomad-Clients | vm-nomad-client-04, -05, -06 | nomad, docker, containerd, linstor-*, drbd-* |
 
-Ist-Zustand ausserhalb der Storage-Nodes: Dort ist nur die jeweilige Dienst-Blacklist gesetzt, kein expliziter Restart-Modus -- es gilt also weiterhin der Ubuntu-Modus.
+Auf den Servern wiegt `vault.service` am schwersten: Ein Vault-Restart lässt den Node versiegelt zurück, weil `vault-unseal.service` `Type=oneshot` mit `RemainAfterExit` ist und nach einem Paket-Restart nicht nachläuft. Beim regulären VM-Boot dagegen läuft die Kette vollständig durch. Bei consul und nomad geht es um das Raft-Quorum: Die drei Server patchen unkoordiniert im selben Stundenfenster, und gleichzeitige Restarts auf zwei von drei kosten die Mehrheit.
+
+Auf den Clients wirft ein Restart von nomad, docker oder containerd die Allocations des Nodes weg. Dazu kommt die vollständige LINSTOR-/DRBD-Promoter-Kette: drbd-reactor, `drbd-promote@*` sowie linstor-controller, -satellite, -unlock und -consul-register. Die Kette hängt zusammen; ein Fremd-Restart einzelner Glieder bricht sie, und wenn eine Unit der Sammel-Transaktion nicht starten kann, blockiert der gesamte systemctl-Aufruf samt apt-Lock.
+
+Die LINSTOR-/DRBD-Muster gelten bewusst für alle drei Clients, nicht nur für die beiden Storage-Nodes: vm-nomad-client-04 führt zwar keinen eigenen Storage, fährt aber drbd-reactor und linstor-satellite als diskless Client und war bis zum 15.08.2026 der einzige Client ohne Schutz für diese Kette.
+
+::: tip consul auf den Clients ist bewusst nicht geschützt
+Im DCLab steht der Consul-Agent auch auf den Clients auf der Blacklist, im Homelab nicht. Ein Consul-Client-Agent kommt nach einem Restart selbständig zurück und registriert seine Services neu -- anders als bei der DRBD-Kette bleibt nichts dauerhaft kaputt. Die Abweichung ist eine Entscheidung, kein Versehen.
+:::
 
 ::: warning Geblacklistete Dienste bleiben auf alten Bibliotheken
 Ein geschützter Dienst läuft nach einem Bibliotheks-Update so lange mit der alten Bibliothek weiter, bis die VM neu startet. Die Blacklist verhindert den Neustart also nicht, sie verschiebt ihn ins geplante Wartungsfenster. Für alle übrigen Dienste wirkt der Patch sofort.
@@ -129,7 +140,11 @@ Der Vendor-Default für `apt-daily-upgrade` ist 06:00 mit 60 Minuten Streuung --
 
 ### Wo es im Code steht
 
-Rolle `ansible/roles/needrestart`, ausgerollt mit `playbooks/deploy-needrestart.yml`. Sie setzt nur den Restart-Modus; die Dienst-Blacklists bleiben bei den Rollen, zu denen sie gehören: `roles/drbd-reactor` liefert die DRBD-/LINSTOR-Kette, `roles/nomad` die Nomad-Zeile. needrestart summiert die Einträge aller Dateien in `conf.d`. Die gestaffelten Patch-Fenster stehen als Gruppen-Variable in `ansible/inventory/group_vars/drbd_storage.yml`.
+Rolle `ansible/roles/needrestart`, ausgerollt mit `playbooks/deploy-needrestart.yml` auf die Gruppen `nomad_servers` und `nomad_workers`. Die Rolle schreibt ausschliesslich Dateien unter `/etc/needrestart/conf.d/` -- sie enthält keinen Handler und keinen Dienst-Task und kann deshalb selbst keinen Neustart auslösen.
+
+Die Klassen-Belegung der Blacklist steht im Inventory: `ansible/inventory/group_vars/nomad_servers.yml` und `ansible/inventory/group_vars/nomad_workers.yml`. Daneben legen einzelne Dienst-Rollen weiterhin eigene Dateien ab -- `roles/vault`, `roles/drbd-reactor` und `roles/nomad`. Das ist unschädlich, weil needrestart die Einträge aller Dateien in `conf.d` summiert; auf den Storage-Nodes stehen die DRBD-/LINSTOR-Muster deshalb doppelt. Die gestaffelten Patch-Fenster stehen als Gruppen-Variable in `ansible/inventory/group_vars/drbd_storage.yml`.
+
+Die beiden Storage-Nodes werden auch hier einzeln angefasst, mit `--limit` je Host: Sie sind die beiden Hälften derselben DRBD-Redundanz.
 
 Auf den Hosts landet die Policy als `/etc/needrestart/conf.d/zz-restart-auto.conf`. Der `zz-`-Präfix ist nötig, weil needrestart die Dateien in `conf.d` alphabetisch lädt und die ältere `nomad.conf` die Blacklist zuweist statt sie zu ergänzen -- eine früher geladene Zuweisung würde spätere Einträge sonst verwerfen. Der Nomad-Sonderfall ist unter [Smart Shutdown](smart-shutdown.md) beschrieben.
 
