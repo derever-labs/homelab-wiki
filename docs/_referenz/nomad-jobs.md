@@ -25,7 +25,7 @@ Diese Seite ist die kanonische Übersicht aller Nomad Jobs. Job-Definitionen lie
 | monitoring/ | Grafana, InfluxDB, Loki, Uptime Kuma, Keep, Keep Mobile, Keep DB Retention, Keep Escalate Stale, Keep Heartbeat Watch, Metrics Deadman, Stale-Crit-Melder, iperf3-to-InfluxDB |
 | services/ | VitePress Wiki, Paperless (simple), Vaultwarden, Ollama, Open-WebUI, Flame, Flame-Intra, Homepage-Intra, Tandoor, ChangeDetection, Browserless, Profilarr, Obsidian-LiveSync, Mosquitto, Zigbee2MQTT, Gitea, Metabase, solidtime, n8n, MeshCommander, PHDler Telegram Bot, Telegram Relay, PocketBase, Directus Gravel, Immo-Monitor, Immoscraper, Immoscraper Weekly, Immoscraper Frühsignal, Karakeep, Karakeep Ingest, Claude Usage |
 | system/ | Alloy (Log-Collector), Linstor CSI |
-| tools/ | Todo-Ingest |
+| tools/ | Todo-Ingest, Mexiko-Reiseübersicht |
 | volumes/ | CSI-Volume-Spezifikationen (.hcl) |
 
 ## Abhängigkeiten

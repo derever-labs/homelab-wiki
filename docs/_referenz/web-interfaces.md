@@ -92,6 +92,7 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 | Banner (Pocketbase) | `https://banner.ackermannprivat.ch` | Banner-Config-Backend und Admin-UI |
 | Karakeep | `https://kara.ackermannprivat.ch` | Bookmark-Manager (intern + Tailscale) |
 | Todo Ingest | `https://todo.ackermannprivat.ch` | To-do-Erfassung per iPhone-Diktat (öffentlich, Bearer-Auth) |
+| Mexiko-Reiseübersicht | `https://mexico.ackermannprivat.ch` | Reise-Übersicht Mexiko 2026/27 (extern und intern, hinter Authentik) |
 | ntfy | `https://ntfy.ackermannprivat.ch` | Push-Benachrichtigungen (öffentlich, deny-all) |
 
 ## AI / LLM

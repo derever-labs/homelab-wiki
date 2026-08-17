@@ -30,6 +30,7 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 - [Karakeep Ingest](./karakeep-ingest/) -- Anreicherungs-Ingest für Karakeep (LinkedIn, Instagram, YouTube und Web-Links), dazu die Überholspur für Einzel-Abrufe
 - [LLM-Stack](./llm-stack/) -- Ollama als LLM-Backend mit Open WebUI als Chat-Interface
 - [Metabase](./metabase/) -- Business-Intelligence-Plattform für Datenvisualisierung und Dashboards
+- [Mexiko-Reiseübersicht](./mexico-ackermann/) -- Statische Reise-Übersicht hinter Authentik, offline nutzbar unterwegs
 - [n8n](./n8n/) -- Workflow-Automation-Plattform für Datenverarbeitung und Integrationen
 - [ntfy](./ntfy/) -- Selbstgehosteter Push-Benachrichtigungsdienst mit Action-Buttons für Homelab-Services
 - [Obsidian LiveSync](./obsidian-livesync/) -- Selbstgehosteter Obsidian-Sync-Server mit CouchDB-Backend
