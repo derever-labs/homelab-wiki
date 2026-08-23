@@ -16,7 +16,7 @@ Dieses Kapitel bündelt die eigenständigen Dienste des Homelabs, die keinem der
 - [Browserless](./browserless/) -- Geteilter Headless-Browser-Dienst für Rendering und Seiten-Bedienung
 - [ChangeDetection.io](./changedetection/) -- Website-Änderungsüberwachung mit geteiltem Browser-Dienst für JavaScript-Rendering
 - [Claude Usage](./claude-usage/) -- Dashboard für die Usage-Limiten der drei Claude-Konten mit Reset-Countdown
-- [Dashboards](./dashboards/) -- Flame als öffentliche Startseite und Homepage als internes Dashboard
+- [Portale](./dashboards/) -- welcome als Gast-Portal und intra als Arbeits-Portal
 - [DbGate](./dbgate/) -- Web-basiertes Datenbank-Management für den PostgreSQL Shared Cluster
 - [Directus Gravel](./directus-gravel/) -- Headless CMS für die persönliche Gravel-Bike-Recherche
 - [Dokumenten-Pipeline](./dokumenten-pipeline/) -- Batch-Verarbeitung des NAS-Dokumentenbestands mit Metadaten-Extraktion und Ablage-Routing

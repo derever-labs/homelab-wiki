@@ -26,7 +26,7 @@ Claude Usage zeigt auf einer Seite, wie weit die Limiten der drei Claude-Konten 
 
 Der Dienst ist Anzeige plus Kontingent-Pflege: Er hält keine Historie und hängt an keiner Datenbank. Bis August 2026 lief der Poller auf Samuels Mac (Token im macOS-Keychain, Push per HTTPS PUT), mit dem strukturellen Nachteil, dass ein schlafender Mac eingefrorene Zahlen, ausbleibende Token-Erneuerungen und verpasste Resets bedeutete. Seit dem Umzug in den Cluster laufen Abfrage, Token-Erneuerung, Wochenfenster-Pings und Meldungen rund um die Uhr. Der bewusste Preis dafür: Die OAuth-Credentials der Konten liegen jetzt in Vault statt im Keychain -- zur Laufzeit ausschliesslich im tmpfs der Task, nie auf einer Platte.
 
-Der Einstieg läuft über die Kachel auf dem internen Portal [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) in der Gruppe Monitoring (siehe [Dashboards](../dashboards/index.md)).
+Der Einstieg läuft über die Kachel auf dem internen Portal [intra.ackermannprivat.ch](https://intra.ackermannprivat.ch) in der Gruppe Monitoring (siehe [Portale](../dashboards/index.md)).
 
 ## Datenfluss
 
@@ -166,7 +166,7 @@ Poller-Mechanik, Konto-Zuordnung, Ping- und Melde-Logik und der Aufbau von `usag
 
 ## Verwandte Seiten
 
-- [Dashboards](../dashboards/index.md) -- internes Portal mit der Kachel zu diesem Dienst
+- [Portale](../dashboards/index.md) -- internes Portal mit der Kachel zu diesem Dienst
 - [ntfy](../ntfy/index.md) -- Push-Kanal der "wieder frei"-Meldungen
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `intern-auth` und `intern-api`
 - [Authentik](../../edge/authentik/index.md) -- SSO vor der Seite (Gruppe `admin`)
