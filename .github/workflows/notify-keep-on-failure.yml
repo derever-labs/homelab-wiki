@@ -33,7 +33,6 @@ jobs:
           WF_REPO: ${{ github.event.workflow_run.repository.full_name }}
           WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
           WF_URL: ${{ github.event.workflow_run.html_url }}
-          WF_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           curl -fsS --max-time 15 --retry 3 \
@@ -53,8 +52,7 @@ jobs:
                 \"annotations\": {
                   \"summary\": \"Workflow ${WF_NAME} in ${WF_REPO} (Branch ${WF_BRANCH}) fehlgeschlagen: ${WF_URL}\"
                 },
-                \"startsAt\": \"${NOW}\",
-                \"fingerprint\": \"ci-${WF_RUN_ID}\"
+                \"startsAt\": \"${NOW}\"
               }]
             }"
 
