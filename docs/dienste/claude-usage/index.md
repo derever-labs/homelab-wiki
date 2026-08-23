@@ -116,7 +116,7 @@ browser -> traefik.rdata: "8 usage.json lesen" { class: seite }
 Die Zahlen stammen aus einem internen, nicht dokumentierten Endpunkt von Anthropic -- demselben, den Claude Code für die eigene Limiten-Anzeige nutzt. Er kann sich jederzeit ändern oder wegfallen, ohne Vorwarnung und ohne Migrationspfad. Der Schaden bleibt dabei auf die Anzeige begrenzt: Kein anderer Dienst hängt an diesen Daten, und kein Arbeitsablauf bricht, wenn die Seite leer bleibt.
 :::
 
-Fällt der Poller aus, frieren die Prozentwerte auf dem Stand des letzten Laufs ein. Die Seite verschweigt das nicht, sondern blendet ein Staleness-Banner mit dem Alter der Daten ein. Die Reset-Countdowns bleiben in diesem Zustand korrekt, weil sie aus den mitgelieferten Reset-Zeitpunkten laufen; ein Fenster, dessen Reset bereits in der Vergangenheit liegt, leitet die Seite clientseitig als wieder frei ab.
+Fällt der Poller aus, frieren die Prozentwerte auf dem Stand des letzten Laufs ein. Aktiv gemeldet wird das über den Kuma-Push-Monitor `claude-usage Poller`: Der Poller pusht nach jedem Zyklus einen Heartbeat, bleibt er aus oder liefern alle drei Konten nichts mehr, alarmiert [Uptime-Kuma](../../monitoring/uptime-kuma/index.md). Die Seite selbst verschweigt es ebenfalls nicht, sondern blendet ein Staleness-Banner mit dem Alter der Daten ein. Die Reset-Countdowns bleiben in diesem Zustand korrekt, weil sie aus den mitgelieferten Reset-Zeitpunkten laufen; ein Fenster, dessen Reset bereits in der Vergangenheit liegt, leitet die Seite clientseitig als wieder frei ab.
 
 ## Credentials in Vault {#credentials-in-vault}
 
