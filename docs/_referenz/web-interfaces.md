@@ -106,8 +106,8 @@ IP-Adressen sind kanonisch in [Hosts und IPs](./hosts-und-ips.md) gepflegt.
 
 | Service | URL | Beschreibung |
 | :--- | :--- | :--- |
-| Flame | `https://welcome.ackermannprivat.ch` | Startseite extern |
-| Homepage | `https://intra.ackermannprivat.ch` | Dashboard intern |
+| welcome | `https://welcome.ackermannprivat.ch` | Gast-Portal extern |
+| intra | `https://intra.ackermannprivat.ch` | Arbeits-Portal intern |
 | Claude Usage | `https://claude.ackermannprivat.ch` | Usage-Limiten der Claude-Konten (nur intern) |
 
 ## Verwandte Seiten
