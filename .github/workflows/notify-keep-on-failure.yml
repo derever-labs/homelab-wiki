@@ -65,6 +65,13 @@ jobs:
   resolve:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: [self-hosted, homelab]
+    # Der Repo-Default "Read repository contents and packages permissions"
+    # gibt dem GITHUB_TOKEN kein actions:read. Hier faellt das nicht auf, weil
+    # das Repo public ist und die Runs-API dann auch ohne den Scope antwortet
+    # -- in den privaten Schwester-Repos laeuft dieselbe Abfrage in ein 403.
+    # Der Block macht den Watcher unabhaengig von der Repo-Sichtbarkeit.
+    permissions:
+      actions: read
     steps:
       - name: Entwarnung an Keep posten (nur nach vorherigem Failure)
         env:
@@ -74,8 +81,11 @@ jobs:
           WF_BRANCH: ${{ github.event.workflow_run.head_branch }}
           WF_ID: ${{ github.event.workflow_run.workflow_id }}
         run: |
-          PREV=$(gh api "repos/${WF_REPO}/actions/workflows/${WF_ID}/runs?per_page=2&status=completed&branch=${WF_BRANCH}" \
-            --jq '.workflow_runs[1].conclusion' 2>/dev/null || echo unknown)
+          if ! PREV=$(gh api "repos/${WF_REPO}/actions/workflows/${WF_ID}/runs?per_page=2&status=completed&branch=${WF_BRANCH}" \
+            --jq '.workflow_runs[1].conclusion'); then
+            echo "::warning::Run-Abfrage fehlgeschlagen -- Entwarnung uebersprungen"
+            exit 0
+          fi
           if [ "$PREV" != "failure" ]; then
             echo "Vorheriger Run: ${PREV} -- keine Entwarnung noetig"
             exit 0
