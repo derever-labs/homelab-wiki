@@ -29,7 +29,7 @@ Seit dem 30.07.2026 hat der Dienst neben der Paste-Seite eine zweite, authentisi
 
 Karakeep Ingest ist die Erfassungs-Hilfe für Fälle, die der Karakeep-eigene Crawler nicht sauber oder nicht kostenfrei abdeckt: LinkedIn-Posts hinter der Auth-Wall, Instagram-Posts und -Reels hinter dem Login, YouTube-Videos als vollwertige Karte ohne Scrapfly-Kosten und Web-Seiten mit Consent-Bannern oder fehlendem Vorschaubild. Er reichert nur an (Archiv, Vorschaubild, Metadaten) und ordnet nicht ein -- keine organisierenden Tags und keine Listen-Zuweisung; für LinkedIn, Instagram und YouTube setzt er lediglich Herkunfts-Tags (LinkedIn: Autor, erwähnte Firmen, Hashtags; Instagram: Quelle, Autor, markierte Konten, Hashtags; YouTube: Quelle und Kanal) automatisch. Die Organisation bleibt im wöchentlichen Karakeep-Batch. Stirbt Apify oder Scrapfly, funktioniert der manuelle Screenshot-Weg unverändert weiter; der Dienst ist bewusst degradierbar.
 
-Eingefügte URLs werden nach Herkunft aufgeteilt: LinkedIn läuft über die Apify-Pipeline (Volltext und Originalbilder), Instagram über einen zweiten Apify-Actor (Caption und Originalbilder, bei Carousels alle Seiten, bei Reels das Cover-Thumbnail statt des Videos), YouTube-Videos über einen kostenlosen Pfad (oEmbed-Metadaten und das Vorschaubild aus dem Thumbnail-CDN, ohne Scrapfly), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Alle Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird. Bei Instagram nehmen nur einzelne Posts und Reels (`/p/`, `/reel/`) den Apify-Pfad; Profile, Explore und Stories bleiben im Web-Pfad. Bei YouTube gilt dasselbe für echte Videos (Watch-Links, Shorts, youtu.be) gegenüber Kanälen und Playlists.
+Eingefügte URLs werden nach Herkunft aufgeteilt: LinkedIn-Posts laufen über die Apify-Pipeline (Volltext und Originalbilder), LinkedIn-Personen-Profile (`/in/…`) seit dem 27.08.2026 über einen eigenen Apify-Actor (Profil-Karte mit Headline, About, Werdegang und Foto), Instagram über einen weiteren Apify-Actor (Caption und Originalbilder, bei Carousels alle Seiten, bei Reels das Cover-Thumbnail statt des Videos), YouTube-Videos über einen kostenlosen Pfad (oEmbed-Metadaten und das Vorschaubild aus dem Thumbnail-CDN, ohne Scrapfly), alle anderen Quellen über Scrapfly (og-Metadaten und ein Consent-Wall-freies HTML-Archiv). Alle Pfade schreiben das Ergebnis über die Karakeep-API, die intern via Consul aufgelöst wird. Bei Instagram nehmen nur einzelne Posts und Reels (`/p/`, `/reel/`) den Apify-Pfad; Profile, Explore und Stories bleiben im Web-Pfad. Bei YouTube gilt dasselbe für echte Videos (Watch-Links, Shorts, youtu.be) gegenüber Kanälen und Playlists. `lnkd.in`-Kurzlinks bleiben im Post-Pfad, weil ihr Ziel ohne Auflösung unbekannt ist.
 
 ```d2
 classes: {
@@ -52,7 +52,8 @@ DMA: "LinkedIn-DMA-Snapshot\n(gespeicherte Posts)" {
 
 Ingest: "karakeep-ingest\n(Hono-BFF + In-Prozess-Queue)" {
   style.stroke-dash: 4
-  LI: "LinkedIn-Pfad\n(Apify)" { class: node }
+  LI: "LinkedIn-Post-Pfad\n(Apify)" { class: node }
+  PROF: "LinkedIn-Profil-Pfad\n(Apify)" { class: node }
   IG: "Instagram-Pfad\n(Apify)" { class: node }
   YT: "YouTube-Pfad\n(oEmbed, gratis)" { class: node }
   WEB: "Web-Pfad\n(Scrapfly)" { class: node }
@@ -64,12 +65,15 @@ Tandoor: "Tandoor\n(Rezepte)" { class: node }
 
 BL: "browserless\n(Consent-Klick)" { class: node }
 
-UI -> Ingest.LI: "linkedin.com"
+UI -> Ingest.LI: "LinkedIn-Post"
+UI -> Ingest.PROF: "linkedin.com/in/…"
 UI -> Ingest.IG: "Post / Reel"
 UI -> Ingest.YT: "YouTube-Video"
 UI -> Ingest.WEB: "andere Quellen"
 DMA -> Ingest.LI: "stündlicher Saves-Pull"
+DMA -> Ingest.PROF: "gespeicherte Profile"
 Ingest.LI -> Karakeep: "Volltext + Bilder"
+Ingest.PROF -> Karakeep: "Profil-Karte + Foto"
 Ingest.IG -> Karakeep: "Caption + Bilder"
 Ingest.YT -> Karakeep: "oEmbed + Thumbnail"
 Ingest.WEB -> Karakeep: "og-Meta + Archiv"
@@ -78,11 +82,12 @@ Ingest -> Tandoor: "Rezept-Toggle:\nLLM-Extraktion" { style.stroke: "#16a34a" }
 Read -> Ingest: "POST /api/read (Bearer):\neine URL, Volltext zurück" { style.stroke: "#2563eb" }
 ```
 
-**Belegt gegen** `server/api.ts`, `server/engine.ts`, `server/pipeline.ts`, `server/linkedin-pull.ts` und `server/recipe-extract.ts` im App-Repo, Stand 08.08.2026.
+**Belegt gegen** `server/api.ts`, `server/engine.ts`, `server/pipeline.ts`, `server/linkedin-pull.ts`, `server/linkedin-profile-pipeline.ts` und `server/recipe-extract.ts` im App-Repo, Stand 27.08.2026.
 
 ## Nutzungsregel
 
 - LinkedIn-Post-URL: immer über den Ingest. Der Karakeep-eigene Crawler läuft in die Auth-Wall.
+- LinkedIn-Personen-Profil (`linkedin.com/in/…`): über den Ingest. Es entsteht eine Profil-Karte mit Name, Headline, About, Werdegang und Foto -- in LinkedIn gespeicherte Profile kommen über den Saves-Pull von selbst.
 - Instagram-Post- oder Reel-URL: über den Ingest. Der Karakeep-eigene Crawler kommt nicht hinter den Login.
 - YouTube-Video-URL: über den Ingest. Er baut die Karte kostenlos aus oEmbed und dem Thumbnail-CDN, statt Scrapfly-Credits zu verbrauchen.
 - Alle anderen Quellen: weiterhin Karakeep-nativ (Extension, Share-Sheet). Der Ingest ist der zweite Versuch, wenn die Karte ohne Bild bleibt oder das Archiv einen Consent-Banner zeigt.
@@ -124,6 +129,16 @@ Gespeicherte LinkedIn-Posts laufen seit dem 19.07.2026 ohne Handgriff ein: Ein s
 
 ::: warning DMA-Snapshot: 404 ist doppeldeutig
 Die Snapshot-API beendet die Pagination seit Juli 2026 mit einem 404 auf der Folgeseite («No data found for this domain and memberId»); nur auf der ersten Seite bedeutet derselbe Status «Snapshot noch nicht generiert». Wer jeden Nicht-200 als Abbruch wertet, verwirft stillschweigend gültige Daten -- so entstand zwischen dem 21.07. und dem 08.08.2026 ein 18-tägiger unbemerkter Stillstand. Die Changelog-API ist kein Ersatz: sie führt keine Save-Ereignisse.
+:::
+
+## LinkedIn-Personen-Profile
+
+Spannende Personen lassen sich seit dem 27.08.2026 als vollwertige Karte ablegen: Eine Profil-URL (`linkedin.com/in/…`, eingefügt oder als gespeichertes Profil aus dem Saves-Pull) läuft über einen eigenen Apify-Actor ohne Login und wird zur Karte mit Name, Headline, About, aktuellen Positionen, Werdegang, Ausbildung und Top-Skills; das Profilfoto wird sofort geladen (die CDN-URL verfällt) und dient als Vorschaubild. Die Karte trägt die Tags `quelle/linkedin`, `typ/person`, `person/<Name>` und die Top-Skills, das strukturierte Profil steckt als durchsuchbares HTML-Archiv dahinter. Gross-/Kleinvarianten und Unterseiten derselben Person ergeben dieselbe Karte (Slug-Dedup).
+
+Datenschutz-Leitplanke wie bei den Post-Pfaden: Das Mapping liest nur eine Whitelist von Feldern -- E-Mail-Adressen, «weitere Profile» (fremde Personen) und erhaltene Empfehlungen Dritter werden nie gelesen und nie gespeichert.
+
+::: warning Apify-Actor-Updates können stillschweigend brechen
+Der Post-Actor lieferte ab dem 14.08.2026 für jeden Post ein leeres Ergebnis trotz Status SUCCEEDED -- ein kaputtes Actor-Update (Build 1.0.9) crashte beim Schreiben des Datasets. Seither pinnt `INGEST_APIFY_ACTOR_BUILD` im Nomad-Job den Post-Actor auf den letzten funktionierenden Build; der Pin fällt erst, wenn ein Nachfolge-Build verifiziert ist. Symptom im Ingest: Serien von «kein Ergebnis vom Actor» bei URLs, die im Browser funktionieren.
 :::
 
 ## Consent-Walls im Web-Pfad
