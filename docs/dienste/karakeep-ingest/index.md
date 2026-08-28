@@ -71,7 +71,7 @@ UI -> Ingest.IG: "Post / Reel"
 UI -> Ingest.YT: "YouTube-Video"
 UI -> Ingest.WEB: "andere Quellen"
 DMA -> Ingest.LI: "stündlicher Saves-Pull"
-DMA -> Ingest.PROF: "gespeicherte Profile"
+DMA -> Ingest.PROF: "täglich: Verbindungen +\ngefolgte Profile (Netzwerk)"
 Ingest.LI -> Karakeep: "Volltext + Bilder"
 Ingest.PROF -> Karakeep: "Profil-Karte + Foto"
 Ingest.IG -> Karakeep: "Caption + Bilder"
@@ -133,9 +133,33 @@ Die Snapshot-API beendet die Pagination seit Juli 2026 mit einem 404 auf der Fol
 
 ## LinkedIn-Personen-Profile
 
-Spannende Personen lassen sich seit dem 27.08.2026 als vollwertige Karte ablegen: Eine Profil-URL (`linkedin.com/in/…`, eingefügt oder als gespeichertes Profil aus dem Saves-Pull) läuft über einen eigenen Apify-Actor ohne Login und wird zur Karte mit Name, Headline, About, aktuellen Positionen, Werdegang, Ausbildung und Top-Skills; das Profilfoto wird sofort geladen (die CDN-URL verfällt) und dient als Vorschaubild. Die Karte trägt die Tags `quelle/linkedin`, `typ/person`, `person/<Name>` und die Top-Skills, das strukturierte Profil steckt als durchsuchbares HTML-Archiv dahinter. Gross-/Kleinvarianten und Unterseiten derselben Person ergeben dieselbe Karte (Slug-Dedup).
+Spannende Personen lassen sich seit dem 27.08.2026 als vollwertige Karte ablegen: Eine Profil-URL (`linkedin.com/in/…`, eingefügt oder per Share-Sheet eingereicht) läuft über einen eigenen Apify-Actor ohne Login und wird zur Personen-Karte (Aufbau siehe [Netzwerk](#netzwerk-verbindungen-und-gefolgte-profile)); das Profilfoto wird sofort geladen (die CDN-URL verfällt) und dient als Vorschaubild. Manuell eingereichte Profile tragen den Tag `netzwerk/geteilt`. Gross-/Kleinvarianten und Unterseiten derselben Person ergeben dieselbe Karte (Slug-Dedup).
 
 Datenschutz-Leitplanke wie bei den Post-Pfaden: Das Mapping liest nur eine Whitelist von Feldern -- E-Mail-Adressen, «weitere Profile» (fremde Personen) und erhaltene Empfehlungen Dritter werden nie gelesen und nie gespeichert.
+
+## Netzwerk: Verbindungen und gefolgte Profile
+
+Das eigene LinkedIn-Netzwerk liegt als Personen-Karten in Karakeep: Ein täglicher Abgleich liest die Verbindungen und die gefolgten Profile aus dem LinkedIn-Datenexport (DMA-Domains `CONNECTIONS` und `MEMBER_FOLLOWING`, gratis) und führt sie in einer Personen-Tabelle der Ingest-DB. Jede Person mit Profil-URL bekommt zuerst eine **Basis-Karte** aus den Export-Daten (Name, Firma, Position, verbunden seit; 0 USD) und wird danach im Rahmen des Apify-Budgets **angereichert**: Profil-Scrape, Zusammenfassung durch ein Sprachmodell (gpt-5-mini) mit einem Anknüpfungspunkt zum eigenen Profil, Foto als Vorschaubild, Themen-Tags aus einem festen Vokabular von 13 Begriffen (maximal drei pro Person). Die Smart-Listen `👥 Netzwerk` (alle Karten mit `typ/person`) und `🗞️ Ohne Personen` (der übrige Bestand) trennen die Ansichten; die Karten sind auf das Verbindungsdatum rückdatiert, damit der Feed nicht überschwemmt wird.
+
+So ist eine Personen-Karte aufgebaut:
+
+- **Titel** «Name – Headline», **Beschreibung** Headline und Ort, darunter das About im Original.
+- **Zusammenfassung** (Karakeep-Feld `summary`): zwei bis drei Sätze, was die Person macht und wofür sie steht, plus ein Satz «Anknüpfungspunkt». Der Anknüpfungspunkt entsteht nur, wenn das Profil genug Substanz hat und das Modell ein Belegzitat aus dem Profil liefert; sonst entfällt er, statt erfunden zu werden.
+- **Notiz** (`note`): die Netzwerk-Fakten in einer Zeile, der komplette Werdegang und alle Abschlüsse, die meistbeachteten Posts der letzten zwölf Monate und der «Im Fokus»-Eintrag. Die Notiz ist der durchsuchbare Lebenslauf: Wer nach einer Firma oder Hochschule sucht, findet alle Personen, die dort einmal waren.
+- **Archiv**: der ausführliche Lebenslauf mit Stationsbeschreibungen als Lese-Ansicht.
+- **Tags**: `typ/person`, `quelle/linkedin`, `netzwerk/kontakt` (Verbindung), `netzwerk/gefolgt` (nur gefolgt), `netzwerk/geteilt` (manuell eingereicht) oder `netzwerk/ehemalig` (nicht mehr im Export), bis zu drei Themen, und `autor/<Name>`, falls von der Person schon gespeicherte Posts existieren (Autor-Brücke). Keine Namens- und keine Skill-Tags.
+
+**Top-Posts** (die drei reaktionsstärksten Posts aus zwölf Monaten) gibt es nur für die Stufe A: Personen mit Stern in Karakeep, mit mehr als 2000 Followern oder mit mindestens zwei Kernthemen-Tags, gedeckelt auf 150 Personen. Der Stern ist das manuelle Opt-in direkt in Karakeep.
+
+**Budget und Rhythmus:** Alle bezahlten Schritte (Profil 0.004 USD, Post 0.0015 USD) prüfen vor jedem Lauf den Live-Headroom des Apify-Kontos: Monatsdeckel minus Reserve für die Post-Importe (mindestens 2.50 USD) minus Verbrauch. Ist kein Headroom da, wartet die Warteschlange, nichts wird geschätzt. Neue Verbindungen zuerst, Profile werden alle 90 Tage neu geholt, Top-Posts alle 180 Tage; ändert sich im Export Firma oder Position einer Person, wird sie vorgezogen. Die Netzwerk-Karte in kara-in zeigt Bestand, Headroom und Betriebsmodus: `Aus` (nur Export in die DB), `Nur Karten` (Basis-Karten, kein Apify) und `Vollbetrieb` (bezahlte Anreicherung). Ein zweiter Kuma-Push-Monitor überwacht den täglichen Lauf als Dead-Man, unabhängig vom stündlichen Saves-Pull.
+
+::: warning Gefolgte Profile kommen ohne URL
+Der Datenexport liefert für gefolgte Profile nur Status, Datum und Namen. Diese Personen stehen in der Tabelle, bekommen aber erst eine Karte, wenn der Name zu einer Profil-URL aufgelöst ist (Auflösungsweg in Arbeit, Stand 27.08.2026). Die Netzwerk-Karte weist sie als «nicht aufgelöst» aus.
+:::
+
+::: warning Ein ersetztes Archiv wird nicht neu indexiert
+Karakeep indexiert das Archiv einer Karte nur beim ersten Crawl; ein per API ersetztes Archiv bleibt im Suchindex alt, einen Recrawl-Endpoint gibt es nicht. Darum lebt alles Durchsuchbare in der Notiz, die bei jedem Refresh neu geschrieben und sofort indexiert wird.
+:::
 
 ::: warning Apify-Actor-Updates können stillschweigend brechen
 Der Post-Actor lieferte ab dem 14.08.2026 für jeden Post ein leeres Ergebnis trotz Status SUCCEEDED -- ein kaputtes Actor-Update (Build 1.0.9) crashte beim Schreiben des Datasets. Seither pinnt `INGEST_APIFY_ACTOR_BUILD` im Nomad-Job den Post-Actor auf den letzten funktionierenden Build; der Pin fällt erst, wenn ein Nachfolge-Build verifiziert ist. Symptom im Ingest: Serien von «kein Ergebnis vom Actor» bei URLs, die im Browser funktionieren.
