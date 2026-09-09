@@ -1,6 +1,6 @@
 ---
 title: Claude Usage
-description: Dashboard für die Usage-Limiten der drei Claude-Konten mit Reset-Countdown, Wochenfenster-Pings und ntfy-Meldungen
+description: Dashboard für die Usage-Limiten der vier Claude-Konten mit Reset-Countdown, Wochenfenster-Pings und ntfy-Meldungen
 tags:
   - service
   - dashboard
@@ -10,7 +10,7 @@ tags:
 
 # Claude Usage
 
-Claude Usage zeigt auf einer Seite, wie weit die Limiten der drei Claude-Konten ausgeschöpft sind -- je Konto das 5-Stunden-Fenster der laufenden Session, das Wochenfenster und das separate Wochenfenster für Fable -- und wann das jeweilige Fenster wieder zurücksetzt. Damit beantwortet die Seite die Planungsfrage, welches Konto gerade arbeitsfähig ist und wie lange ein blockiertes Konto noch blockiert bleibt. Dazu kommt je Konto der gebuchte Tarif (siehe [Abo-Übersicht](#abo-uebersicht)). Technisch ist es ein Nomad-Job mit zwei Tasks nach dem [Homelab-App-Standard](../../_querschnitt/app-standard/index.md): eine statische nginx-Seite und ein Poller, der die Zahlen im Cluster selbst beschafft. Der Poller pingt zusätzlich jedes Wochenfenster direkt nach dem Reset an und meldet über [ntfy](../ntfy/index.md), wenn ein fast volles Limit wieder frei ist.
+Claude Usage zeigt auf einer Seite, wie weit die Limiten der vier Claude-Konten ausgeschöpft sind -- je Konto das 5-Stunden-Fenster der laufenden Session, das Wochenfenster und das separate Wochenfenster für Fable -- und wann das jeweilige Fenster wieder zurücksetzt. Damit beantwortet die Seite die Planungsfrage, welches Konto gerade arbeitsfähig ist und wie lange ein blockiertes Konto noch blockiert bleibt. Dazu kommt je Konto der gebuchte Tarif (siehe [Abo-Übersicht](#abo-uebersicht)). Technisch ist es ein Nomad-Job mit zwei Tasks nach dem [Homelab-App-Standard](../../_querschnitt/app-standard/index.md): eine statische nginx-Seite und ein Poller, der die Zahlen im Cluster selbst beschafft. Der Poller pingt zusätzlich jedes Wochenfenster direkt nach dem Reset an und meldet über [ntfy](../ntfy/index.md), wenn ein fast volles Limit wieder frei ist.
 
 ## Übersicht
 
@@ -30,7 +30,7 @@ Der Einstieg läuft über die Kachel auf dem internen Portal [intra.ackermannpri
 
 ## Datenfluss
 
-**Leitfrage:** Wie kommen die Zahlen der drei Konten auf die Seite, und wohin fliessen Credentials und Meldungen?
+**Leitfrage:** Wie kommen die Zahlen der vier Konten auf die Seite, und wohin fliessen Credentials und Meldungen?
 
 Lese-Konvention: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Ocker kodiert den Poller-Weg, Blau den Seiten-Weg des Browsers.
 
@@ -111,7 +111,7 @@ mac -> traefik.rdata: "9 aktives Konto melden" { class: push }
 app.poller -> app.swap: "10 swap.json schreiben" { class: push }
 ```
 
-1. Beim Start stellt der Poller die Credentials-Dateien der drei Konten aus Vault im tmpfs her (siehe [Credentials in Vault](#credentials-in-vault)).
+1. Beim Start stellt der Poller die Credentials-Dateien der vier Konten aus Vault im tmpfs her (siehe [Credentials in Vault](#credentials-in-vault)).
 2. Alle fünf Minuten fragt er damit den Anthropic-Usage-Endpunkt ab (siehe [Datenquelle](#datenquelle)).
 3. Das Ergebnis schreibt er als `usage.json` ins geteilte Alloc-Verzeichnis, aus dem nginx sie ausliefert.
 4. Erneuert die Claude-CLI ein Token, geht der neue Stand sofort zurück nach Vault.
@@ -130,7 +130,7 @@ app.poller -> app.swap: "10 swap.json schreiben" { class: push }
 Die Zahlen stammen aus einem internen, nicht dokumentierten Endpunkt von Anthropic -- demselben, den Claude Code für die eigene Limiten-Anzeige nutzt. Er kann sich jederzeit ändern oder wegfallen, ohne Vorwarnung und ohne Migrationspfad. Der Schaden bleibt dabei auf die Anzeige begrenzt: Kein anderer Dienst hängt an diesen Daten, und kein Arbeitsablauf bricht, wenn die Seite leer bleibt.
 :::
 
-Fällt der Poller aus, frieren die Prozentwerte auf dem Stand des letzten Laufs ein. Aktiv gemeldet wird das über den Kuma-Push-Monitor `claude-usage Poller`: Der Poller pusht nach jedem Zyklus einen Heartbeat, bleibt er aus oder liefern alle drei Konten nichts mehr, alarmiert [Uptime-Kuma](../../monitoring/uptime-kuma/index.md). Die Seite selbst verschweigt es ebenfalls nicht, sondern blendet ein Staleness-Banner mit dem Alter der Daten ein. Die Reset-Countdowns bleiben in diesem Zustand korrekt, weil sie aus den mitgelieferten Reset-Zeitpunkten laufen; ein Fenster, dessen Reset bereits in der Vergangenheit liegt, leitet die Seite clientseitig als wieder frei ab.
+Fällt der Poller aus, frieren die Prozentwerte auf dem Stand des letzten Laufs ein. Aktiv gemeldet wird das über den Kuma-Push-Monitor `claude-usage Poller`: Der Poller pusht nach jedem Zyklus einen Heartbeat, bleibt er aus oder liefern alle vier Konten nichts mehr, alarmiert [Uptime-Kuma](../../monitoring/uptime-kuma/index.md). Die Seite selbst verschweigt es ebenfalls nicht, sondern blendet ein Staleness-Banner mit dem Alter der Daten ein. Die Reset-Countdowns bleiben in diesem Zustand korrekt, weil sie aus den mitgelieferten Reset-Zeitpunkten laufen; ein Fenster, dessen Reset bereits in der Vergangenheit liegt, leitet die Seite clientseitig als wieder frei ab.
 
 ## Credentials in Vault {#credentials-in-vault}
 

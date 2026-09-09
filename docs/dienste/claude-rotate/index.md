@@ -24,7 +24,7 @@ Claude Rotate ist ein kleiner HTTP-Proxy vor der Anthropic-API. Claude Code auf 
 
 ## Betriebsweise
 
-Standardweg für den Kontowechsel ist seit dem 6. September 2026 nicht mehr der Proxy, sondern der lokale Live-Wechsler `claude-swap` (Kommando `cswap`, MIT-Lizenz, Projekt `realiti4/claude-swap`) auf Samuels Mac. Er tauscht das angemeldete Konto direkt im macOS-Keychain. Claude Code liest den Credential-Store pro Anfrage neu, deshalb wechselt auch eine bereits laufende Session samt ihrer Subagenten das Konto, ohne Neustart. Erfasst sind dieselben drei Konten wie im Proxy: `hslu-dc`, `hslu-privat` und `privat`.
+Standardweg für den Kontowechsel ist seit dem 6. September 2026 nicht mehr der Proxy, sondern der lokale Live-Wechsler `claude-swap` (Kommando `cswap`, MIT-Lizenz, Projekt `realiti4/claude-swap`) auf Samuels Mac. Er tauscht das angemeldete Konto direkt im macOS-Keychain. Claude Code liest den Credential-Store pro Anfrage neu, deshalb wechselt auch eine bereits laufende Session samt ihrer Subagenten das Konto, ohne Neustart. Erfasst sind die drei Konten des Proxys `hslu-dc`, `hslu-privat` und `privat` sowie seit dem 9. September 2026 zusätzlich `hslu-digital`, das nur der Wechsler kennt (der Proxy bleibt bei drei Konten).
 
 Der Wechsel läuft automatisch. Ein LaunchAgent `ch.ackermannprivat.claude-swap-auto` prüft jede Minute, ob das aktive Konto die Schwelle von 90 Prozent erreicht, bewertet dabei das Fable-Wochenfenster mit und wählt das nächste Konto nach der Strategie consume-first. Protokoll unter `~/.local/var/log/claude-swap-auto.log`.
 
@@ -40,7 +40,7 @@ Der Proxy läuft weiter, aber als bewusster Opt-in für Agenten-Flotten und Head
 
 ## Rolle im Stack
 
-Drei Konten teilen sich die Arbeit von Claude Code. Ohne Proxy heisst ein volles Limit: Session abbrechen, umloggen, weiterarbeiten, und das Fable-Wochenfenster eines Kontos ist regelmässig leer, während das andere Konto Platz hätte. Der Proxy macht daraus eine Betriebsentscheidung, die niemand von Hand treffen muss. Er umgeht dabei keine Nutzungslimite: jedes Konto bleibt einzeln durch Anthropic begrenzt, der Proxy verteilt nur auf Konten, die Samuel selbst bezahlt.
+Vier Konten teilen sich die Arbeit von Claude Code. Ohne Proxy heisst ein volles Limit: Session abbrechen, umloggen, weiterarbeiten, und das Fable-Wochenfenster eines Kontos ist regelmässig leer, während das andere Konto Platz hätte. Der Proxy macht daraus eine Betriebsentscheidung, die niemand von Hand treffen muss. Er umgeht dabei keine Nutzungslimite: jedes Konto bleibt einzeln durch Anthropic begrenzt, der Proxy verteilt nur auf Konten, die Samuel selbst bezahlt.
 
 Ein Ausfall mitten in einer Session heisst `rotate-off` und Resume, der Prompt-Cache liegt bei Anthropic pro Konto und überlebt das. Der Poller von Claude Usage läuft immer direkt gegen Anthropic, weil die Claude-CLI dort ihr eigenes Token erneuern muss.
 
