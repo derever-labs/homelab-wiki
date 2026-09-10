@@ -26,7 +26,7 @@ Claude Rotate ist ein kleiner HTTP-Proxy vor der Anthropic-API. Claude Code auf 
 
 Standardweg für den Kontowechsel ist seit dem 6. September 2026 nicht mehr der Proxy, sondern der lokale Live-Wechsler `claude-swap` (Kommando `cswap`, MIT-Lizenz, Projekt `realiti4/claude-swap`) auf Samuels Mac. Er tauscht das angemeldete Konto direkt im macOS-Keychain. Claude Code liest den Credential-Store pro Anfrage neu, deshalb wechselt auch eine bereits laufende Session samt ihrer Subagenten das Konto, ohne Neustart. Erfasst sind die drei Konten des Proxys `hslu-dc`, `hslu-privat` und `privat` sowie seit dem 9. September 2026 zusätzlich `hslu-digital`, das nur der Wechsler kennt (der Proxy bleibt bei drei Konten).
 
-Der Wechsel läuft automatisch. Ein LaunchAgent `ch.ackermannprivat.claude-swap-auto` prüft jede Minute, ob das aktive Konto die Schwelle von 90 Prozent erreicht, bewertet dabei das Fable-Wochenfenster mit und wählt das nächste Konto nach der Strategie consume-first. Protokoll unter `~/.local/var/log/claude-swap-auto.log`.
+Der Wechsel läuft automatisch. Ein LaunchAgent `ch.ackermannprivat.claude-swap-auto` prüft jede Minute, ob das aktive Konto die Schwelle von 95 Prozent erreicht, bewertet dabei das Fable-Wochenfenster mit und wählt das nächste Konto nach der Strategie consume-first. Protokoll unter `~/.local/var/log/claude-swap-auto.log`.
 
 ### Warum der Proxy nicht mehr Standard ist
 
