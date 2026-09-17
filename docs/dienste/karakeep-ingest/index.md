@@ -96,6 +96,8 @@ Read -> Ingest: "POST /api/read (Bearer):\neine URL, Volltext zurück" { style.s
 
 Die Kosten sind gedeckelt: ein Tageslimit für Scrapfly-Requests und eine Bestätigungsschwelle bei grossen Batches (Details im Job und im Design). Karakeep bleibt der einzige Bestand -- der Ingest speichert nur seinen Betriebszustand.
 
+Ob die Importe auch gelingen, überwacht seit dem 17.09.2026 ein eigener Kuma-Push: Der Dienst meldet stündlich die Fehlerquote der letzten 24 Stunden und setzt den Monitor `Karakeep Import-Qualitaet` auf down, sobald mehr als drei Importe gescheitert sind oder die Fehlerquote über 20 Prozent liegt. Die Dead-Man-Switches der Scheduler belegen nämlich nur, dass der Code läuft -- eine Serie still gescheiterter Importe bleibt für sie unsichtbar.
+
 ## Überholspur für Einzel-Abrufe
 
 Die Paste-Seite ist ein Batch-Weg: URLs gehen in die Queue, die Karten erscheinen, wenn sie fertig sind. Für einen wartenden Aufrufer taugt das nicht -- [Todo Ingest](../todo-ingest/index.md) muss einen diktierten Link innerhalb seines Verarbeitungslaufs lesen oder ehrlich aufgeben. Dafür trägt der Dienst seit dem 30.07.2026 eine zweite, schmale Schnittstelle: `POST /api/read` holt genau eine URL und gibt deren Inhalt zurück, statt eine Karte zu bauen. Sie nutzt dieselben vier Pfade wie der Batch, und dieser Abschnitt ist die kanonische Beschreibung der Schnittstelle.
