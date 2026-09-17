@@ -20,7 +20,7 @@ ntfy ist ein selbstgehosteter Push-Benachrichtigungsdienst. Homelab-Services pub
 | Deployment | Nomad Job `infrastructure/ntfy.nomad` |
 | Storage | Linstor CSI: `ntfy-data` (Benutzer- und Cache-Datenbank) |
 | Auth | ntfy-eigen, `deny-all` (kein anonymer Zugriff); extern `public-noauth@file`, intern `intern-noauth@file` |
-| Secrets | 1Password (Admin-Passwort, Service-Token); Service-Token zusätzlich in Vault `kv/todo-ingest` |
+| Secrets | 1Password (Admin-Passwort, Service-Token); Service-Token zusätzlich im Vault-KV des jeweiligen Konsumenten |
 
 ## Rolle im Stack
 
@@ -57,16 +57,22 @@ Für iOS-Zustellung ist `NTFY_UPSTREAM_BASE_URL` auf `https://ntfy.sh` gesetzt. 
 
 ## Authentifizierung und Zugriff
 
-Der Zugriff ist auf `deny-all` gestellt: Ohne Benutzer oder Token ist weder Lesen noch Schreiben möglich. Zwei Rollen sind angelegt:
+Der Zugriff ist auf `deny-all` gestellt: Ohne Benutzer oder Token ist weder Lesen noch Schreiben möglich. Jeder publizierende Dienst bekommt einen eigenen Service-Benutzer mit reiner Schreibberechtigung auf genau ein Topic -- ein Token wird nie zwischen Diensten geteilt, damit ein Leak nur das eigene Topic trifft.
 
 - **`samuel`** -- Admin-Benutzer für die App und die Verwaltung. Das Passwort liegt in 1Password (`ntfy Homelab Admin Password`).
-- **`todo-ingest`** -- Service-Benutzer mit reiner Schreibberechtigung auf das Topic `todo`. Der Token liegt in 1Password (`ntfy todo-ingest Token`) und in Vault `kv/todo-ingest`.
+- **`todo-ingest`** -- schreibt auf Topic `todo`. Der Token liegt in 1Password (`ntfy todo-ingest Token`) und in Vault `kv/todo-ingest`.
+- **`todo-dani`** -- schreibt auf Topic `todo-dani`. Der Token liegt in Vault `kv/todo-dani`.
+- **`claude-usage`** -- schreibt auf Topic `claude`. Der Token liegt in Vault `kv/claude-usage`.
+- **`karakeep-ingest`** -- schreibt auf Topic `karakeep`. Der Token liegt in 1Password (`ntfy karakeep-ingest Token`) und in Vault `kv/karakeep-ingest`.
+
+Benutzer und Berechtigungen liegen in der Benutzerdatenbank auf dem CSI-Volume, nicht im Nomad-Job -- angelegt werden sie mit `ntfy user add` und `ntfy access` im Container, der Token mit `ntfy token add`.
 
 Der externe Router nutzt `public-noauth@file` (CrowdSec plus Security-Header); die eigentliche Zugriffskontrolle macht ntfy selbst. Ein interner Router (`intern-noauth@file`) deckt den Zugriff aus den internen Netzen ab, und `/v1/health` läuft über einen eigenen, hoch priorisierten no-auth-Router. Details zu den Ketten: [Traefik Referenz](../../edge/traefik/referenz.md).
 
 ## Verwandte Seiten
 
 - [Todo Ingest](../todo-ingest/index.md) -- erster Konsument, nutzt Topic `todo` für Bestätigungen und Rückfragen
+- [Karakeep Ingest](../karakeep-ingest/index.md) -- nutzt Topic `karakeep` für Token- und Fehlerserien-Alarme
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `public-noauth@file` und `intern-noauth@file`
 - [Linstor CSI](../../storage/linstor/index.md) -- replizierter Block-Storage (DRBD) für die Datenbanken
 - [Credentials](../../_referenz/credentials.md) -- Speicherorte der Zugangsdaten
