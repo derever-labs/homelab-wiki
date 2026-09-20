@@ -121,8 +121,10 @@ app.poller -> app.swap: "10 swap.json schreiben" { class: push }
 8. Die Daten selbst holt das JavaScript über den zweiten Router ohne Authentik (siehe [Zwei Router auf einem Service](#zwei-router-auf-einem-service)).
 9. Der Wechsler auf dem Mac meldet bei jedem Kontowechsel und alle fünf Minuten, welches Konto die Claude-Code-Sessions gerade nutzen (siehe [Wechsler-Anzeige](#wechsler-anzeige)).
 10. Der Empfänger in der Poller-Task prüft das Token und schreibt die Meldung als `swap.json`; die Seite markiert damit die Karte des aktiven Kontos.
+11. Der zentrale Telegraf holt `usage.json` alle fünf Minuten über denselben Daten-Router ab und schreibt die Prozentwerte je Konto und Fenster als Zeitreihe nach InfluxDB (siehe [Zeitreihe und Grafana](#zeitreihe-und-grafana)).
+12. Mit dem Heartbeat des Wechslers kommt zusätzlich das Kontingent des ChatGPT-Abos mit, das nur der Mac kennt; der Poller führt es als fünftes Konto `codex` in derselben Zeitreihe.
 
-**Belegt gegen** `services/claude-usage.nomad` im Repo `homelab-nomad-jobs`, Stand 07.09.2026.
+**Belegt gegen** `services/claude-usage.nomad` im Repo `homelab-nomad-jobs`, Stand 20.09.2026.
 
 ## Datenquelle
 
@@ -186,9 +188,20 @@ Scheitert auch das, zeigt die Karte "Re-Login nötig" samt Befehl. Der Login lä
 Poller-Mechanik, Konto-Zuordnung, Ping- und Melde-Logik und der Aufbau von `usage.json` werden im README von [derever-labs/claude-usage](https://github.com/derever-labs/claude-usage) gepflegt und hier nicht dupliziert.
 :::
 
+## Zeitreihe und Grafana {#zeitreihe-und-grafana}
+
+Die Seite zeigt nur den Momentanwert. Ob ein Abo über Wochen brachliegt, sieht man erst in der Historie, und genau das ist die Kostenfrage: Ungenutztes Wochenkontingent verfällt ersatzlos, ein Max-Abo, das nie über ein Fünftel kommt, ist ein Kündigungskandidat. Darum landen die Prozentwerte seit dem 20. September 2026 als Zeitreihe in InfluxDB.
+
+Der Poller liefert dafür in `usage.json` neben der verschachtelten Kontenliste zwei flache Listen, eine Zeile je Konto und Fenster sowie eine Zeile je Konto mit Login-Zustand und Tarif. Der Grund ist eine Eigenheit des JSON-Parsers von Telegraf: Unter einem Objekt übernimmt er nur flache Schlüssel, ein verschachteltes Array lässt er ohne Fehlermeldung fallen. Der zentrale Telegraf (Job `influxdb`, Konfiguration `monitoring/telegraf/telegraf.conf` im Repo `homelab-nomad-jobs`) holt die Datei alle fünf Minuten über den Daten-Router ab, für den das Cluster-Netz freigeschaltet ist, und schreibt die Measurements `claude_usage` und `claude_usage_status` in den Bucket `telegraf`. Der Downsampling-Task kopiert sie alle zehn Minuten als 5-Minuten-Mittel nach `telegraf_1y`, aus dem die Dashboards lesen; neue Werte erscheinen dort mit bis zu zehn Minuten Verzögerung.
+
+Der Reset-Zeitpunkt jedes Fensters bleibt als Tag erhalten. Er ändert sich nur beim Reset, gruppiert man danach, ergibt der Höchstwert je Gruppe den Stand kurz vor dem Reset, also den Rest, der ungenutzt verfallen ist. Das Grafana-Dashboard `claude-usage` (Datei `monitoring/grafana-dashboards/claude-usage.json`, deployt über den Dashboard-Workflow) zeigt neben dem aktuellen Fable-Stand und dem Login-Zustand je Konto die drei Verläufe für Session, Woche und Fable-Woche sowie diese Tabelle der Höchststände je Wochenfenster.
+
+Das Kontingent des ChatGPT-Abos, das Codex nutzt, kennt nur der Mac. Der Ereignis-Handler des Wechslers fragt es über den lokalen Codex-App-Server ab, ohne Modellaufruf und ohne das Anmeldetoken zu berühren, und hängt Tarif und Fenster an den Heartbeat. Der Empfänger reicht den Block normalisiert in `swap.json` durch, die Seite zeigt ihn in der Wechsler-Zeile, und der Poller nimmt ihn als Konto `codex` in die flachen Listen auf, solange die Meldung jünger als fünfzehn Minuten ist. Auf dem Mac erscheint derselbe Wert als fünfte Zeile der Claude-Code-Statusline.
+
 ## Verwandte Seiten
 
 - [Portale](../dashboards/index.md) -- internes Portal mit der Kachel zu diesem Dienst
+- [InfluxDB und Telegraf](../../monitoring/influxdb.md) -- Zeitreihen-Ablage, Telegraf-Konfiguration und Downsampling-Tasks
 - [claude-rotate](../claude-rotate/index.md) -- Live-Wechsler claude-swap und Proxy, deren Zustand die Seite anzeigt
 - [ntfy](../ntfy/index.md) -- Push-Kanal der "wieder frei"-Meldungen
 - [Traefik Referenz](../../edge/traefik/referenz.md) -- Middleware-Ketten `intern-auth` und `intern-api`
