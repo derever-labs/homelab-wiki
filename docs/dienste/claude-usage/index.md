@@ -30,9 +30,9 @@ Der Einstieg läuft über die Kachel auf dem internen Portal [intra.ackermannpri
 
 ## Datenfluss
 
-**Leitfrage:** Wie kommen die Zahlen der vier Konten auf die Seite, und wohin fliessen Credentials und Meldungen?
+**Leitfrage:** Wie kommen die Zahlen der vier Konten auf die Seite und in die Historie, und wohin fliessen Credentials und Meldungen?
 
-Lese-Konvention: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Ocker kodiert den Poller-Weg, Blau den Seiten-Weg des Browsers.
+Lese-Konvention: Der Pfeil zeigt vom Initiator zum Ziel, das Label nennt Schritt und Inhalt. Ocker kodiert den Poller- und Wechsler-Weg, Blau den Seiten-Weg des Browsers, Grün den Weg der Zeitreihe.
 
 ```d2
 classes: {
@@ -40,6 +40,7 @@ classes: {
   container: { style: { border-radius: 8; stroke-dash: 4 } }
   push: { style: { stroke: "#b45309"; font-color: "#b45309" } }
   seite: { style: { stroke: "#3b6ea5"; font-color: "#3b6ea5" } }
+  zeitreihe: { style: { stroke: "#4d7c0f"; font-color: "#4d7c0f" } }
 }
 
 direction: right
@@ -64,6 +65,11 @@ browser: Browser { class: node }
 mac: "Mac: Wechsler claude-swap" {
   class: node
   tooltip: "Tauscht die Claude-Code-Credentials im Keychain und meldet bei jedem Wechsel und alle 5 Minuten das aktive Konto"
+}
+
+codex: "Codex-App-Server auf dem Mac" {
+  class: node
+  tooltip: "Lokaler Dienst des Codex-Werkzeugs -- nennt Tarif und Fenster des ChatGPT-Abos ohne Modellaufruf"
 }
 
 traefik: Traefik {
@@ -99,6 +105,22 @@ app: "claude-usage (Nomad-Group)" {
   }
 }
 
+telegraf: "Telegraf (zentral)" {
+  class: node
+  tooltip: "HTTP-Input im Job influxdb -- liest die flachen Listen aus usage.json"
+}
+
+influx: InfluxDB {
+  shape: cylinder
+  class: node
+  tooltip: "Measurements claude_usage und claude_usage_status im Bucket telegraf, Downsample nach telegraf_1y"
+}
+
+grafana: "Grafana-Dashboard claude-usage" {
+  class: node
+  tooltip: "Verläufe je Fenster und Tabelle der Höchststände je Wochenfenster"
+}
+
 vault -> app.poller: "1 Credentials beim Start" { class: push }
 app.poller -> anthropic: "2 Limiten je Konto abfragen" { class: push }
 app.poller -> app.data: "3 usage.json schreiben" { class: push }
@@ -107,8 +129,12 @@ app.poller -> ntfy: "5 Limit wieder frei" { class: push }
 browser -> traefik.rseite: "6 Seite anfordern" { class: seite }
 traefik.rseite -> app.html: "7 HTML und JS ausliefern" { class: seite }
 browser -> traefik.rdata: "8 usage.json und swap.json lesen" { class: seite }
-mac -> traefik.rdata: "9 aktives Konto melden" { class: push }
-app.poller -> app.swap: "10 swap.json schreiben" { class: push }
+mac -> codex: "9 Kontingent des ChatGPT-Abos lesen" { class: push }
+mac -> traefik.rdata: "10 aktives Konto und Kontingent melden" { class: push }
+app.poller -> app.swap: "11 swap.json schreiben" { class: push }
+telegraf -> traefik.rdata: "12 usage.json abholen" { class: zeitreihe }
+telegraf -> influx: "13 Prozentwerte schreiben" { class: zeitreihe }
+grafana -> influx: "14 Verläufe abfragen" { class: zeitreihe }
 ```
 
 1. Beim Start stellt der Poller die Credentials-Dateien der vier Konten aus Vault im tmpfs her (siehe [Credentials in Vault](#credentials-in-vault)).
@@ -119,12 +145,14 @@ app.poller -> app.swap: "10 swap.json schreiben" { class: push }
 6. Der Browser holt die Seite über den Seiten-Router, der Authentik und die IP-Allowlist vorschaltet.
 7. Ausgeliefert wird statisches HTML mit JavaScript; die Aufbereitung der Zahlen passiert im Browser.
 8. Die Daten selbst holt das JavaScript über den zweiten Router ohne Authentik (siehe [Zwei Router auf einem Service](#zwei-router-auf-einem-service)).
-9. Der Wechsler auf dem Mac meldet bei jedem Kontowechsel und alle fünf Minuten, welches Konto die Claude-Code-Sessions gerade nutzen (siehe [Wechsler-Anzeige](#wechsler-anzeige)).
-10. Der Empfänger in der Poller-Task prüft das Token und schreibt die Meldung als `swap.json`; die Seite markiert damit die Karte des aktiven Kontos.
-11. Der zentrale Telegraf holt `usage.json` alle fünf Minuten über denselben Daten-Router ab und schreibt die Prozentwerte je Konto und Fenster als Zeitreihe nach InfluxDB (siehe [Zeitreihe und Grafana](#zeitreihe-und-grafana)).
-12. Mit dem Heartbeat des Wechslers kommt zusätzlich das Kontingent des ChatGPT-Abos mit, das nur der Mac kennt; der Poller führt es als fünftes Konto `codex` in derselben Zeitreihe.
+9. Das Kontingent des ChatGPT-Abos kennt nur der Mac. Der Wechsler holt es dort beim lokalen Codex-App-Server, ohne Modellaufruf.
+10. Er meldet bei jedem Kontowechsel und alle fünf Minuten, welches Konto die Claude-Code-Sessions gerade nutzen, und hängt dieses Kontingent an (siehe [Wechsler-Anzeige](#wechsler-anzeige)).
+11. Der Empfänger in der Poller-Task prüft das Token und schreibt die Meldung als `swap.json`. Die Seite markiert damit die Karte des aktiven Kontos, der Poller führt das Kontingent als fünftes Konto `codex`.
+12. Der zentrale Telegraf holt `usage.json` alle fünf Minuten über denselben Daten-Router ab.
+13. Die Prozentwerte je Konto und Fenster landen als Zeitreihe in InfluxDB (siehe [Zeitreihe und Grafana](#zeitreihe-und-grafana)).
+14. Das Grafana-Dashboard `claude-usage` liest die Verläufe aus dem Downsample-Bucket.
 
-**Belegt gegen** `services/claude-usage.nomad` im Repo `homelab-nomad-jobs`, Stand 20.09.2026.
+**Belegt gegen** `services/claude-usage.nomad`, `monitoring/telegraf/telegraf.conf` und `monitoring/grafana-dashboards/claude-usage.json` im Repo `homelab-nomad-jobs` sowie `scripts/claude-swap-events.py` im Repo `claude-config`, Stand 20.09.2026.
 
 ## Datenquelle
 
@@ -192,7 +220,7 @@ Poller-Mechanik, Konto-Zuordnung, Ping- und Melde-Logik und der Aufbau von `usag
 
 Die Seite zeigt nur den Momentanwert. Ob ein Abo über Wochen brachliegt, sieht man erst in der Historie, und genau das ist die Kostenfrage: Ungenutztes Wochenkontingent verfällt ersatzlos, ein Max-Abo, das nie über ein Fünftel kommt, ist ein Kündigungskandidat. Darum landen die Prozentwerte seit dem 20. September 2026 als Zeitreihe in InfluxDB.
 
-Der Poller liefert dafür in `usage.json` neben der verschachtelten Kontenliste zwei flache Listen, eine Zeile je Konto und Fenster sowie eine Zeile je Konto mit Login-Zustand und Tarif. Der Grund ist eine Eigenheit des JSON-Parsers von Telegraf: Unter einem Objekt übernimmt er nur flache Schlüssel, ein verschachteltes Array lässt er ohne Fehlermeldung fallen. Der zentrale Telegraf (Job `influxdb`, Konfiguration `monitoring/telegraf/telegraf.conf` im Repo `homelab-nomad-jobs`) holt die Datei alle fünf Minuten über den Daten-Router ab, für den das Cluster-Netz freigeschaltet ist, und schreibt die Measurements `claude_usage` und `claude_usage_status` in den Bucket `telegraf`. Der Downsampling-Task kopiert sie alle zehn Minuten als 5-Minuten-Mittel nach `telegraf_1y`, aus dem die Dashboards lesen; neue Werte erscheinen dort mit bis zu zehn Minuten Verzögerung.
+Der Poller liefert dafür in `usage.json` neben der verschachtelten Kontenliste zwei flache Listen, eine Zeile je Konto und Fenster sowie eine Zeile je Konto mit Login-Zustand und Tarif. Der Grund ist eine Eigenheit des JSON-Parsers von Telegraf: Unter einem Objekt übernimmt er nur flache Schlüssel, ein verschachteltes Array lässt er ohne Fehlermeldung fallen. Der zentrale Telegraf (Job `influxdb`, Konfiguration `monitoring/telegraf/telegraf.conf` im Repo `homelab-nomad-jobs`) holt die Datei alle fünf Minuten über den Daten-Router ab, für den das Cluster-Netz freigeschaltet ist, und schreibt die Measurements `claude_usage` und `claude_usage_status` in den Bucket `telegraf`. Der Downsampling-Task kopiert sie alle zehn Minuten als 5-Minuten-Mittel nach `telegraf_1y`, aus dem die Dashboards lesen. Neue Werte erscheinen dort mit bis zu rund zwanzig Minuten Verzögerung, weil sich drei Takte addieren: das Alter der abgeholten Datei (bis fünf Minuten), der Stempel des 5-Minuten-Fensters (plus fünf Minuten) und der Takt des Downsampling-Tasks (bis zehn Minuten).
 
 Der Reset-Zeitpunkt jedes Fensters bleibt als Tag erhalten. Er ändert sich nur beim Reset, gruppiert man danach, ergibt der Höchstwert je Gruppe den Stand kurz vor dem Reset, also den Rest, der ungenutzt verfallen ist. Das Grafana-Dashboard `claude-usage` (Datei `monitoring/grafana-dashboards/claude-usage.json`, deployt über den Dashboard-Workflow) zeigt neben dem aktuellen Fable-Stand und dem Login-Zustand je Konto die drei Verläufe für Session, Woche und Fable-Woche sowie diese Tabelle der Höchststände je Wochenfenster.
 
