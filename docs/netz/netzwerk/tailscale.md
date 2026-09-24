@@ -46,7 +46,7 @@ classes: {
 ADMIN: "tag:admin" {
   class: cluster
   COPPER: copper-1 { class: host; tooltip: "macOS, 100.77.173.91" }
-  BOSON: boson { class: host; tooltip: "iOS, 100.103.149.48, trägt zusätzlich tag:homelab und tag:hslu" }
+  BOSON: boson { class: host; tooltip: "iOS, 100.103.149.48" }
   ATV: apple-tv { class: host; tooltip: "tvOS, 100.106.104.34, Subnet-Router 172.16.0.0/24" }
 }
 
@@ -83,8 +83,7 @@ HSLU <-> HOMELAB: blockiert { class: blocked }
 1. Die Policy kennt genau drei Grants ([ACL-Pattern](#acl-pattern)): `tag:admin` sieht alles, `tag:hslu` und `tag:homelab` sehen jeweils nur den eigenen Cluster samt der eigenen Subnetze.
 2. Durchgesetzt wird die Trennung nicht an einem zentralen Punkt: Die Control-Plane verteilt die Filterregeln an alle Nodes, jeder Host filtert eingehende Verbindungen selbst nach dem Quell-Tag. Es gibt keinen Chokepoint, dessen Ausfall die Trennung aufheben würde.
 3. Das Luzern-Netz `172.16.0.0/24` fehlt im homelab-Grant bewusst: Homelab-Hosts erreichen `pve-lu-01` über dessen Tailscale-IP, das LAN dahinter nutzt nur `tag:admin` ([Tag-Schema](#tag-schema)).
-4. `boson` trägt alle drei Tags -- wirksam ist der weiteste Grant (`tag:admin -> *`), als Ziel ist das iPhone aus beiden Clustern erreichbar.
-5. Verifikation der Trennung nur über TCP-Tests, `tailscale ping` ignoriert ACLs ([Test-Validierung](#test-validierung)).
+4. Verifikation der Trennung nur über TCP-Tests, `tailscale ping` ignoriert ACLs ([Test-Validierung](#test-validierung)).
 
 ## Remote-Zugriff über die Subnet-Router {#subnet-router-topologie}
 
@@ -208,7 +207,7 @@ Weitere Mitglieder (im Tailnet, ohne eigene Subnet-Routes):
 `tag:admin` (3 Geräte):
 
 - `copper-1` -- Laptop (macOS)
-- `boson` -- iPhone (iOS), trägt zusätzlich `tag:homelab` und `tag:hslu`
+- `boson` -- iPhone (iOS)
 - `apple-tv` -- Wohnzimmer Apple-TV, Subnet-Router für 172.16.0.0/24
 
 ## CheckMK Routing-Sonderregel
